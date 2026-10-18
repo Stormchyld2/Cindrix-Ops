@@ -15,9 +15,8 @@ jobs:
         run: cargo test --all-targets
 
   interface:
-    name: Interface type check (UNTESTED in the first commit)
+    name: Interface type check and build
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -28,9 +27,8 @@ jobs:
       - run: npm run build
 
   windows:
-    name: Windows app build (UNTESTED in the first commit)
+    name: Windows app build
     runs-on: windows-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -40,7 +38,14 @@ jobs:
       - run: npm install
       - run: npx tauri icon src-tauri/icon.svg
       - run: npx tauri build --no-bundle
+      - name: Assemble portable folder
+        shell: bash
+        run: |
+          mkdir -p out/Cindrix
+          cp src-tauri/target/release/cindrix-ops.exe out/Cindrix/
+          cp -r content out/Cindrix/content
+          printf 'Run cindrix-ops.exe. Needs Microsoft WebView2 (already on Windows 11).\r\n' > out/Cindrix/README.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: cindrix-ops-windows
-          path: src-tauri/target/release/cindrix-ops.exe
+          name: Cindrix-windows-portable
+          path: out/Cindrix

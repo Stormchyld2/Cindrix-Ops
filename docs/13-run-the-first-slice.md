@@ -10,14 +10,12 @@ What works and what has been tested, so nothing is guessed.
 - card loading (a card can't claim to be reviewed without a reviewer and date)
 - library search over `content/library-sample`
 
-## Written but NOT tested
-The workspace can't download Rust crates or npm packages, so these have never been built:
-- `src/` (Svelte + TypeScript interface: Ask with sources, Library with emergency cards, grouped menu)
-- `src-tauri/` (Tauri 2 shell exposing `list_cards` and `ask`)
+## Built by GitHub Actions (compiles, not yet run by a person)
+Every push runs three jobs: the core and safety tests, the interface type check and build, and a Windows build of the whole app. The first run passed all three. That proves the code compiles and type-checks on Windows. It does **not** prove the window opens and behaves, because nobody has run it yet.
 
-Expect small errors on the first build. Send me the messages and I'll fix them.
+Download the result: open the repository on GitHub, go to **Actions**, open the latest run, and download the **Cindrix-windows-portable** artifact. Unzip it on a Windows PC and run `cindrix-ops.exe`. The `content` folder must sit next to it.
 
-## To run it on Windows
+## To run it from source on Windows (optional)
 1. Install: Rust (rustup), Node.js 22, Visual Studio Build Tools (C++), and WebView2 (already on Windows 11).
 2. In the repository folder:
    ```
