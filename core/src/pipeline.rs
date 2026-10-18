@@ -54,11 +54,17 @@ pub enum Event {
 }
 
 pub fn answer_stream(question: &str, library: &Path, model: &dyn Model, emit: &mut dyn FnMut(Event)) -> Reply {
+    answer_stream_with(question, &|| retrieval::search(library, question, 3), model, emit)
+}
+
+/// Same, with the passages supplied by the caller (for example the small built-in library plus Kiwix).
+/// The safety check runs first, so `passages` is not even called for a medication-dose question.
+pub fn answer_stream_with(question: &str, passages: &dyn Fn() -> Vec<retrieval::Passage>, model: &dyn Model, emit: &mut dyn FnMut(Event)) -> Reply {
     if let Some(fixed) = safety::gate(question) {
         emit(Event::Replace(fixed.to_string()));
         return Reply { kind: Kind::Refused, text: fixed.to_string(), sources: vec![], card: Some(safety::FIXED_REPLY_CARD.to_string()) };
     }
-    let passages = retrieval::search(library, question, 3);
+    let passages = passages();
     let (system, user) = match prompt::build_parts(question, &passages) {
         Some(p) => p,
         None => {

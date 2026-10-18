@@ -2,6 +2,7 @@ use cindrix_core::inventory::{self, Item, Status};
 use cindrix_core::userdata::{self, UserDir};
 use cindrix_core::hardware::{self, Size};
 use cindrix_core::llama::LlamaModel;
+use cindrix_core::kiwix::{self, KiwixHost};
 use cindrix_core::modelhost::ModelHost;
 use cindrix_core::{calendar, cards, cascade, pipeline};
 use serde::{Deserialize, Serialize};
@@ -72,6 +73,8 @@ struct ModelStatus {
 struct AppState {
     host: Mutex<Option<ModelHost>>,
     port: Mutex<Option<u16>>,
+    kiwix_host: Mutex<Option<KiwixHost>>,
+    kiwix_port: Mutex<Option<u16>>,
     status: Mutex<ModelStatus>,
 }
 
@@ -81,6 +84,13 @@ impl AppState {
             h.stop();
         }
         *self.port.lock().unwrap() = None;
+    }
+    fn stop_all(&self) {
+        self.stop();
+        if let Some(mut h) = self.kiwix_host.lock().unwrap().take() {
+            h.stop();
+        }
+        *self.kiwix_port.lock().unwrap() = None;
     }
     fn set(&self, state: &str, model: &str, size: &str, message: &str) {
         let mut st = self.status.lock().unwrap();
@@ -95,6 +105,41 @@ impl AppState {
 fn engine_path() -> PathBuf {
     let name = if cfg!(windows) { "llama-server.exe" } else { "llama-server" };
     root().join("engines").join(name)
+}
+
+fn library_dir() -> PathBuf {
+    root().join("library")
+}
+
+fn start_library(state: &AppState) {
+    let zims = kiwix::zim_files(&library_dir());
+    let name = if cfg!(windows) { "kiwix-serve.exe" } else { "kiwix-serve" };
+    let engine = root().join("engines").join(name);
+    if zims.is_empty() || !engine.exists() {
+        return;
+    }
+    if let Ok(mut h) = KiwixHost::start(&engine, &zims) {
+        if h.wait_ready(Duration::from_secs(60)).is_ok() {
+            *state.kiwix_port.lock().unwrap() = Some(h.port);
+            *state.kiwix_host.lock().unwrap() = Some(h);
+        } else {
+            h.stop();
+        }
+    }
+}
+
+#[derive(Serialize)]
+struct LibraryStatus {
+    archives: Vec<String>,
+    ready: bool,
+}
+
+#[tauri::command]
+fn library_status(state: tauri::State<'_, AppState>) -> LibraryStatus {
+    LibraryStatus {
+        archives: kiwix::zim_files(&library_dir()).iter().filter_map(|p| p.file_name().map(|n| n.to_string_lossy().to_string())).collect(),
+        ready: state.kiwix_port.lock().unwrap().is_some(),
+    }
 }
 
 fn models_dir() -> PathBuf {
@@ -193,6 +238,16 @@ async fn ask_stream(question: String, on_event: Channel<StreamEvent>, app: tauri
     tauri::async_runtime::spawn_blocking(move || {
         let lib = content_dir().join("library-sample");
         let port = *app.state::<AppState>().port.lock().unwrap();
+        let kport = *app.state::<AppState>().kiwix_port.lock().unwrap();
+        let passages = || {
+            let mut p = cindrix_core::retrieval::search(&lib, &question, 3);
+            if let Some(k) = kport {
+                p.extend(kiwix::search(k, &question, 2));
+            }
+            p.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+            p.truncate(3);
+            p
+        };
         let mut emit = |e: pipeline::Event| {
             let ev = match e {
                 pipeline::Event::Text(t) => StreamEvent { replace: false, text: t },
@@ -201,8 +256,8 @@ async fn ask_stream(question: String, on_event: Channel<StreamEvent>, app: tauri
             let _ = on_event.send(ev);
         };
         let r = match port {
-            Some(p) => pipeline::answer_stream(&question, &lib, &LlamaModel { port: p, max_tokens: 700 }, &mut emit),
-            None => pipeline::answer_stream(&question, &lib, &pipeline::NoModel, &mut emit),
+            Some(p) => pipeline::answer_stream_with(&question, &passages, &LlamaModel { port: p, max_tokens: 700 }, &mut emit),
+            None => pipeline::answer_stream_with(&question, &passages, &pipeline::NoModel, &mut emit),
         };
         Ok(reply_dto(r))
     })
@@ -372,6 +427,7 @@ pub fn run() {
             let handle = app.handle().clone();
             std::thread::spawn(move || {
                 let st = handle.state::<AppState>();
+                start_library(&st);
                 start_model(&st, None);
             });
             Ok(())
@@ -380,6 +436,7 @@ pub fn run() {
             list_cards,
             ask_stream,
             model_status,
+            library_status,
             list_models,
             select_model,
             inventory_list,
@@ -395,7 +452,7 @@ pub fn run() {
     app.run(|handle, event| {
         if let tauri::RunEvent::Exit = event {
             if let Some(st) = handle.try_state::<AppState>() {
-                st.stop();
+                st.stop_all();
             }
         }
     });

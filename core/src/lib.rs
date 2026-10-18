@@ -6,6 +6,7 @@ pub mod cascade;
 pub mod fsio;
 pub mod hardware;
 pub mod inventory;
+pub mod kiwix;
 pub mod llama;
 pub mod modelhost;
 pub mod pipeline;
