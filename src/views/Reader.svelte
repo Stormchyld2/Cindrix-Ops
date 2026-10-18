@@ -188,7 +188,7 @@
     {#if isPdf}
       <button class="btn" class:on={panel === 'search'} onclick={() => (panel = panel === 'search' ? '' : 'search')}>Search</button>
       <button class="btn" class:on={bookmarked} onclick={toggleBookmark} aria-pressed={bookmarked}>{bookmarked ? 'Bookmarked' : 'Bookmark'}</button>
-      <button class="btn" class:on={panel === 'notes'} onclick={() => (panel = panel === 'notes' ? '' : 'notes')}>Notes ({marks.filter((m) => m.kind !== 'last').length})</button>
+      <button class="btn" class:on={panel === 'notes'} onclick={() => (panel = panel === 'notes' ? '' : 'notes')}>Notes ({marks.length})</button>
       <button class="btn" onclick={() => (zoom = Math.max(0.5, +(zoom - 0.25).toFixed(2)))} aria-label="Zoom out">−</button>
       <button class="btn" onclick={() => (zoom = Math.min(4, +(zoom + 0.25).toFixed(2)))} aria-label="Zoom in">+</button>
       <button class="btn" class:on={night} onclick={() => (night = !night)} aria-pressed={night}>Night</button>
