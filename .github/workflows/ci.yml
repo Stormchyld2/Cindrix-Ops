@@ -35,6 +35,28 @@ jobs:
       - run: npm run check
       - run: npm run build
 
+  screenshots:
+    name: Screenshots of each screen
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npm install --no-save playwright
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - name: Serve the built interface
+        run: |
+          npx vite preview --port 4173 &
+          for i in $(seq 1 30); do curl -sf http://localhost:4173/ >/dev/null && break; sleep 1; done
+      - run: node scripts/shots.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: shots
+
   windows:
     name: Windows app build
     runs-on: windows-latest
