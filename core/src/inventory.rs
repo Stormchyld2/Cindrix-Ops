@@ -33,7 +33,7 @@ impl fmt::Display for ParseError {
     }
 }
 
-fn split_record(line: &str) -> Vec<String> {
+pub(crate) fn split_record(line: &str) -> Vec<String> {
     let mut fields = Vec::new();
     let mut cur = String::new();
     let mut in_q = false;
@@ -57,7 +57,7 @@ fn split_record(line: &str) -> Vec<String> {
     fields
 }
 
-fn quote(s: &str) -> String {
+pub(crate) fn quote(s: &str) -> String {
     if s.contains(',') || s.contains('"') || s.contains('\n') {
         format!("\"{}\"", s.replace('"', "\"\""))
     } else {

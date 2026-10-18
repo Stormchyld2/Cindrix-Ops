@@ -2,6 +2,28 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
 
+// A small valid PDF with text, built in memory, to try adding and reading a book.
+function makePdf(pages) {
+  const objs = [];
+  const add = (body) => { objs.push(body); return objs.length; };
+  add('<< /Type /Catalog /Pages 2 0 R >>');
+  const kids = pages.map((_, i) => `${4 + i * 2} 0 R`).join(' ');
+  add(`<< /Type /Pages /Kids [${kids}] /Count ${pages.length} >>`);
+  add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
+  pages.forEach((lines, i) => {
+    const content = 'BT /F1 22 Tf 50 740 Td 28 TL ' + lines.map((l) => `(${l}) Tj T*`).join(' ') + ' ET';
+    add(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents ${5 + i * 2} 0 R /Resources << /Font << /F1 3 0 R >> >> >>`);
+    add(`<< /Length ${content.length} >>\nstream\n${content}\nendstream`);
+  });
+  let out = '%PDF-1.4\n';
+  const offs = [];
+  objs.forEach((b, i) => { offs.push(out.length); out += `${i + 1} 0 obj\n${b}\nendobj\n`; });
+  const x = out.length;
+  out += `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n` + offs.map((o) => String(o).padStart(10, '0') + ' 00000 n \n').join('');
+  out += `trailer\n<< /Size ${objs.length + 1} /Root 1 0 R >>\nstartxref\n${x}\n%%EOF`;
+  return Buffer.from(out, 'latin1');
+}
+
 const url = process.env.URL ?? 'http://localhost:4173/';
 mkdirSync('shots', { recursive: true });
 const browser = await chromium.launch();
@@ -22,6 +44,24 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   await shoot(page, `${label}-1-ask`);
 
   await page.getByRole('button', { name: 'Library', exact: true }).click();
+  await shoot(page, `${label}-1b-shelf`);
+  await page.locator('#add-book').setInputFiles({
+    name: 'where_there_is_no_doctor.pdf', mimeType: 'application/pdf',
+    buffer: makePdf([['A book I added myself', 'Page one of the sample'], ['Cool a burn with clean running water', 'Page two of the sample'], ['Page three of the sample']]),
+  });
+  await page.getByText(/Added: where there is no doctor/).waitFor();
+  await shoot(page, `${label}-1c-shelf-added`);
+  await page.getByRole('button', { name: /Open where there is no doctor/ }).click();
+  await page.waitForTimeout(1200);
+  await shoot(page, `${label}-1d-reader`);
+  await page.getByRole('button', { name: 'Next ›' }).click();
+  await page.getByRole('button', { name: 'Search', exact: true }).click();
+  await page.getByLabel('Search in this book').fill('burn');
+  await page.getByRole('button', { name: 'Find' }).click();
+  await page.waitForTimeout(800);
+  await shoot(page, `${label}-1e-reader-search`);
+  await page.getByRole('button', { name: '‹ Shelf' }).click();
+  await page.getByRole('button', { name: 'Emergency cards', exact: true }).click();
   await page.getByRole('button', { name: /Low blood sugar/ }).click();
   await shoot(page, `${label}-2-library`);
 

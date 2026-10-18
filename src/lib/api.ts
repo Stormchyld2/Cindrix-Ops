@@ -142,3 +142,84 @@ export async function familySave(family: Family, passphrase?: string): Promise<v
   }
   memFamily = family;
 }
+
+// ---------- bookshelf ----------
+export type Book = {
+  id: string; title: string; author: string; category: string; kind: 'pdf' | 'md' | 'txt'; added: string; license: string;
+  mine: boolean; searchable: boolean; last_page: number;
+};
+export type Mark = { kind: 'bookmark' | 'highlight' | 'note'; page: number; text: string };
+
+const sampleText =
+  '# Emergency toilet when the water is off\n\nDo not use a toilet that has no running water for long. Line a bucket or the toilet bowl with a heavy plastic bag. After each use, cover the waste with a scoop of cat litter, sawdust, ash or dry soil to cut smell and flies.\n\nTie the bag shut when it is about half full and keep it in a lidded container away from where you live and cook.\n\n# Handwashing without a tap\n\nWash hands with soap and clean water for 20 seconds after using the toilet, before cooking and before eating.';
+const memBooks: { meta: Book; bytes: Uint8Array }[] = [
+  { meta: { id: 'b-sample', title: 'Emergency Sanitation (sample)', author: 'Cindrix original', category: 'Food and water', kind: 'md', added: '', license: 'Cindrix original, draft', mine: false, searchable: true, last_page: 1 },
+    bytes: new TextEncoder().encode(sampleText) },
+];
+const memMarks: ({ book: string } & Mark)[] = [];
+
+export async function shelfList(): Promise<Book[]> {
+  if (inTauri) return call<Book[]>('shelf_list');
+  return memBooks.map((b) => b.meta);
+}
+
+/** Add a book from a file the person picked. Throws a readable message if it is refused. */
+export async function shelfAdd(file: File, category = ''): Promise<Book> {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  if (inTauri) {
+    const { invoke } = await import('@tauri-apps/api/core');
+    return invoke<Book>('shelf_add', bytes, { headers: { 'x-file-name': encodeURIComponent(file.name), 'x-category': encodeURIComponent(category) } });
+  }
+  const lower = file.name.toLowerCase();
+  const kind = lower.endsWith('.pdf') ? 'pdf' : lower.endsWith('.md') ? 'md' : lower.endsWith('.txt') ? 'txt' : null;
+  if (!kind) throw 'Only PDF, Markdown (.md) and text (.txt) books can be added.';
+  if (kind === 'pdf' && String.fromCharCode(...bytes.slice(0, 5)) !== '%PDF-') throw 'That file says it is a PDF but does not look like one.';
+  const title = file.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim() || 'Untitled';
+  const meta: Book = { id: 'u' + (memBooks.length + 1), title, author: '', category: category || 'Mine', kind, added: new Date().toISOString().slice(0, 10), license: 'Added by you', mine: true, searchable: false, last_page: 1 };
+  memBooks.push({ meta, bytes });
+  return meta;
+}
+
+export async function shelfRead(id: string): Promise<Uint8Array> {
+  if (inTauri) return new Uint8Array(await call<ArrayBuffer>('shelf_read', { id }));
+  const b = memBooks.find((x) => x.meta.id === id);
+  if (!b) throw 'No such book.';
+  return b.bytes.slice();
+}
+
+export async function shelfUpdate(id: string, title: string, author: string, category: string): Promise<void> {
+  if (inTauri) return call<void>('shelf_update', { id, title, author, category });
+  const b = memBooks.find((x) => x.meta.id === id);
+  if (b) { b.meta.title = title || b.meta.title; b.meta.author = author; b.meta.category = category || b.meta.category; }
+}
+
+export async function shelfRemove(id: string): Promise<void> {
+  if (inTauri) return call<void>('shelf_remove', { id });
+  const i = memBooks.findIndex((x) => x.meta.id === id);
+  if (i >= 0) memBooks.splice(i, 1);
+}
+
+export async function shelfSaveText(id: string, pages: string[]): Promise<void> {
+  if (inTauri) return call<void>('shelf_save_text', { id, pages });
+  const b = memBooks.find((x) => x.meta.id === id);
+  if (b) b.meta.searchable = true;
+}
+
+export async function marksList(book: string): Promise<Mark[]> {
+  if (inTauri) return call<Mark[]>('marks_list', { book });
+  return memMarks.filter((m) => m.book === book).map(({ kind, page, text }) => ({ kind, page, text }));
+}
+export async function marksAdd(book: string, m: Mark): Promise<void> {
+  if (inTauri) return call<void>('marks_add', { book, ...m });
+  if (!(m.kind === 'bookmark' && memMarks.some((x) => x.book === book && x.kind === 'bookmark' && x.page === m.page))) memMarks.push({ book, ...m });
+}
+export async function marksRemove(book: string, m: Mark): Promise<void> {
+  if (inTauri) return call<void>('marks_remove', { book, ...m });
+  const i = memMarks.findIndex((x) => x.book === book && x.kind === m.kind && x.page === m.page && x.text === m.text);
+  if (i >= 0) memMarks.splice(i, 1);
+}
+export async function marksSetLast(book: string, page: number): Promise<void> {
+  if (inTauri) return call<void>('marks_set_last', { book, page });
+  const b = memBooks.find((x) => x.meta.id === book);
+  if (b) b.meta.last_page = page;
+}

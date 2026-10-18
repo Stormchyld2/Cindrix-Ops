@@ -12,6 +12,7 @@ pub mod modelhost;
 pub mod pipeline;
 pub mod prompt;
 pub mod retrieval;
+pub mod shelf;
 pub mod safestream;
 pub mod safety;
 pub mod userdata;

@@ -23,6 +23,13 @@ pub fn today_ym() -> (i32, u32) {
     (y, m)
 }
 
+/// Today as "YYYY-MM-DD".
+pub fn today_string() -> String {
+    let secs = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs() as i64).unwrap_or(0);
+    let (y, m, d) = civil_from_days(secs.div_euclid(86_400));
+    format!("{:04}-{:02}-{:02}", y, m, d)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -6,6 +6,7 @@
   import Family from './views/Family.svelte';
   import Cascade from './views/Cascade.svelte';
   import Soon from './views/Soon.svelte';
+  import Shelf from './views/Shelf.svelte';
   import { onMount } from 'svelte';
   import { modelStatus, type ModelStatus } from './lib/api';
   let ms: ModelStatus | null = $state(null);
@@ -17,10 +18,13 @@
 
   let group: Group = $state('Ask');
   let plan: (typeof planTabs)[number] = $state('Start');
+  const libTabs = ['Shelf', 'Cards'] as const;
+  let lib: (typeof libTabs)[number] = $state('Shelf');
   let cardToOpen: string | null = $state(null);
 
   function openCard(id: string) {
     cardToOpen = id;
+    lib = 'Cards';
     group = 'Library';
   }
   function goPlan(tab: string) {
@@ -47,6 +51,13 @@
         <button class:on={group === g} onclick={() => (group = g)} aria-current={group === g ? 'page' : undefined}>{g}</button>
       {/each}
     </nav>
+    {#if group === 'Library'}
+      <div class="subnav">
+        {#each libTabs as t}
+          <button class:on={lib === t} onclick={() => (lib = t)}>{t === 'Cards' ? 'Emergency cards' : t}</button>
+        {/each}
+      </div>
+    {/if}
     {#if group === 'Plan'}
       <div class="subnav">
         {#each planTabs as t}
@@ -60,7 +71,11 @@
     {#if group === 'Ask'}
       <Ask {openCard} />
     {:else if group === 'Library'}
-      <Library bind:cardToOpen />
+      {#if lib === 'Shelf'}
+        <Shelf />
+      {:else}
+        <Library bind:cardToOpen />
+      {/if}
     {:else if group === 'Plan'}
       {#if plan === 'Start'}
         <Start go={goPlan} />

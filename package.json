@@ -10,7 +10,8 @@
     "tauri": "tauri"
   },
   "dependencies": {
-    "@tauri-apps/api": "^2.0.0"
+    "@tauri-apps/api": "^2.0.0",
+    "pdfjs-dist": "4.10.38"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^5.0.0",

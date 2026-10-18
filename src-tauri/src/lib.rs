@@ -4,6 +4,7 @@ use cindrix_core::hardware::{self, Size};
 use cindrix_core::llama::LlamaModel;
 use cindrix_core::kiwix::{self, KiwixHost};
 use cindrix_core::modelhost::ModelHost;
+use cindrix_core::shelf::{Book, Mark, Marks, Shelf};
 use cindrix_core::{calendar, cards, cascade, pipeline};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -241,6 +242,8 @@ async fn ask_stream(question: String, on_event: Channel<StreamEvent>, app: tauri
         let kport = *app.state::<AppState>().kiwix_port.lock().unwrap();
         let passages = || {
             let mut p = cindrix_core::retrieval::search(&lib, &question, 3);
+            p.extend(bundled_shelf().search(&question, 2));
+            p.extend(user_shelf().search(&question, 2));
             if let Some(k) = kport {
                 p.extend(kiwix::search(k, &question, 2));
             }
@@ -277,6 +280,147 @@ fn reply_dto(r: pipeline::Reply) -> ReplyDto {
         sources: r.sources,
         card: r.card,
     }
+}
+
+fn user_shelf() -> Shelf {
+    Shelf::new(&root().join("user").join("my-library"), "u")
+}
+
+fn bundled_shelf() -> Shelf {
+    Shelf::new(&content_dir().join("shelf"), "b")
+}
+
+/// Books whose id starts with "b" come with the drive and cannot be changed or removed.
+fn shelf_for(id: &str) -> Shelf {
+    if id.starts_with('b') { bundled_shelf() } else { user_shelf() }
+}
+
+fn marks() -> Marks {
+    Marks::new(&root().join("user"))
+}
+
+#[derive(Serialize)]
+struct BookDto {
+    id: String,
+    title: String,
+    author: String,
+    category: String,
+    kind: String,
+    added: String,
+    license: String,
+    mine: bool,
+    searchable: bool,
+    last_page: u32,
+}
+
+fn book_dto(b: Book, mine: bool, shelf: &Shelf) -> BookDto {
+    BookDto { searchable: shelf.has_text(&b.id), last_page: marks().last_page(&b.id), id: b.id, title: b.title, author: b.author,
+              category: b.category, kind: b.kind, added: b.added, license: b.license, mine }
+}
+
+#[tauri::command]
+fn shelf_list() -> Result<Vec<BookDto>, String> {
+    let (bs, us) = (bundled_shelf(), user_shelf());
+    let mut out: Vec<BookDto> = bs.list()?.into_iter().map(|b| book_dto(b, false, &bs)).collect();
+    out.extend(us.list()?.into_iter().map(|b| book_dto(b, true, &us)));
+    Ok(out)
+}
+
+/// Add a book. The file bytes are the raw request body; the name and category come in headers.
+#[tauri::command]
+fn shelf_add(request: tauri::ipc::Request<'_>) -> Result<BookDto, String> {
+    let bytes = match request.body() {
+        tauri::ipc::InvokeBody::Raw(v) => v.clone(),
+        _ => return Err("No file was received.".into()),
+    };
+    let header = |k: &str| -> String {
+        request.headers().get(k).and_then(|v| v.to_str().ok()).map(percent_decode).unwrap_or_default()
+    };
+    let name = header("x-file-name");
+    let category = header("x-category");
+    let shelf = user_shelf();
+    let b = shelf.add(&name, &bytes, &category, &calendar::today_string())?;
+    Ok(book_dto(b, true, &shelf))
+}
+
+fn percent_decode(s: &str) -> String {
+    let b = s.as_bytes();
+    let mut out = Vec::with_capacity(b.len());
+    let mut i = 0;
+    while i < b.len() {
+        if b[i] == b'%' && i + 2 < b.len() {
+            let hex = std::str::from_utf8(&b[i + 1..i + 3]).ok().and_then(|h| u8::from_str_radix(h, 16).ok());
+            if let Some(v) = hex {
+                out.push(v);
+                i += 3;
+                continue;
+            }
+        }
+        out.push(b[i]);
+        i += 1;
+    }
+    String::from_utf8_lossy(&out).to_string()
+}
+
+#[tauri::command]
+fn shelf_read(id: String) -> Result<tauri::ipc::Response, String> {
+    Ok(tauri::ipc::Response::new(shelf_for(&id).read(&id)?))
+}
+
+#[tauri::command]
+fn shelf_update(id: String, title: String, author: String, category: String) -> Result<(), String> {
+    if id.starts_with('b') {
+        return Err("Books that come with the drive cannot be edited.".into());
+    }
+    user_shelf().update(&id, &title, &author, &category)
+}
+
+#[tauri::command]
+fn shelf_remove(id: String) -> Result<(), String> {
+    if id.starts_with('b') {
+        return Err("Books that come with the drive cannot be removed.".into());
+    }
+    user_shelf().remove(&id)?;
+    marks().remove_book(&id)
+}
+
+/// The reader sends the text of each page so the assistant can search the book.
+#[tauri::command]
+fn shelf_save_text(id: String, pages: Vec<String>) -> Result<(), String> {
+    if id.starts_with('b') {
+        return Err("Books that come with the drive are indexed when the drive is built.".into());
+    }
+    user_shelf().save_pages(&id, &pages)
+}
+
+#[derive(Serialize, Deserialize)]
+struct MarkDto {
+    kind: String,
+    page: u32,
+    text: String,
+}
+
+#[tauri::command]
+fn marks_list(book: String) -> Result<Vec<MarkDto>, String> {
+    Ok(marks().for_book(&book)?.into_iter().filter(|m| m.kind != "last").map(|m| MarkDto { kind: m.kind, page: m.page, text: m.text }).collect())
+}
+
+#[tauri::command]
+fn marks_add(book: String, kind: String, page: u32, text: String) -> Result<(), String> {
+    if !["bookmark", "highlight", "note"].contains(&kind.as_str()) {
+        return Err("Unknown kind of mark.".into());
+    }
+    marks().add(Mark { book, kind, page, text })
+}
+
+#[tauri::command]
+fn marks_remove(book: String, kind: String, page: u32, text: String) -> Result<(), String> {
+    marks().remove(&book, &kind, page, &text)
+}
+
+#[tauri::command]
+fn marks_set_last(book: String, page: u32) -> Result<(), String> {
+    marks().set_last(&book, page)
 }
 
 fn user() -> UserDir {
@@ -437,6 +581,16 @@ pub fn run() {
             ask_stream,
             model_status,
             library_status,
+            shelf_list,
+            shelf_add,
+            shelf_read,
+            shelf_update,
+            shelf_remove,
+            shelf_save_text,
+            marks_list,
+            marks_add,
+            marks_remove,
+            marks_set_last,
             list_models,
             select_model,
             inventory_list,
