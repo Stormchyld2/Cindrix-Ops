@@ -87,6 +87,23 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   await page.getByRole('button', { name: 'What fails', exact: true }).click();
   await shoot(page, `${label}-8-what-fails`);
 
+  await page.getByRole('button', { name: 'Drills', exact: true }).click();
+  await shoot(page, `${label}-9a-drills`);
+  await page.getByRole('button', { name: 'Do it again' }).first().click();
+  await page.locator('.steps input').nth(0).check();
+  await page.locator('.steps input').nth(1).check();
+  await page.locator('.steps input').nth(2).check();
+  await shoot(page, `${label}-9b-drill-running`);
+  await page.getByRole('button', { name: 'End drill without saving' }).click();
+
+  await page.getByRole('button', { name: 'Binder', exact: true }).click();
+  await shoot(page, `${label}-9c-binder`);
+
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await shoot(page, `${label}-9d-settings`);
+  await page.getByRole('tab', { name: 'Sources and licenses' }).click();
+  await shoot(page, `${label}-9e-sources`);
+
   if (errors.length) console.log(label, 'console errors:', errors);
   await page.close();
 }

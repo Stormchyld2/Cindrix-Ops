@@ -3,6 +3,7 @@ use cindrix_core::userdata::{self, UserDir};
 use cindrix_core::hardware::{self, Size};
 use cindrix_core::llama::LlamaModel;
 use cindrix_core::crawl;
+use cindrix_core::drills;
 use cindrix_core::drive::{self, DriveInfo};
 use cindrix_core::kiwix::{self, KiwixHost};
 use cindrix_core::modelhost::ModelHost;
@@ -930,6 +931,64 @@ fn archive_remove(name: String, app: tauri::AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+// ---------- drills ----------
+
+#[derive(Serialize)]
+struct DrillResultDto {
+    date: String,
+    seconds: u32,
+    done: u32,
+    total: u32,
+    notes: String,
+}
+
+#[derive(Serialize)]
+struct DrillDto {
+    id: String,
+    title: String,
+    minutes: u32,
+    place: String,
+    summary: String,
+    status: String,
+    steps: Vec<String>,
+    /// Most recent result, if the drill has been done
+    last: Option<DrillResultDto>,
+    times_done: usize,
+}
+
+#[tauri::command]
+fn drills_list() -> Result<Vec<DrillDto>, String> {
+    let results = drills::Log::new(&root().join("user")).list()?;
+    Ok(drills::load_dir(&content_dir().join("drills"))
+        .into_iter()
+        .map(|d| {
+            let mine: Vec<&drills::Result_> = results.iter().filter(|r| r.drill == d.id).collect();
+            DrillDto {
+                last: mine.last().map(|r| DrillResultDto { date: r.date.clone(), seconds: r.seconds, done: r.done, total: r.total, notes: r.notes.clone() }),
+                times_done: mine.len(),
+                id: d.id,
+                title: d.title,
+                minutes: d.minutes,
+                place: d.place,
+                summary: d.summary,
+                status: d.status,
+                steps: d.steps,
+            }
+        })
+        .collect())
+}
+
+#[tauri::command]
+fn drill_save(drill: String, seconds: u32, done: u32, total: u32, notes: String) -> Result<(), String> {
+    drills::Log::new(&root().join("user")).add(drills::Result_ { date: calendar::today_string(), drill, seconds, done, total, notes })
+}
+
+/// The list of sources and licenses shown in Settings (a JSON file that ships with the content).
+#[tauri::command]
+fn sources_list() -> String {
+    std::fs::read_to_string(content_dir().join("sources.json")).unwrap_or_else(|_| "{\"groups\":[]}".to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let app = tauri::Builder::default()
@@ -961,6 +1020,9 @@ pub fn run() {
             library_status,
             library_share,
             drive_rescan,
+            drills_list,
+            drill_save,
+            sources_list,
             crawl_start,
             crawl_status,
             crawl_cancel,

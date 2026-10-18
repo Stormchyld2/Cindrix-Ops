@@ -8,6 +8,9 @@
   import Soon from './views/Soon.svelte';
   import Shelf from './views/Shelf.svelte';
   import Archives from './views/Archives.svelte';
+  import Drills from './views/Drills.svelte';
+  import Binder from './views/Binder.svelte';
+  import Settings from './views/Settings.svelte';
   import { onMount } from 'svelte';
   import { modelStatus, libraryStatus, type ModelStatus } from './lib/api';
   let ms: ModelStatus | null = $state(null);
@@ -18,7 +21,7 @@
 
   type Group = 'Ask' | 'Library' | 'Maps' | 'Plan' | 'Settings';
   const groups: Group[] = ['Ask', 'Library', 'Maps', 'Plan', 'Settings'];
-  const planTabs = ['Start', 'Inventory', 'Family', 'What fails'] as const;
+  const planTabs = ['Start', 'Inventory', 'Drills', 'Family', 'Binder', 'What fails'] as const;
 
   let group: Group = $state('Ask');
   let plan: (typeof planTabs)[number] = $state('Start');
@@ -31,6 +34,10 @@
     lib = 'Cards';
     group = 'Library';
   }
+  function openArchives() {
+    lib = 'Archives';
+    group = 'Library';
+  }
   function goPlan(tab: string) {
     group = 'Plan';
     if ((planTabs as readonly string[]).includes(tab)) plan = tab as (typeof planTabs)[number];
@@ -38,7 +45,7 @@
 </script>
 
 <div class="shell">
-  <header>
+  <header class="no-print">
     <div class="brand">
       <svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true">
         <defs><linearGradient id="fl" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff5a1f" /><stop offset="1" stop-color="#ffc247" /></linearGradient></defs>
@@ -87,17 +94,23 @@
         <Start go={goPlan} />
       {:else if plan === 'Inventory'}
         <Inventory />
+      {:else if plan === 'Drills'}
+        <Drills />
+      {:else if plan === 'Binder'}
+        <Binder />
       {:else if plan === 'Family'}
         <Family />
       {:else}
         <Cascade go={goPlan} />
       {/if}
+    {:else if group === 'Settings'}
+      <Settings {openArchives} />
     {:else}
       <Soon title={group} />
     {/if}
   </main>
 
-  <footer>
+  <footer class="no-print">
     <span><b class="dot">●</b> Library on this drive</span>
     <span>Model: {ms?.state === 'ready' ? ms.model : ms?.state === 'loading' ? 'loading…' : 'none loaded'}</span>
     <span class:warn-text={sharing || online}>{online ? 'Saving a website: the app is using the internet right now, and only for that.' : sharing ? 'Sharing the library with your network (read only). Everything else stays on this device.' : 'This app only talks to itself on this device.'}</span>

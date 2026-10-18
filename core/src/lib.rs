@@ -4,6 +4,7 @@ pub mod calendar;
 pub mod cards;
 pub mod cascade;
 pub mod crawl;
+pub mod drills;
 pub mod drive;
 pub mod fsio;
 pub mod hardware;

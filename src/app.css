@@ -53,3 +53,10 @@ textarea.input { width: 100%; min-height: 70px; resize: vertical; }
 dialog { background: var(--panel); color: var(--text); border: 1px solid var(--line2); border-top: 2px solid var(--blue); border-radius: 14px; padding: 0; width: min(520px, 94vw); }
 dialog::backdrop { background: #000a; }
 .sr { position: absolute; left: -9999px; }
+
+@media print {
+  .no-print { display: none !important; }
+  html, body { background: #fff !important; color: #111 !important; }
+  .shell, main { display: block !important; padding: 0 !important; background: #fff !important; }
+  .sheet { padding: 0 !important; border-radius: 0 !important; }
+}

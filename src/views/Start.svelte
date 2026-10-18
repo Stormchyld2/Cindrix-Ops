@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { familyStatus, inventoryList } from '../lib/api';
+  import { familyStatus, inventoryList, drillsList } from '../lib/api';
   import { onMount } from 'svelte';
 
   let { go }: { go: (tab: string) => void } = $props();
@@ -7,11 +7,13 @@
   type Step = { title: string; text: string; done: boolean; tab?: string; button?: string };
   let familyDone = $state(false);
   let inventoryDone = $state(false);
+  let drillDone = $state(false);
 
   onMount(async () => {
     try {
       familyDone = (await familyStatus()).exists;
       inventoryDone = (await inventoryList()).length > 0;
+      drillDone = (await drillsList()).some((d) => d.times_done > 0);
     } catch {
       /* leave as not done */
     }
@@ -22,8 +24,8 @@
     { title: 'Fill in the Family page', text: "Names, medicines as your doctor wrote them, allergies, contacts.", done: familyDone, tab: 'Family', button: 'Open Family' },
     { title: 'Add your county maps', text: 'Street and topo come on the drive. (Not built yet.)', done: false },
     { title: 'Count your supplies', text: 'Water, food, glucose supplies and batteries, with use-by dates.', done: inventoryDone, tab: 'Inventory', button: 'Open Inventory' },
-    { title: 'Print your binder', text: 'A paper copy of your plan. (Not built yet.)', done: false },
-    { title: 'Run your first drill', text: 'The 72-hour power outage drill. (Not built yet.)', done: false },
+    { title: 'Print your binder', text: 'A paper copy of your plan, for when the screens are dark.', done: false, tab: 'Binder', button: 'Open Binder' },
+    { title: 'Run your first drill', text: 'The 72-hour power outage drill.', done: drillDone, tab: 'Drills', button: 'Open Drills' },
   ]);
   let doneCount = $derived(steps.filter((s) => s.done).length);
 </script>

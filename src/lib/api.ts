@@ -297,3 +297,39 @@ export async function archiveCopyStatus(): Promise<CopyStatus> {
 export async function archiveRemove(name: string): Promise<void> {
   if (inTauri) await call<void>('archive_remove', { name });
 }
+
+// ---------- drills ----------
+export type DrillResult = { date: string; seconds: number; done: number; total: number; notes: string };
+export type Drill = {
+  id: string; title: string; minutes: number; place: string; summary: string; status: string; steps: string[];
+  last: DrillResult | null; times_done: number;
+};
+const memDrills: Drill[] = [
+  { id: '01-power-outage', title: '72-hour power outage', minutes: 25, place: 'at home', status: 'draft', times_done: 1,
+    summary: 'Light, water, food, phones, medications and a plan for the first three days.',
+    last: { date: '2026-10-12', seconds: 754, done: 7, total: 8, notes: 'No spare batteries for the big lantern.' },
+    steps: ['Find flashlights, lanterns and spare batteries. Test each one.', 'Count drinking water for everyone, for three days', 'Charge phones and battery banks, then switch to low-power mode', 'Gather medications and glucose supplies in one place', 'Keep the refrigerator and freezer doors closed', 'Never run a generator, grill or camp stove indoors', 'Write down who to call and where to meet', 'Check food that needs no cooking'] },
+  { id: '04-boil-water', title: 'Boil-water advisory', minutes: 15, place: 'at home', status: 'draft', times_done: 0, last: null,
+    summary: 'Make water safe, store it, and set up a clean-water routine.',
+    steps: ['Fill clean containers before the water is shut off', 'Bring water to a rolling boil for 1 minute', 'Store boiled water in clean, covered containers', 'Check you have a backup method and its label'] },
+];
+
+export async function drillsList(): Promise<Drill[]> {
+  if (inTauri) return call<Drill[]>('drills_list');
+  return memDrills;
+}
+export async function drillSave(drill: string, seconds: number, done: number, total: number, notes: string): Promise<void> {
+  if (inTauri) return call<void>('drill_save', { drill, seconds, done, total, notes });
+  const d = memDrills.find((x) => x.id === drill);
+  if (d) { d.last = { date: new Date().toISOString().slice(0, 10), seconds, done, total, notes }; d.times_done++; }
+}
+
+// ---------- sources and licenses ----------
+export type SourceItem = { name: string; license: string; status: string; note: string };
+export type SourceGroup = { title: string; items: SourceItem[] };
+export type Sources = { note?: string; groups: SourceGroup[] };
+
+export async function sourcesList(): Promise<Sources> {
+  if (inTauri) return JSON.parse(await call<string>('sources_list')) as Sources;
+  return { groups: [{ title: 'Program and tools', items: [{ name: 'llama.cpp (llama-server)', license: 'MIT', status: 'in this build', note: 'Runs the model on this computer only.' }] }] };
+}
