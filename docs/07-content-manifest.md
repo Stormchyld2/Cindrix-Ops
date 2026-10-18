@@ -27,3 +27,23 @@ Has a source URL, edition and date, license, checksum, and an entry in `SOURCES.
 
 ## Machine-readable manifest
 `manifest/content.json` lists each item with: `id`, `name`, `category`, `source_url`, `license`, `attribution`, `size_estimate_gb`, `required`, `tier`, `sha256` (filled by the build). The first version has placeholders where the exact file names are not yet confirmed.
+
+
+## Editions: Go and Vault
+
+One program, one manifest, two builds. The program is a portable folder, so it does not change between editions. Only the contents do. Each manifest item lists the editions it belongs to, and the build script takes an edition name.
+
+| | Go | Vault |
+|---|---|---|
+| Medium | 128 GB USB stick | 4 TB external drive |
+| Wikipedia | English, text only (about 10 GB) | English, with pictures (about 55 GB) |
+| Library | WikiMed, WikEM, Appropedia, government manuals | Go, plus full Project Gutenberg, Wikibooks, Wikisource, Stack Exchange DIY/home/outdoors/gardening |
+| Maps | US street map and topo | Same, plus satellite imagery (NAIP) preloaded for chosen states or counties |
+| Models | 2B, 4B (9B optional) | all three, plus room for more later |
+| Extra | | Large free space for the owner's backups, scans and photos |
+
+Notes:
+- Format the drive exFAT or NTFS. FAT32 cannot hold a file over 4 GB, and Wikipedia and the map files are larger.
+- A spinning 4 TB drive loads the model and big archives a little slower than a stick or SSD and does not like being dropped. An SSD is better for a drive that gets carried.
+- Whole-US satellite imagery is far too large for any drive here (many terabytes), so Vault preloads chosen states or counties only.
+- The Vault is also the natural off-grid server: plug it into a laptop or mini PC on a hotspot and turn on library sharing.

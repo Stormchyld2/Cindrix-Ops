@@ -11,7 +11,11 @@
       "required": true,
       "tier": "all",
       "source_url": null,
-      "sha256": null
+      "sha256": null,
+      "editions": [
+        "go",
+        "vault"
+      ]
     },
     {
       "id": "qwen35-4b",
@@ -22,7 +26,11 @@
       "required": true,
       "tier": "all",
       "source_url": null,
-      "sha256": null
+      "sha256": null,
+      "editions": [
+        "go",
+        "vault"
+      ]
     },
     {
       "id": "qwen35-9b",
@@ -33,7 +41,11 @@
       "required": false,
       "tier": "all",
       "source_url": null,
-      "sha256": null
+      "sha256": null,
+      "editions": [
+        "go",
+        "vault"
+      ]
     },
     {
       "id": "wikipedia-en-nopic",
@@ -44,7 +56,11 @@
       "required": true,
       "tier": "A",
       "source_url": null,
-      "sha256": null
+      "sha256": null,
+      "editions": [
+        "go",
+        "vault"
+      ]
     },
     {
       "id": "wikipedia-en-maxi",
@@ -55,7 +71,10 @@
       "required": false,
       "tier": "B",
       "source_url": null,
-      "sha256": null
+      "sha256": null,
+      "editions": [
+        "vault"
+      ]
     },
     {
       "id": "wikimed",
@@ -66,7 +85,11 @@
       "required": true,
       "tier": "all",
       "source_url": null,
-      "sha256": null
+      "sha256": null,
+      "editions": [
+        "go",
+        "vault"
+      ]
     },
     {
       "id": "wikem",
@@ -77,7 +100,11 @@
       "required": true,
       "tier": "all",
       "source_url": null,
-      "sha256": null
+      "sha256": null,
+      "editions": [
+        "go",
+        "vault"
+      ]
     },
     {
       "id": "appropedia",
@@ -88,7 +115,11 @@
       "required": false,
       "tier": "all",
       "source_url": null,
-      "sha256": null
+      "sha256": null,
+      "editions": [
+        "go",
+        "vault"
+      ]
     },
     {
       "id": "us-army-manuals",
@@ -99,7 +130,11 @@
       "required": true,
       "tier": "all",
       "source_url": null,
-      "sha256": null
+      "sha256": null,
+      "editions": [
+        "go",
+        "vault"
+      ]
     },
     {
       "id": "fema-guides",
@@ -110,7 +145,11 @@
       "required": true,
       "tier": "all",
       "source_url": null,
-      "sha256": null
+      "sha256": null,
+      "editions": [
+        "go",
+        "vault"
+      ]
     },
     {
       "id": "cdc-fda-guidance",
@@ -121,7 +160,11 @@
       "required": true,
       "tier": "all",
       "source_url": null,
-      "sha256": null
+      "sha256": null,
+      "editions": [
+        "go",
+        "vault"
+      ]
     },
     {
       "id": "osm-us-street",
@@ -132,7 +175,11 @@
       "required": true,
       "tier": "all",
       "source_url": null,
-      "sha256": null
+      "sha256": null,
+      "editions": [
+        "go",
+        "vault"
+      ]
     },
     {
       "id": "us-topo",
@@ -143,7 +190,11 @@
       "required": true,
       "tier": "all",
       "source_url": null,
-      "sha256": null
+      "sha256": null,
+      "editions": [
+        "go",
+        "vault"
+      ]
     },
     {
       "id": "cindrix-cards",
@@ -154,7 +205,11 @@
       "required": true,
       "tier": "all",
       "source_url": null,
-      "sha256": null
+      "sha256": null,
+      "editions": [
+        "go",
+        "vault"
+      ]
     },
     {
       "id": "cindrix-guide",
@@ -165,7 +220,11 @@
       "required": true,
       "tier": "all",
       "source_url": null,
-      "sha256": null
+      "sha256": null,
+      "editions": [
+        "go",
+        "vault"
+      ]
     },
     {
       "id": "usda-home-canning",
@@ -177,7 +236,11 @@
       "tier": "all",
       "source_url": "https://nchfp.uga.edu/",
       "sha256": null,
-      "status": "verify license before release"
+      "status": "verify license before release",
+      "editions": [
+        "go",
+        "vault"
+      ]
     },
     {
       "id": "twdb-rainwater",
@@ -189,7 +252,11 @@
       "tier": "all",
       "source_url": "https://www.twdb.texas.gov/publications/brochures/conservation/doc/RainwaterHarvestingManual_3rdedition.pdf",
       "sha256": null,
-      "status": "verify license before release"
+      "status": "verify license before release",
+      "editions": [
+        "go",
+        "vault"
+      ]
     },
     {
       "id": "nuclear-war-survival-skills",
@@ -201,7 +268,11 @@
       "tier": "all",
       "source_url": "https://apps.dtic.mil/sti/pdfs/ADA328301.pdf",
       "sha256": null,
-      "status": "verify license before release"
+      "status": "verify license before release",
+      "editions": [
+        "go",
+        "vault"
+      ]
     },
     {
       "id": "psych-first-aid",
@@ -213,7 +284,11 @@
       "tier": "all",
       "source_url": "https://www.samhsa.gov/resource/dbhis/psychological-first-aid-field-operations-guide-2nd-edition",
       "sha256": null,
-      "status": "verify license before release"
+      "status": "verify license before release",
+      "editions": [
+        "go",
+        "vault"
+      ]
     },
     {
       "id": "army-tm-9-8000",
@@ -225,7 +300,11 @@
       "tier": "all",
       "source_url": "https://everyspec.com/ARMY/TM-Tech-Manual/TM_9-8000_CHG-1_48512/",
       "sha256": null,
-      "status": "verify license before release"
+      "status": "verify license before release",
+      "editions": [
+        "go",
+        "vault"
+      ]
     },
     {
       "id": "fm-21-76-1",
@@ -237,7 +316,90 @@
       "tier": "all",
       "source_url": "https://irp.fas.org/doddir/army/fm21-76-1.pdf",
       "sha256": null,
-      "status": "distribution statement checked in the 1999 edition"
+      "status": "distribution statement checked in the 1999 edition",
+      "editions": [
+        "go",
+        "vault"
+      ]
+    },
+    {
+      "id": "gutenberg-en",
+      "name": "Project Gutenberg, English books (Kiwix ZIM)",
+      "category": "library",
+      "license": "Public domain, Gutenberg terms",
+      "size_estimate_gb": 70,
+      "required": false,
+      "tier": "V",
+      "editions": [
+        "vault"
+      ],
+      "source_url": null,
+      "sha256": null,
+      "status": "estimate; check license in the ZIM metadata"
+    },
+    {
+      "id": "wikibooks-en",
+      "name": "Wikibooks English (Kiwix ZIM)",
+      "category": "library",
+      "license": "CC BY-SA 4.0",
+      "size_estimate_gb": 4,
+      "required": false,
+      "tier": "V",
+      "editions": [
+        "vault"
+      ],
+      "source_url": null,
+      "sha256": null,
+      "status": "estimate; check license in the ZIM metadata"
+    },
+    {
+      "id": "wikisource-en",
+      "name": "Wikisource English (Kiwix ZIM)",
+      "category": "library",
+      "license": "CC BY-SA 4.0",
+      "size_estimate_gb": 10,
+      "required": false,
+      "tier": "V",
+      "editions": [
+        "vault"
+      ],
+      "source_url": null,
+      "sha256": null,
+      "status": "estimate; check license in the ZIM metadata"
+    },
+    {
+      "id": "stackexchange-diy",
+      "name": "Stack Exchange: DIY, Home Improvement, Outdoors, Gardening, Cooking (Kiwix ZIMs)",
+      "category": "library",
+      "license": "CC BY-SA, attribution required",
+      "size_estimate_gb": 8,
+      "required": false,
+      "tier": "V",
+      "editions": [
+        "vault"
+      ],
+      "source_url": null,
+      "sha256": null,
+      "status": "estimate; check license in the ZIM metadata"
+    },
+    {
+      "id": "naip-home-state",
+      "name": "USGS NAIP satellite imagery for chosen states or counties (preloaded)",
+      "category": "library",
+      "license": "US government, public",
+      "size_estimate_gb": 200,
+      "required": false,
+      "tier": "V",
+      "editions": [
+        "vault"
+      ],
+      "source_url": null,
+      "sha256": null,
+      "status": "estimate; check license in the ZIM metadata"
     }
-  ]
+  ],
+  "editions": {
+    "go": "128 GB USB stick: Wikipedia text only, models, maps, manuals",
+    "vault": "4 TB external drive: everything in Go plus Wikipedia with pictures, full Gutenberg, more reference, preloaded satellite imagery, room for the owner's files and backups"
+  }
 }
