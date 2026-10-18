@@ -157,9 +157,9 @@
           <span class="mono">{i.quantity} {i.unit}</span>
           <button class="mini" aria-label="Add one" onclick={() => step(i, 1)}>+</button>
         </div>
-        <div class="small cell">{lasts(i)}</div>
-        <div class="small cell">{i.use_by || '—'}</div>
-        <div class="small cell {i.status}">● {statusText[i.status ?? 'ok']}</div>
+        <div class="small cell lasts">{lasts(i)}</div>
+        <div class="small cell useby">{i.use_by || '—'}</div>
+        <div class="small cell st {i.status}">● {statusText[i.status ?? 'ok']}</div>
       </div>
     {/each}
 
@@ -215,13 +215,15 @@
   @media (max-width: 760px) {
     aside { display: none; }
     .catselect { display: block; width: 100%; }
-    .item { grid-template-columns: 24px 1fr 1fr; }
+    .item { grid-template-columns: 24px auto 1fr; }
     .item .name { grid-column: 2 / 4; }
     .item .qty { grid-column: 2; }
-    .item .cell { grid-column: auto; }
+    .item .lasts { grid-column: 3; }
+    .item .useby { grid-column: 2; }
+    .item .st { grid-column: 3; }
   }
   .small { font-size: 13px; }
-  .mono { font-family: var(--mono); font-size: 13px; min-width: 62px; text-align: center; }
+  .mono { font-family: var(--mono); font-size: 13px; min-width: 62px; text-align: center; white-space: nowrap; }
   .dform { display: flex; flex-direction: column; gap: 10px; padding: 18px; }
   .dform label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
   .half { flex: 1 1 140px; }
