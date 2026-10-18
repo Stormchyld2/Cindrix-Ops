@@ -38,7 +38,7 @@ h2 { margin: 0; text-transform: uppercase; font-family: var(--display); letter-s
 .panel { position: relative; padding: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 3px; border-top: 2px solid var(--line2); }
 .panel::before { content: ''; position: absolute; top: -2px; left: -1px; width: 18px; height: 2px; background: var(--amber-tick, var(--accent)); }
 .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-.btn { padding: 9px 16px; border-radius: 2px; border: 1px solid var(--line2); background: transparent; color: var(--text); font-size: 12px; font-family: var(--mono); text-transform: uppercase; letter-spacing: .1em; clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px)); }
+.btn { padding: 9px 16px; border-radius: 2px; border: 1px solid var(--line2); background: transparent; color: var(--text); font-size: 12px; font-family: var(--mono); text-transform: uppercase; letter-spacing: .1em; }
 .btn:hover:not(:disabled) { border-color: var(--blue-line); color: var(--blue); }
 .btn.primary { background: var(--blue); border-color: var(--blue); color: #07131d; font-weight: 700; }
 .btn.primary:hover:not(:disabled) { color: #07131d; background: #7bbdf0; }
