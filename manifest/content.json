@@ -226,6 +226,18 @@
       "source_url": "https://everyspec.com/ARMY/TM-Tech-Manual/TM_9-8000_CHG-1_48512/",
       "sha256": null,
       "status": "verify license before release"
+    },
+    {
+      "id": "fm-21-76-1",
+      "name": "US Army FM 21-76-1 Survival, Evasion, and Recovery (PDF)",
+      "category": "library",
+      "license": "US government work, approved for public release",
+      "size_estimate_gb": 0.02,
+      "required": true,
+      "tier": "all",
+      "source_url": "https://irp.fas.org/doddir/army/fm21-76-1.pdf",
+      "sha256": null,
+      "status": "distribution statement checked in the 1999 edition"
     }
   ]
 }

@@ -9,7 +9,7 @@ License status: **PD** = US government work or public domain. **Verify** = I bel
 | Topic | Real source to bundle | Status | Our own writing |
 |---|---|---|---|
 | First aid | US Army TC 4-02.1 First Aid | PD | |
-| Survival | US Army FM 21-76 Survival | PD | |
+| Survival | US Army FM 21-76-1 Survival, Evasion, and Recovery (1999), cover says "Approved for public release; distribution is unlimited" | PD (checked) | |
 | Home canning and preserving | USDA Complete Guide to Home Canning (NCHFP) | PD, verify | |
 | Rainwater | Texas Water Development Board, Texas Manual on Rainwater Harvesting | Verify | basic rainwater card |
 | Nuclear and chemical | Nuclear War Survival Skills (Kearny, ORNL); Army NBC manuals | Verify; PD | |
@@ -33,3 +33,24 @@ Defense and weapons books, and political or economic forecasting. A home-safety 
 
 ## How the app uses it
 Real books go in as Kiwix archives or PDFs/MD in the library folder, with a Sources screen row for each (title, license, link). Our own pieces are Markdown in `content/`. Each file carries its source in the answer's "Sources" line.
+
+
+## License findings (Oct 18, 2026)
+
+- **Where There Is No Doctor / Where There Is No Dentist (Hesperian): cannot bundle as is.** Hesperian's terms allow free non-commercial copying, but "any digital format" and "commercial purposes" need written permission. Selling a drive that contains them is commercial and digital. Option: ask Hesperian for written permission (they may say no or ask for a fee). Until then they are "Recommended reading" only.
+- **US Army FM 3-05.70 Survival (2002): do not bundle.** The copy I checked is stamped "Distribution authorized to U.S. Government agencies and their contractors only". Use **FM 21-76-1** (1999 multiservice manual, approved for public release) and, if its own cover says public release, the older FM 21-76 (1992).
+- **Rule for every government manual:** read the distribution statement on the cover page of the exact PDF. Only "Approved for public release" goes on the drive. The build script should fail the build for a PDF whose first pages contain "Distribution authorized to U.S. Government agencies" or "Distribution restricted".
+- TC 4-02.1 First Aid: the cover statement was not confirmed. Check it the same way.
+- Project Gutenberg books may be sold, as long as we follow its terms (remove the Gutenberg trademark or keep the license text).
+
+## Shelf and reader (design)
+
+Idea: a Kindle-like shelf inside Library, mockups `Shelf` and `Reader`.
+
+- **Two kinds of book.** Scanned or designed PDFs (Army manuals, USDA guides) keep their pages, because first-aid and knot pictures matter. They open in a bundled PDF viewer (pdf.js, Apache 2.0) that is read-only. Our own pieces and Gutenberg books are Markdown, shown as reflowable text with adjustable size.
+- **Storage rule.** PDF stays an export-only format for anything the user writes. Books on the shelf are read-only content, the one place PDFs are stored. Notes, bookmarks, highlights and reading position are JSON files in `user/`.
+- **Search and AI.** At build time each PDF's text is extracted page by page (pdftotext, no OCR) into a page-numbered Markdown index. The assistant searches the index, answers from it and cites "Book, page N". The citation opens the reader on that page. Scanned books with no text layer need OCR at build time, so skip those or OCR them with Tesseract (Apache 2.0).
+- **Shelf metadata.** `shelf/index.json`: title, author, license, source URL, category, cover PNG (first page rendered at build time), file, page count.
+- **Reader features.** Contents, search in book, text size, night mode, bookmarks, highlights, notes, jump to page, "Ask about this page", resume where you left off.
+- **My own books.** "Add my own" copies a user's file into `my-library/`.
+- **Android.** WebView on Android cannot show PDFs by itself, but pdf.js works in both.
