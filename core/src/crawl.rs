@@ -1158,6 +1158,7 @@ fn run_inner(
     ] {
         zw.metadata(k, v).map_err(|e| e.to_string())?;
     }
+    zw.add(b'M', "Illustration_48x48@1", "", "image/png", crate::png::archive_icon()).map_err(|e| e.to_string())?;
     let stats = zw.finish().map_err(|e| format!("Cannot finish the archive: {}", e))?;
     if let Some(d) = text_path.parent() {
         let _ = std::fs::create_dir_all(d);
