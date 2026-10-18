@@ -103,14 +103,11 @@ jobs:
           cd "$RUNNER_TEMP"
           curl -fsSL https://download.kiwix.org/release/kiwix-tools/ -o kt.html
           kt=$(grep -oE 'kiwix-tools_linux-x86_64-[0-9.]+\.tar\.gz' kt.html | sort -uV | tail -n1)
-          curl -fsSL https://download.kiwix.org/release/zim-tools/ -o zt.html
-          zt=$(grep -oE 'zim-tools_linux-x86_64-[0-9.]+\.tar\.gz' zt.html | sort -uV | tail -n1)
-          say "tools: $kt $zt"
-          grep -oE 'href="[^"]*linux[^"]*"' zt.html | head -8 | while IFS= read -r l; do echo "::notice::zim-tools listing: $l"; done
+          sudo apt-get install -y zim-tools > apt.log 2>&1 || bad "apt could not install zim-tools"
+          say "tools: $kt"
           [ -n "$kt" ] && curl -fsSL -o kt.tgz "https://download.kiwix.org/release/kiwix-tools/$kt" && mkdir -p kt && tar xzf kt.tgz -C kt --strip-components=1
-          [ -n "$zt" ] && curl -fsSL -o zt.tgz "https://download.kiwix.org/release/zim-tools/$zt" && mkdir -p zt && tar xzf zt.tgz -C zt --strip-components=1
-          if [ -x zt/zimcheck ]; then
-            out=$(zt/zimcheck zim/sample.zim 2>&1); code=$?
+          if command -v zimcheck > /dev/null; then
+            out=$(zimcheck zim/sample.zim 2>&1); code=$?
             echo "$out" | head -40 | while IFS= read -r l; do echo "::notice::zimcheck: $l"; done
             [ $code -ne 0 ] && bad "zimcheck reported problems (exit $code)"
           else
