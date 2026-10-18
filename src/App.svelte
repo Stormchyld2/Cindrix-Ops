@@ -7,10 +7,13 @@
   import Cascade from './views/Cascade.svelte';
   import Soon from './views/Soon.svelte';
   import Shelf from './views/Shelf.svelte';
+  import Archives from './views/Archives.svelte';
   import { onMount } from 'svelte';
-  import { modelStatus, type ModelStatus } from './lib/api';
+  import { modelStatus, libraryStatus, type ModelStatus } from './lib/api';
   let ms: ModelStatus | null = $state(null);
-  onMount(() => { const t = setInterval(async () => { ms = await modelStatus(); }, 3000); modelStatus().then((m) => (ms = m)); return () => clearInterval(t); });
+  let sharing = $state(false);
+  async function poll() { ms = await modelStatus(); sharing = (await libraryStatus()).shared; }
+  onMount(() => { const t = setInterval(poll, 3000); poll(); return () => clearInterval(t); });
 
   type Group = 'Ask' | 'Library' | 'Maps' | 'Plan' | 'Settings';
   const groups: Group[] = ['Ask', 'Library', 'Maps', 'Plan', 'Settings'];
@@ -18,7 +21,7 @@
 
   let group: Group = $state('Ask');
   let plan: (typeof planTabs)[number] = $state('Start');
-  const libTabs = ['Shelf', 'Cards'] as const;
+  const libTabs = ['Shelf', 'Archives', 'Cards'] as const;
   let lib: (typeof libTabs)[number] = $state('Shelf');
   let cardToOpen: string | null = $state(null);
 
@@ -73,6 +76,8 @@
     {:else if group === 'Library'}
       {#if lib === 'Shelf'}
         <Shelf />
+      {:else if lib === 'Archives'}
+        <Archives />
       {:else}
         <Library bind:cardToOpen />
       {/if}
@@ -94,7 +99,7 @@
   <footer>
     <span><b class="dot">●</b> Library on this drive</span>
     <span>Model: {ms?.state === 'ready' ? ms.model : ms?.state === 'loading' ? 'loading…' : 'none loaded'}</span>
-    <span>This app only talks to itself on this device.</span>
+    <span class:warn-text={sharing}>{sharing ? 'Sharing the library with your network (read only). Everything else stays on this device.' : 'This app only talks to itself on this device.'}</span>
     <span class="right">Sample content</span>
   </footer>
 </div>
@@ -118,4 +123,5 @@
     font-family: var(--mono); font-size: 12px; color: var(--muted); }
   footer .right { margin-left: auto; }
   .dot { color: var(--ok); }
+  .warn-text { color: var(--blue); }
 </style>

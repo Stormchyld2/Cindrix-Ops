@@ -61,6 +61,8 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   await page.waitForTimeout(800);
   await shoot(page, `${label}-1e-reader-search`);
   await page.getByRole('button', { name: '‹ Shelf' }).click();
+  await page.getByRole('button', { name: 'Archives', exact: true }).click();
+  await shoot(page, `${label}-1f-archives`);
   await page.getByRole('button', { name: 'Emergency cards', exact: true }).click();
   await page.getByRole('button', { name: /Low blood sugar/ }).click();
   await shoot(page, `${label}-2-library`);

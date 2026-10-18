@@ -62,3 +62,13 @@ The Shelf has "+ Add a book" and accepts drag and drop. It takes PDF, Markdown a
 When a PDF is opened the reader reads its text page by page in the background, which makes search inside the book work, and saves it once to `user/my-library/text/` so the assistant can use the book. Answers cite the book and page. The medication rule still applies to everything the assistant says, including answers drawn from the person's own books.
 
 Known limits: scanned PDFs without a text layer can be read but not searched; PDFs that rely on special fonts or Asian-language character maps may show with substitute fonts until those files are bundled with the app; highlights are not built yet; books are not deleted by the app until the person chooses Remove.
+
+## Archives reader and sharing (built)
+
+Library has three tabs: Shelf, Archives, Emergency cards. Archives opens the Kiwix reader (the bundled `kiwix-serve`, MIT/GPL program) inside the app on this computer only (127.0.0.1), so .zim files are read in a built-in browser without internet. No Docker is needed.
+
+Sharing: off by default. When turned on (with a confirmation), the library program listens on the local network, port 8787 when free, so phones and tablets on the same Wi-Fi or hotspot can open it in their own browser. The app tells the person the address. It is read-only and only the archives are served, not the shelf, inventory, family page or the assistant. The footer changes from "This app only talks to itself on this device" to a sharing notice while it is on. Windows will show a firewall prompt the first time.
+
+Which archives to bundle: Wikipedia, WikiMed, Wikibooks, Wikisource and Project Gutenberg (public domain), and Stack Exchange archives such as DIY, Home Improvement, Outdoors and Gardening (CC BY-SA, attribution required). Skip anything under a non-commercial license (for example wikiHow and iFixit). The build script should read each ZIM's license from its metadata and refuse non-commercial ones.
+
+Left out on purpose: manuals for explosives, booby traps, improvised munitions, weapon conversions and similar material, even where an old government copy exists.

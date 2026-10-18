@@ -224,3 +224,15 @@ export async function marksSetLast(book: string, page: number): Promise<void> {
   const b = memBooks.find((x) => x.meta.id === book);
   if (b) b.meta.last_page = page;
 }
+
+// ---------- archives (ZIM files) and sharing ----------
+export type LibraryStatus = { archives: string[]; ready: boolean; url: string | null; shared: boolean; lan_url: string | null };
+
+export async function libraryStatus(): Promise<LibraryStatus> {
+  if (inTauri) return call<LibraryStatus>('library_status');
+  return { archives: [], ready: false, url: null, shared: false, lan_url: null };
+}
+
+export async function libraryShare(enable: boolean): Promise<void> {
+  if (inTauri) await call<void>('library_share', { enable });
+}

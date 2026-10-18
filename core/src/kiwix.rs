@@ -9,6 +9,8 @@ use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::time::{Duration, Instant};
 
+pub const SHARE_PORT: u16 = 8787;
+
 pub struct KiwixHost {
     child: Child,
     pub port: u16,
@@ -23,23 +25,27 @@ pub fn zim_files(dir: &Path) -> Vec<PathBuf> {
     v
 }
 
-pub fn args(zims: &[PathBuf], port: u16) -> Vec<String> {
-    let mut a = vec!["--address".to_string(), "127.0.0.1".into(), "--port".into(), port.to_string()];
+/// `share` false: only this computer can connect (127.0.0.1). `share` true: other devices on the
+/// same network can read the library too (they cannot change anything).
+pub fn args(zims: &[PathBuf], port: u16, share: bool) -> Vec<String> {
+    let addr = if share { "0.0.0.0" } else { "127.0.0.1" };
+    let mut a = vec!["--address".to_string(), addr.into(), "--port".into(), port.to_string()];
     a.extend(zims.iter().map(|z| z.to_string_lossy().to_string()));
     a
 }
 
 impl KiwixHost {
-    pub fn start(engine: &Path, zims: &[PathBuf]) -> Result<KiwixHost, String> {
+    pub fn start(engine: &Path, zims: &[PathBuf], share: bool) -> Result<KiwixHost, String> {
         if zims.is_empty() {
             return Err("no .zim library files found".into());
         }
         if !engine.exists() {
             return Err(format!("the library server was not found at {}", engine.display()));
         }
-        let port = crate::modelhost::free_port()?;
+        // A steady port when sharing, so other devices can bookmark the address.
+        let port = if share && std::net::TcpListener::bind(("0.0.0.0", SHARE_PORT)).is_ok() { SHARE_PORT } else { crate::modelhost::free_port()? };
         let mut cmd = Command::new(engine);
-        cmd.args(args(zims, port)).stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null());
+        cmd.args(args(zims, port, share)).stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null());
         if let Some(dir) = engine.parent() {
             cmd.current_dir(dir);
         }
@@ -78,6 +84,15 @@ impl Drop for KiwixHost {
     fn drop(&mut self) {
         self.stop();
     }
+}
+
+/// This computer's address on the local network, if it has one (for telling other devices where to connect).
+/// Nothing is sent: the socket only asks the system which network address it would use.
+pub fn lan_ip() -> Option<String> {
+    let s = std::net::UdpSocket::bind("0.0.0.0:0").ok()?;
+    s.connect("192.0.2.1:9").ok()?;
+    let ip = s.local_addr().ok()?.ip();
+    if ip.is_loopback() || ip.is_unspecified() { None } else { Some(ip.to_string()) }
 }
 
 /// Minimal HTTP GET to 127.0.0.1. Returns (status, body).
@@ -229,9 +244,17 @@ mod tests {
 
     #[test]
     fn arguments_bind_only_to_this_computer() {
-        let a = args(&[PathBuf::from("a.zim")], 8123);
+        let a = args(&[PathBuf::from("a.zim")], 8123, false);
         assert!(a.windows(2).any(|w| w[0] == "--address" && w[1] == "127.0.0.1"));
         assert_eq!(a.last().unwrap(), "a.zim");
+    }
+
+    #[test]
+    fn sharing_is_only_on_when_asked_for() {
+        let on = args(&[PathBuf::from("a.zim")], 8787, true);
+        assert!(on.windows(2).any(|w| w[0] == "--address" && w[1] == "0.0.0.0"));
+        let off = args(&[PathBuf::from("a.zim")], 8787, false);
+        assert!(!off.iter().any(|x| x == "0.0.0.0"));
     }
 
     #[test]

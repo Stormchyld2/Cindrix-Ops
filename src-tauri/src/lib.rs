@@ -76,6 +76,7 @@ struct AppState {
     port: Mutex<Option<u16>>,
     kiwix_host: Mutex<Option<KiwixHost>>,
     kiwix_port: Mutex<Option<u16>>,
+    kiwix_shared: Mutex<bool>,
     status: Mutex<ModelStatus>,
 }
 
@@ -88,6 +89,9 @@ impl AppState {
     }
     fn stop_all(&self) {
         self.stop();
+        self.stop_kiwix();
+    }
+    fn stop_kiwix(&self) {
         if let Some(mut h) = self.kiwix_host.lock().unwrap().take() {
             h.stop();
         }
@@ -112,15 +116,18 @@ fn library_dir() -> PathBuf {
     root().join("library")
 }
 
-fn start_library(state: &AppState) {
+fn start_library(state: &AppState, share: bool) {
+    state.stop_kiwix();
+    *state.kiwix_shared.lock().unwrap() = false;
     let zims = kiwix::zim_files(&library_dir());
     let name = if cfg!(windows) { "kiwix-serve.exe" } else { "kiwix-serve" };
     let engine = root().join("engines").join(name);
     if zims.is_empty() || !engine.exists() {
         return;
     }
-    if let Ok(mut h) = KiwixHost::start(&engine, &zims) {
+    if let Ok(mut h) = KiwixHost::start(&engine, &zims, share) {
         if h.wait_ready(Duration::from_secs(60)).is_ok() {
+            *state.kiwix_shared.lock().unwrap() = share;
             *state.kiwix_port.lock().unwrap() = Some(h.port);
             *state.kiwix_host.lock().unwrap() = Some(h);
         } else {
@@ -133,14 +140,33 @@ fn start_library(state: &AppState) {
 struct LibraryStatus {
     archives: Vec<String>,
     ready: bool,
+    /// Address for the built-in reader (this computer only)
+    url: Option<String>,
+    shared: bool,
+    /// Address other devices on the network can use, when sharing is on
+    lan_url: Option<String>,
 }
 
 #[tauri::command]
 fn library_status(state: tauri::State<'_, AppState>) -> LibraryStatus {
+    let port = *state.kiwix_port.lock().unwrap();
+    let shared = *state.kiwix_shared.lock().unwrap();
     LibraryStatus {
         archives: kiwix::zim_files(&library_dir()).iter().filter_map(|p| p.file_name().map(|n| n.to_string_lossy().to_string())).collect(),
-        ready: state.kiwix_port.lock().unwrap().is_some(),
+        ready: port.is_some(),
+        url: port.map(|p| format!("http://127.0.0.1:{}/", p)),
+        shared,
+        lan_url: if shared { port.and_then(|p| kiwix::lan_ip().map(|ip| format!("http://{}:{}/", ip, p))) } else { None },
     }
+}
+
+/// Turn sharing the library with other devices on the same network on or off. Off by default.
+#[tauri::command]
+fn library_share(enable: bool, app: tauri::AppHandle) {
+    std::thread::spawn(move || {
+        let st = app.state::<AppState>();
+        start_library(&st, enable);
+    });
 }
 
 fn models_dir() -> PathBuf {
@@ -571,7 +597,7 @@ pub fn run() {
             let handle = app.handle().clone();
             std::thread::spawn(move || {
                 let st = handle.state::<AppState>();
-                start_library(&st);
+                start_library(&st, false);
                 start_model(&st, None);
             });
             Ok(())
@@ -581,6 +607,7 @@ pub fn run() {
             ask_stream,
             model_status,
             library_status,
+            library_share,
             shelf_list,
             shelf_add,
             shelf_read,
