@@ -37,8 +37,8 @@
 
 <style>
   .list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; margin: 12px 0 16px; }
-  .card { text-align: left; padding: 14px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
-  .card.on { border-color: var(--accent); }
+  .card { text-align: left; padding: 14px; border-radius: 3px; background: var(--panel); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
+  .card.on { border-color: var(--blue); }
   .badge { align-self: flex-start; }
   article h2 { margin-bottom: 8px; }
   pre { margin: 0; white-space: pre-wrap; font: inherit; }

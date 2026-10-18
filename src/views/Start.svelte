@@ -54,11 +54,11 @@
 
 <style>
   .between { justify-content: space-between; }
-  .count { font-family: var(--mono); font-size: 13px; color: var(--accent); }
-  .track { margin-top: 8px; height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
-  .track span { display: block; height: 100%; background: var(--accent); }
+  .count { font-family: var(--mono); font-size: 13px; color: var(--blue); }
+  .track { margin-top: 8px; height: 8px; border-radius: 1px; background: var(--line); overflow: hidden; }
+  .track span { display: block; height: 100%; background: var(--blue); }
   .step { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 14px 0; border-top: 1px solid var(--line); margin-top: 6px; }
-  .mark { flex: 0 0 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line2); color: var(--muted); font-size: 13px; }
+  .mark { flex: 0 0 28px; height: 28px; border-radius: 2px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line2); color: var(--muted); font-size: 13px; }
   .mark.done { background: #1f2a1d; border-color: #34502f; color: var(--ok); }
   .grow { flex: 1 1 260px; }
   .title { font-weight: 600; }

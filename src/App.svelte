@@ -6,6 +6,10 @@
   import Family from './views/Family.svelte';
   import Cascade from './views/Cascade.svelte';
   import Soon from './views/Soon.svelte';
+  import { onMount } from 'svelte';
+  import { modelStatus, type ModelStatus } from './lib/api';
+  let ms: ModelStatus | null = $state(null);
+  onMount(() => { const t = setInterval(async () => { ms = await modelStatus(); }, 3000); modelStatus().then((m) => (ms = m)); return () => clearInterval(t); });
 
   type Group = 'Ask' | 'Library' | 'Maps' | 'Plan' | 'Settings';
   const groups: Group[] = ['Ask', 'Library', 'Maps', 'Plan', 'Settings'];
@@ -74,7 +78,7 @@
 
   <footer>
     <span><b class="dot">●</b> Library on this drive</span>
-    <span>Model: not connected yet</span>
+    <span>Model: {ms?.state === 'ready' ? ms.model : ms?.state === 'loading' ? 'loading…' : 'none loaded'}</span>
     <span>This app only talks to itself on this device.</span>
     <span class="right">Sample content</span>
   </footer>
@@ -83,17 +87,17 @@
 <style>
   .shell { min-height: 100vh; display: flex; flex-direction: column; }
   header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px 24px;
-    padding: 12px 24px; background: var(--panel2); border-bottom: 1px solid var(--line); }
+    padding: 12px 24px; background: var(--panel2); border-bottom: 1px solid var(--line); border-top: 3px solid var(--accent); }
   .brand { display: flex; gap: 12px; align-items: center; }
   .name { font-family: var(--display); font-weight: 700; font-size: 24px; letter-spacing: .12em; line-height: 1; }
   .name span { color: var(--accent); }
-  .tag { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .tag { font-family: var(--mono); text-transform: uppercase; letter-spacing: .14em; font-size: 10px; color: var(--muted); margin-top: 4px; }
   nav { display: flex; flex-wrap: wrap; gap: 6px; }
-  nav button { padding: 8px 14px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: #b5ada0; font-weight: 500; }
-  nav button.on { background: var(--accent-soft); color: var(--accent); border-color: var(--accent-line); font-weight: 600; }
+  nav button { padding: 8px 14px; border-radius: 2px; border: 1px solid transparent; background: transparent; color: #aab3ad; font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: .12em; font-weight: 500; }
+  nav button.on { background: var(--blue-soft); color: var(--blue); border-color: var(--blue-line); font-weight: 600; }
   .subnav { flex: 1 1 100%; display: flex; flex-wrap: wrap; gap: 4px; padding-top: 6px; border-top: 1px solid var(--line); }
-  .subnav button { padding: 6px 10px; background: transparent; border: 0; border-bottom: 2px solid transparent; color: var(--muted); font-size: 13px; }
-  .subnav button.on { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+  .subnav button { padding: 6px 10px; background: transparent; border: 0; border-bottom: 2px solid transparent; color: var(--muted); font-family: var(--mono); text-transform: uppercase; letter-spacing: .1em; font-size: 12px; }
+  .subnav button.on { color: var(--blue); border-bottom-color: var(--blue); font-weight: 600; }
   main { flex: 1; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; max-width: 1040px; width: 100%; margin: 0 auto; }
   footer { display: flex; flex-wrap: wrap; gap: 6px 22px; padding: 9px 24px; background: var(--panel2); border-top: 1px solid var(--line);
     font-family: var(--mono); font-size: 12px; color: var(--muted); }
