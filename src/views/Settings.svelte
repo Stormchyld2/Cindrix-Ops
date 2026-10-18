@@ -7,9 +7,9 @@
   const tabs = ['Assistant', 'Drive', 'Sources and licenses', 'About'] as const;
   let tab: (typeof tabs)[number] = $state('Assistant');
 
-  let ms: ModelStatus | null = $state(null);
+  let ms = $state<ModelStatus | null>(null);
   let models: ModelChoice[] = $state([]);
-  let lib: LibraryStatus | null = $state(null);
+  let lib = $state<LibraryStatus | null>(null);
   let sources: Sources = $state({ groups: [] });
   let switching = $state('');
   let error = $state('');

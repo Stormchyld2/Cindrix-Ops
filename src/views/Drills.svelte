@@ -7,7 +7,7 @@
   let saved = $state('');
 
   // The drill being walked through
-  let active: Drill | null = $state(null);
+  let active = $state<Drill | null>(null);
   let checked: boolean[] = $state([]);
   let seconds = $state(0);
   let paused = $state(false);

@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { familyStatus, familyLoad, inventoryList, listCards, drillsList, type Family, type Item, type Card, type Drill } from '../lib/api';
 
-  let family: Family | null = $state(null);
+  let family = $state<Family | null>(null);
   let locked = $state(false);
   let pass = $state('');
   let passError = $state('');
