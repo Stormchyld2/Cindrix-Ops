@@ -47,3 +47,14 @@ Notes:
 - A spinning 4 TB drive loads the model and big archives a little slower than a stick or SSD and does not like being dropped. An SSD is better for a drive that gets carried.
 - Whole-US satellite imagery is far too large for any drive here (many terabytes), so Vault preloads chosen states or counties only.
 - The Vault is also the natural off-grid server: plug it into a laptop or mini PC on a hotspot and turn on library sharing.
+
+## Size budgets (hard limits)
+
+- **Go:** content must stay at or under 100 GB, so a 128 GB stick has room left for the owner's files and backups.
+- **Vault:** content may go up to 3,400 GB on the 4 TB drive.
+- The build script adds up the real file sizes for the chosen edition and fails the build when a budget is exceeded. Today's Go estimate is about 51 GB with the Wikipedia text tier, so it fits with room for more.
+
+## Importing .zim files and making your own
+
+- **Add a .zim file (planned next):** an "Add archive" button on the Archives tab that copies a chosen .zim into `library/` and restarts the reader. It shows what the file says about itself (name, size, license) and warns if the license looks non-commercial. This is for the owner's private use. Built drives still go through the manifest rules.
+- **Website to .zim:** not built into the app for now. The free tools for it (Kiwix's Zimit crawler, or `zimwriterfs`) need a web crawler or Docker and a lot of internet time. The user guide will explain how to make one on a computer with internet and then add it with the button. Copying other people's sites also raises permission questions, so we do not ship any such copies.

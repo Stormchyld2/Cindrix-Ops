@@ -401,5 +401,10 @@
   "editions": {
     "go": "128 GB USB stick: Wikipedia text only, models, maps, manuals",
     "vault": "4 TB external drive: everything in Go plus Wikipedia with pictures, full Gutenberg, more reference, preloaded satellite imagery, room for the owner's files and backups"
-  }
+  },
+  "budget_gb": {
+    "go": 100,
+    "vault": 3400
+  },
+  "budget_note": "Go: 128 GB stick holds about 119 GiB; keep content at or under 100 GB so there is room for user files. Vault: 4 TB holds about 3.6 TiB; keep content at or under 3400 GB. The build script adds up the real sizes per edition and fails the build if a budget is exceeded."
 }
