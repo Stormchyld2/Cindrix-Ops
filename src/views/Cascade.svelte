@@ -70,7 +70,7 @@
 
 <style>
   .tiles { display: flex; flex-wrap: wrap; gap: 12px; }
-  .tile { flex: 1 1 180px; padding: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 3px; }
+  .tile { flex: 1 1 180px; padding: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
   .big { font-size: 24px; font-weight: 600; margin-top: 2px; }
   .line { display: flex; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); align-items: center; }
   .grow { flex: 1; }

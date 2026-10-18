@@ -71,12 +71,12 @@
 
 <style>
   .chat { display: flex; flex-direction: column; gap: 14px; flex: 1; }
-  .msg { padding: 12px 14px; border-radius: 3px; background: var(--panel); border: 1px solid var(--line); max-width: 760px; }
+  .msg { padding: 12px 14px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); max-width: 760px; }
   .msg.you { align-self: flex-end; background: #27231e; border-color: #3a342c; }
   .msg.app { border-left: 3px solid var(--accent); }
   .text { margin-top: 4px; white-space: pre-wrap; }
   .sources { margin-top: 10px; font-size: 12px; color: var(--muted); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-  .chip { padding: 3px 10px; border-radius: 2px; background: #1f2a1d; border: 1px solid #34502f; color: #9fd18f; }
+  .chip { padding: 3px 10px; border-radius: 999px; background: #1f2a1d; border: 1px solid #34502f; color: #9fd18f; }
   .link { margin-top: 8px; background: none; border: 0; color: var(--blue); padding: 0; text-decoration: underline; }
   .status { font-size: 12px; margin: 0 0 8px; }
   .grow { flex: 1 1 280px; padding: 13px 14px; }

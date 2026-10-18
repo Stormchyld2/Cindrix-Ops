@@ -194,22 +194,22 @@
 <style>
   .head { justify-content: space-between; flex-wrap: nowrap; }
   .grow { flex: 1 1 200px; }
-  .plus { width: 48px; height: 48px; border-radius: 3px; border: 0; background: var(--blue); color: #07131d; font-size: 30px; font-weight: 700; line-height: 1; }
+  .plus { width: 48px; height: 48px; border-radius: 50%; border: 0; background: var(--blue); color: #07131d; font-size: 30px; font-weight: 700; line-height: 1; }
   .layout { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
   aside { flex: 0 1 230px; min-width: 200px; display: flex; flex-direction: column; gap: 4px; }
-  .cat { display: flex; justify-content: space-between; padding: 8px 10px; border-radius: 2px; border: 1px solid transparent; background: transparent; text-align: left; }
+  .cat { display: flex; justify-content: space-between; padding: 8px 10px; border-radius: 8px; border: 1px solid transparent; background: transparent; text-align: left; }
   .cat.on { background: var(--blue-soft); border-color: var(--blue-line); color: var(--blue); font-weight: 600; }
   .main { flex: 1 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
   .chips { gap: 6px; }
-  .chip { padding: 6px 12px; border-radius: 2px; border: 1px solid var(--line2); background: var(--panel); font-size: 13px; color: #b5ada0; }
+  .chip { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line2); background: var(--panel); font-size: 13px; color: #b5ada0; }
   .chip.on { background: var(--blue-soft); border-color: var(--blue-line); color: var(--blue); font-weight: 600; }
-  .bar { padding: 8px 10px; border-radius: 3px; background: #241512; border: 1px solid #6b2a20; }
+  .bar { padding: 8px 10px; border-radius: 10px; background: #241512; border: 1px solid #6b2a20; }
   .right { margin-left: auto; }
   .item { display: grid; grid-template-columns: 24px minmax(0, 1fr) 150px 80px 70px 80px; gap: 6px 14px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
   .item input[type='checkbox'], .bar input[type='checkbox'] { width: 20px; height: 20px; accent-color: var(--blue); }
   .name { display: flex; flex-direction: column; text-align: left; background: none; border: 0; padding: 0; }
   .qty { display: flex; align-items: center; gap: 6px; }
-  .mini { width: 26px; height: 26px; border-radius: 2px; border: 1px solid var(--line2); background: var(--panel2); }
+  .mini { width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--line2); background: var(--panel2); }
   .cell { white-space: nowrap; }
   .catselect { display: none; }
   @media (max-width: 760px) {
