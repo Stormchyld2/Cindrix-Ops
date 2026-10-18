@@ -78,18 +78,18 @@ export async function inventoryDelete(ids: string[]): Promise<Item[]> {
 export async function whatFailsNext(): Promise<Cascade> {
   if (inTauri) return call<Cascade>('what_fails_next');
   const items = memItems;
-  const groups = new Map<string, { q: number; per: number; places: Set<string> }>();
-  for (const i of items.filter((x) => x.use_per_day > 0)) {
-    const g = groups.get(i.name) ?? { q: 0, per: 0, places: new Set<string>() };
+  const groups = new Map<string, { q: number; per: number; places: Set<string>; cat: string }>();
+  for (const i of items) {
+    const g = groups.get(i.name) ?? { q: 0, per: 0, places: new Set<string>(), cat: i.category };
     g.q += i.quantity; g.per = Math.max(g.per, i.use_per_day); g.places.add(i.location);
     groups.set(i.name, g);
   }
-  const runs_out = [...groups].map(([name, g]) => ({ name, location: g.places.size > 1 ? 'several places' : [...g.places][0], days: g.q / g.per }))
+  const used = [...groups].filter(([, g]) => g.per > 0);
+  const runs_out = used.map(([name, g]) => ({ name, location: g.places.size > 1 ? 'several places' : [...g.places][0], days: g.q / g.per }))
     .sort((a, b) => a.days - b.days);
   const days = (cat: string) => {
-    const rows = items.filter((i) => i.category === cat && i.use_per_day > 0);
-    const per = rows.reduce((s, r) => s + r.use_per_day, 0);
-    return per > 0 ? rows.reduce((s, r) => s + r.quantity, 0) / per : null;
+    const d = used.filter(([, g]) => g.cat === cat).map(([, g]) => g.q / g.per);
+    return d.length ? Math.min(...d) : null;
   };
   return { runs_out, expiring: [{ name: 'Test strips (Person 2)', months: 2 }], water_days: days('Water'), food_days: days('Food') };
 }

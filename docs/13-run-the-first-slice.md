@@ -3,12 +3,18 @@
 What works and what has been tested, so nothing is guessed.
 
 ## Tested (in the workspace, on Linux)
-`core/` is a Rust crate with **no outside dependencies**. `cargo test` in `core/` runs 25 tests, all passing:
+`core/` is a Rust crate with **no outside dependencies**. `cargo test` in `core/` runs 35 tests, all passing (the first slice had 25; the Plan group added the user folder, calendar and what-fails-next):
 - the medication safety check against all 37 cases in `tests/safety/dosing.json`
 - the answer path: dosing question never reaches the model; unknown topic gets "not found"; a model answer containing a dose is replaced; a model failure gives a plain message
 - inventory CSV (round trip, days left, status, delete selected)
 - card loading (a card can't claim to be reviewed without a reviewer and date)
 - library search over `content/library-sample`
+- user folder: safe saves with backups, a damaged file is never wiped
+- what fails next: same supply in several places is added together
+
+`crypto/` (optional passphrase lock: Argon2id + XChaCha20-Poly1305) has 6 tests that run on GitHub only, because it needs outside crates my workspace can't download. They pass there.
+
+Every push also builds screenshots of each screen and publishes them on the repository's `screenshots` branch.
 
 ## Built by GitHub Actions (compiles, not yet run by a person)
 Every push runs three jobs: the core and safety tests, the interface type check and build, and a Windows build of the whole app. The first run passed all three. That proves the code compiles and type-checks on Windows. It does **not** prove the window opens and behaves, because nobody has run it yet.
