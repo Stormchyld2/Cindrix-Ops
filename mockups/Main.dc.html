@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cindrix Ops — Chat</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#b5ada0}a:hover{color:#ece7de}
+</style>
+</helmet>
+<div style="min-height:820px;display:flex;flex-direction:column;background:#121211;color:#ece7de;font-family:'IBM Plex Sans',system-ui,sans-serif;font-size:14px;line-height:1.5">
+
+<header style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 24px;padding:12px 24px;background:#171614;border-bottom:1px solid #2a2724">
+<div style="display:flex;align-items:center;gap:12px">
+<svg width="32" height="32" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="fl" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff5a1f"/><stop offset="1" stop-color="#ffc247"/></linearGradient></defs><path d="M12 2.2c.9 3.3 4.7 5.3 4.7 9.9a4.7 4.7 0 0 1-9.4 0c0-2.1 1-3.4 2.1-4.5.2 1.5.9 2.2 1.7 2.4-.4-2.8-.2-5.4.9-7.8z" fill="url(#fl)"/><path d="M12 12.6c.5 1.2 1.9 1.9 1.9 3.5a1.9 1.9 0 0 1-3.8 0c0-1 .6-1.6 1.2-2.2.4.7.7.8.7-1.3z" fill="#ffe3a0"/></svg>
+<div>
+<div style="font-family:'Barlow Condensed',system-ui,sans-serif;font-weight:700;font-size:24px;letter-spacing:.12em;line-height:1">CINDRIX <span style="color: {{accent}}">OPS</span></div>
+<div style="font-size:12px;color:#9a9388;margin-top:3px">Carry the library. Keep the fire.</div>
+</div>
+</div>
+<nav aria-label="Sections" style="display:flex;flex-wrap:wrap;gap:6px">
+<a href="Start.dc.html" style="padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:500;border:1px solid transparent">Start</a>
+<a href="Main.dc.html" aria-current="page" style="padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:600;background: {{accentSoft}};color: {{accent}};border:1px solid {{accentLine}}">Chat</a>
+<a href="Library.dc.html" style="padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:500;border:1px solid transparent">Library</a>
+<a href="Maps.dc.html" style="padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:500;border:1px solid transparent">Maps</a>
+<a href="Cascade.dc.html" style="padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:500;border:1px solid transparent">What fails</a>
+<a href="Supplies.dc.html" style="padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:500;border:1px solid transparent">Inventory</a>
+<a href="Drills.dc.html" style="padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:500;border:1px solid transparent">Drills</a>
+<a href="Family.dc.html" style="padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:500;border:1px solid transparent">Family</a>
+<a href="Binder.dc.html" style="padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:500;border:1px solid transparent">Binder</a>
+<a href="Devices.dc.html" style="padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:500;border:1px solid transparent">Devices</a>
+<a href="Sources.dc.html" style="padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:500;border:1px solid transparent">Sources</a>
+<a href="Phone.dc.html" style="padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:500;border:1px solid transparent">Android</a>
+<a href="Settings.dc.html" style="padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:500;border:1px solid transparent">Settings</a>
+</nav>
+</header>
+
+<div style="flex:1;display:flex;flex-wrap:wrap;align-items:stretch">
+
+<aside style="flex:0 1 280px;box-sizing:border-box;padding:16px;border-right:1px solid #2a2724;background:#141312;min-width:0">
+<button type="button" style="width:100%;padding:11px 14px;border:0;border-radius:8px;background: {{accent}};color:#1a1208;font-weight:700;font-size:14px;font-family:inherit;cursor:pointer">New session</button>
+
+<div style="margin-top:14px;padding:14px;background:#1a1917;border:1px solid #2a2724;border-radius:10px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;color:#9a9388">MODEL</div>
+<div style="margin-top:6px;font-weight:600">Qwen3.5 2B</div>
+<div style="margin-top:2px;font-size:12px;color:#9a9388">CPU · 4 threads · 4K context · chosen for this computer's memory (8 GB)</div>
+<button type="button" style="margin-top:10px;width:100%;padding:8px;border-radius:8px;border:1px solid #3a3631;background:transparent;color:#ece7de;font-family:inherit;font-size:13px;cursor:pointer">Change model</button>
+</div>
+
+<div style="margin-top:12px;padding:14px;background:#1a1917;border:1px solid #2a2724;border-radius:10px">
+<div style="display:flex;align-items:center;justify-content:space-between">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;color:#9a9388">NETWORK</div>
+<button type="button" aria-label="Network is off" style="position:relative;width:44px;height:24px;padding:0;border-radius:12px;border:1px solid #3a3631;background:#23201d;cursor:pointer"><span style="position:absolute;left:3px;top:3px;width:16px;height:16px;border-radius:50%;background:#6f695f"></span></button>
+</div>
+<div style="margin-top:6px;font-weight:600">Off</div>
+<div style="margin-top:2px;font-size:12px;color:#9a9388">This app only talks to itself on this device (127.0.0.1).</div>
+</div>
+
+<div style="margin-top:12px;padding:14px;background:#1a1917;border:1px solid #2a2724;border-radius:10px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;color:#9a9388">LIBRARY</div>
+<div style="margin-top:8px;display:flex;align-items:flex-start;gap:8px">
+<input type="checkbox" id="lib" checked style="margin-top:3px;accent-color: {{accent}}">
+<label for="lib" style="font-weight:600">Answer from the library</label>
+</div>
+<div style="margin-top:4px;font-size:12px;color:#9a9388">Searches the archives and manuals on this drive first, and shows where each answer came from.</div>
+</div>
+
+<div style="margin-top:12px;padding:14px;background:#1a1917;border:1px solid #2a2724;border-radius:10px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;color:#9a9388">LANGUAGE</div>
+<label for="lang" style="position:absolute;left:-9999px">Language</label>
+<select id="lang" style="margin-top:8px;width:100%;padding:8px;border-radius:8px;border:1px solid #3a3631;background:#121211;color:#ece7de;font-family:inherit;font-size:13px">
+<option>English</option>
+<option>Español</option>
+<option>עברית</option>
+</select>
+</div>
+</aside>
+
+<main style="flex:999 1 560px;min-width:0;box-sizing:border-box;padding:20px 24px;display:flex;flex-direction:column;gap:16px">
+
+<div style="align-self:flex-end;max-width:560px;padding:12px 14px;background:#27231e;border:1px solid #3a342c;border-radius:12px 12px 4px 12px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;color:#9a9388">YOU</div>
+<div style="margin-top:4px">My blood sugar is 52 and I'm shaky and sweating. What should I do right now?</div>
+</div>
+
+<div style="align-self:flex-start;max-width:740px;padding:14px 16px;background:#1a1917;border:1px solid #2a2724;border-left:3px solid {{accent}};border-radius:4px 12px 12px 12px">
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;color:#9a9388">QWEN3.5 2B · FROM THE LIBRARY</div>
+<div style="padding:2px 8px;border-radius:999px;border:1px solid #6b4a1c;background:#2a1f10;color:#f0b35a;font-size:11px">Sample text · pending clinical review</div>
+</div>
+<ol style="margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px">
+<li>If you can swallow safely, take about 15 grams of fast-acting sugar: 3–4 glucose tablets, or about 4 oz (½ cup) of juice or regular soda.</li>
+<li>Wait 15 minutes and recheck. If you are still below 70 mg/dL, repeat.</li>
+<li>Once you are above 70, eat a snack or meal that has carbohydrate and protein.</li>
+<li>If the person is confused, cannot swallow or is unconscious, do not put food or drink in their mouth. Use glucagon if you have it and call 911.</li>
+</ol>
+<div style="margin-top:12px;padding:10px 12px;border-radius:8px;background:#211b12;border:1px solid #5a4219;font-size:13px">
+<strong style="color: {{accent}}">Insulin doses are not my call.</strong> I don't give insulin amounts or dose changes. Use your doctor's written plan, and open the <a href="Library.dc.html" style="color: {{accent}}">Low blood sugar card</a> for the one-screen steps.
+</div>
+<div style="margin-top:12px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:12px;color:#9a9388">
+<span>Sources</span>
+<a href="Library.dc.html" style="padding:3px 10px;border-radius:999px;background:#1f2a1d;border:1px solid #34502f;color:#9fd18f;text-decoration:none">Diabetes pack · Low blood sugar</a>
+<a href="Library.dc.html" style="padding:3px 10px;border-radius:999px;background:#1f2a1d;border:1px solid #34502f;color:#9fd18f;text-decoration:none">WikiMed · Hypoglycemia</a>
+</div>
+</div>
+
+<div style="flex:1"></div>
+
+<div style="display:flex;flex-wrap:wrap;gap:8px">
+<a href="Library.dc.html" style="padding:6px 12px;border-radius:999px;border:1px solid #3a3631;background:#1a1917;text-decoration:none;font-size:13px">Emergency cards</a>
+<a href="Library.dc.html" style="padding:6px 12px;border-radius:999px;border:1px solid #3a3631;background:#1a1917;text-decoration:none;font-size:13px">Insulin without power</a>
+<a href="Drills.dc.html" style="padding:6px 12px;border-radius:999px;border:1px solid #3a3631;background:#1a1917;text-decoration:none;font-size:13px">72-hour outage drill</a>
+<a href="Maps.dc.html" style="padding:6px 12px;border-radius:999px;border:1px solid #3a3631;background:#1a1917;text-decoration:none;font-size:13px">Nearest hospital</a>
+</div>
+
+<div style="display:flex;flex-wrap:wrap;gap:10px">
+<label for="msg" style="position:absolute;left:-9999px">Message</label>
+<input id="msg" type="text" placeholder="Ask anything. It stays on this device." style="flex:1 1 320px;min-width:0;padding:13px 14px;border-radius:10px;border:1px solid #3a3631;background:#171614;color:#ece7de;font-family:inherit;font-size:14px">
+<button type="button" style="flex:0 0 auto;padding:13px 24px;border:0;border-radius:10px;background: {{accent}};color:#1a1208;font-weight:700;font-family:inherit;font-size:14px;cursor:pointer">Send</button>
+</div>
+
+</main>
+</div>
+
+<footer style="display:flex;flex-wrap:wrap;gap:6px 22px;align-items:center;padding:9px 24px;background:#171614;border-top:1px solid #2a2724;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#9a9388">
+<span><span style="color:#6fbf73">●</span> Model: Qwen3.5 2B on CPU</span>
+<span>Speed: 7.8 tokens/s</span>
+<span>Memory: 5.1 / 8 GB</span>
+<span><span style="color: {{accent}}">●</span> Network off</span>
+<span style="margin-left:auto">Concept mockup · sample content</span>
+</footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#ff9a1f","options":["#ff9a1f","#ffb02e","#ff7a2f","#e8c15a"]},"$preview":{"width":1280,"height":820}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const accent = this.props.accent ?? '#ff9a1f';
+    return { accent, accentSoft: accent + '1f', accentLine: accent + '66' };
+  }
+}
+</script>
+</body>
+</html>

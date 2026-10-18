@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cindrix Ops — Maps</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#b5ada0}a:hover{color:#ece7de}
+.bm{position:absolute;opacity:0;pointer-events:none}
+.lyr-topo,.lyr-sat{display:none}
+#bm-topo:checked ~ svg .lyr-topo,#bm-sat:checked ~ svg .lyr-sat{display:inline}
+#bm-street:checked ~ .bmsw label[for=bm-street],#bm-topo:checked ~ .bmsw label[for=bm-topo],#bm-sat:checked ~ .bmsw label[for=bm-sat]{background:#2a2724;color:#ece7de;font-weight:600}
+#bm-sat:checked ~ svg .base-water{fill:#10202c}
+.bm:focus-visible ~ .bmsw{outline:2px solid #ff9a1f}
+</style>
+</helmet>
+<div style="min-height:820px;display:flex;flex-direction:column;background:#121211;color:#ece7de;font-family:'IBM Plex Sans',system-ui,sans-serif;font-size:14px;line-height:1.5">
+
+<header style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 24px;padding:12px 24px;background:#171614;border-bottom:1px solid #2a2724">
+<div style="display:flex;align-items:center;gap:12px">
+<svg width="32" height="32" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="fl" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff5a1f"/><stop offset="1" stop-color="#ffc247"/></linearGradient></defs><path d="M12 2.2c.9 3.3 4.7 5.3 4.7 9.9a4.7 4.7 0 0 1-9.4 0c0-2.1 1-3.4 2.1-4.5.2 1.5.9 2.2 1.7 2.4-.4-2.8-.2-5.4.9-7.8z" fill="url(#fl)"/><path d="M12 12.6c.5 1.2 1.9 1.9 1.9 3.5a1.9 1.9 0 0 1-3.8 0c0-1 .6-1.6 1.2-2.2.4.7.7.8.7-1.3z" fill="#ffe3a0"/></svg>
+<div>
+<div style="font-family:'Barlow Condensed',system-ui,sans-serif;font-weight:700;font-size:24px;letter-spacing:.12em;line-height:1">CINDRIX <span style="color: {{accent}}">OPS</span></div>
+<div style="font-size:12px;color:#9a9388;margin-top:3px">Carry the library. Keep the fire.</div>
+</div>
+</div>
+<nav aria-label="Sections" style="display:flex;flex-wrap:wrap;gap:6px">
+<a href="Start.dc.html" style="padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:500;border:1px solid transparent">Start</a>
+<a href="Main.dc.html" style="padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:500;border:1px solid transparent">Chat</a>
+<a href="Library.dc.html" style="padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:500;border:1px solid transparent">Library</a>
+<a href="Maps.dc.html" aria-current="page" style="padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:600;background: {{accentSoft}};color: {{accent}};border:1px solid {{accentLine}}">Maps</a>
+<a href="Cascade.dc.html" style="padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:500;border:1px solid transparent">What fails</a>
+<a href="Supplies.dc.html" style="padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:500;border:1px solid transparent">Inventory</a>
+<a href="Drills.dc.html" style="padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:500;border:1px solid transparent">Drills</a>
+<a href="Family.dc.html" style="padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:500;border:1px solid transparent">Family</a>
+<a href="Binder.dc.html" style="padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:500;border:1px solid transparent">Binder</a>
+<a href="Devices.dc.html" style="padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:500;border:1px solid transparent">Devices</a>
+<a href="Sources.dc.html" style="padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:500;border:1px solid transparent">Sources</a>
+<a href="Phone.dc.html" style="padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:500;border:1px solid transparent">Android</a>
+<a href="Settings.dc.html" style="padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:500;border:1px solid transparent">Settings</a>
+</nav>
+</header>
+
+<div style="flex:1;display:flex;flex-wrap:wrap;align-items:stretch">
+
+<aside style="flex:0 1 280px;box-sizing:border-box;padding:16px;border-right:1px solid #2a2724;background:#141312;min-width:0">
+<div style="padding:14px;background:#1a1917;border:1px solid #2a2724;border-radius:10px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;color:#9a9388">MAP PACKS</div>
+<div style="margin-top:8px;display:flex;flex-direction:column;gap:6px;font-size:13px">
+<div style="display:flex;justify-content:space-between"><span>Sample state pack</span><span style="color:#9a9388">1.4 GB</span></div>
+<div style="display:flex;justify-content:space-between"><span>Neighboring state</span><span style="color:#9a9388">1.1 GB</span></div>
+<div style="display:flex;justify-content:space-between"><span>Elevation (topo)</span><span style="color:#9a9388">0.8 GB</span></div>
+<div style="display:flex;justify-content:space-between"><span>Satellite · Sample County</span><span style="color:#9a9388">3.8 GB</span></div>
+<div style="display:flex;justify-content:space-between"><span>Satellite · Neighbor County</span><span style="color:#9a9388">2.9 GB</span></div>
+</div>
+<div style="margin-top:10px;height:8px;border-radius:4px;background:#2a2724;overflow:hidden;display:flex"><span style="width:38%;background:#5aa9e6"></span><span style="width:14%;background:#b58cf0"></span></div>
+<div style="margin-top:4px;font-size:12px;color:#9a9388">Drive space for maps: 11.3 of 24 GB used</div>
+<a href="Settings.dc.html" style="display:block;margin-top:10px;text-align:center;padding:8px;border-radius:8px;border:1px solid #3a3631;color:#ece7de;text-decoration:none;font-size:13px">Manage map downloads in Settings</a>
+</div>
+
+<div style="margin-top:12px;padding:14px;background:#1a1917;border:1px solid #2a2724;border-radius:10px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;color:#9a9388">LAYERS</div>
+<div style="margin-top:8px;display:flex;flex-direction:column;gap:6px;font-size:13px">
+<label style="display:flex;align-items:center;gap:8px"><input type="checkbox" checked style="accent-color:#e5533d"> Hospitals and clinics</label>
+<label style="display:flex;align-items:center;gap:8px"><input type="checkbox" checked style="accent-color:#6fbf73"> Pharmacies</label>
+<label style="display:flex;align-items:center;gap:8px"><input type="checkbox" checked style="accent-color:#5aa9e6"> Drinking water</label>
+<label style="display:flex;align-items:center;gap:8px"><input type="checkbox" checked style="accent-color:#b58cf0"> Shelters</label>
+<label style="display:flex;align-items:center;gap:8px"><input type="checkbox" style="accent-color:#e8c15a"> Fuel</label>
+<label style="display:flex;align-items:center;gap:8px"><input type="checkbox" checked style="accent-color:#9a9388"> Contour lines</label>
+<label style="display:flex;align-items:center;gap:8px"><input type="checkbox" checked style="accent-color:#7a8f6a"> Terrain shading</label>
+<label style="display:flex;align-items:center;gap:8px"><input type="checkbox" style="accent-color:#5aa9e6"> Line of sight (pick 2 points)</label>
+<label style="display:flex;align-items:center;gap:8px;color:#9a9388"><input type="checkbox" disabled style="accent-color:#e5533d"> Follow GPS (phones or a USB receiver)</label>
+</div>
+</div>
+
+<div style="margin-top:12px;padding:14px;background:#1a1917;border:1px solid #2a2724;border-radius:10px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;color:#9a9388">NO-GO AREAS</div>
+<div style="margin-top:6px;font-size:13px">Mark flooded, blocked or unsafe areas. Routes go around them.</div>
+<button type="button" style="margin-top:10px;width:100%;padding:8px;border-radius:8px;border:1px solid #6b2a20;background:#241512;color:#f08a78;font-family:inherit;font-size:13px;cursor:pointer">Draw a no-go area</button>
+</div>
+<div style="margin-top:12px;padding:14px;background:#1a1917;border:1px solid #2a2724;border-radius:10px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;color:#9a9388">MY SAVED MAPS</div>
+<div style="margin-top:8px;display:flex;flex-direction:column;gap:6px;font-size:13px"><div style="display:flex;justify-content:space-between"><span>Family bug-out plan</span><span style="color:#9a9388">today</span></div><div style="display:flex;justify-content:space-between"><span>Flood detour</span><span style="color:#9a9388">Oct 3</span></div><div style="display:flex;justify-content:space-between"><span>Hunting camp</span><span style="color:#9a9388">Sep 12</span></div></div>
+</div>
+</aside>
+
+<main style="flex:999 1 560px;min-width:0;box-sizing:border-box;padding:10px 14px;display:flex;flex-direction:column;gap:8px">
+
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px">
+<label for="place" style="position:absolute;left:-9999px">Place, ZIP code or coordinates</label>
+<input id="place" type="text" placeholder="Search a place, ZIP or coordinates" style="flex:1 1 200px;min-width:0;border:1px solid #3a3631;background:#171614;color:#ece7de;height:32px;box-sizing:border-box;border-radius:8px;font-family:inherit;font-size:13px;padding:0 10px">
+<button type="button" style="border:0;background: {{accent}};color:#1a1208;font-weight:700;height:32px;box-sizing:border-box;border-radius:8px;font-family:inherit;font-size:13px;padding:0 14px;cursor:pointer">Search</button>
+<span style="width:1px;height:20px;background:#2a2724"></span>
+<label for="near" style="position:absolute;left:-9999px">Find nearest</label>
+<select id="near" style="border:1px solid #3a3631;background:#171614;color:#ece7de;height:32px;box-sizing:border-box;border-radius:8px;font-family:inherit;font-size:13px;padding:0 8px"><option>Nearest pharmacy</option><option>Nearest hospital</option><option>Nearest drinking water</option><option>Nearest shelter</option></select>
+<button type="button" style="border:1px solid {{accent}};background: {{accentSoft}};color: {{accent}};font-weight:600;height:32px;box-sizing:border-box;border-radius:8px;font-family:inherit;font-size:13px;padding:0 12px;cursor:pointer">Find</button>
+<span style="display:inline-flex;border:1px solid #3a3631;border-radius:8px;overflow:hidden;font-size:13px;height:32px;align-items:center"><span style="padding:0 10px;background:#2a2724;line-height:30px">Walk</span><span style="padding:0 10px">Drive</span></span>
+<span style="width:1px;height:20px;background:#2a2724"></span>
+<button type="button" style="border:1px solid #3a3631;background:#1a1917;color:#ece7de;height:32px;box-sizing:border-box;border-radius:8px;font-family:inherit;font-size:13px;padding:0 10px;cursor:pointer">Mark spot</button>
+<button type="button" style="border:1px solid #3a3631;background:#1a1917;color:#ece7de;height:32px;box-sizing:border-box;border-radius:8px;font-family:inherit;font-size:13px;padding:0 10px;cursor:pointer">Home</button>
+<button type="button" onclick="document.getElementById('savemap').showModal()" style="border:0;background: {{accent}};color:#1a1208;font-weight:700;height:32px;border-radius:8px;font-family:inherit;font-size:13px;padding:0 12px;cursor:pointer">Save / export</button>
+<button type="button" title="Position set by hand 12 min ago" style="border:1px solid #3a3631;background:#1a1917;color:#ece7de;height:32px;box-sizing:border-box;border-radius:8px;font-family:inherit;font-size:13px;padding:0 10px;cursor:pointer;color:#f0b35a">● Set by hand · 12 min</button>
+</div>
+
+<div style="position:relative;flex:1;min-height:560px;display:flex">
+<input class="bm" type="radio" name="bm" id="bm-street" checked aria-label="Street map"><input class="bm" type="radio" name="bm" id="bm-topo" aria-label="Topographic map"><input class="bm" type="radio" name="bm" id="bm-sat" aria-label="Satellite imagery">
+<div class="bmsw" style="position:absolute;top:12px;right:12px;z-index:2;display:flex;border:1px solid #3a3631;border-radius:8px;overflow:hidden;background:#171614;font-size:13px"><label for="bm-street" style="padding:7px 12px;cursor:pointer;color:#b5ada0">Street</label><label for="bm-topo" style="padding:7px 12px;cursor:pointer;color:#b5ada0;border-left:1px solid #2a2724">Topo</label><label for="bm-sat" style="padding:7px 12px;cursor:pointer;color:#b5ada0;border-left:1px solid #2a2724">Satellite · county</label></div>
+<svg viewBox="0 0 800 460" width="100%" height="100%" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Sample offline map with terrain contours, roads, a saved home spot and a route to the nearest pharmacy" style="display:block;flex:1;background:#1a1917;border-radius:12px;border:1px solid #2a2724">
+<rect width="800" height="460" fill="#1a1917"/>
+<g class="lyr-topo"><rect width="800" height="460" fill="#25291f"/>
+<path d="M0 0 H800 V120 C560 40 330 140 0 120Z" fill="#3a3a2c"/><path d="M0 0 H800 V90 C560 20 330 100 0 80Z" fill="#4a4636"/><path d="M0 0 H800 V50 C560 -10 330 60 0 40Z" fill="#5b5541"/>
+<g fill="none" stroke="#8a7f5e" stroke-width="1">
+<path d="M0 100 C120 70 220 120 330 85 S560 30 800 75"/><path d="M0 130 C130 100 230 150 340 115 S570 60 800 105"/><path d="M0 160 C140 130 240 178 350 144 S580 96 800 138"/><path d="M0 190 C150 160 250 206 360 174 S590 130 800 170"/><path d="M0 220 C150 192 250 232 360 204 S590 166 800 202"/>
+<path d="M0 280 C150 262 260 292 380 280 S620 262 800 280"/></g>
+<g fill="none" stroke="#b3a678" stroke-width="1.6"><path d="M0 70 C120 40 220 90 330 55 S560 0 800 45"/><path d="M0 250 C150 226 250 262 360 234 S590 196 800 234"/></g>
+<text x="60" y="64" fill="#cbbf92" font-size="10" font-family="IBM Plex Mono, monospace">1,240 ft</text><text x="40" y="244" fill="#cbbf92" font-size="10" font-family="IBM Plex Mono, monospace">860 ft</text>
+<path d="M0 340 C120 310 210 366 330 346 S530 386 800 354 L800 460 L0 460Z" fill="#1d2a38"/></g>
+<g class="lyr-sat"><rect width="800" height="460" fill="#2d3a24"/>
+<path d="M0 0 H330 V150 L180 200 L0 190Z" fill="#26331f"/><path d="M340 0 H560 V150 H340Z" fill="#3a4a2c"/><path d="M570 0 H800 V230 H570Z" fill="#344326"/>
+<path d="M0 262 H330 V340 H120 L0 330Z" fill="#4b4a33"/><path d="M350 262 H540 V340 H350Z" fill="#3f4630"/><path d="M570 262 H800 V320 H570Z" fill="#5a5238"/>
+<g fill="#6b6a62"><rect x="150" y="268" width="14" height="10"/><rect x="170" y="284" width="12" height="9"/><rect x="195" y="272" width="16" height="11"/><rect x="380" y="276" width="14" height="10"/><rect x="402" y="290" width="12" height="9"/><rect x="600" y="272" width="18" height="12"/><rect x="630" y="286" width="14" height="10"/></g>
+<g fill="#1f2c1a"><circle cx="90" cy="60" r="26"/><circle cx="130" cy="100" r="20"/><circle cx="420" cy="50" r="22"/><circle cx="640" cy="90" r="30"/><circle cx="700" cy="170" r="22"/></g>
+<path d="M0 340 C120 310 210 366 330 346 S530 386 800 354 L800 460 L0 460Z" class="base-water" fill="#10202c"/>
+<path d="M20 20 H780 V440 H20Z" fill="none" stroke="#5aa9e6" stroke-width="1.5" stroke-dasharray="10 6"/><text x="30" y="38" fill="#9ccbf0" font-size="11" font-family="IBM Plex Mono, monospace">Sample County satellite coverage · survey year 2022</text></g>
+<g fill="none" stroke="#2c2924" stroke-width="1.2">
+<path d="M0 120 C120 80 220 140 330 100 S560 40 800 90"/>
+<path d="M0 150 C130 112 230 168 340 130 S570 76 800 122"/>
+<path d="M0 182 C140 146 240 196 350 160 S580 112 800 154"/>
+<path d="M0 214 C150 180 250 224 360 190 S590 148 800 186"/>
+</g>
+<path d="M0 340 C120 310 210 366 330 346 S530 386 800 354 L800 460 L0 460Z" class="base-water" fill="#1d2a38"/>
+<g fill="none" stroke="#4a3f2e" stroke-width="2">
+<path d="M60 460 L120 300 L190 210 L300 150"/>
+<path d="M0 255 L220 262 L420 250 L800 232"/>
+<path d="M330 0 L336 150 L340 300 L344 460"/>
+<path d="M560 0 L552 150 L548 250 L560 340"/>
+<path d="M120 300 L330 300 L560 340 L800 320"/>
+</g>
+<g fill="none" stroke="#7a6238" stroke-width="4">
+<path d="M0 255 L220 262 L420 250 L800 232"/>
+<path d="M336 0 L340 300 L344 460"/>
+</g>
+<path d="M470 200 L548 190 L566 244 L488 258Z" fill="#e5533d" fill-opacity=".18" stroke="#e5533d" stroke-dasharray="5 4"/>
+<text x="478" y="228" fill="#f08a78" font-size="12" font-family="IBM Plex Sans, sans-serif">No-go: flooded road</text>
+<path d="M180 300 L180 258 L338 254 L340 150 L560 150" fill="none" stroke="{{accent}}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="180" cy="300" r="14" fill="{{accent}}" fill-opacity=".2"/>
+<circle cx="180" cy="300" r="6" fill="{{accent}}"/>
+<text x="198" y="318" fill="#ece7de" font-size="12" font-family="IBM Plex Sans, sans-serif">Home</text>
+<circle cx="560" cy="150" r="8" fill="#6fbf73"/>
+<text x="574" y="146" fill="#ece7de" font-size="12" font-family="IBM Plex Sans, sans-serif">Main St Pharmacy</text>
+<circle cx="640" cy="278" r="7" fill="#e5533d"/>
+<text x="652" y="274" fill="#b5ada0" font-size="12" font-family="IBM Plex Sans, sans-serif">County General</text>
+<circle cx="250" cy="372" r="6" fill="#5aa9e6"/>
+<text x="262" y="376" fill="#b5ada0" font-size="12" font-family="IBM Plex Sans, sans-serif">Public well</text>
+<circle cx="430" cy="92" r="6" fill="#b58cf0"/>
+<text x="442" y="96" fill="#b5ada0" font-size="12" font-family="IBM Plex Sans, sans-serif">High school shelter</text>
+<g stroke="#ece7de" stroke-width="1.5" fill="none">
+<circle cx="420" cy="320" r="9"/>
+<path d="M420 302 V312 M420 328 V338 M402 320 H412 M428 320 H438"/>
+</g>
+<g class="drawn">
+<path d="M180 300 L230 330 L300 350 L420 372" fill="none" stroke="#5aa9e6" stroke-width="3" stroke-dasharray="8 5" stroke-linecap="round"/>
+<path d="M610 120 C640 100 680 110 690 140 C700 170 660 190 630 180" fill="none" stroke="#b58cf0" stroke-width="3" stroke-linecap="round"/>
+<rect x="412" y="364" width="16" height="16" rx="3" fill="#5aa9e6" stroke="#0e1a24" stroke-width="2"/>
+<text x="420" y="376" fill="#0e1a24" font-size="11" font-weight="700" text-anchor="middle" font-family="IBM Plex Sans, sans-serif">1</text>
+<text x="436" y="378" fill="#cfe6f8" font-size="12" font-family="IBM Plex Sans, sans-serif">RV1 · Meet here if we are separated</text>
+<text x="612" y="206" fill="#d6c2f5" font-size="12" font-family="IBM Plex Sans, sans-serif">Creek crossing: shallow</text>
+</g>
+<text x="520" y="446" fill="#8a8479" font-size="11" font-family="IBM Plex Mono, monospace">© OpenStreetMap contributors (ODbL) · aerial imagery: USGS NAIP (2022)</text>
+</svg>
+<div style="position:absolute;top:12px;left:12px;padding:10px 12px;background:#171614;border:1px solid #3a3631;border-radius:10px;max-width:260px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;color:#9a9388">NEAREST PHARMACY</div>
+<div style="margin-top:2px;font-weight:600">Main St Pharmacy</div>
+<div style="font-size:13px;color:#b5ada0">2.4 mi · about 6 min by car · avoiding 1 no-go area</div>
+</div>
+
+<div role="toolbar" aria-label="Drawing tools" style="position:absolute;left:12px;top:118px;z-index:2;width:128px;padding:8px;background:#171614f2;border:1px solid #3a3631;border-radius:12px;display:flex;flex-direction:column;gap:4px"><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;color:#9a9388;padding:0 2px 2px">DRAW</div><button type="button" title="Pan" aria-label="Pan" style="width:100%;display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:#2a2724;color:#ece7de;border:1px solid {{accent}};font-family:inherit;font-size:12px;cursor:pointer;"><span aria-hidden="true" style="width:16px;text-align:center">✥</span>Pan</button><button type="button" title="Pin" aria-label="Pin" style="width:100%;display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:#171614;color:#b5ada0;border:1px solid #3a3631;font-family:inherit;font-size:12px;cursor:pointer;"><span aria-hidden="true" style="width:16px;text-align:center">📍</span>Pin</button><button type="button" title="Rendezvous" aria-label="Rendezvous" style="width:100%;display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:#171614;color:#b5ada0;border:1px solid #3a3631;font-family:inherit;font-size:12px;cursor:pointer;"><span aria-hidden="true" style="width:16px;text-align:center">⚑</span>Rendezvous</button><button type="button" title="Route line" aria-label="Route line" style="width:100%;display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:#171614;color:#b5ada0;border:1px solid #3a3631;font-family:inherit;font-size:12px;cursor:pointer;"><span aria-hidden="true" style="width:16px;text-align:center">〰</span>Route line</button><button type="button" title="No-go area" aria-label="No-go area" style="width:100%;display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:#171614;color:#b5ada0;border:1px solid #3a3631;font-family:inherit;font-size:12px;cursor:pointer;"><span aria-hidden="true" style="width:16px;text-align:center">⛔</span>No-go area</button><button type="button" title="Freehand" aria-label="Freehand" style="width:100%;display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:#171614;color:#b5ada0;border:1px solid #3a3631;font-family:inherit;font-size:12px;cursor:pointer;"><span aria-hidden="true" style="width:16px;text-align:center">✎</span>Freehand</button><button type="button" title="Label" aria-label="Label" style="width:100%;display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:#171614;color:#b5ada0;border:1px solid #3a3631;font-family:inherit;font-size:12px;cursor:pointer;"><span aria-hidden="true" style="width:16px;text-align:center">T</span>Label</button><button type="button" title="Measure" aria-label="Measure" style="width:100%;display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:#171614;color:#b5ada0;border:1px solid #3a3631;font-family:inherit;font-size:12px;cursor:pointer;"><span aria-hidden="true" style="width:16px;text-align:center">↔</span>Measure</button><button type="button" title="Eraser" aria-label="Eraser" style="width:100%;display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:#171614;color:#b5ada0;border:1px solid #3a3631;font-family:inherit;font-size:12px;cursor:pointer;"><span aria-hidden="true" style="width:16px;text-align:center">⌫</span>Eraser</button><div style="display:flex;gap:4px;margin-top:4px"><button type="button" style="flex:1;padding:6px;border-radius:8px;border:1px solid #3a3631;background:#171614;color:#b5ada0;font-family:inherit;font-size:12px;cursor:pointer">Undo</button><button type="button" style="flex:1;padding:6px;border-radius:8px;border:1px solid #3a3631;background:#171614;color:#b5ada0;font-family:inherit;font-size:12px;cursor:pointer">Redo</button></div></div>
+<div style="position:absolute;right:12px;top:56px;z-index:2;display:flex;flex-direction:column;border:1px solid #3a3631;border-radius:10px;overflow:hidden"><button type="button" aria-label="Zoom in" style="width:38px;height:38px;border:0;background:#171614;color:#ece7de;font-size:20px;cursor:pointer;font-family:inherit">+</button><button type="button" aria-label="Zoom out" style="width:38px;height:38px;border:0;background:#171614;color:#ece7de;font-size:20px;cursor:pointer;font-family:inherit;border-top:1px solid #2a2724">−</button><button type="button" aria-label="Zoom to my position" title="Zoom to my position" style="width:38px;height:38px;border:0;background:#171614;color:#ece7de;font-size:20px;cursor:pointer;font-family:inherit;border-top:1px solid #2a2724;font-size:15px">◎</button></div>
+<div style="position:absolute;right:12px;bottom:70px;z-index:2;padding:4px 8px;background:#171614e6;border:1px solid #3a3631;border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#b5ada0">Zoom 14 · <span style="display:inline-block;width:60px;border-bottom:2px solid #ece7de;vertical-align:middle"></span> 0.5 mi</div>
+<div style="position:absolute;left:12px;right:12px;bottom:12px;padding:8px 12px;background:#171614e6;border:1px solid #3a3631;border-radius:10px;display:flex;flex-wrap:wrap;gap:4px 24px;font-size:13px;color:#b5ada0">
+<span style="color:#ece7de;font-weight:600">Directions · drive</span>
+<span>1. Head north on Oak Ave</span>
+<span>2. Turn right onto Main St</span>
+<span>3. Destination on the left</span>
+<button type="button" onclick="document.getElementById('dirs').showModal()" style="margin-left:auto;height:28px;padding:0 12px;border-radius:8px;border:1px solid {{accent}};background: {{accentSoft}};color: {{accent}};font-weight:600;font-family:inherit;font-size:12px;cursor:pointer">Full directions</button>
+</div>
+<dialog id="dirs" aria-labelledby="dt" style="width:min(440px,92%);padding:0;border:1px solid #3a3631;border-radius:14px;background:#1a1917;color:#ece7de;font-family:'IBM Plex Sans',system-ui,sans-serif">
+<div style="padding:16px 18px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px"><div><div id="dt" style="font-family:'Barlow Condensed',system-ui,sans-serif;font-size:22px;letter-spacing:.08em;font-weight:600">DIRECTIONS · DRIVE</div><div style="font-size:13px;color:#9a9388">Home to Main St Pharmacy · 2.4 mi · about 6 min · avoiding 1 no-go area</div></div>
+<button type="button" aria-label="Close" onclick="document.getElementById('dirs').close()" style="border:1px solid #3a3631;background:transparent;color:#ece7de;border-radius:8px;width:32px;height:32px;cursor:pointer">✕</button></div>
+<ol style="margin:0;padding:0 18px 6px 36px"><li style="padding:10px 0;border-top:1px solid #2a2724"><div style="font-weight:600">Head north on Oak Ave</div><div style="font-size:12px;color:#9a9388">0.4 mi</div></li><li style="padding:10px 0;border-top:1px solid #2a2724"><div style="font-weight:600">Turn right onto Main St</div><div style="font-size:12px;color:#9a9388">1.6 mi · passes the flooded-road no-go area on your left</div></li><li style="padding:10px 0;border-top:1px solid #2a2724"><div style="font-weight:600">Turn left at the light</div><div style="font-size:12px;color:#9a9388">0.3 mi</div></li><li style="padding:10px 0;border-top:1px solid #2a2724"><div style="font-weight:600">Destination on the left: Main St Pharmacy</div></li></ol>
+<div style="padding:12px 18px 16px;display:flex;gap:10px;flex-wrap:wrap"><button type="button" style="padding:9px 16px;border:0;border-radius:8px;background: {{accent}};color:#1a1208;font-weight:700;font-family:inherit;font-size:13px;cursor:pointer">Switch to walking</button><button type="button" style="padding:9px 16px;border-radius:8px;border:1px solid #3a3631;background:transparent;color:#ece7de;font-family:inherit;font-size:13px;cursor:pointer">Print</button><button type="button" onclick="document.getElementById('dirs').close()" style="padding:9px 16px;border-radius:8px;border:1px solid #3a3631;background:transparent;color:#ece7de;font-family:inherit;font-size:13px;cursor:pointer">Close</button></div>
+</dialog>
+</div>
+
+
+<dialog id="savemap" aria-labelledby="sv" style="width:min(480px,92%);padding:0;border:1px solid #3a3631;border-radius:14px;background:#1a1917;color:#ece7de;font-family:'IBM Plex Sans',system-ui,sans-serif">
+<div style="padding:16px 18px;display:flex;justify-content:space-between;gap:12px"><div><div id="sv" style="font-family:'Barlow Condensed',system-ui,sans-serif;font-size:22px;letter-spacing:.08em;font-weight:600">SAVE THIS MAP</div><div style="font-size:13px;color:#9a9388">Saves your drawings with the current view: 2 pins, 1 rendezvous, 1 route, 1 no-go area, 2 labels.</div></div><button type="button" aria-label="Close" onclick="document.getElementById('savemap').close()" style="border:1px solid #3a3631;background:transparent;color:#ece7de;border-radius:8px;width:32px;height:32px;cursor:pointer">✕</button></div>
+<div style="padding:0 18px"><label for="mn" style="font-size:12px;color:#9a9388">Name</label><input id="mn" type="text" value="Family bug-out plan" style="margin-top:4px;width:100%;box-sizing:border-box;height:36px;border-radius:8px;border:1px solid #3a3631;background:#171614;color:#ece7de;padding:0 10px;font-family:inherit;font-size:14px">
+<div style="margin-top:12px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;color:#9a9388">SAVE AS</div>
+<label style="display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid #2a2724"><input type="checkbox" checked style="margin-top:3px;accent-color: {{accent}}"><span><span style="font-weight:600">Editable map on this drive</span><br><span style="font-size:12px;color:#9a9388">Reopen it any time and keep drawing. Stored in your Cindrix folder.</span></span></label>
+<label style="display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid #2a2724"><input type="checkbox" checked style="margin-top:3px;accent-color: {{accent}}"><span><span style="font-weight:600">Picture (PNG)</span><br><span style="font-size:12px;color:#9a9388">A picture you can text, email or print.</span></span></label>
+<label style="display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid #2a2724"><input type="checkbox"  style="margin-top:3px;accent-color: {{accent}}"><span><span style="font-weight:600">Printable page (PDF)</span><br><span style="font-size:12px;color:#9a9388">Map, legend, route steps and rendezvous list on paper.</span></span></label>
+<label style="display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid #2a2724"><input type="checkbox"  style="margin-top:3px;accent-color: {{accent}}"><span><span style="font-weight:600">GPS file (GPX)</span><br><span style="font-size:12px;color:#9a9388">Route and waypoints for phone map apps such as Organic Maps.</span></span></label>
+</div>
+<div style="padding:12px 18px 16px;display:flex;gap:10px;flex-wrap:wrap"><button type="button" style="padding:9px 16px;border:0;border-radius:8px;background: {{accent}};color:#1a1208;font-weight:700;font-family:inherit;font-size:13px;cursor:pointer">Save</button><button type="button" onclick="document.getElementById('savemap').close()" style="padding:9px 16px;border-radius:8px;border:1px solid #3a3631;background:transparent;color:#ece7de;font-family:inherit;font-size:13px;cursor:pointer">Cancel</button></div>
+</dialog>
+</main>
+</div>
+
+<footer style="display:flex;flex-wrap:wrap;gap:6px 22px;align-items:center;padding:9px 24px;background:#171614;border-top:1px solid #2a2724;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#9a9388">
+<span><span style="color:#6fbf73">●</span> Maps run from this drive</span>
+<span>No location services on this device</span>
+<span><span style="color: {{accent}}">●</span> Network off</span>
+<span style="margin-left:auto">Concept mockup · sample content</span>
+</footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#ff9a1f","options":["#ff9a1f","#ffb02e","#ff7a2f","#e8c15a"]},"$preview":{"width":1280,"height":820}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const accent = this.props.accent ?? '#ff9a1f';
+    return { accent, accentSoft: accent + '1f', accentLine: accent + '66' };
+  }
+}
+</script>
+</body>
+</html>
