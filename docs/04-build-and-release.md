@@ -6,12 +6,14 @@ GitHub: `Stormchyld2/Cindrix-Ops`, public. Mockups are in `mockups/`, docs in `d
 ## Builds (GitHub Actions)
 - A Windows job builds the portable folder and a zip.
 - An Android job builds the APK.
-- Large content (models, archives, maps) is **not** stored in the repository. A script downloads it from its original sources, checks it, and assembles the drive image. This also records exactly which edition of each source was used.
-- **TO CHECK:** the account's Actions limits and the maximum file sizes for releases.
+- **The finished drive includes everything, built in.** Models, library archives, and US street and topo maps are all on the drive, so it works fully offline with nothing to download. Only satellite counties are added by the user afterward.
+- **The repository holds the recipe, not the big files.** GitHub rejects files over 100 MB and is not meant for tens of gigabytes. A build script downloads each item from its original source, checks it, and assembles the complete drive folder, recording exactly which edition of each source was used. The result is the drive image: a folder you copy onto the stick.
+- The script runs on your Windows PC (my workspace can't download large files). GitHub Actions builds the app and the APK; the full drive image is assembled locally.
+- **TO CHECK:** Actions limits, and whether to publish the finished image as split release files (each under 2 GB).
 
 ## Testing
-1. **Windows first.** The i7-8700 desktop (16 GB) and the 8 GB laptop. Check speed of the 2B and 4B models, memory use, start-up time, and the SmartScreen warning.
-2. **Drive.** Test the 128 GB stick for fake capacity (F3 or H2testw) before loading it. Which letter it uses (D: or E:) is not yet known.
+1. **Windows first.** Test on the PC folder before any drive. Machines: the i7-8700 desktop (16 GB) and the 8 GB laptop (reported as an i7-8700). Check speed of the 2B and 4B models, memory use, start-up time, and the SmartScreen warning.
+2. **Drive.** Not needed yet. When the build is ready, test the 128 GB stick for fake capacity (F3 or H2testw) before loading it.
 3. **Android.** Galaxy Note 20 with 8 GB: install the APK, check the Play Protect notice, model speed, battery, offline maps, and GPS.
 4. **Offline.** With networking disabled, every feature except downloads must work.
 5. **Safety tests.** A fixed list of dosing questions must always get the fixed reply. This list runs on every build.

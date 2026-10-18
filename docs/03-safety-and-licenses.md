@@ -32,7 +32,7 @@ Only free and open content ships.
 Excluded: DeepL, Meta Seamless, iFixit (non-commercial license), any archive with an unclear license, and any copyrighted book.
 
 ## What GPL means for selling
-Shipping Kiwix components makes the app a GPL work. So the app is **open source** (this repository), with source links in the app. What is sold is the curated, tested and loaded drive, the user guide, updates, and support. This is a working assumption, not legal advice. **OPEN:** short review by a lawyer before the first sale, which can also cover the name.
+Shipping Kiwix components makes the app a GPL work. So the app is **open source** (this repository), with source links in the app. What is sold is the curated, tested and loaded drive, the user guide, updates, and support. The author has reviewed the licensing and is satisfied. This doc is not legal advice.
 
 ## Name
-"Cindrix" resembles "Citrix" (software company, many registered marks). A clearance check by a trademark attorney is recommended before selling. Fallback names discussed: Cindrel, Cindar, Cinderon.
+"Cindrix" resembles "Citrix" (software company, many registered marks). The author has checked and is proceeding. Fallback names discussed earlier: Cindrel, Cindar, Cinderon.

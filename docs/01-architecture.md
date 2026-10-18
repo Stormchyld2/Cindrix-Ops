@@ -37,7 +37,7 @@
 - **Later:** a bootable launcher for non-Windows PCs, then Mac and iPhone.
 
 ## Hardware targets
-- Minimum: an 8 GB RAM Windows laptop with an Intel i7 (exact model not recorded). Expect the 2B model.
+- Minimum: an 8 GB RAM Windows laptop with an Intel i7 (reported as an i7-8700). Expect the 2B model.
 - Reference desktop: Windows, i7-8700, 16 GB RAM.
 - Phone: Galaxy Note 20, 8 GB RAM.
 - Speeds in the mockup are made up. Real speeds are **TO TEST**.
