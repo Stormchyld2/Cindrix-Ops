@@ -32,8 +32,8 @@ The complete guide ships on the drive as Markdown (`guide/`), with a PDF export.
    - Medicines and doses: follow your doctor's written plan
 8. **Settings**
    - Downloading satellite photos for your county
-   - Language, devices, updates
-9. **Backups and moving your data** (the `user` folder)
+   - Language, devices, version and build date
+9. **Backups and moving your data to a newer drive** (the `user` folder), and where safety notices are posted
 10. **Troubleshooting** (Windows warnings, slow answers, low memory, phone battery)
 11. **Sources and licenses**
 12. **Appendix:** wallet card, one-page checklists, glossary

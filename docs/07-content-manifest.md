@@ -23,7 +23,7 @@ A full Wikipedia with pictures would not leave room for maps, so the choice is a
 **OPEN:** pick a tier after the real sizes are measured.
 
 ## Rules for every item
-Has a source URL, edition and date, license, checksum, and an entry in `SOURCES.md` and `LICENSES/`. Items without an entry do not ship. See doc 3 for exclusions.
+Has a source URL, edition and date, license, checksum, and an entry in `SOURCES.md` and `LICENSES/`. Items without an entry do not ship. The drive is sold as a one-time product, so the manifest also records the drive version and build date. See doc 3 for exclusions.
 
 ## Machine-readable manifest
 `manifest/content.json` lists each item with: `id`, `name`, `category`, `source_url`, `license`, `attribution`, `size_estimate_gb`, `required`, `tier`, `sha256` (filled by the build). The first version has placeholders where the exact file names are not yet confirmed.

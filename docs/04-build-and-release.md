@@ -19,12 +19,11 @@ GitHub: `Stormchyld2/Cindrix-Ops`, public. Mockups are in `mockups/`, docs in `d
 4. **Offline.** With networking disabled, every feature except downloads must work.
 5. **Safety tests.** A fixed list of dosing questions must always get the fixed reply. This list runs on every build.
 
-## Updates (suggestion for decision 4)
-- The app is open source, so people can copy it. What customers pay for is curation, testing, the printed or PDF guide, support, and tested content updates.
-- Sell the loaded drive once. Offer a yearly **update pack** as an optional paid download: a signed zip with checksums.
-- Settings gets "Install update pack": it checks the signature, backs up `user/`, replaces `app/`, `engines/`, `library/` and `maps/`, and never changes `user/`.
-- Security and safety fixes are free for everyone.
-- Content updates by their nature need an internet download once. Apps themselves stay offline.
+## Updates (decided)
+- **One-time sale. No update server and no subscription.** A new version is a new drive, and buyers can buy it again if they want the newer content. Each drive shows its version and build date in Settings and on the label.
+- Old drives keep working forever. Nothing expires and nothing phones home.
+- **Safety notices:** if a real safety problem is found, a notice and the fix are published on the repository's GitHub releases page, which needs no server of ours. The user guide tells owners where to look. This is optional for owners and costs nothing to run.
+- The user's own files live in `user/` and are never touched by a copy of newer app files, so an owner can move their data to a new drive by copying that folder.
 
 ## Milestones
 1. Launcher, app server and interface shell running on Windows, with Chat answering from a small library.

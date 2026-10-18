@@ -5,7 +5,7 @@
 | 1 | File and folder storage | Agreed in principle: plain files, no database. Exact layout is in doc 2. To confirm against the earlier project the author mentioned. |
 | 2 | Encryption and passphrase lock for `family.json` | Decided: optional passphrase, Family page only. See doc 9. |
 | 3 | Map viewer for the interface | Proposed: Protomaps (PMTiles) with a JavaScript viewer on Windows; Organic Maps for phone companion use. **TO TEST.** |
-| 4 | Update and sales model | Proposed in doc 4: one-time drive sale plus optional yearly update pack. Awaiting the author's answer. |
+| 4 | Update and sales model | Decided: one-time sale, no update server. A new drive is a new version. Safety notices go on GitHub releases. See doc 4. |
 | 5 | GitHub builds | Yes. Check Actions limits. |
 | 6 | Map coverage | US-wide street and topo maps are built into the drive. Satellite is the user's own state and county download from USGS (Settings). |
 | 7 | Stack | Decided: Rust, Tauri 2, Svelte, TypeScript. See doc 6. Android and llama.cpp are the main risks to test first. |
