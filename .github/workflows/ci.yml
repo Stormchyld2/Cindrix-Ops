@@ -108,7 +108,7 @@ jobs:
           [ -n "$kt" ] && curl -fsSL -o kt.tgz "https://download.kiwix.org/release/kiwix-tools/$kt" && mkdir -p kt && tar xzf kt.tgz -C kt --strip-components=1
           if command -v zimcheck > /dev/null; then
             out=$(zimcheck zim/sample.zim 2>&1); code=$?
-            echo "$out" | head -40 | while IFS= read -r l; do echo "::notice::zimcheck: $l"; done
+            echo "::notice::zimcheck output: $(echo "$out" | grep -v INFO | tr '\n' '|' | head -c 1500)"
             [ $code -ne 0 ] && bad "zimcheck reported problems (exit $code)"
           else
             bad "zimcheck could not be downloaded"
