@@ -4,8 +4,9 @@
 GitHub: `Stormchyld2/Cindrix-Ops`, public. Mockups are in `mockups/`, docs in `docs/`. Code will go in `app/`, `launcher/`, and `android/`.
 
 ## Builds (GitHub Actions)
-- A Windows job builds the portable folder and a zip.
-- An Android job builds the APK.
+- A Windows job builds the Tauri app as a portable folder and a zip.
+- An Android job builds the APK with the Tauri Android toolchain.
+- A test job runs the Rust tests and the safety tests (`tests/safety/dosing.json`) on every change.
 - **The finished drive includes everything, built in.** Models, library archives, and US street and topo maps are all on the drive, so it works fully offline with nothing to download. Only satellite counties are added by the user afterward.
 - **The repository holds the recipe, not the big files.** GitHub rejects files over 100 MB and is not meant for tens of gigabytes. A build script downloads each item from its original source, checks it, and assembles the complete drive folder, recording exactly which edition of each source was used. The result is the drive image: a folder you copy onto the stick.
 - The script runs on your Windows PC (my workspace can't download large files). GitHub Actions builds the app and the APK; the full drive image is assembled locally.
