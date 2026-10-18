@@ -12,7 +12,8 @@
   import { modelStatus, libraryStatus, type ModelStatus } from './lib/api';
   let ms: ModelStatus | null = $state(null);
   let sharing = $state(false);
-  async function poll() { ms = await modelStatus(); sharing = (await libraryStatus()).shared; }
+  let online = $state(false);
+  async function poll() { ms = await modelStatus(); const l = await libraryStatus(); sharing = l.shared; online = l.online; }
   onMount(() => { const t = setInterval(poll, 3000); poll(); return () => clearInterval(t); });
 
   type Group = 'Ask' | 'Library' | 'Maps' | 'Plan' | 'Settings';
@@ -99,7 +100,7 @@
   <footer>
     <span><b class="dot">●</b> Library on this drive</span>
     <span>Model: {ms?.state === 'ready' ? ms.model : ms?.state === 'loading' ? 'loading…' : 'none loaded'}</span>
-    <span class:warn-text={sharing}>{sharing ? 'Sharing the library with your network (read only). Everything else stays on this device.' : 'This app only talks to itself on this device.'}</span>
+    <span class:warn-text={sharing || online}>{online ? 'Saving a website: the app is using the internet right now, and only for that.' : sharing ? 'Sharing the library with your network (read only). Everything else stays on this device.' : 'This app only talks to itself on this device.'}</span>
     <span class="right">Sample content</span>
   </footer>
 </div>

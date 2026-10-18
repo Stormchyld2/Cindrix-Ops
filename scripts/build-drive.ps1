@@ -1,10 +1,18 @@
 # Fills the library folder of a Cindrix folder/drive with Kiwix archives.
-# Usage:  powershell -File scripts\build-drive.ps1 -Target D:\Cindrix
+# Usage:  powershell -File scripts\build-drive.ps1 -Target D:\Cindrix [-Edition go|vault] [-Name 'My drive']
 # Needs internet. Large downloads (Wikipedia is several GB). Nothing here is tested by a person yet.
-param([Parameter(Mandatory=$true)][string]$Target)
+param(
+  [Parameter(Mandatory=$true)][string]$Target,
+  [ValidateSet('go','vault')][string]$Edition = 'go',
+  [string]$Name = ''
+)
 $ErrorActionPreference = 'Stop'
 $lib = Join-Path $Target 'library'
 New-Item -ItemType Directory -Force -Path $lib | Out-Null
+# The marker file is how the program finds this drive on any computer, whatever drive letter it gets.
+if (-not $Name) { $Name = if ($Edition -eq 'vault') { 'Cindrix Vault' } else { 'Cindrix Go' } }
+$marker = '{ "name": "' + $Name + '", "edition": "' + $Edition + '" }'
+Set-Content -Path (Join-Path $Target 'cindrix-drive.json') -Value $marker -Encoding UTF8
 $base = 'https://download.kiwix.org/zim'
 # project folder on download.kiwix.org, filename prefix (latest dated file is picked)
 $wanted = @(

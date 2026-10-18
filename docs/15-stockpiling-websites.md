@@ -25,3 +25,29 @@ These commands come from the Zimit project's page. I have not run them. Zimit lo
 
 ## How the assistant reads archives
 The assistant sends your question to the library reader, takes the best-matching articles, and then picks the section of each article that matches best (not just the introduction). It quotes only those sections and names the archive and article. A .zim file made without a search index cannot be searched this way. Zimit and Wikipedia-style archives normally include one.
+
+## Saving a website from inside the app (built, not yet run by a person)
+
+Archives tab → **Save a website**. Give it an address, pick how much (the whole site, one folder,
+or a page limit) and a size limit, and press the button. The program:
+
+1. reads the site's `robots.txt` and obeys it, and waits about 0.6 seconds between requests;
+2. follows the site's own links (never to other sites), fetching pictures, style sheets and fonts
+   from any host the pages use;
+3. drops scripts, rewrites every link to point inside the archive, and writes a `.zim` file into
+   the library folder, with a front page that lists everything saved;
+4. keeps a plain-text copy in `library/web-text/` so the assistant can answer from it (the writer
+   cannot build Kiwix's own full-text index, so Kiwix's search box finds saved sites by title only).
+
+Limits, stated plainly: sites that need JavaScript to show their content come out empty; logins are
+not supported; videos are skipped if over 25 MB per file; archives are not compressed, so they are
+larger than Zimit's. If a site matters and it comes out wrong, use Zimit (above), which drives a real
+browser. The core logic is tested with a made-up website; the CI job `zim-check` opens a sample
+archive with the real `zimcheck` and `kiwix-serve`.
+
+## Finding the drive
+
+A Cindrix drive has a small file, `cindrix-drive.json`, in its top folder (or in a `Cindrix` folder
+there). The program looks for it on every drive letter (or mount point) at start and every few
+seconds until it finds one, so the drive can be any letter on any computer. If the program itself
+runs from the drive, that drive is used. The build script writes the file (`-Edition go|vault`).

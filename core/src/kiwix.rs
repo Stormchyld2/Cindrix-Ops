@@ -150,7 +150,7 @@ pub fn parse_search(xml: &str) -> Vec<(String, String)> {
 
 /// Plain text from an article's HTML: drops scripts, styles and tags, keeps paragraph breaks.
 pub fn html_to_text(html: &str) -> String {
-    let lower = html.to_lowercase();
+    let lower = html.to_ascii_lowercase();
     let mut out = String::new();
     let mut i = 0;
     let b = html.as_bytes();

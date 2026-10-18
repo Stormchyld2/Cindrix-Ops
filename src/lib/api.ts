@@ -226,13 +226,74 @@ export async function marksSetLast(book: string, page: number): Promise<void> {
 }
 
 // ---------- archives (ZIM files) and sharing ----------
-export type LibraryStatus = { archives: string[]; ready: boolean; url: string | null; shared: boolean; lan_url: string | null };
+export type ArchiveInfo = { file: string; mb: number; articles: number; saved_site: boolean; note: string };
+export type DriveInfo = { name: string; edition: string; path: string };
+export type LibraryStatus = {
+  archives: ArchiveInfo[];
+  ready: boolean;
+  url: string | null;
+  shared: boolean;
+  lan_url: string | null;
+  drive: DriveInfo | null;
+  folder: string;
+  online: boolean;
+};
 
 export async function libraryStatus(): Promise<LibraryStatus> {
   if (inTauri) return call<LibraryStatus>('library_status');
-  return { archives: [], ready: false, url: null, shared: false, lan_url: null };
+  return { archives: [], ready: false, url: null, shared: false, lan_url: null, drive: null, folder: '', online: false };
 }
 
 export async function libraryShare(enable: boolean): Promise<void> {
   if (inTauri) await call<void>('library_share', { enable });
+}
+
+export async function driveRescan(): Promise<void> {
+  if (inTauri) await call<void>('drive_rescan');
+}
+
+export type CrawlStatus = {
+  running: boolean;
+  phase: string;
+  pages: number;
+  files: number;
+  mb: number;
+  queued: number;
+  current: string;
+  failed: number;
+  finished: boolean;
+  ok: boolean;
+  message: string;
+  file: string;
+  blocked: number;
+  hit_limit: boolean;
+};
+const idleCrawl: CrawlStatus = { running: false, phase: '', pages: 0, files: 0, mb: 0, queued: 0, current: '', failed: 0, finished: false, ok: false, message: '', file: '', blocked: 0, hit_limit: false };
+
+export async function crawlStart(url: string, name: string, section: boolean, maxPages: number, maxMb: number): Promise<void> {
+  if (!inTauri) throw 'Saving websites works in the desktop app, not in the browser preview.';
+  await call<void>('crawl_start', { url, name, section, maxPages, maxMb });
+}
+export async function crawlStatus(): Promise<CrawlStatus> {
+  if (inTauri) return call<CrawlStatus>('crawl_status');
+  return idleCrawl;
+}
+export async function crawlCancel(): Promise<void> {
+  if (inTauri) await call<void>('crawl_cancel');
+}
+
+export type CopyStatus = { running: boolean; finished: boolean; ok: boolean; name: string; copied_mb: number; total_mb: number; message: string };
+const idleCopy: CopyStatus = { running: false, finished: false, ok: false, name: '', copied_mb: 0, total_mb: 0, message: '' };
+
+/** Ask for a .zim file and copy it into the library. Resolves with the file name, or null if cancelled. */
+export async function archiveAdd(): Promise<string | null> {
+  if (!inTauri) throw 'Adding archives works in the desktop app, not in the browser preview.';
+  return call<string | null>('archive_add');
+}
+export async function archiveCopyStatus(): Promise<CopyStatus> {
+  if (inTauri) return call<CopyStatus>('archive_copy_status');
+  return idleCopy;
+}
+export async function archiveRemove(name: string): Promise<void> {
+  if (inTauri) await call<void>('archive_remove', { name });
 }

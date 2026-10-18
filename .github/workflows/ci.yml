@@ -83,6 +83,64 @@ jobs:
           git commit -q -m "Screenshots for ${GITHUB_SHA}"
           git push -f origin screenshots
 
+  zim-check:
+    name: Saved-website archive opens in real Kiwix tools
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build a sample archive with the website saver
+        working-directory: core
+        run: cargo run --example make_zim -- "$RUNNER_TEMP/zim"
+      - name: Check it with zimcheck and kiwix-serve
+        shell: bash
+        run: |
+          set +e
+          fail=0
+          say() { echo "::notice::$1"; }
+          bad() { echo "::error::$1"; fail=1; }
+          cd "$RUNNER_TEMP"
+          curl -fsSL https://download.kiwix.org/release/kiwix-tools/ -o kt.html
+          kt=$(grep -oE 'kiwix-tools_linux-x86_64-[0-9.]+\.tar\.gz' kt.html | sort -uV | tail -n1)
+          curl -fsSL https://download.kiwix.org/release/zim-tools/ -o zt.html
+          zt=$(grep -oE 'zim-tools_linux-x86_64-[0-9.]+\.tar\.gz' zt.html | sort -uV | tail -n1)
+          say "tools: $kt $zt"
+          [ -n "$kt" ] && curl -fsSL -o kt.tgz "https://download.kiwix.org/release/kiwix-tools/$kt" && mkdir -p kt && tar xzf kt.tgz -C kt --strip-components=1
+          [ -n "$zt" ] && curl -fsSL -o zt.tgz "https://download.kiwix.org/release/zim-tools/$zt" && mkdir -p zt && tar xzf zt.tgz -C zt --strip-components=1
+          if [ -x zt/zimcheck ]; then
+            out=$(zt/zimcheck zim/sample.zim 2>&1); code=$?
+            echo "$out" | head -40 | while IFS= read -r l; do echo "::notice::zimcheck: $l"; done
+            [ $code -ne 0 ] && bad "zimcheck reported problems (exit $code)"
+          else
+            bad "zimcheck could not be downloaded"
+          fi
+          if [ -x kt/kiwix-serve ]; then
+            kt/kiwix-serve --port 8099 --address 127.0.0.1 zim/sample.zim > serve.log 2>&1 &
+            pid=$!
+            sleep 4
+            cat=$(curl -s "http://127.0.0.1:8099/catalog/v2/entries")
+            path=$(echo "$cat" | grep -oE 'href="/content/[^"/]+"' | head -1 | sed -E 's/href="([^"]+)"/\1/')
+            say "book path: $path"
+            check() {
+              code=$(curl -s -o body.txt -w '%{http_code}' "http://127.0.0.1:8099$1")
+              if [ "$code" = "200" ] && grep -q "$2" body.txt; then say "ok $1"; else bad "FAILED $1 -> $code (wanted: $2)"; head -c 300 body.txt | while IFS= read -r l; do echo "::notice::$l"; done; fi
+            }
+            check "$path/example.test/index.html" "Boil water"
+            check "$path/example.test/guides/water%20storage.html" "one gallon"
+            check "$path/example.test/site.css" "background"
+            check "$path/_cindrix/index.html" "All pages"
+            code=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:8099$path/example.test/pic.png")
+            [ "$code" = "200" ] && say "ok picture" || bad "picture -> $code"
+            sx=$(curl -s "http://127.0.0.1:8099/suggest?content=$(basename "$path")&term=water" | head -c 300)
+            say "suggest: $sx"
+            kill $pid 2>/dev/null
+            head -20 serve.log | while IFS= read -r l; do echo "::notice::serve: $l"; done
+          else
+            bad "kiwix-serve could not be downloaded"
+          fi
+          exit $fail
+
   windows:
     name: Windows app build
     runs-on: windows-latest
@@ -123,6 +181,7 @@ jobs:
           else
             echo "::warning::kiwix-tools not found; the big library will not work in this build"
           fi
+          printf '{ "name": "Cindrix Ops", "edition": "go" }\r\n' > out/Cindrix/cindrix-drive.json
           printf 'Put .zim library files (from Kiwix) in this folder.\r\n' > out/Cindrix/library/README.txt
           if [ ! -f out/Cindrix/engines/llama-server.exe ]; then echo "::error::llama-server.exe missing: $(ls -R out/Cindrix/engines | tr '\n' ' ')"; exit 1; fi
           printf 'Put a Qwen3.5 .gguf model file in this folder (for example a 2B or 4B Q4 file).\r\n' > out/Cindrix/models/README.txt

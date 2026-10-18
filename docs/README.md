@@ -17,5 +17,6 @@ Status: first draft, before any code. Items marked **TO TEST** have not been tri
 13. [Run the first slice](13-run-the-first-slice.md)
 14. [Content plan: real books and our own writing](14-content-plan.md)
 15. [Stockpiling websites as .zim files](15-stockpiling-websites.md)
+16. [Vault server on an old Fire tablet](16-vault-on-a-fire-tablet.md)
 
 Mockups of every screen are in [`../mockups`](../mockups).
