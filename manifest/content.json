@@ -166,6 +166,66 @@
       "tier": "all",
       "source_url": null,
       "sha256": null
+    },
+    {
+      "id": "usda-home-canning",
+      "name": "USDA Complete Guide to Home Canning (PDF)",
+      "category": "library",
+      "license": "US government work",
+      "size_estimate_gb": 0.05,
+      "required": false,
+      "tier": "all",
+      "source_url": "https://nchfp.uga.edu/",
+      "sha256": null,
+      "status": "verify license before release"
+    },
+    {
+      "id": "twdb-rainwater",
+      "name": "Texas Manual on Rainwater Harvesting (PDF)",
+      "category": "library",
+      "license": "Texas state publication",
+      "size_estimate_gb": 0.02,
+      "required": false,
+      "tier": "all",
+      "source_url": "https://www.twdb.texas.gov/publications/brochures/conservation/doc/RainwaterHarvestingManual_3rdedition.pdf",
+      "sha256": null,
+      "status": "verify license before release"
+    },
+    {
+      "id": "nuclear-war-survival-skills",
+      "name": "Nuclear War Survival Skills (Kearny, ORNL)",
+      "category": "library",
+      "license": "Released to the public; verify",
+      "size_estimate_gb": 0.03,
+      "required": false,
+      "tier": "all",
+      "source_url": "https://apps.dtic.mil/sti/pdfs/ADA328301.pdf",
+      "sha256": null,
+      "status": "verify license before release"
+    },
+    {
+      "id": "psych-first-aid",
+      "name": "Psychological First Aid Field Operations Guide, 2nd ed.",
+      "category": "library",
+      "license": "US government work",
+      "size_estimate_gb": 0.01,
+      "required": false,
+      "tier": "all",
+      "source_url": "https://www.samhsa.gov/resource/dbhis/psychological-first-aid-field-operations-guide-2nd-edition",
+      "sha256": null,
+      "status": "verify license before release"
+    },
+    {
+      "id": "army-tm-9-8000",
+      "name": "Army TM 9-8000 Principles of Automotive Vehicles",
+      "category": "library",
+      "license": "US government work",
+      "size_estimate_gb": 0.1,
+      "required": false,
+      "tier": "all",
+      "source_url": "https://everyspec.com/ARMY/TM-Tech-Manual/TM_9-8000_CHG-1_48512/",
+      "sha256": null,
+      "status": "verify license before release"
     }
   ]
 }
