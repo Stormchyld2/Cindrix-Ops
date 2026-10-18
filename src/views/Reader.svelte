@@ -96,7 +96,7 @@
       const pg = await doc.getPage(page);
       if (mine !== renderId) return;
       const base = pg.getViewport({ scale: 1 });
-      const avail = Math.max(240, wrap.clientWidth - 8);
+      const avail = Math.max(240, wrap.clientWidth - 28);
       const scale = (avail / base.width) * zoom;
       const dpr = window.devicePixelRatio || 1;
       const vp = pg.getViewport({ scale: scale * dpr });

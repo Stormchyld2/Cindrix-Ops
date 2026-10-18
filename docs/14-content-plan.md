@@ -54,3 +54,11 @@ Idea: a Kindle-like shelf inside Library, mockups `Shelf` and `Reader`.
 - **Reader features.** Contents, search in book, text size, night mode, bookmarks, highlights, notes, jump to page, "Ask about this page", resume where you left off.
 - **My own books.** "Add my own" copies a user's file into `my-library/`.
 - **Android.** WebView on Android cannot show PDFs by itself, but pdf.js works in both.
+
+## Adding your own books (built)
+
+The Shelf has "+ Add a book" and accepts drag and drop. It takes PDF, Markdown and text files, up to 400 MB each, and refuses anything else or a file that says PDF but is not one. The same file twice is refused. Files are copied to `user/my-library/books/` under a safe name (`u1.pdf`), the list is `books.csv`, and bookmarks, notes and the reading position are `user/marks.csv`.
+
+When a PDF is opened the reader reads its text page by page in the background, which makes search inside the book work, and saves it once to `user/my-library/text/` so the assistant can use the book. Answers cite the book and page. The medication rule still applies to everything the assistant says, including answers drawn from the person's own books.
+
+Known limits: scanned PDFs without a text layer can be read but not searched; PDFs that rely on special fonts or Asian-language character maps may show with substitute fonts until those files are bundled with the app; highlights are not built yet; books are not deleted by the app until the person chooses Remove.

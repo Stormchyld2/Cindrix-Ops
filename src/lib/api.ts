@@ -174,7 +174,8 @@ export async function shelfAdd(file: File, category = ''): Promise<Book> {
   const kind = lower.endsWith('.pdf') ? 'pdf' : lower.endsWith('.md') ? 'md' : lower.endsWith('.txt') ? 'txt' : null;
   if (!kind) throw 'Only PDF, Markdown (.md) and text (.txt) books can be added.';
   if (kind === 'pdf' && String.fromCharCode(...bytes.slice(0, 5)) !== '%PDF-') throw 'That file says it is a PDF but does not look like one.';
-  const title = file.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim() || 'Untitled';
+  let title = file.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim() || 'Untitled';
+  if (title === title.toLowerCase()) title = title.replace(/\b\w/g, (c) => c.toUpperCase());
   const meta: Book = { id: 'u' + (memBooks.length + 1), title, author: '', category: category || 'Mine', kind, added: new Date().toISOString().slice(0, 10), license: 'Added by you', mine: true, searchable: false, last_page: 1 };
   memBooks.push({ meta, bytes });
   return meta;

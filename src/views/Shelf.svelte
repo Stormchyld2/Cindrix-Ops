@@ -188,7 +188,7 @@
   .cover { position: relative; aspect-ratio: 3 / 4; border-radius: 10px; border: 1px solid var(--line2); padding: 14px 12px; display: flex; flex-direction: column; justify-content: space-between; text-align: left; color: var(--text); overflow: hidden; }
   .cover:hover { border-color: var(--blue); }
   .spine { position: absolute; left: 0; top: 0; bottom: 0; width: 8px; background: #00000055; }
-  .t { font-family: var(--display); font-weight: 700; font-size: 20px; line-height: 1.05; letter-spacing: .05em; text-transform: uppercase; padding-left: 6px; overflow-wrap: anywhere; }
+  .t { font-family: var(--display); font-weight: 700; font-size: 18px; line-height: 1.05; letter-spacing: .04em; text-transform: uppercase; padding-left: 6px; overflow-wrap: break-word; hyphens: auto; min-width: 0; }
   .k { font-family: var(--mono); font-size: 10px; letter-spacing: .1em; color: #ece7dea0; padding-left: 6px; text-transform: uppercase; }
   .meta { font-size: 12px; color: var(--muted); }
   .small { gap: 6px; }

@@ -49,9 +49,9 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
     name: 'where_there_is_no_doctor.pdf', mimeType: 'application/pdf',
     buffer: makePdf([['A book I added myself', 'Page one of the sample'], ['Cool a burn with clean running water', 'Page two of the sample'], ['Page three of the sample']]),
   });
-  await page.getByText(/Added: where there is no doctor/).waitFor();
+  await page.getByText(/Added: Where There Is No Doctor/).waitFor();
   await shoot(page, `${label}-1c-shelf-added`);
-  await page.getByRole('button', { name: /Open where there is no doctor/ }).click();
+  await page.getByRole('button', { name: /Open Where There Is No Doctor/ }).click();
   await page.waitForTimeout(1200);
   await shoot(page, `${label}-1d-reader`);
   await page.getByRole('button', { name: 'Next ›' }).click();

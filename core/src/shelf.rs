@@ -67,7 +67,23 @@ pub fn title_from_filename(name: &str) -> String {
     };
     let t: String = stem.chars().map(|c| if c == '_' || c == '-' { ' ' } else { c }).collect();
     let t = t.split_whitespace().collect::<Vec<_>>().join(" ");
-    if t.is_empty() { "Untitled".to_string() } else { t }
+    if t.is_empty() {
+        return "Untitled".to_string();
+    }
+    if t.chars().any(|c| c.is_uppercase()) {
+        return t;
+    }
+    // all lower case file name: make it read like a title
+    t.split(' ')
+        .map(|w| {
+            let mut c = w.chars();
+            match c.next() {
+                Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
+                None => String::new(),
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 /// Only these kinds can go on the shelf. Returns the lower-case extension.
@@ -314,7 +330,8 @@ mod tests {
 
     #[test]
     fn titles_from_file_names() {
-        assert_eq!(title_from_filename("where_there_is-no__doctor.pdf"), "where there is no doctor");
+        assert_eq!(title_from_filename("where_there_is-no__doctor.pdf"), "Where There Is No Doctor");
+        assert_eq!(title_from_filename("FM 21-76-1 Survival.pdf"), "FM 21 76 1 Survival");
         assert_eq!(title_from_filename("My Book (2).PDF"), "My Book (2)");
         assert_eq!(title_from_filename(".pdf"), "Untitled");
     }
