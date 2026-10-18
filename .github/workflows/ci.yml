@@ -32,7 +32,17 @@ jobs:
         with:
           node-version: 22
       - run: npm install
-      - run: npm run check
+      - name: Type check
+        shell: bash
+        run: |
+          set +e
+          npm run check > check.txt 2>&1
+          code=$?
+          if [ $code -ne 0 ]; then
+            grep -E "Error|error" check.txt | head -15 | while IFS= read -r l; do echo "::error::${l}"; done
+            tail -5 check.txt | while IFS= read -r l; do echo "::error::tail: ${l}"; done
+          fi
+          exit $code
       - run: npm run build
 
   screenshots:
