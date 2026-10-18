@@ -20,8 +20,8 @@ Cindrix/
     family.json
     inventory.csv
     saved-maps/              one folder per map: map.json, picture.png, route.gpx
-    drills/                  progress and debrief notes
-    binder/                  last built binder (PDF)
+    drills/                  progress (json) and debrief notes (md)
+    binder/                  last built binder (pdf, export only)
     settings.json
     backups/                 dated copies, made before risky changes
   LICENSES/                  full license text for every component and content source
@@ -29,7 +29,13 @@ Cindrix/
 ```
 
 ## Rules for user files
-- **Open formats:** JSON for structured data, CSV for the inventory, GPX for routes and waypoints, PNG and PDF for pictures and print.
+- **Five formats only for stored data:** JSON, MD, CSV, PNG and JPEG.
+  - **JSON:** structured data (family, settings, saved map contents, drill progress).
+  - **MD (Markdown):** anything written to be read: notes, drill debriefs, emergency cards, the user guide.
+  - **CSV:** the inventory (opens in any spreadsheet).
+  - **PNG:** exported map pictures and screenshots.
+  - **JPEG:** photos, including NAIP aerial tiles.
+  - **Export-only extras, not used for storage:** GPX (so phone map apps can open a route) and PDF (printing the binder). Say if you want them dropped.
 - **Safe writes:** write to a temporary file, then rename, so a power loss never leaves a half-written file.
 - **Backups:** copy the previous version into `user/backups/` before saving over family data or inventory.
 - **Versioned:** every JSON file has a `"version"` number so later releases can migrate it.
@@ -43,7 +49,8 @@ One row per item: id, category, name, location, quantity, unit, use per day, use
 Each saved map is a folder with:
 - `map.json`: view, pins, rendezvous points, route lines, no-go areas, labels
 - `picture.png`: the exported picture
-- `route.gpx`: optional, for phone map apps
+- `notes.md`: written notes for the map
+- `route.gpx`: optional export, for phone map apps
 
 ## Family file
 Names, conditions, medications as written by the doctor, allergies, contacts. An optional passphrase lock is **OPEN** (decision 2). Until it is decided, the interface warns that the drive is not encrypted.
