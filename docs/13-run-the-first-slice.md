@@ -44,3 +44,14 @@ cargo test
 - Connect llama.cpp (Windows first) behind the `Model` trait in `core/src/pipeline.rs`.
 - Android hello-world build.
 - Portable build check: copy the exe and `content/` to a USB folder and run it.
+
+
+## Update: the chat engine
+
+The Windows download now also contains:
+
+- `engines/` with `llama-server.exe` (llama.cpp, MIT) and Kiwix's `kiwix-serve.exe`. Both listen on 127.0.0.1 only and are stopped when the app closes.
+- `models/` (empty). Put a Qwen3.5 `.gguf` file here. The app picks the size from your memory (2B under 12 GB, 4B from 12 GB). Ask shows "Model ready" when it has loaded.
+- `library/` (empty). Put Kiwix `.zim` files here, or run `scripts/build-drive.ps1 -Target <folder>` to download them. Answers then draw on them as well as on the small built-in library.
+
+Honest status: the code is tested with fake servers and builds on GitHub, but nobody has run it with a real model or real archives yet. The Kiwix search output format is parsed from documentation, so it is the most likely thing to need a fix on first real use.
