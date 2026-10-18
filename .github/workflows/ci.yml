@@ -95,12 +95,10 @@ jobs:
           cp src-tauri/target/release/cindrix-ops.exe out/Cindrix/
           cp -r content out/Cindrix/content
           mkdir -p out/Cindrix/models out/Cindrix/engines
-          gh api repos/ggml-org/llama.cpp/releases/latest --jq '.assets[].name' | tee assets.txt
-          name=$(grep -E 'bin-win-cpu-x64\.zip$' assets.txt || true)
-          name=${name%%$'\n'*}
-          if [ -z "$name" ]; then echo "::error::no matching llama.cpp asset: $(tr '\n' ' ' < assets.txt)"; exit 1; fi
-          echo "llama.cpp asset: $name"
-          gh release download --repo ggml-org/llama.cpp --pattern "$name" --output llama.zip
+          url=$(gh api "repos/ggml-org/llama.cpp/releases?per_page=15" --jq '[.[].assets[] | select(.name | test("bin-win-cpu-x64\\.zip$"))][0].browser_download_url')
+          if [ -z "$url" ] || [ "$url" = "null" ]; then echo "::error::no llama.cpp windows cpu asset found"; exit 1; fi
+          echo "llama.cpp: $url"
+          curl -fsSL -o llama.zip "$url"
           powershell -NoProfile -Command "Expand-Archive -Path llama.zip -DestinationPath llama-extract"
           ls llama-extract || true
           cp -r llama-extract/* out/Cindrix/engines/
