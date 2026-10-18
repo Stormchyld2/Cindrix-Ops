@@ -72,3 +72,13 @@ Sharing: off by default. When turned on (with a confirmation), the library progr
 Which archives to bundle: Wikipedia, WikiMed, Wikibooks, Wikisource and Project Gutenberg (public domain), and Stack Exchange archives such as DIY, Home Improvement, Outdoors and Gardening (CC BY-SA, attribution required). Skip anything under a non-commercial license (for example wikiHow and iFixit). The build script should read each ZIM's license from its metadata and refuse non-commercial ones.
 
 Left out on purpose: manuals for explosives, booby traps, improvised munitions, weapon conversions and similar material, even where an old government copy exists.
+
+## Save a website from inside the app (design, not built)
+
+Goal: the person pastes a web address, the app saves that site for offline reading.
+
+- **Crawler in the app.** Written in Rust with a small HTTP client. It fetches pages on the same site only, follows links to a depth and page limit the person sets, saves the HTML and the images, CSS and scripts the page needs, rewrites links to point at the saved copies, obeys robots.txt, waits between requests, and shows progress with a Stop button. Works for ordinary and documentation-style sites. Sites that build their pages with JavaScript, need a login or block crawlers will come out partly or fully empty. A headless-browser mode could be added later.
+- **Where it is saved.** First version: a folder per site in `library/sites/<name>/`, served read-only by the same local library server, listed in the Archives tab, with its text also written out as Markdown so the assistant can search it. A true `.zim` file is the better long-term format because other Kiwix readers can open it, but writing one means implementing the ZIM format (or bundling libzim), which is a second, larger step.
+- **Honesty.** This is the one feature that reaches the internet on purpose. It only runs when the person starts it, the footer shows "Internet in use: saving a website" while it runs, and the sentence "This app only talks to itself on this device" is replaced for that time.
+- **Permission.** The person is saving a private copy for themselves. The screen says so, and says that the site's own terms apply. We never ship such copies on drives we sell.
+- **Size.** A limit in pages and megabytes is required, with a default, so a link-heavy site cannot fill a stick.
