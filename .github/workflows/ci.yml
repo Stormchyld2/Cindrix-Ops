@@ -14,6 +14,15 @@ jobs:
         working-directory: core
         run: cargo test --all-targets
 
+  crypto:
+    name: Passphrase lock tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - working-directory: crypto
+        run: cargo test
+
   interface:
     name: Interface type check and build
     runs-on: ubuntu-latest

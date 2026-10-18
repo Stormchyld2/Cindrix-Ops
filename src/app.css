@@ -21,3 +21,24 @@ html, body { margin: 0; background: var(--bg); color: var(--text);
   font: 14px/1.5 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif; }
 button { font: inherit; color: inherit; cursor: pointer; }
 a { color: var(--link); }
+
+/* shared pieces */
+h1 { margin: 0; font-family: var(--display); letter-spacing: .06em; font-weight: 600; font-size: 30px; }
+h2 { margin: 0; font-family: var(--display); letter-spacing: .08em; font-weight: 600; }
+.sub { color: var(--muted); max-width: 720px; margin: 2px 0 0; }
+.muted { color: var(--muted); }
+.label { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; color: var(--muted); }
+.panel { padding: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.btn { padding: 9px 16px; border-radius: 8px; border: 1px solid var(--line2); background: transparent; color: var(--text); font-size: 13px; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #1a1208; font-weight: 700; }
+.btn.danger { border-color: #c0432f; background: #3a1a14; color: #ff9a86; font-weight: 700; }
+.btn:disabled { opacity: .5; cursor: default; }
+.input, select.input, textarea.input { padding: 9px 10px; border-radius: 8px; border: 1px solid var(--line2); background: var(--panel2); color: var(--text); font: inherit; }
+textarea.input { width: 100%; min-height: 70px; resize: vertical; }
+.badge { padding: 2px 8px; border-radius: 999px; border: 1px solid #6b4a1c; background: #2a1f10; color: #f0b35a; font-size: 11px; }
+.ok { color: var(--ok); } .check { color: #f0b35a; } .act { color: var(--danger); }
+.warn { padding: 10px 12px; border-radius: 8px; background: #211b12; border: 1px solid #5a4219; font-size: 13px; color: #d8c9a8; }
+dialog { background: var(--panel); color: var(--text); border: 1px solid var(--line2); border-radius: 14px; padding: 0; width: min(520px, 94vw); }
+dialog::backdrop { background: #000a; }
+.sr { position: absolute; left: -9999px; }
