@@ -94,12 +94,13 @@ jobs:
           cp src-tauri/target/release/cindrix-ops.exe out/Cindrix/
           cp -r content out/Cindrix/content
           mkdir -p out/Cindrix/models out/Cindrix/engines
-          url=$(gh api repos/ggml-org/llama.cpp/releases/latest --jq '.assets[] | select(.name | test("bin-win-cpu-x64\\.zip$")) | .browser_download_url' | head -n1)
-          echo "llama.cpp: $url"
-          curl -fsSL -o llama.zip "$url"
-          unzip -q llama.zip -d llama-extract
-          cp -r llama-extract/* out/Cindrix/engines/ || true
-          find out/Cindrix/engines -name 'llama-server.exe' | head -n1 | xargs -I{} cp {} out/Cindrix/engines/llama-server.exe
+          gh api repos/ggml-org/llama.cpp/releases/latest --jq '.assets[].name' | tee assets.txt
+          name=$(grep -E 'bin-win-cpu-x64\.zip$' assets.txt | head -n1)
+          echo "llama.cpp asset: $name"
+          gh release download --repo ggml-org/llama.cpp --pattern "$name" --output llama.zip
+          powershell -NoProfile -Command "Expand-Archive -Path llama.zip -DestinationPath llama-extract"
+          find llama-extract | head -n 40
+          cp -r llama-extract/* out/Cindrix/engines/
           test -f out/Cindrix/engines/llama-server.exe
           printf 'Put a Qwen3.5 .gguf model file in this folder (for example a 2B or 4B Q4 file).\r\n' > out/Cindrix/models/README.txt
           printf 'Run cindrix-ops.exe. Needs Microsoft WebView2 (already on Windows 11). Put a model file in the models folder.\r\n' > out/Cindrix/README.txt
