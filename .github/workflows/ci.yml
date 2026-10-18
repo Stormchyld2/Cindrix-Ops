@@ -106,6 +106,7 @@ jobs:
           curl -fsSL https://download.kiwix.org/release/zim-tools/ -o zt.html
           zt=$(grep -oE 'zim-tools_linux-x86_64-[0-9.]+\.tar\.gz' zt.html | sort -uV | tail -n1)
           say "tools: $kt $zt"
+          grep -oE 'href="[^"]*linux[^"]*"' zt.html | head -8 | while IFS= read -r l; do echo "::notice::zim-tools listing: $l"; done
           [ -n "$kt" ] && curl -fsSL -o kt.tgz "https://download.kiwix.org/release/kiwix-tools/$kt" && mkdir -p kt && tar xzf kt.tgz -C kt --strip-components=1
           [ -n "$zt" ] && curl -fsSL -o zt.tgz "https://download.kiwix.org/release/zim-tools/$zt" && mkdir -p zt && tar xzf zt.tgz -C zt --strip-components=1
           if [ -x zt/zimcheck ]; then
