@@ -1,12 +1,12 @@
 # 17. Three products, one code base
 
-Plan, not built. Working names; the spelling and final names are the owner's call.
+Plan, not built. Names chosen by the owner: Cindrix Ops Go, Cindrix Ops Vault, Cindrix Ops Hub (spelling "Cindrix" vs "Cindrex" still to be confirmed).
 
 | Product | What it is | Runs on | Content size |
 |---|---|---|---|
-| **Cindrix Go** | The full app on a 128 GB USB stick: assistant, library, shelf, cards, drills, binder, maps | Windows PC (Android later) | up to 100 GB |
-| **Cindrix Vault** (or "Pro") | The same app on a 4 TB external drive, with the big archives and saved websites | Windows PC | up to 3400 GB |
-| **Cindrix Hub** (the "internet in a box") | A server only: it holds the archives and shares them over its own Wi-Fi to phones and laptops. No assistant. | A small always-on device (Raspberry Pi, mini PC, old tablet) | whatever the drive holds |
+| **Cindrix Ops Go** | The full app on a 128 GB USB stick: assistant, library, shelf, cards, drills, binder, maps | Windows PC (Android later) | up to 100 GB |
+| **Cindrix Ops Vault** | The same app on a 4 TB external drive, with the big archives and saved websites | Windows PC | up to 3400 GB |
+| **Cindrix Ops Hub** (the "internet in a box") | A server only: it holds the archives and shares them over its own Wi-Fi to phones and laptops. No assistant. | A small always-on device (Raspberry Pi, mini PC, old tablet) | whatever the drive holds |
 
 ## Not three programs
 
