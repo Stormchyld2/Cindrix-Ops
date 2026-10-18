@@ -51,9 +51,35 @@ export async function listCards(): Promise<Card[]> {
   ];
 }
 
-export async function ask(question: string): Promise<Reply> {
-  if (inTauri) return call<Reply>('ask', { question });
-  return { kind: 'NotFound', text: 'Browser preview only. Run the desktop app to ask the library.', sources: [], card: null };
+export type ModelStatus = { state: 'none' | 'loading' | 'ready' | 'error'; model: string; size: string; message: string; ram_gb: number };
+export type ModelChoice = { file: string; size: string; recommended: boolean };
+type StreamEvent = { replace: boolean; text: string };
+
+/** Ask a question. onText is called as the answer arrives: replace=true means swap everything shown. */
+export async function ask(question: string, onText: (text: string, replace: boolean) => void): Promise<Reply> {
+  if (inTauri) {
+    const { Channel } = await import('@tauri-apps/api/core');
+    const ch = new Channel<StreamEvent>();
+    ch.onmessage = (e) => onText(e.text, e.replace);
+    return call<Reply>('ask_stream', { question, onEvent: ch });
+  }
+  const text = 'Browser preview only. Run the desktop app to ask the library.';
+  onText(text, true);
+  return { kind: 'NotFound', text, sources: [], card: null };
+}
+
+export async function modelStatus(): Promise<ModelStatus> {
+  if (inTauri) return call<ModelStatus>('model_status');
+  return { state: 'none', model: '', size: '', message: 'Browser preview: no model.', ram_gb: 0 };
+}
+
+export async function listModels(): Promise<ModelChoice[]> {
+  if (inTauri) return call<ModelChoice[]>('list_models');
+  return [];
+}
+
+export async function selectModel(file: string): Promise<void> {
+  if (inTauri) await call<void>('select_model', { file });
 }
 
 export async function inventoryList(): Promise<Item[]> {

@@ -63,7 +63,7 @@ fn library_sample_answers_boiling_question() {
     let hits = retrieval::search(&dir, "How long do I boil water to make it safe?", 3);
     assert!(!hits.is_empty());
     assert_eq!(hits[0].heading, "Boiling water");
-    assert!(prompt::build("x", &hits).unwrap().contains("rolling boil"));
+    assert!(prompt::build_parts("x", &hits).unwrap().1.contains("rolling boil"));
 }
 
 #[test]
@@ -71,7 +71,7 @@ fn unknown_question_gets_not_found_not_a_guess() {
     use cindrix_core::{prompt, retrieval};
     let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../content/library-sample");
     let hits = retrieval::search(&dir, "How do I tune a violin?", 3);
-    assert!(prompt::build("x", &hits).is_none());
+    assert!(prompt::build_parts("x", &hits).is_none());
 }
 
 #[test]

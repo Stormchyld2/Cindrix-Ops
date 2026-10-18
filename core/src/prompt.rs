@@ -10,18 +10,18 @@ If the passages do not answer the question, say so. Be short and plain. Number y
 Never give a medication amount or dose, and never tell anyone to change a dose; tell them to use \
 their doctor's written plan. For emergencies, say to call 911 first.";
 
+/// The system and user parts of the question for the model.
 /// None when there are no passages: the caller replies NOT_FOUND and does not call the model.
-pub fn build(question: &str, passages: &[Passage]) -> Option<String> {
+pub fn build_parts(question: &str, passages: &[Passage]) -> Option<(String, String)> {
     if passages.is_empty() {
         return None;
     }
-    let mut p = String::from(SYSTEM);
-    p.push_str("\n\nPassages:\n");
+    let mut user = String::from("Passages:\n");
     for (i, ps) in passages.iter().enumerate() {
-        p.push_str(&format!("[{}] ({} · {})\n{}\n\n", i + 1, ps.source, ps.heading, ps.text));
+        user.push_str(&format!("[{}] ({} · {})\n{}\n\n", i + 1, ps.source, ps.heading, ps.text));
     }
-    p.push_str(&format!("Question: {}\nAnswer:", question));
-    Some(p)
+    user.push_str(&format!("Question: {}", question));
+    Some((SYSTEM.to_string(), user))
 }
 
 /// Source labels to show under the answer.
