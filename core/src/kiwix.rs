@@ -2,7 +2,7 @@
 //! The `kiwix-serve` program serves them on this computer only (127.0.0.1); this module starts it,
 //! searches it and turns the matching articles into plain-text passages for the answer path.
 
-use crate::retrieval::Passage;
+use crate::retrieval::{self, Passage};
 use std::io::{Read, Write};
 use std::net::{TcpStream, ToSocketAddrs};
 use std::path::{Path, PathBuf};
@@ -194,7 +194,38 @@ pub fn html_to_text(html: &str) -> String {
     lines.join("\n\n")
 }
 
-/// Search the archives and return up to `limit` passages (first ~1500 characters of each article).
+/// The part of an article that best matches the question: paragraphs are grouped into chunks of
+/// about 1200 characters, each chunk is scored against the question, and the best one is returned.
+/// A long article is therefore not cut off at its introduction when the answer is further down.
+pub fn best_chunk(title: &str, text: &str, question: &str) -> String {
+    let q = retrieval::tokens(question);
+    let mut chunks: Vec<String> = Vec::new();
+    let mut cur = String::new();
+    for para in text.split("\n\n") {
+        if !cur.is_empty() && cur.len() + para.len() > 1200 {
+            chunks.push(std::mem::take(&mut cur));
+        }
+        if !cur.is_empty() {
+            cur.push_str("\n\n");
+        }
+        cur.push_str(para);
+    }
+    if !cur.is_empty() {
+        chunks.push(cur);
+    }
+    let mut best = (f64::MIN, 0usize);
+    for (i, c) in chunks.iter().enumerate() {
+        // the first chunk gets a small bonus: introductions are usually the right summary
+        let sc = retrieval::score(&q, title, c) + if i == 0 { 0.5 } else { 0.0 };
+        if sc > best.0 {
+            best = (sc, i);
+        }
+    }
+    let chosen = chunks.get(best.1).cloned().unwrap_or_default();
+    chosen.chars().take(1500).collect()
+}
+
+/// Search the archives and return up to `limit` passages. Each is the best-matching part of its article.
 pub fn search(port: u16, question: &str, limit: usize) -> Vec<Passage> {
     let path = format!("/search?pattern={}&pageLength={}&format=xml", url_encode(question), limit);
     let xml = match get(port, &path) {
@@ -209,7 +240,7 @@ pub fn search(port: u16, question: &str, limit: usize) -> Vec<Passage> {
             if text.len() < 80 {
                 continue;
             }
-            let text: String = text.chars().take(1500).collect();
+            let text = best_chunk(&title, &text, question);
             // /content/<book>/A/<article>
             let book = link.trim_start_matches("/content/").split('/').next().unwrap_or("library").replace('_', " ");
             passages.push(Passage { source: book, heading: title, text, score: 6.0 - rank as f64 });
@@ -235,6 +266,17 @@ mod tests {
     fn html_becomes_text() {
         let t = html_to_text("<html><head><style>p{}</style></head><body><h1>Title</h1><p>One <b>two</b> &amp; three</p><script>x()</script><p>Four</p></body></html>");
         assert_eq!(t, "Title\n\nOne two & three\n\nFour");
+    }
+
+    #[test]
+    fn long_articles_give_the_matching_part_not_just_the_start() {
+        let intro = "Water is a clear liquid that covers most of the earth and is used for many things every day. ".repeat(10);
+        let answer = "To purify river water, filter it through cloth and then boil it for one minute so germs are killed. ".repeat(5);
+        let filler = "Lakes and oceans have been studied by many scientists over the years in different ways. ".repeat(12);
+        let article = format!("{}\n\n{}\n\n{}", intro, filler, answer);
+        let got = best_chunk("Water", &article, "how do I purify river water by boiling");
+        assert!(got.contains("boil it for one minute"), "{}", got);
+        assert!(got.len() <= 1500);
     }
 
     #[test]

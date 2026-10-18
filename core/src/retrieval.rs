@@ -17,7 +17,7 @@ const STOP: &[&str] = &[
     "i", "my", "me", "can", "should", "for", "it", "with", "at", "be", "you", "we", "if", "when",
 ];
 
-fn tokens(s: &str) -> Vec<String> {
+pub fn tokens(s: &str) -> Vec<String> {
     s.to_lowercase()
         .split(|c: char| !c.is_alphanumeric())
         .filter(|w| w.len() > 1 && !STOP.contains(w))
