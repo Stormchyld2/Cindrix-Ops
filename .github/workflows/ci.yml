@@ -38,6 +38,8 @@ jobs:
   screenshots:
     name: Screenshots of each screen
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -56,6 +58,19 @@ jobs:
         with:
           name: screenshots
           path: shots
+      - name: Publish screenshots to the 'screenshots' branch
+        if: github.ref == 'refs/heads/main'
+        run: |
+          cp -r shots "$RUNNER_TEMP/shots"
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git checkout --orphan screenshots
+          git rm -rf --quiet .
+          cp -r "$RUNNER_TEMP/shots/." .
+          printf '# Screenshots\n\nMade by CI from the latest build of main.\n' > README.md
+          git add -A
+          git commit -q -m "Screenshots for ${GITHUB_SHA}"
+          git push -f origin screenshots
 
   windows:
     name: Windows app build
