@@ -28,7 +28,7 @@
 
 ## Network behavior
 - The interface talks to the Rust core directly, so no network port is opened for the app itself. The interface shows this honestly: "This app only talks to itself on this device." It does not claim to switch off Wi-Fi or radios.
-- The only features that use the internet are ones the user starts: downloading a satellite county or an update pack.
+- The only features that use the internet are ones the user starts: downloading a satellite county.
 
 ## Platforms
 - **Windows:** portable folder, launcher starts the servers and opens the default browser or an embedded window. Unsigned at first, so SmartScreen will warn (**TO TEST**). Code signing later.

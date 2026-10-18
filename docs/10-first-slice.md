@@ -12,7 +12,7 @@ Goal: prove the stack on real hardware before building the rest. Small, runnable
 7. A hello-world Android APK from the same code, installed on the Note 20, to test the riskiest part early.
 
 ## Out of scope for the slice
-Maps, drawing, satellite downloads, drills, binder, the Family page lock, update packs.
+Maps, drawing, satellite downloads, drills, binder, the Family page lock.
 
 ## Done means
 - Runs from a folder on the author's Windows PC with the network off.
