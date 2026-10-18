@@ -113,6 +113,10 @@
   </aside>
 
   <section class="panel main">
+    <select class="input catselect" aria-label="Category" bind:value={category}>
+      <option value="All">All categories ({items.length})</option>
+      {#each categories as c}<option value={c}>{c} ({count(c)})</option>{/each}
+    </select>
     <div class="row">
       <input class="input grow" type="search" placeholder="Search your inventory" aria-label="Search" bind:value={search} />
       <select class="input" aria-label="Show" bind:value={show}>
@@ -201,12 +205,21 @@
   .chip.on { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent); font-weight: 600; }
   .bar { padding: 8px 10px; border-radius: 10px; background: #241512; border: 1px solid #6b2a20; }
   .right { margin-left: auto; }
-  .item { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+  .item { display: grid; grid-template-columns: 24px minmax(0, 1fr) 150px 80px 70px 80px; gap: 6px 14px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
   .item input[type='checkbox'], .bar input[type='checkbox'] { width: 20px; height: 20px; accent-color: var(--accent); }
-  .name { flex: 1 1 200px; display: flex; flex-direction: column; text-align: left; background: none; border: 0; padding: 0; }
-  .qty { display: flex; align-items: center; gap: 6px; flex: 0 0 150px; }
+  .name { display: flex; flex-direction: column; text-align: left; background: none; border: 0; padding: 0; }
+  .qty { display: flex; align-items: center; gap: 6px; }
   .mini { width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--line2); background: var(--panel2); }
-  .cell { flex: 0 0 90px; }
+  .cell { white-space: nowrap; }
+  .catselect { display: none; }
+  @media (max-width: 760px) {
+    aside { display: none; }
+    .catselect { display: block; width: 100%; }
+    .item { grid-template-columns: 24px 1fr 1fr; }
+    .item .name { grid-column: 2 / 4; }
+    .item .qty { grid-column: 2; }
+    .item .cell { grid-column: auto; }
+  }
   .small { font-size: 13px; }
   .mono { font-family: var(--mono); font-size: 13px; min-width: 62px; text-align: center; }
   .dform { display: flex; flex-direction: column; gap: 10px; padding: 18px; }

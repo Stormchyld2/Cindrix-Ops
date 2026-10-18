@@ -66,6 +66,7 @@ jobs:
           git config user.email "actions@github.com"
           git checkout --orphan screenshots
           git rm -rf --quiet .
+          git clean -fdxq
           cp -r "$RUNNER_TEMP/shots/." .
           printf '# Screenshots\n\nMade by CI from the latest build of main.\n' > README.md
           git add -A
