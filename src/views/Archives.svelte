@@ -182,7 +182,7 @@
         <label>Web address
           <input class="input" type="url" placeholder="https://www.ready.gov/" bind:value={siteUrl} />
         </label>
-        <label>Name <span class="muted">(optional)</span>
+        <label><span>Name <span class="muted">(optional)</span></span>
           <input class="input" type="text" placeholder="Ready.gov" bind:value={siteName} />
         </label>
         <label>How much
@@ -221,11 +221,6 @@
     </div>
   {:else if st.archives.length > 0}
     <div class="panel"><strong>Starting the library…</strong><p class="muted">{st.archives.length} archive{st.archives.length === 1 ? '' : 's'} found. This can take a few seconds.</p></div>
-  {:else}
-    <div class="panel">
-      <strong>No archives on this drive yet.</strong>
-      <p class="muted">Put .zim files in the <code>library</code> folder next to the program, then restart. You can download them from the Kiwix library while you have internet, or run the drive build script. Only add archives whose license lets you keep a copy.</p>
-    </div>
   {/if}
 
   {#if st.ready}
