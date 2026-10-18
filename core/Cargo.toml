@@ -1,0 +1,8 @@
+[package]
+name = "cindrix-core"
+version = "0.1.0"
+edition = "2021"
+description = "Cindrix Ops core logic: safety check, cards, inventory, library search. No external dependencies on purpose, so the safety-critical code stays small and auditable."
+license = "GPL-3.0-or-later"
+
+[dependencies]

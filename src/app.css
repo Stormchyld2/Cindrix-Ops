@@ -1,0 +1,23 @@
+/* System fonts only: nothing is loaded from the internet. */
+:root {
+  --bg: #121211;
+  --panel: #1a1917;
+  --panel2: #171614;
+  --line: #2a2724;
+  --line2: #3a3631;
+  --text: #ece7de;
+  --muted: #9a9388;
+  --accent: #ff9a1f;
+  --accent-soft: #ff9a1f1f;
+  --accent-line: #ff9a1f66;
+  --link: #5aa9e6;
+  --danger: #e5533d;
+  --ok: #6fbf73;
+  --mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  --display: 'Arial Narrow', 'Segoe UI', system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--text);
+  font: 14px/1.5 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif; }
+button { font: inherit; color: inherit; cursor: pointer; }
+a { color: var(--link); }
