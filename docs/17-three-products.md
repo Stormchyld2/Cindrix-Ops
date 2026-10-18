@@ -34,3 +34,22 @@ sold, and build option 2 only if phones need our cards and drills without the PC
 2. Go: a tested 128 GB drive image.
 3. Vault: the same, with the big archives.
 4. Hub, once the first two are in people's hands.
+
+## Hub: building our own (decision: owner wants our own)
+
+Open-source starting points found (details from project pages; check each license before copying
+code, nothing has been tried):
+
+| Piece | Candidate | Notes |
+|---|---|---|
+| Serve archives | `kiwix-serve` (GPL-3.0) | Already used by the app. |
+| Search across many archives | Zimi (MIT, Python) | Web UI, JSON API, can make ZIMs, LAN sharing; Python dependency. Good to study; maybe not to ship. |
+| Own Wi-Fi network | `hostapd` + `dnsmasq`, or NetworkManager hotspot mode | Standard Linux parts. RaspAP is a ready-made admin page for them (license not confirmed). |
+| Build a Pi image | Kiwix Hotspot / "offspot" imager (GPL-3.0, github.com/offspot/imager-service) | Images up to 1 TB; Pi 3B+/4/5/400. Reference for how to pack content onto an image. |
+| Whole-box reference | Internet-in-a-Box (IIAB), community project | Admin console, maps, many apps. License not confirmed from its wiki. Study its menu and admin design. |
+
+Proposed shape: a small Rust server built on `cindrix-core` (cards, drills, shelf, search, ZIM
+writer, website saver) that serves our read-only screens to phone browsers, with `kiwix-serve`
+behind it for the archives, on a Pi or mini PC that makes its own Wi-Fi. The Hub could also run the
+website saver on a schedule when it has internet. First step when it is time: a web build of the
+existing interface plus a read-only HTTP layer over the core crate.
