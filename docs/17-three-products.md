@@ -1,6 +1,6 @@
 # 17. Three products, one code base
 
-Plan, not built. Names chosen by the owner: Cindrix Ops Go, Cindrix Ops Vault, Cindrix Ops Hub (spelling "Cindrix" vs "Cindrex" still to be confirmed).
+Plan, not built. Names chosen by the owner: Cindrix Ops Go, Cindrix Ops Vault, Cindrix Ops Hub Spelling confirmed: C-I-N-D-R-I-X.
 
 | Product | What it is | Runs on | Content size |
 |---|---|---|---|
