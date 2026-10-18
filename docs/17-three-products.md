@@ -1,6 +1,6 @@
 # 17. Three products, one code base
 
-Plan, not built. Names chosen by the owner: Cindrix Ops Go, Cindrix Ops Vault, Cindrix Ops Hub Spelling confirmed: C-I-N-D-R-I-X.
+**DECIDED (owner, 2026-10-18).** Three products: Cindrix Ops Go, Cindrix Ops Vault, Cindrix Ops Hub. The Hub is our own build, not a repackaged existing project. Not built yet. Names chosen by the owner: Cindrix Ops Go, Cindrix Ops Vault, Cindrix Ops Hub Spelling confirmed: C-I-N-D-R-I-X.
 
 | Product | What it is | Runs on | Content size |
 |---|---|---|---|
@@ -35,7 +35,7 @@ sold, and build option 2 only if phones need our cards and drills without the PC
 3. Vault: the same, with the big archives.
 4. Hub, once the first two are in people's hands.
 
-## Hub: building our own (decision: owner wants our own)
+## Hub: building our own (DECIDED)
 
 Open-source starting points found (details from project pages; check each license before copying
 code, nothing has been tried):

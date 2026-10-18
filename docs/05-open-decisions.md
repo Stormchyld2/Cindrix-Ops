@@ -15,3 +15,7 @@
 | 11 | Legal | Closed. The author has checked the licensing and the name. |
 | 12 | SERE material | Author's own work, to be reviewed before it is included. |
 | 13 | Wikipedia tier | Text only (about 10 GB) or with pictures (about 55 GB). Decide after real sizes are measured. See doc 7. |
+
+## Decided 2026-10-18
+- Three products from one code base: Cindrix Ops Go (128 GB stick, content up to 100 GB), Cindrix Ops Vault (4 TB drive, up to 3400 GB), Cindrix Ops Hub (own server for phones on its own Wi-Fi). Spelling: Cindrix. See [17](17-three-products.md).
+- The Hub is our own build on `cindrix-core` with `kiwix-serve` behind it, not a repackaged Internet-in-a-Box. Order: finish the base app, then Go, then Vault, then Hub.
