@@ -38,7 +38,7 @@
   let addMode: 'off' | 'pin' | 'rendezvous' | 'corner' = $state('off');
   let map: MLMap | null = null;
   let markers: Marker[] = [];
-  let ml: typeof import('maplibre-gl').default | null = null;
+  let ml: typeof import('maplibre-gl') | null = null;
   let protocolAdded = false;
 
   onMount(async () => {
@@ -60,7 +60,7 @@
 
   async function initMap(pack: Pack, el: HTMLDivElement) {
     try {
-      const [{ default: maplibregl }, { Protocol }, { layers, namedFlavor }] = await Promise.all([
+      const [maplibregl, { Protocol }, { layers, namedFlavor }] = await Promise.all([
         import('maplibre-gl'),
         import('pmtiles'),
         import('@protomaps/basemaps'),
