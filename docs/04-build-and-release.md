@@ -1,7 +1,7 @@
 # 4. Build and release
 
 ## Repository
-GitHub: `Stormchyld2/Cindrix-Ops`, public. Mockups are in `mockups/`, docs in `docs/`. Code will go in `app/`, `launcher/`, and `android/`.
+GitHub: `Stormchyld2/Cindrix-Ops`, public. Mockups are in `mockups/`, docs in `docs/`. Code is in `core/` (Rust core), `crypto/` (passphrase lock), `src-tauri/` (Tauri shell) and `src/` (Svelte interface); `scripts/` holds the drive build script.
 
 ## Builds (GitHub Actions)
 - A Windows job builds the Tauri app as a portable folder and a zip.

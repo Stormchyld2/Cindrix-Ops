@@ -12,8 +12,15 @@ pub struct DriveInfo {
     /// The folder that holds engines/, models/, library/ and user/.
     pub root: PathBuf,
     pub name: String,
-    /// "go", "vault", or "" when the marker does not say.
+    /// "go", "vault", "hub", or "" when the marker does not say.
     pub edition: String,
+}
+
+impl DriveInfo {
+    /// Which product this drive is. A marker that says nothing counts as Go.
+    pub fn product(&self) -> crate::product::Product {
+        crate::product::Product::from_edition(&self.edition)
+    }
 }
 
 /// Pull a string value out of the marker (a tiny flat JSON object). Not a general JSON parser:
@@ -157,6 +164,16 @@ mod tests {
         assert_eq!(d.root, b.join("Cindrix"));
         assert!(check(&c).is_none());
         assert_eq!(find_in(&[c.clone(), a.clone(), b.clone()]).len(), 2);
+    }
+
+    #[test]
+    fn marker_edition_becomes_a_product() {
+        use crate::product::Product;
+        for (word, want) in [("go", Product::Go), ("vault", Product::Vault), ("hub", Product::Hub), ("", Product::Go)] {
+            let d = tmp(&format!("prod-{}", if word.is_empty() { "none" } else { word }));
+            fs::write(d.join(MARKER), format!(r#"{{"name":"x","edition":"{}"}}"#, word)).unwrap();
+            assert_eq!(check(&d).unwrap().product(), want, "edition {:?}", word);
+        }
     }
 
     #[test]

@@ -1,3 +1,5 @@
+> **Superseded 2026-10-18 for anything beyond a first test.** The Hub is now planned as the same Cindrix program running on an Android tablet with its own hotspot and a viewer. See [17](17-three-products.md). This page stays as the stopgap: the Kiwix app alone on an old Fire tablet.
+
 # Vault server on an old Fire tablet (plan, not tested)
 
 Idea: the 4 TB Vault drive plugged into an old Amazon Fire tablet, which serves the ZIM archives

@@ -7,6 +7,7 @@ use cindrix_core::drills;
 use cindrix_core::drive::{self, DriveInfo};
 use cindrix_core::kiwix::{self, KiwixHost};
 use cindrix_core::modelhost::ModelHost;
+use cindrix_core::product::Product;
 use cindrix_core::shelf::{Book, Mark, Marks, Shelf};
 use cindrix_core::{calendar, cards, cascade, pipeline};
 use serde::{Deserialize, Serialize};
@@ -245,6 +246,38 @@ fn archive_list() -> Vec<ArchiveDto> {
 
 fn drive_dto(d: &Option<DriveInfo>) -> Option<DriveDto> {
     d.as_ref().map(|d| DriveDto { name: d.name.clone(), edition: d.edition.clone(), path: d.root.to_string_lossy().to_string() })
+}
+
+#[derive(Serialize)]
+struct ProductDto {
+    /// "go", "vault" or "hub"
+    id: &'static str,
+    name: &'static str,
+    budget_gb: Option<f64>,
+    assistant: bool,
+    library: bool,
+    maps: bool,
+    plan: bool,
+    web_saver: bool,
+    serve_archives: bool,
+}
+
+/// Which product this is, from the drive marker. No marker (for example a dev run) counts as Go.
+#[tauri::command]
+fn product_info(state: tauri::State<'_, AppState>) -> ProductDto {
+    let p = state.drive.lock().unwrap().as_ref().map(|d| d.product()).unwrap_or(Product::Go);
+    let f = p.features();
+    ProductDto {
+        id: p.id(),
+        name: p.name(),
+        budget_gb: p.budget_gb(),
+        assistant: f.assistant,
+        library: f.library,
+        maps: f.maps,
+        plan: f.plan,
+        web_saver: f.web_saver,
+        serve_archives: f.serve_archives,
+    }
 }
 
 #[tauri::command]
@@ -1018,6 +1051,7 @@ pub fn run() {
             ask_stream,
             model_status,
             library_status,
+            product_info,
             library_share,
             drive_rescan,
             drills_list,

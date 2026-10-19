@@ -19,3 +19,5 @@
 ## Decided 2026-10-18
 - Three products from one code base: Cindrix Ops Go (128 GB stick, content up to 100 GB), Cindrix Ops Vault (4 TB drive, up to 3400 GB), Cindrix Ops Hub (own server for phones on its own Wi-Fi). Spelling: Cindrix. See [17](17-three-products.md).
 - The Hub is our own build on `cindrix-core` with `kiwix-serve` behind it, not a repackaged Internet-in-a-Box. Order: finish the base app, then Go, then Vault, then Hub.
+- The Hub is the same program as Go and Vault, run as a server (drive marker `edition: hub`), not a separate stripped-down app. Its first target is an Android tablet with a 4 TB drive and the tablet's own hotspot, with the normal app screens as the viewer on the tablet. See [17](17-three-products.md).
+- **OPEN:** Hub has the assistant off by default; confirm. Which tablet and Android version, and whether the 4 TB drive is a spinning disk or an SSD.

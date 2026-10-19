@@ -248,6 +248,25 @@ export async function libraryShare(enable: boolean): Promise<void> {
   if (inTauri) await call<void>('library_share', { enable });
 }
 
+// ---------- which product this is (Go, Vault or Hub) ----------
+export type ProductInfo = {
+  id: 'go' | 'vault' | 'hub';
+  name: string;
+  budget_gb: number | null;
+  assistant: boolean;
+  library: boolean;
+  maps: boolean;
+  plan: boolean;
+  web_saver: boolean;
+  serve_archives: boolean;
+};
+
+export async function productInfo(): Promise<ProductInfo> {
+  if (inTauri) return call<ProductInfo>('product_info');
+  // Browser preview and screenshots: show the full app as Go.
+  return { id: 'go', name: 'Cindrix Ops Go', budget_gb: 100, assistant: true, library: true, maps: true, plan: true, web_saver: true, serve_archives: false };
+}
+
 export async function driveRescan(): Promise<void> {
   if (inTauri) await call<void>('drive_rescan');
 }

@@ -13,7 +13,7 @@ An offline survival library for Windows and Android: a local AI assistant that a
 - Everything runs offline. Satellite photos (USGS NAIP) are an optional per-county download in Settings.
 
 ## Layout
-- `core/`: Rust core logic (safety check, cards, inventory, library search). No outside dependencies. `cd core && cargo test`
+- `core/`: Rust core logic (safety check, cards, inventory, library search, the Go/Vault/Hub product setup). No outside dependencies. `cd core && cargo test`
 - `src/`, `src-tauri/`: Svelte + TypeScript interface and Tauri shell (first slice, not yet built; see docs/13)
 - `content/`: sample emergency cards and sample library (drafts)
 - `tests/safety/`: medication safety test cases

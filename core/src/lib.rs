@@ -15,6 +15,7 @@ pub mod md5;
 pub mod modelhost;
 pub mod pipeline;
 pub mod png;
+pub mod product;
 pub mod prompt;
 pub mod retrieval;
 pub mod shelf;

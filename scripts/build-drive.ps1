@@ -1,16 +1,17 @@
 # Fills the library folder of a Cindrix folder/drive with Kiwix archives.
-# Usage:  powershell -File scripts\build-drive.ps1 -Target D:\Cindrix [-Edition go|vault] [-Name 'My drive']
+# Usage:  powershell -File scripts\build-drive.ps1 -Target D:\Cindrix [-Edition go|vault|hub] [-Name 'My drive']
+# Budgets (doc 7): go content must stay at or under 100 GB, vault at or under 3400 GB, hub has no limit.
 # Needs internet. Large downloads (Wikipedia is several GB). Nothing here is tested by a person yet.
 param(
   [Parameter(Mandatory=$true)][string]$Target,
-  [ValidateSet('go','vault')][string]$Edition = 'go',
+  [ValidateSet('go','vault','hub')][string]$Edition = 'go',
   [string]$Name = ''
 )
 $ErrorActionPreference = 'Stop'
 $lib = Join-Path $Target 'library'
 New-Item -ItemType Directory -Force -Path $lib | Out-Null
 # The marker file is how the program finds this drive on any computer, whatever drive letter it gets.
-if (-not $Name) { $Name = if ($Edition -eq 'vault') { 'Cindrix Vault' } else { 'Cindrix Go' } }
+if (-not $Name) { $Name = switch ($Edition) { 'vault' { 'Cindrix Ops Vault' } 'hub' { 'Cindrix Ops Hub' } default { 'Cindrix Ops Go' } } }
 $marker = '{ "name": "' + $Name + '", "edition": "' + $Edition + '" }'
 Set-Content -Path (Join-Path $Target 'cindrix-drive.json') -Value $marker -Encoding UTF8
 $base = 'https://download.kiwix.org/zim'
@@ -30,4 +31,12 @@ foreach ($w in $wanted) {
   Write-Host "Downloading $latest ..."
   Invoke-WebRequest -UseBasicParsing "$base/$($w.dir)/$latest" -OutFile $dest
 }
+# Size budget: add up the real size of the library folder and fail when the edition's limit is passed.
+# Keep these numbers the same as core/src/product.rs.
+$budgetGb = switch ($Edition) { 'go' { 100 } 'vault' { 3400 } default { $null } }
+$bytes = (Get-ChildItem -Path $lib -Recurse -File -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum
+if (-not $bytes) { $bytes = 0 }
+$gb = [math]::Round($bytes / 1GB, 1)
+Write-Host "Library content: $gb GB"
+if ($budgetGb -and $gb -gt $budgetGb) { throw "Cindrix $Edition content is $gb GB, over the $budgetGb GB limit." }
 Write-Host "Done. Put your model .gguf file in $(Join-Path $Target 'models')."

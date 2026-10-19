@@ -12,18 +12,32 @@
   import Binder from './views/Binder.svelte';
   import Settings from './views/Settings.svelte';
   import { onMount } from 'svelte';
-  import { modelStatus, libraryStatus, type ModelStatus } from './lib/api';
+  import { modelStatus, libraryStatus, productInfo, type ModelStatus, type ProductInfo } from './lib/api';
   let ms: ModelStatus | null = $state(null);
   let sharing = $state(false);
   let online = $state(false);
-  async function poll() { ms = await modelStatus(); const l = await libraryStatus(); sharing = l.shared; online = l.online; }
+  let product: ProductInfo | null = $state(null);
+  async function poll() { ms = await modelStatus(); const l = await libraryStatus(); sharing = l.shared; online = l.online; product = await productInfo(); }
   onMount(() => { const t = setInterval(poll, 3000); poll(); return () => clearInterval(t); });
 
   type Group = 'Ask' | 'Library' | 'Maps' | 'Plan' | 'Settings';
-  const groups: Group[] = ['Ask', 'Library', 'Maps', 'Plan', 'Settings'];
+  const allGroups: Group[] = ['Ask', 'Library', 'Maps', 'Plan', 'Settings'];
+  // Each product switches parts of the program on or off (core/src/product.rs).
+  const groups = $derived(
+    allGroups.filter((g) => {
+      if (!product) return true;
+      if (g === 'Ask') return product.assistant;
+      if (g === 'Library') return product.library;
+      if (g === 'Maps') return product.maps;
+      if (g === 'Plan') return product.plan;
+      return true;
+    })
+  );
   const planTabs = ['Start', 'Inventory', 'Drills', 'Family', 'Binder', 'What fails'] as const;
 
   let group: Group = $state('Ask');
+  // If the current screen is switched off for this product, move to the first one that is on.
+  $effect(() => { if (groups.length && !groups.includes(group)) group = groups[0]; });
   let plan: (typeof planTabs)[number] = $state('Start');
   const libTabs = ['Shelf', 'Archives', 'Cards'] as const;
   let lib: (typeof libTabs)[number] = $state('Shelf');
@@ -53,7 +67,7 @@
         <path d="M12 12.6c.5 1.2 1.9 1.9 1.9 3.5a1.9 1.9 0 0 1-3.8 0c0-1 .6-1.6 1.2-2.2.4.7.7.8.7-1.3z" fill="#ffe3a0" />
       </svg>
       <div>
-        <div class="name">CINDRIX <span>OPS</span></div>
+        <div class="name">CINDRIX <span>OPS</span>{#if product && product.id !== 'go'}<small> {product.id.toUpperCase()}</small>{/if}</div>
         <div class="tag">Carry the library. Keep the fire.</div>
       </div>
     </div>
@@ -114,7 +128,7 @@
     <span><b class="dot">●</b> Library on this drive</span>
     <span>Model: {ms?.state === 'ready' ? ms.model : ms?.state === 'loading' ? 'loading…' : 'none loaded'}</span>
     <span class:warn-text={sharing || online}>{online ? 'Saving a website: the app is using the internet right now, and only for that.' : sharing ? 'Sharing the library with your network (read only). Everything else stays on this device.' : 'This app only talks to itself on this device.'}</span>
-    <span class="right">Sample content</span>
+    <span class="right">{product ? product.name + ' · ' : ''}Sample content</span>
   </footer>
 </div>
 
@@ -125,6 +139,7 @@
   .brand { display: flex; gap: 12px; align-items: center; }
   .name { font-family: var(--display); font-weight: 700; font-size: 24px; letter-spacing: .12em; line-height: 1; }
   .name span { color: var(--accent); }
+  .name small { font-size: 12px; letter-spacing: .2em; color: var(--muted); }
   .tag { font-family: var(--mono); text-transform: uppercase; letter-spacing: .14em; font-size: 10px; color: var(--muted); margin-top: 4px; }
   nav { display: flex; flex-wrap: wrap; gap: 6px; }
   nav button { padding: 8px 14px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: #aab3ad; font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: .12em; font-weight: 500; }
