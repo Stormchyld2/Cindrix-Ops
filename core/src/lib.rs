@@ -12,6 +12,7 @@ pub mod hardware;
 pub mod inventory;
 pub mod kiwix;
 pub mod llama;
+pub mod maps;
 pub mod md5;
 pub mod modelhost;
 pub mod pipeline;

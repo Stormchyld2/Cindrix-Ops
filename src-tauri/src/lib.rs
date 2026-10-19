@@ -6,6 +6,7 @@ use cindrix_core::crawl;
 use cindrix_core::drills;
 use cindrix_core::drive::{self, DriveInfo};
 use cindrix_core::kiwix::{self, KiwixHost};
+use cindrix_core::maps::{self, MapStore};
 use cindrix_core::modelhost::ModelHost;
 use cindrix_core::product::Product;
 use cindrix_core::shelf::{Book, Mark, Marks, Shelf};
@@ -278,6 +279,71 @@ fn product_info(state: tauri::State<'_, AppState>) -> ProductDto {
         web_saver: f.web_saver,
         serve_archives: f.serve_archives,
     }
+}
+
+// ---------- saved maps ----------
+
+#[derive(Serialize)]
+struct MapMetaDto {
+    id: String,
+    name: String,
+    has_picture: bool,
+    has_route: bool,
+}
+
+#[derive(Serialize)]
+struct MapDto {
+    json: String,
+    notes: String,
+}
+
+#[derive(Serialize)]
+struct RouteStats {
+    km: f64,
+    miles: f64,
+}
+
+fn map_store() -> MapStore {
+    MapStore::new(&root().join("user"))
+}
+
+#[tauri::command]
+fn maps_list() -> Vec<MapMetaDto> {
+    map_store()
+        .list()
+        .into_iter()
+        .map(|m| MapMetaDto { id: m.id, name: m.name, has_picture: m.has_picture, has_route: m.has_route })
+        .collect()
+}
+
+#[tauri::command]
+fn map_load(id: String) -> Result<MapDto, String> {
+    let (json, notes) = map_store().load(&id)?;
+    Ok(MapDto { json, notes })
+}
+
+/// Save a map. `id` is None for a new map. Returns the id.
+#[tauri::command]
+fn map_save(id: Option<String>, name: String, json: String, notes: String) -> Result<String, String> {
+    map_store().save(id.as_deref(), &name, &json, &notes)
+}
+
+#[tauri::command]
+fn map_delete(id: String) -> Result<(), String> {
+    map_store().delete(&id)
+}
+
+/// Write route.gpx into the saved map's folder. Returns the file's path.
+#[tauri::command]
+fn map_export_gpx(id: String, name: String, points: Vec<(f64, f64)>) -> Result<String, String> {
+    map_store().export_gpx(&id, &name, &points).map(|p| p.to_string_lossy().to_string())
+}
+
+/// Straight-line length of a route through the points (this app does not plan roads).
+#[tauri::command]
+fn route_stats(points: Vec<(f64, f64)>) -> RouteStats {
+    let km = maps::route_km(&points);
+    RouteStats { km, miles: km * 0.621_371_192 }
 }
 
 #[tauri::command]
@@ -1052,6 +1118,12 @@ pub fn run() {
             model_status,
             library_status,
             product_info,
+            maps_list,
+            map_load,
+            map_save,
+            map_delete,
+            map_export_gpx,
+            route_stats,
             library_share,
             drive_rescan,
             drills_list,

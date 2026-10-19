@@ -67,6 +67,31 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   await page.getByRole('button', { name: /Low blood sugar/ }).click();
   await shoot(page, `${label}-2-library`);
 
+  await page.getByRole('button', { name: 'Maps', exact: true }).click();
+  await shoot(page, `${label}-2b-maps-empty`);
+  await page.getByLabel('Map name').fill('Home to the lake cabin');
+  for (const [lab, lat, lon] of [['Home', '39.4', '-80.1'], ['Bridge', '39.45', '-80.05'], ['Cabin', '39.5', '-79.95']]) {
+    await page.getByLabel('Place label').fill(lab);
+    await page.getByLabel('Latitude', { exact: true }).fill(lat);
+    await page.getByLabel('Longitude', { exact: true }).fill(lon);
+    await page.getByRole('button', { name: 'Add', exact: true }).click();
+  }
+  for (const n of [0, 1, 2]) await page.getByRole('button', { name: 'add to route' }).nth(n).click();
+  for (const [lat, lon] of [['39.43', '-80.07'], ['39.43', '-80.03'], ['39.47', '-80.03']]) {
+    await page.getByLabel('Corner latitude').fill(lat);
+    await page.getByLabel('Corner longitude').fill(lon);
+    await page.getByRole('button', { name: 'Add corner' }).click();
+  }
+  await page.getByRole('button', { name: 'Finish area' }).click();
+  await page.getByText(/in a straight line through 3 points/).waitFor();
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByText('Saved.').waitFor();
+  await shoot(page, `${label}-2c-maps-plan`);
+  await page.getByLabel('Latitude', { exact: true }).fill('95');
+  await page.getByLabel('Longitude', { exact: true }).fill('0');
+  await page.getByRole('button', { name: 'Add', exact: true }).click();
+  await page.getByText(/latitude between -90 and 90/).waitFor();
+
   await page.getByRole('button', { name: 'Plan', exact: true }).click();
   await shoot(page, `${label}-3-start`);
 

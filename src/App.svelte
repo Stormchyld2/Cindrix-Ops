@@ -6,6 +6,7 @@
   import Family from './views/Family.svelte';
   import Cascade from './views/Cascade.svelte';
   import Soon from './views/Soon.svelte';
+  import Maps from './views/Maps.svelte';
   import Shelf from './views/Shelf.svelte';
   import Archives from './views/Archives.svelte';
   import Drills from './views/Drills.svelte';
@@ -103,6 +104,8 @@
       {:else}
         <Library bind:cardToOpen />
       {/if}
+    {:else if group === 'Maps'}
+      <Maps />
     {:else if group === 'Plan'}
       {#if plan === 'Start'}
         <Start go={goPlan} />
