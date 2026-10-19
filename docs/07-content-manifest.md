@@ -54,6 +54,17 @@ Notes:
 - **Vault:** content may go up to 3,400 GB on the 4 TB drive.
 - The build script adds up the real file sizes for the chosen edition and fails the build when a budget is exceeded. Today it counts the `library` folder only (models and maps are not counted yet), and the limits are also in `core/src/product.rs`: keep the two in step. The Hub edition has no budget; it serves whatever its drive holds. See [17](17-three-products.md). Today's Go estimate is about 51 GB with the Wikipedia text tier, so it fits with room for more.
 
+## Checking a finished drive
+
+`cd core && cargo run --release --example check_drive -- <drive folder>` reads a built drive and reports:
+**MUST FIX** for a missing `cindrix-drive.json` or `library/` folder, content over the edition's budget
+(everything except the owner's `user/` folder is counted), a `.zim` that will not open, a `.zim` whose
+metadata license is non-commercial (or whose name is wikiHow, iFixit or Hesperian), and a PDF stamped
+with a restricted distribution statement; **CHECK BY HAND** for an archive with no license in its metadata
+and for PDFs whose statement cannot be read. The PDF check only reads text stored uncompressed, so most
+real manuals will land in "check by hand" until the build extracts their text; it never counts as a pass.
+It exits with 1 when anything must be fixed. It does not yet check checksums against the manifest.
+
 ## Importing .zim files and making your own
 
 - **Add a .zim file (planned next):** an "Add archive" button on the Archives tab that copies a chosen .zim into `library/` and restarts the reader. It shows what the file says about itself (name, size, license) and warns if the license looks non-commercial. This is for the owner's private use. Built drives still go through the manifest rules.

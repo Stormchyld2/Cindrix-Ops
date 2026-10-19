@@ -3,7 +3,7 @@
 What works and what has been tested, so nothing is guessed.
 
 ## Tested (in the workspace, on Linux)
-`core/` is a Rust crate with **no outside dependencies**. `cargo test` in `core/` runs 114 unit tests plus the 4 safety-suite tests, all passing as of 2026-10-18 (the first slice had 25; later groups added the user folder, calendar, what-fails-next, the shelf, the website saver, the ZIM writer, drive detection and the product setup):
+`core/` is a Rust crate with **no outside dependencies**. `cargo test` in `core/` runs 123 unit tests plus the 4 safety-suite tests, all passing as of 2026-10-18 (the first slice had 25; later groups added the user folder, calendar, what-fails-next, the shelf, the website saver, the ZIM writer, drive detection and the product setup):
 - the medication safety check against all 37 cases in `tests/safety/dosing.json`
 - the answer path: dosing question never reaches the model; unknown topic gets "not found"; a model answer containing a dose is replaced; a model failure gives a plain message
 - inventory CSV (round trip, days left, status, delete selected)

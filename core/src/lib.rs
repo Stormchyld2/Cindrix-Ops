@@ -6,6 +6,7 @@ pub mod cascade;
 pub mod crawl;
 pub mod drills;
 pub mod drive;
+pub mod drivecheck;
 pub mod fsio;
 pub mod hardware;
 pub mod inventory;
