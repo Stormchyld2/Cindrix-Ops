@@ -14,7 +14,7 @@
       { "title": "Cindrix Ops", "width": 1180, "height": 780, "minWidth": 380, "minHeight": 560 }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; frame-src http://127.0.0.1:*; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; connect-src 'self' ipc: http://ipc.localhost"
+      "csp": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; frame-src http://127.0.0.1:*; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; connect-src 'self' ipc: http://ipc.localhost cindrix-tiles: http://cindrix-tiles.localhost"
     }
   },
   "bundle": {

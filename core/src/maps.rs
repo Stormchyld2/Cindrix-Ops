@@ -244,6 +244,173 @@ impl MapStore {
     }
 }
 
+// ---------- map packs (PMTiles files) and serving them by byte range ----------
+//
+// A map pack is one `.pmtiles` file under the drive's `maps/` folder (doc 2: `maps/us/street/`,
+// `maps/us/topo/`, `maps/satellite/<state>/<county>/`). The interface's map library reads a
+// PMTiles file with HTTP Range requests, so the shell only has to hand out byte ranges of the
+// file. These functions decide which files may be handed out and read the bytes.
+
+use std::io::{Read, Seek, SeekFrom};
+
+/// Most bytes returned for one range request. PMTiles asks for small pieces (a 16 KB header
+/// and directory, then single tiles), so a larger request is cut short rather than trusted.
+pub const MAX_RANGE_BYTES: u64 = 32 * 1024 * 1024;
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Pack {
+    /// Path under `maps/`, with `/` separators, for example `us/street/us.pmtiles`.
+    pub rel: String,
+    /// File name without the extension.
+    pub name: String,
+    /// "street", "topo", "satellite" or "other", from the folder it sits in.
+    pub kind: String,
+    pub mb: u64,
+}
+
+fn pack_kind(rel: &str) -> &'static str {
+    let r = rel.to_lowercase();
+    if r.contains("street") {
+        "street"
+    } else if r.contains("topo") {
+        "topo"
+    } else if r.contains("satellite") {
+        "satellite"
+    } else {
+        "other"
+    }
+}
+
+/// Every `.pmtiles` file under `maps_root`, up to four folders deep, sorted by path.
+pub fn packs(maps_root: &Path) -> Vec<Pack> {
+    let mut out = Vec::new();
+    let mut stack = vec![(maps_root.to_path_buf(), 0u8)];
+    while let Some((dir, depth)) = stack.pop() {
+        let Ok(rd) = fs::read_dir(&dir) else { continue };
+        for e in rd.flatten() {
+            let Ok(ft) = e.file_type() else { continue };
+            let p = e.path();
+            if ft.is_dir() {
+                if depth < 4 {
+                    stack.push((p, depth + 1));
+                }
+            } else if ft.is_file() && p.extension().map(|x| x.to_string_lossy().eq_ignore_ascii_case("pmtiles")).unwrap_or(false) {
+                let Ok(rel) = p.strip_prefix(maps_root) else { continue };
+                let rel = rel.components().map(|c| c.as_os_str().to_string_lossy().to_string()).collect::<Vec<_>>().join("/");
+                out.push(Pack {
+                    name: p.file_stem().map(|n| n.to_string_lossy().to_string()).unwrap_or_default(),
+                    kind: pack_kind(&rel).to_string(),
+                    mb: e.metadata().map(|m| m.len() / 1_048_576).unwrap_or(0),
+                    rel,
+                });
+            }
+        }
+    }
+    out.sort_by(|a, b| a.rel.cmp(&b.rel));
+    out
+}
+
+fn percent_decode(s: &str) -> Option<String> {
+    let b = s.as_bytes();
+    let mut out = Vec::with_capacity(b.len());
+    let mut i = 0;
+    while i < b.len() {
+        if b[i] == b'%' {
+            let h = s.get(i + 1..i + 3)?;
+            out.push(u8::from_str_radix(h, 16).ok()?);
+            i += 3;
+        } else {
+            out.push(b[i]);
+            i += 1;
+        }
+    }
+    String::from_utf8(out).ok()
+}
+
+/// Turn the path of a tile request into a real file, but only a `.pmtiles` file that sits inside
+/// `maps_root`. Anything else (parent folders, absolute paths, other file types, links that lead
+/// outside the folder) gives None. This is the only door from the web view to the disk.
+pub fn resolve_tile_path(maps_root: &Path, requested: &str) -> Option<PathBuf> {
+    let path = requested.split(['?', '#']).next().unwrap_or("");
+    let decoded = percent_decode(path)?;
+    let rel = decoded.trim_start_matches('/');
+    if rel.is_empty() || rel.contains('\\') || rel.contains('\0') {
+        return None;
+    }
+    let mut full = maps_root.to_path_buf();
+    for part in rel.split('/') {
+        let ok = !part.is_empty()
+            && part != "."
+            && part != ".."
+            && part.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-' | ' '));
+        if !ok {
+            return None;
+        }
+        full.push(part);
+    }
+    if !full.extension().map(|x| x.to_string_lossy().eq_ignore_ascii_case("pmtiles")).unwrap_or(false) {
+        return None;
+    }
+    let real = full.canonicalize().ok()?;
+    let root = maps_root.canonicalize().ok()?;
+    if real.starts_with(&root) && real.is_file() { Some(real) } else { None }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RangeError {
+    /// The header is not a single `bytes=` range we understand.
+    Unsupported,
+    /// The range starts past the end of the file.
+    Unsatisfiable,
+}
+
+/// Read an HTTP `Range` header against a file of `len` bytes. Returns inclusive (start, end),
+/// with `end` cut to the end of the file and to MAX_RANGE_BYTES.
+pub fn parse_range(header: &str, len: u64) -> Result<(u64, u64), RangeError> {
+    let spec = header.trim().strip_prefix("bytes=").ok_or(RangeError::Unsupported)?;
+    if spec.contains(',') || len == 0 {
+        return Err(if len == 0 { RangeError::Unsatisfiable } else { RangeError::Unsupported });
+    }
+    let (a, b) = spec.split_once('-').ok_or(RangeError::Unsupported)?;
+    let (start, end) = if a.trim().is_empty() {
+        // "-N": the last N bytes
+        let n: u64 = b.trim().parse().map_err(|_| RangeError::Unsupported)?;
+        if n == 0 {
+            return Err(RangeError::Unsatisfiable);
+        }
+        (len.saturating_sub(n), len - 1)
+    } else {
+        let s: u64 = a.trim().parse().map_err(|_| RangeError::Unsupported)?;
+        let e: Option<u64> = if b.trim().is_empty() { None } else { Some(b.trim().parse().map_err(|_| RangeError::Unsupported)?) };
+        if matches!(e, Some(e) if e < s) {
+            return Err(RangeError::Unsupported);
+        }
+        if s >= len {
+            return Err(RangeError::Unsatisfiable);
+        }
+        (s, e.unwrap_or(len - 1).min(len - 1))
+    };
+    if start >= len {
+        return Err(RangeError::Unsatisfiable);
+    }
+    Ok((start, end.min(start + MAX_RANGE_BYTES - 1)))
+}
+
+/// Read bytes `start..=end` of a file.
+pub fn read_range(path: &Path, start: u64, end: u64) -> std::io::Result<Vec<u8>> {
+    let mut f = fs::File::open(path)?;
+    f.seek(SeekFrom::Start(start))?;
+    let mut buf = vec![0u8; (end - start + 1) as usize];
+    f.read_exact(&mut buf)?;
+    Ok(buf)
+}
+
+/// Does this look like a PMTiles v3 file? The file starts with the seven letters PMTiles and
+/// the version byte 3.
+pub fn is_pmtiles_v3(head: &[u8]) -> bool {
+    head.len() >= 8 && &head[..7] == b"PMTiles" && head[7] == 3
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -404,5 +571,101 @@ mod tests {
         s.save(None, "Good", MAP, "").unwrap();
         fs::create_dir_all(user.join("saved-maps/empty-folder")).unwrap();
         assert_eq!(s.list().len(), 1);
+    }
+
+    // ---------- packs and range reads ----------
+
+    fn pack_root(name: &str) -> PathBuf {
+        let root = tmp(name).join("maps");
+        fs::create_dir_all(root.join("us/street")).unwrap();
+        fs::create_dir_all(root.join("us/topo")).unwrap();
+        fs::write(root.join("us/street/us.pmtiles"), b"PMTiles\x03 street data 0123456789").unwrap();
+        fs::write(root.join("us/topo/contours.PMTILES"), b"PMTiles\x03 topo").unwrap();
+        fs::write(root.join("us/street/readme.txt"), b"not a pack").unwrap();
+        root
+    }
+
+    #[test]
+    fn packs_are_found_with_their_kind() {
+        let root = pack_root("packs");
+        let p = packs(&root);
+        assert_eq!(p.len(), 2, "{:?}", p);
+        assert_eq!(p[0].rel, "us/street/us.pmtiles");
+        assert_eq!(p[0].kind, "street");
+        assert_eq!(p[0].name, "us");
+        assert_eq!(p[1].kind, "topo");
+        assert!(packs(&root.join("nothing-here")).is_empty());
+    }
+
+    #[test]
+    fn only_pmtiles_inside_the_folder_can_be_served() {
+        let root = pack_root("resolve");
+        assert!(resolve_tile_path(&root, "/us/street/us.pmtiles").is_some());
+        assert!(resolve_tile_path(&root, "us/street/us.pmtiles?x=1").is_some());
+        assert!(resolve_tile_path(&root, "/us/topo/contours.PMTILES").is_some());
+        // The interface may send the folder separators percent-encoded (Tauri's convertFileSrc).
+        assert!(resolve_tile_path(&root, "/us%2Fstreet%2Fus.pmtiles").is_some());
+        for bad in [
+            "",
+            "/",
+            "/us/street/readme.txt",
+            "/us/street/missing.pmtiles",
+            "/../maps/us/street/us.pmtiles",
+            "/us/../us/street/us.pmtiles",
+            "/us/street/%2e%2e/street/us.pmtiles",
+            "//etc/passwd",
+            "/us\\street\\us.pmtiles",
+            "/us/street/us.pmtiles%00.txt",
+            "/us/street",
+            "/us/street/%zz.pmtiles",
+        ] {
+            assert!(resolve_tile_path(&root, bad).is_none(), "should refuse {:?}", bad);
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_link_that_leaves_the_folder_is_refused() {
+        let root = pack_root("symlink");
+        let outside = root.parent().unwrap().join("secret.pmtiles");
+        fs::write(&outside, b"PMTiles\x03 secret").unwrap();
+        std::os::unix::fs::symlink(&outside, root.join("us/street/link.pmtiles")).unwrap();
+        assert!(resolve_tile_path(&root, "/us/street/link.pmtiles").is_none());
+    }
+
+    #[test]
+    fn range_headers_are_read_the_standard_way() {
+        assert_eq!(parse_range("bytes=0-99", 1000), Ok((0, 99)));
+        assert_eq!(parse_range("bytes=900-", 1000), Ok((900, 999)));
+        assert_eq!(parse_range("bytes=900-5000", 1000), Ok((900, 999))); // cut to the file
+        assert_eq!(parse_range("bytes=-100", 1000), Ok((900, 999)));
+        assert_eq!(parse_range("bytes=-5000", 1000), Ok((0, 999)));
+        assert_eq!(parse_range("bytes=1000-", 1000), Err(RangeError::Unsatisfiable));
+        assert_eq!(parse_range("bytes=-0", 1000), Err(RangeError::Unsatisfiable));
+        assert_eq!(parse_range("bytes=0-0", 0), Err(RangeError::Unsatisfiable));
+        for bad in ["", "0-99", "bytes=", "bytes=a-b", "bytes=5-2", "bytes=0-1,5-9", "items=0-1"] {
+            assert_eq!(parse_range(bad, 1000), Err(RangeError::Unsupported), "{:?}", bad);
+        }
+    }
+
+    #[test]
+    fn a_huge_range_is_cut_short() {
+        let big = 10 * MAX_RANGE_BYTES;
+        let (s, e) = parse_range("bytes=0-", big).unwrap();
+        assert_eq!((s, e - s + 1), (0, MAX_RANGE_BYTES));
+    }
+
+    #[test]
+    fn ranges_read_the_right_bytes() {
+        let root = pack_root("read");
+        let p = resolve_tile_path(&root, "/us/street/us.pmtiles").unwrap();
+        let len = fs::metadata(&p).unwrap().len();
+        let (s, e) = parse_range("bytes=0-7", len).unwrap();
+        let head = read_range(&p, s, e).unwrap();
+        assert!(is_pmtiles_v3(&head));
+        let (s, e) = parse_range("bytes=-10", len).unwrap();
+        assert_eq!(read_range(&p, s, e).unwrap(), b"0123456789");
+        assert!(!is_pmtiles_v3(b"PMTiles\x02"));
+        assert!(!is_pmtiles_v3(b"short"));
     }
 }

@@ -32,7 +32,7 @@ confirms (doc 14). Only the archives are served, not the shelf, inventory, famil
 Built so far (base program): `core/src/product.rs` (products, features, budgets, `check_budget`),
 `DriveInfo::product()`, a `product_info` command in the Tauri shell, the interface showing the product
 name and hiding screens a product turns off, and `scripts/build-drive.ps1 -Edition go|vault|hub` with a
-size check on the `library` folder (models and maps are not counted yet). Also built for Go: a drive checker (`core/src/drivecheck.rs`, run with `cargo run --example check_drive -- <folder>`;
+size check on the `library` folder (models and maps are not counted yet). Maps now have a tile viewer (see doc 18); the drive checker also checks map packs. Also built for Go: a drive checker (`core/src/drivecheck.rs`, run with `cargo run --example check_drive -- <folder>`;
 see doc 7). Not built yet: the Hub's
 web layer for other devices' browsers, and the Android build.
 

@@ -4,7 +4,7 @@
 |---|---|---|
 | 1 | File and folder storage | Agreed in principle: plain files, no database. Exact layout is in doc 2. To confirm against the earlier project the author mentioned. |
 | 2 | Encryption and passphrase lock for `family.json` | Decided: optional passphrase, Family page only. See doc 9. |
-| 3 | Map viewer for the interface | Proposed: Protomaps (PMTiles) with a JavaScript viewer on Windows; Organic Maps for phone companion use. **TO TEST.** |
+| 3 | Map viewer for the interface | Chosen and coded, not yet run on real tiles: MapLibre GL JS reading Protomaps PMTiles through the shell's `cindrix-tiles` protocol. See [18](18-maps.md). **TO TEST.** Organic Maps stays an option for phone companion use. |
 | 4 | Update and sales model | Decided: one-time sale, no update server. A new drive is a new version. Safety notices go on GitHub releases. See doc 4. |
 | 5 | GitHub builds | Yes. Check Actions limits. |
 | 6 | Map coverage | US-wide street and topo maps are built into the drive. Satellite is the user's own state and county download from USGS (Settings). |

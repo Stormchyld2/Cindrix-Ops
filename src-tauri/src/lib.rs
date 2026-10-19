@@ -281,6 +281,71 @@ fn product_info(state: tauri::State<'_, AppState>) -> ProductDto {
     }
 }
 
+// ---------- map packs and the tile protocol ----------
+
+#[derive(Serialize)]
+struct PackDto {
+    rel: String,
+    name: String,
+    kind: String,
+    mb: u64,
+}
+
+/// The `.pmtiles` map packs on this drive (street, topo, satellite).
+#[tauri::command]
+fn map_packs() -> Vec<PackDto> {
+    maps::packs(&drive_or_program("maps"))
+        .into_iter()
+        .map(|p| PackDto { rel: p.rel, name: p.name, kind: p.kind, mb: p.mb })
+        .collect()
+}
+
+fn tile_reply(status: u16, content_range: Option<String>, body: Vec<u8>) -> tauri::http::Response<Vec<u8>> {
+    let mut b = tauri::http::Response::builder()
+        .status(status)
+        .header("Access-Control-Allow-Origin", "*")
+        .header("Access-Control-Allow-Methods", "GET, OPTIONS")
+        .header("Access-Control-Allow-Headers", "Range")
+        .header("Access-Control-Expose-Headers", "Content-Range, Accept-Ranges, Content-Length")
+        .header("Accept-Ranges", "bytes");
+    if let Some(r) = content_range {
+        b = b.header("Content-Range", r);
+    }
+    if !body.is_empty() {
+        b = b.header("Content-Type", "application/octet-stream");
+    }
+    b.body(body).unwrap_or_else(|_| tauri::http::Response::new(Vec::new()))
+}
+
+/// Hands the web view byte ranges of `.pmtiles` files under the drive's `maps/` folder, and
+/// nothing else (see `maps::resolve_tile_path`). The map library asks for a piece at a time.
+fn serve_tile(req: &tauri::http::Request<Vec<u8>>) -> tauri::http::Response<Vec<u8>> {
+    if *req.method() == tauri::http::Method::OPTIONS {
+        return tile_reply(204, None, Vec::new());
+    }
+    if *req.method() != tauri::http::Method::GET {
+        return tile_reply(405, None, Vec::new());
+    }
+    let Some(path) = maps::resolve_tile_path(&drive_or_program("maps"), req.uri().path()) else {
+        return tile_reply(404, None, Vec::new());
+    };
+    let Ok(len) = std::fs::metadata(&path).map(|m| m.len()) else {
+        return tile_reply(404, None, Vec::new());
+    };
+    // The whole file can be many gigabytes, so a request without a Range is refused.
+    let Some(range) = req.headers().get("range").and_then(|v| v.to_str().ok()) else {
+        return tile_reply(416, Some(format!("bytes */{}", len)), Vec::new());
+    };
+    match maps::parse_range(range, len) {
+        Ok((start, end)) => match maps::read_range(&path, start, end) {
+            Ok(bytes) => tile_reply(206, Some(format!("bytes {}-{}/{}", start, end, len)), bytes),
+            Err(_) => tile_reply(500, None, Vec::new()),
+        },
+        Err(maps::RangeError::Unsatisfiable) => tile_reply(416, Some(format!("bytes */{}", len)), Vec::new()),
+        Err(maps::RangeError::Unsupported) => tile_reply(400, None, Vec::new()),
+    }
+}
+
 // ---------- saved maps ----------
 
 #[derive(Serialize)]
@@ -1092,6 +1157,7 @@ fn sources_list() -> String {
 pub fn run() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .register_uri_scheme_protocol("cindrix-tiles", |_ctx, request| serve_tile(&request))
         .manage(AppState::default())
         .setup(|app| {
             let handle = app.handle().clone();
@@ -1124,6 +1190,7 @@ pub fn run() {
             map_delete,
             map_export_gpx,
             route_stats,
+            map_packs,
             library_share,
             drive_rescan,
             drills_list,

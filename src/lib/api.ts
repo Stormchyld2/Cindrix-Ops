@@ -294,6 +294,20 @@ export async function routeStats(points: LatLon[]): Promise<RouteStats> {
   return { km, miles: km * 0.621371192 };
 }
 
+// ---------- map packs (the street and topo tiles on the drive) ----------
+export type Pack = { rel: string; name: string; kind: string; mb: number };
+
+export async function mapPacks(): Promise<Pack[]> {
+  if (inTauri) return call<Pack[]>('map_packs');
+  return []; // browser preview: no packs, so the screen shows the plan view
+}
+
+/** The address the map library reads a pack from. Only the desktop app can serve it. */
+export async function tileUrl(rel: string): Promise<string> {
+  const { convertFileSrc } = await import('@tauri-apps/api/core');
+  return convertFileSrc(rel, 'cindrix-tiles');
+}
+
 // ---------- which product this is (Go, Vault or Hub) ----------
 export type ProductInfo = {
   id: 'go' | 'vault' | 'hub';

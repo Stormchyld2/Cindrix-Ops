@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { mapsList, mapLoad, mapSave, mapDelete, mapExportGpx, routeStats, type MapMeta, type LatLon, type RouteStats } from '../lib/api';
+  import { onMount, onDestroy } from 'svelte';
+  import { mapsList, mapLoad, mapSave, mapDelete, mapExportGpx, routeStats, mapPacks, tileUrl, type MapMeta, type LatLon, type RouteStats, type Pack } from '../lib/api';
+  import type { Map as MLMap, Marker, StyleSpecification, GeoJSONSource } from 'maplibre-gl';
 
   type Pin = { id: number; label: string; kind: 'pin' | 'rendezvous'; lat: number; lon: number };
   type Area = { label: string; points: LatLon[] };
@@ -28,7 +29,131 @@
   let aLat = $state('');
   let aLon = $state('');
 
-  onMount(refresh);
+  // ---------- the tile map (only when a street pack is on the drive) ----------
+  let packs: Pack[] = $state([]);
+  let street: Pack | undefined = $derived(packs.find((p) => p.kind === 'street'));
+  let mapEl: HTMLDivElement | undefined = $state();
+  let mapReady = $state(false);
+  let tileError = $state('');
+  let addMode: 'off' | 'pin' | 'rendezvous' | 'corner' = $state('off');
+  let map: MLMap | null = null;
+  let markers: Marker[] = [];
+  let ml: typeof import('maplibre-gl').default | null = null;
+  let protocolAdded = false;
+
+  onMount(async () => {
+    await refresh();
+    try {
+      packs = await mapPacks();
+    } catch (e) {
+      tileError = String(e);
+    }
+  });
+  onDestroy(() => {
+    map?.remove();
+    map = null;
+  });
+
+  $effect(() => {
+    if (street && mapEl && !map) void initMap(street, mapEl);
+  });
+
+  async function initMap(pack: Pack, el: HTMLDivElement) {
+    try {
+      const [{ default: maplibregl }, { Protocol }, { layers, namedFlavor }] = await Promise.all([
+        import('maplibre-gl'),
+        import('pmtiles'),
+        import('@protomaps/basemaps'),
+      ]);
+      await import('maplibre-gl/dist/maplibre-gl.css');
+      ml = maplibregl;
+      if (!protocolAdded) {
+        const protocol = new Protocol();
+        // The cast keeps this compiling whichever handler signature the two libraries agree on.
+        maplibregl.addProtocol('pmtiles', protocol.tile as never);
+        protocolAdded = true;
+      }
+      const url = await tileUrl(pack.rel);
+      // No glyph (font) files ship yet, so the text layers are left out: roads, water, land and
+      // buildings are drawn, place names are not. Pin labels are drawn by this screen instead.
+      const style = {
+        version: 8,
+        sources: { protomaps: { type: 'vector', url: 'pmtiles://' + url, attribution: '© OpenStreetMap contributors' } },
+        layers: layers('protomaps', namedFlavor('dark'), { lang: 'en' }).filter((l) => l.type !== 'symbol'),
+      } as unknown as StyleSpecification;
+      const m = new maplibregl.Map({ container: el, style, center: [-98.5, 39.8], zoom: 3.5, attributionControl: { compact: true } });
+      m.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'top-right');
+      m.addControl(new maplibregl.ScaleControl({ unit: 'imperial' }), 'bottom-left');
+      m.on('error', (e) => {
+        tileError = 'The map could not read its tiles: ' + String((e as { error?: Error }).error?.message ?? e);
+      });
+      m.on('load', () => {
+        for (const id of ['route', 'nogo', 'draft']) m.addSource(id, { type: 'geojson', data: empty() });
+        m.addLayer({ id: 'nogo-fill', type: 'fill', source: 'nogo', paint: { 'fill-color': '#e5533d', 'fill-opacity': 0.25 } });
+        m.addLayer({ id: 'nogo-line', type: 'line', source: 'nogo', paint: { 'line-color': '#e5533d', 'line-width': 2, 'line-dasharray': [2, 2] } });
+        m.addLayer({ id: 'draft-line', type: 'line', source: 'draft', paint: { 'line-color': '#e5533d', 'line-width': 2, 'line-dasharray': [1, 2] } });
+        m.addLayer({ id: 'route-line', type: 'line', source: 'route', paint: { 'line-color': '#ff9a1f', 'line-width': 4 } });
+        mapReady = true;
+        zoomToPoints();
+      });
+      m.on('click', (e) => onMapClick(e.lngLat.lat, e.lngLat.lng));
+      map = m;
+    } catch (e) {
+      tileError = 'The map viewer could not start: ' + String(e);
+    }
+  }
+
+  const empty = () => ({ type: 'FeatureCollection' as const, features: [] });
+  const ring = (pts: LatLon[]) => [...pts, pts[0]].map(([la, lo]) => [lo, la]);
+
+  function onMapClick(lat: number, lon: number) {
+    const p: LatLon = [Math.round(lat * 1e5) / 1e5, Math.round(lon * 1e5) / 1e5];
+    if (addMode === 'pin' || addMode === 'rendezvous') {
+      const id = pins.reduce((m, x) => Math.max(m, x.id), 0) + 1;
+      pins = [...pins, { id, label: (addMode === 'rendezvous' ? 'Rendezvous ' : 'Pin ') + id, kind: addMode, lat: p[0], lon: p[1] }];
+    } else if (addMode === 'corner') {
+      draft = [...draft, p];
+    }
+  }
+
+  function zoomToPoints() {
+    if (!map || !ml) return;
+    const all: LatLon[] = [...pins.map((p) => [p.lat, p.lon] as LatLon), ...nogo.flatMap((a) => a.points)];
+    if (all.length === 0) return;
+    const b = new ml.LngLatBounds([all[0][1], all[0][0]], [all[0][1], all[0][0]]);
+    for (const [la, lo] of all) b.extend([lo, la]);
+    map.fitBounds(b, { padding: 60, maxZoom: 15, duration: 0 });
+  }
+
+  // Keep the drawn layers and the pin markers in step with what is on screen.
+  $effect(() => {
+    if (!map || !ml || !mapReady) return;
+    const m = map;
+    const rp = routePoints;
+    (m.getSource('route') as GeoJSONSource).setData(
+      rp.length > 1
+        ? { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: rp.map(([la, lo]) => [lo, la]) } }
+        : empty(),
+    );
+    (m.getSource('nogo') as GeoJSONSource).setData({
+      type: 'FeatureCollection',
+      features: nogo.filter((a) => a.points.length >= 3).map((a) => ({ type: 'Feature' as const, properties: {}, geometry: { type: 'Polygon' as const, coordinates: [ring(a.points)] } })),
+    });
+    (m.getSource('draft') as GeoJSONSource).setData(
+      draft.length > 1
+        ? { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: draft.map(([la, lo]) => [lo, la]) } }
+        : empty(),
+    );
+    for (const k of markers) k.remove();
+    markers = pins.map((p) => {
+      const el = document.createElement('div');
+      el.className = 'pinmark';
+      el.innerHTML = '<span class="pdot"></span><span class="plab"></span>';
+      (el.querySelector('.pdot') as HTMLElement).style.background = pinColor(p.kind);
+      (el.querySelector('.plab') as HTMLElement).textContent = p.label; // text, never markup
+      return new ml!.Marker({ element: el, anchor: 'left' }).setLngLat([p.lon, p.lat]).addTo(m);
+    });
+  });
 
   async function refresh() {
     try {
@@ -121,6 +246,7 @@
       draft = [];
       message = error = '';
       confirmDelete = false;
+      queueMicrotask(zoomToPoints);
     } catch (e) {
       error = 'Could not open that map: ' + String(e);
     }
@@ -210,9 +336,16 @@
   <p class="sub">Plan with your own points: places to meet, routes between them, and areas to avoid. Save the plan, print it, and export the route for a phone map app.</p>
 </section>
 
-<div class="warn">
-  <strong>No map tiles on this drive yet.</strong> The street and topo maps arrive with the map packs, so for now this is a plan view of the points you enter, drawn to scale with nothing underneath. Positions are typed in by hand and are approximate. Routes are straight lines between your points; this app does not plan roads and does not yet steer routes around no-go areas.
-</div>
+{#if street}
+  <div class="warn">
+    <strong>Map: {street.name}</strong> ({street.mb} MB, from this drive). Roads, water, land and buildings are drawn; place names are not yet. Positions you place are approximate, and routes are straight lines between your points: this app does not plan roads and does not yet steer routes around no-go areas.
+  </div>
+{:else}
+  <div class="warn">
+    <strong>No map tiles on this drive yet.</strong> Street and topo maps come from map packs (see doc 7), so for now this is a plan view of the points you enter, drawn to scale with nothing underneath. Positions are typed in by hand and are approximate. Routes are straight lines between your points; this app does not plan roads and does not yet steer routes around no-go areas.
+  </div>
+{/if}
+{#if tileError}<div class="warn err" role="alert">{tileError}</div>{/if}
 
 {#if error}<div class="warn err" role="alert">{error}</div>{/if}
 {#if message}<div class="ok-note" role="status">{message}</div>{/if}
@@ -240,29 +373,40 @@
       {#if current}<button class="btn danger" onclick={remove}>{confirmDelete ? 'Really delete?' : 'Delete'}</button>{/if}
     </div>
 
-    <svg viewBox="0 0 {W} {H}" role="img" aria-label="Plan view of your points" class="plan">
-      <rect width={W} height={H} fill="#0f1110" />
-      {#if view}
-        {#each nogo as a}
-          <polygon points={a.points.map((p) => view.x(p[1]) + ',' + view.y(p[0])).join(' ')} fill="#e5533d33" stroke="#e5533d" stroke-width="1.5" stroke-dasharray="5 4" />
+    {#if street}
+      <div class="row">
+        <span class="label">Click the map to add:</span>
+        {#each [['off', 'Nothing'], ['pin', 'Pins'], ['rendezvous', 'Rendezvous points'], ['corner', 'No-go corners']] as [k, t]}
+          <button class="btn" class:primary={addMode === k} onclick={() => (addMode = k as typeof addMode)}>{t}</button>
         {/each}
-        {#if draft.length > 0}
-          <polyline points={draft.map((p) => view.x(p[1]) + ',' + view.y(p[0])).join(' ')} fill="none" stroke="#e5533d" stroke-width="1.5" stroke-dasharray="2 3" />
+        <button class="btn" onclick={zoomToPoints} disabled={pins.length === 0 && nogo.length === 0}>Zoom to my points</button>
+      </div>
+      <div class="tilemap" bind:this={mapEl} role="application" aria-label="Map"></div>
+    {:else}
+      <svg viewBox="0 0 {W} {H}" role="img" aria-label="Plan view of your points" class="plan">
+        <rect width={W} height={H} fill="#0f1110" />
+        {#if view}
+          {#each nogo as a}
+            <polygon points={a.points.map((p) => view.x(p[1]) + ',' + view.y(p[0])).join(' ')} fill="#e5533d33" stroke="#e5533d" stroke-width="1.5" stroke-dasharray="5 4" />
+          {/each}
+          {#if draft.length > 0}
+            <polyline points={draft.map((p) => view.x(p[1]) + ',' + view.y(p[0])).join(' ')} fill="none" stroke="#e5533d" stroke-width="1.5" stroke-dasharray="2 3" />
+          {/if}
+          {#if routePoints.length > 1}
+            <polyline points={routePoints.map((p) => view.x(p[1]) + ',' + view.y(p[0])).join(' ')} fill="none" stroke="#ff9a1f" stroke-width="2.5" />
+          {/if}
+          {#each pins as p}
+            <circle cx={view.x(p.lon)} cy={view.y(p.lat)} r="6" fill={pinColor(p.kind)} stroke="#0f1110" stroke-width="2" />
+            <text x={view.x(p.lon) + 10} y={view.y(p.lat) + 4} fill="#ece7de" font-size="12">{p.label}</text>
+          {/each}
+          <line x1={PAD} y1={H - 14} x2={PAD + view.barPx} y2={H - 14} stroke="#b5ada0" stroke-width="2" />
+          <text x={PAD + view.barPx + 8} y={H - 10} fill="#b5ada0" font-size="11">{view.barKm} km ({(view.barKm * 0.621371).toFixed(view.barKm < 1 ? 2 : 1)} mi)</text>
+          <text x={W - 24} y="22" fill="#b5ada0" font-size="12" text-anchor="middle">N ↑</text>
+        {:else}
+          <text x={W / 2} y={H / 2} fill="#9a9388" font-size="14" text-anchor="middle">Add a point below to start your plan.</text>
         {/if}
-        {#if routePoints.length > 1}
-          <polyline points={routePoints.map((p) => view.x(p[1]) + ',' + view.y(p[0])).join(' ')} fill="none" stroke="#ff9a1f" stroke-width="2.5" />
-        {/if}
-        {#each pins as p}
-          <circle cx={view.x(p.lon)} cy={view.y(p.lat)} r="6" fill={pinColor(p.kind)} stroke="#0f1110" stroke-width="2" />
-          <text x={view.x(p.lon) + 10} y={view.y(p.lat) + 4} fill="#ece7de" font-size="12">{p.label}</text>
-        {/each}
-        <line x1={PAD} y1={H - 14} x2={PAD + view.barPx} y2={H - 14} stroke="#b5ada0" stroke-width="2" />
-        <text x={PAD + view.barPx + 8} y={H - 10} fill="#b5ada0" font-size="11">{view.barKm} km ({(view.barKm * 0.621371).toFixed(view.barKm < 1 ? 2 : 1)} mi)</text>
-        <text x={W - 24} y="22" fill="#b5ada0" font-size="12" text-anchor="middle">N ↑</text>
-      {:else}
-        <text x={W / 2} y={H / 2} fill="#9a9388" font-size="14" text-anchor="middle">Add a point below to start your plan.</text>
-      {/if}
-    </svg>
+      </svg>
+    {/if}
 
     {#if stats}
       <p class="stat"><strong>Route:</strong> {stats.km.toFixed(1)} km ({stats.miles.toFixed(1)} miles) in a straight line through {routePoints.length} points. Real roads will be longer.</p>
@@ -326,7 +470,7 @@
 
     <div class="label notes-label">Notes</div>
     <textarea class="input" bind:value={notes} placeholder="Written notes for this map: gates, water on the way, who meets where." aria-label="Notes"></textarea>
-    <p class="muted small">Map data, when added, comes from © OpenStreetMap contributors. Saved maps are plain files in the user/saved-maps folder.</p>
+    <p class="muted small">Map data comes from © OpenStreetMap contributors. Saved maps are plain files in the user/saved-maps folder.</p>
   </div>
 </div>
 
@@ -350,4 +494,8 @@
   .ok-note { padding: 10px 12px; border-radius: 8px; background: #122117; border: 1px solid #2c5a3a; font-size: 13px; color: #b8e3c0; }
   .notes-label { margin-top: 4px; }
   input.input { min-width: 0; }
+  .tilemap { width: 100%; height: 460px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #0f1110; }
+  :global(.pinmark) { display: flex; align-items: center; gap: 6px; pointer-events: none; }
+  :global(.pinmark .pdot) { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #0f1110; display: inline-block; }
+  :global(.pinmark .plab) { color: #ece7de; font-size: 12px; text-shadow: 0 0 3px #000, 0 0 3px #000; white-space: nowrap; }
 </style>

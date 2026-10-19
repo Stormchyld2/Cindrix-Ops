@@ -10,8 +10,11 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@protomaps/basemaps": "^5.0.0",
     "@tauri-apps/api": "^2.0.0",
-    "pdfjs-dist": "4.10.38"
+    "maplibre-gl": "^5.0.0",
+    "pdfjs-dist": "4.10.38",
+    "pmtiles": "^4.0.0"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^5.0.0",

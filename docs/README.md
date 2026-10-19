@@ -19,5 +19,6 @@ Status: first draft, before any code. Items marked **TO TEST** have not been tri
 15. [Stockpiling websites as .zim files](15-stockpiling-websites.md)
 16. [Vault server on an old Fire tablet](16-vault-on-a-fire-tablet.md)
 17. [Three products, one code base](17-three-products.md)
+18. [Maps](18-maps.md): saved maps, the tile viewer, getting map data
 
 Mockups of every screen are in [`../mockups`](../mockups).

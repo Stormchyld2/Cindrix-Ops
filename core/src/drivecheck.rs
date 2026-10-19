@@ -6,6 +6,7 @@
 
 use crate::drive;
 use crate::kiwix;
+use crate::maps;
 use crate::product::{check_budget, Product};
 use crate::zim;
 use std::fs;
@@ -153,6 +154,20 @@ pub fn check_drive(dir: &Path) -> Report {
                 _ => r.warnings.push(format!("{}: no license in its metadata. Check SOURCES.md.", name)),
             },
         }
+    }
+
+    // Map packs: each must start like a PMTiles v3 file (a cut-short or wrong download does not),
+    // and Go and Vault should have a street map to draw.
+    let found = maps::packs(&root.join("maps"));
+    for p in &found {
+        let mut head = [0u8; 8];
+        let ok = fs::File::open(root.join("maps").join(&p.rel)).and_then(|mut f| f.read_exact(&mut head)).is_ok() && maps::is_pmtiles_v3(&head);
+        if !ok {
+            r.problems.push(format!("maps/{}: not a readable PMTiles v3 map file (damaged or cut short?).", p.rel));
+        }
+    }
+    if r.product != Product::Hub && !found.iter().any(|p| p.kind == "street") {
+        r.warnings.push("There is no street map pack in maps/ (for example maps/us/street/conus.pmtiles); the Maps screen will have no map underneath.".into());
     }
 
     // Manuals: no restricted distribution statements. Only text that is stored uncompressed can
@@ -305,6 +320,27 @@ mod tests {
         let d = drive_of("budget-hub", "hub");
         big(d.join("library/huge.bin"), 101);
         assert!(check_drive(&d).ok());
+    }
+
+    #[test]
+    fn map_packs_are_checked_and_a_missing_street_map_is_a_warning() {
+        let d = drive_of("mappacks", "go");
+        let r = check_drive(&d);
+        assert!(r.warnings.iter().any(|w| w.contains("no street map pack")), "{:?}", r.warnings);
+
+        fs::create_dir_all(d.join("maps/us/street")).unwrap();
+        fs::write(d.join("maps/us/street/conus.pmtiles"), b"PMTiles\x03 header and data").unwrap();
+        let r = check_drive(&d);
+        assert!(r.ok(), "{:?}", r.problems);
+        assert!(!r.warnings.iter().any(|w| w.contains("no street map pack")));
+
+        fs::write(d.join("maps/us/street/cut.pmtiles"), b"<html>error page</html>").unwrap();
+        let r = check_drive(&d);
+        assert!(r.problems.iter().any(|p| p.contains("cut.pmtiles")), "{:?}", r.problems);
+
+        // The Hub serves whatever its drive holds: no street map needed.
+        let h = drive_of("mappacks-hub", "hub");
+        assert!(!check_drive(&h).warnings.iter().any(|w| w.contains("street map")));
     }
 
     #[test]
