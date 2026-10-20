@@ -146,7 +146,7 @@
       ],
       "source": {
         "kind": "kiwix",
-        "dir": "wikem",
+        "dir": "other",
         "prefix": "wikem_en_all_maxi_",
         "dest": "library"
       }
@@ -174,7 +174,7 @@
     },
     {
       "id": "us-army-manuals",
-      "name": "US Army field and technical manuals (selected)",
+      "name": "US Army publications (armypubs.army.mil, Kiwix ZIM)",
       "category": "manuals",
       "license": "Public domain",
       "size_estimate_gb": 1,
@@ -187,13 +187,15 @@
         "vault"
       ],
       "source": {
-        "kind": "manual",
-        "how": "download by hand from source_url (verify the license first) and put the file in library\\manuals"
+        "kind": "kiwix",
+        "dir": "zimit",
+        "prefix": "armypubs_en_all_",
+        "dest": "library"
       }
     },
     {
       "id": "fema-guides",
-      "name": "FEMA preparedness guides",
+      "name": "Ready.gov preparedness guides (Kiwix ZIM)",
       "category": "manuals",
       "license": "Public domain",
       "size_estimate_gb": 0.2,
@@ -206,8 +208,10 @@
         "vault"
       ],
       "source": {
-        "kind": "manual",
-        "how": "download by hand from source_url (verify the license first) and put the file in library\\manuals"
+        "kind": "kiwix",
+        "dir": "zimit",
+        "prefix": "ready.gov_en_all_",
+        "dest": "library"
       }
     },
     {

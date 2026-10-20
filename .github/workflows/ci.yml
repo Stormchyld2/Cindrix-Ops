@@ -177,15 +177,6 @@ jobs:
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
-      - name: Look up archives in the Kiwix catalog (diagnostic)
-        shell: powershell
-        run: |
-          foreach ($q in 'wikem','emergency medicine','army','survival','first aid','ready.gov') {
-            $x = (& curl.exe -sL --max-time 60 "https://library.kiwix.org/catalog/v2/entries?q=$([uri]::EscapeDataString($q))&count=15") -join "`n"
-            $rows = [regex]::Matches($x, '<name>([^<]+)</name>[\s\S]*?<link[^>]*type="text/html"[^>]*href="([^"]+)"') | ForEach-Object { $_.Groups[1].Value + ' ' + $_.Groups[2].Value }
-            $dl = [regex]::Matches($x, 'href="([^"]+\.zim\.meta4)"') | ForEach-Object { $_.Groups[1].Value }
-            Write-Host "::notice::catalog '$q': $((($rows) -join ' ; ')) || $((($dl) -join ' ; '))"
-          }
       - name: Dry run for each edition (asks the real servers; downloads nothing)
         shell: powershell
         run: |
