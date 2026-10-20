@@ -351,9 +351,9 @@ export type CrawlStatus = {
 };
 const idleCrawl: CrawlStatus = { running: false, phase: '', pages: 0, files: 0, mb: 0, queued: 0, current: '', failed: 0, finished: false, ok: false, message: '', file: '', blocked: 0, hit_limit: false };
 
-export async function crawlStart(url: string, name: string, section: boolean, maxPages: number, maxMb: number): Promise<void> {
+export async function crawlStart(url: string, name: string, section: boolean, maxPages: number, maxMb: number, fast = false): Promise<void> {
   if (!inTauri) throw 'Saving websites works in the desktop app, not in the browser preview.';
-  await call<void>('crawl_start', { url, name, section, maxPages, maxMb });
+  await call<void>('crawl_start', { url, name, section, maxPages, maxMb, fast });
 }
 export async function crawlStatus(): Promise<CrawlStatus> {
   if (inTauri) return call<CrawlStatus>('crawl_status');

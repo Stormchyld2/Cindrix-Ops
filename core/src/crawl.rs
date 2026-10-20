@@ -729,7 +729,7 @@ pub struct Response {
     pub body: Vec<u8>,
 }
 
-pub trait Fetcher {
+pub trait Fetcher: Sync {
     /// Fetch one address, following redirects. Err when the body is bigger than `max_bytes` or the request fails.
     fn get(&self, url: &str, max_bytes: usize) -> Result<Response, String>;
 }
@@ -745,6 +745,9 @@ pub struct Options {
     pub delay_ms: u64,
     pub respect_robots: bool,
     pub max_depth: usize,
+    /// How many addresses are fetched at once (1 to 8). Forced to 1 when the site's robots.txt
+    /// asks for a crawl delay, so a site that asks for slow service gets it.
+    pub workers: usize,
 }
 
 impl Options {
@@ -758,7 +761,16 @@ impl Options {
             delay_ms: 600,
             respect_robots: true,
             max_depth: 12,
+            workers: 1,
         }
+    }
+
+    /// The "Fast" setting: several requests at once and a short pause between rounds.
+    /// Still obeys robots.txt, including any crawl delay it asks for.
+    pub fn fast(mut self) -> Options {
+        self.delay_ms = 60;
+        self.workers = 6;
+        self
     }
 }
 
@@ -962,33 +974,56 @@ fn run_inner(
     seen.insert(start.key());
     queue.push_back((start.clone(), 0, true));
 
-    while let Some((u, depth, is_page)) = queue.pop_front() {
+    let workers = if robots.delay_ms.unwrap_or(0) > 0 { 1 } else { o.workers.clamp(1, 8) };
+    'rounds: loop {
         if cancel.load(Ordering::Relaxed) {
             return Err("Cancelled".into());
         }
-        if is_page && pages >= o.max_pages {
-            hit_limit = true;
-            continue;
+        // Take the next few addresses that are allowed, then fetch them at the same time.
+        let mut batch: Vec<(Url, usize)> = Vec::new();
+        let mut batch_pages = 0usize;
+        while batch.len() < workers {
+            let Some((u, depth, is_page)) = queue.pop_front() else { break };
+            if is_page && pages + batch_pages >= o.max_pages {
+                hit_limit = true;
+                continue;
+            }
+            if total > max_bytes {
+                hit_limit = true;
+                break 'rounds;
+            }
+            if is_private_host(&u.host) && u.host != start.host {
+                continue;
+            }
+            let pq = format!("{}{}", u.path, u.query.as_ref().map(|q| format!("?{}", q)).unwrap_or_default());
+            if o.respect_robots && u.host == start.host && !robots.allows(&pq) {
+                blocked += 1;
+                continue;
+            }
+            if is_page {
+                batch_pages += 1;
+            }
+            batch.push((u, depth));
         }
-        if total > max_bytes {
-            hit_limit = true;
+        if batch.is_empty() {
             break;
         }
-        if is_private_host(&u.host) && u.host != start.host {
-            continue;
-        }
-        let pq = format!("{}{}", u.path, u.query.as_ref().map(|q| format!("?{}", q)).unwrap_or_default());
-        if o.respect_robots && u.host == start.host && !robots.allows(&pq) {
-            blocked += 1;
-            continue;
-        }
-        p.current = u.to_string();
+        p.current = batch[0].0.to_string();
         p.queued = queue.len();
         progress(&p);
         if delay > 0 && !recs.is_empty() {
             std::thread::sleep(std::time::Duration::from_millis(delay));
         }
-        let resp = match f.get(&u.to_string(), FILE_CAP) {
+        let results: Vec<Result<Response, String>> = if batch.len() == 1 {
+            vec![f.get(&batch[0].0.to_string(), FILE_CAP)]
+        } else {
+            std::thread::scope(|sc| {
+                let handles: Vec<_> = batch.iter().map(|(u, _)| sc.spawn(move || f.get(&u.to_string(), FILE_CAP))).collect();
+                handles.into_iter().map(|h| h.join().unwrap_or_else(|_| Err("the fetch stopped unexpectedly".into()))).collect()
+            })
+        };
+        for ((u, depth), resp) in batch.into_iter().zip(results) {
+        let resp = match resp {
             Ok(r) => r,
             Err(e) => {
                 if recs.is_empty() {
@@ -1060,6 +1095,7 @@ fn run_inner(
         p.pages = pages;
         p.files = files;
         p.mb = total as f64 / 1048576.0;
+        }
     }
     if recs.is_empty() {
         return Err("Nothing could be saved from that address.".into());
@@ -1174,7 +1210,6 @@ fn run_inner(
 mod tests {
     use super::*;
     use crate::zim::Reader;
-    use std::cell::RefCell;
 
     #[test]
     fn urls_parse_and_resolve() {
@@ -1299,11 +1334,11 @@ mod tests {
     struct Fake {
         pages: HashMap<String, (String, Vec<u8>)>,
         redirects: HashMap<String, String>,
-        asked: RefCell<Vec<String>>,
+        asked: std::sync::Mutex<Vec<String>>,
     }
     impl Fetcher for Fake {
         fn get(&self, url: &str, _max: usize) -> Result<Response, String> {
-            self.asked.borrow_mut().push(url.to_string());
+            self.asked.lock().unwrap().push(url.to_string());
             let target = self.redirects.get(url).cloned().unwrap_or_else(|| url.to_string());
             match self.pages.get(&target) {
                 Some((ct, body)) => Ok(Response { status: 200, final_url: target, content_type: ct.clone(), body: body.clone() }),
@@ -1334,7 +1369,7 @@ mod tests {
         add("https://example.com/deep/2.html", "text/html", "<title>D2</title>two");
         let mut redirects = HashMap::new();
         redirects.insert("https://example.com/old".to_string(), "https://example.com/new".to_string());
-        Fake { pages, redirects, asked: RefCell::new(Vec::new()) }
+        Fake { pages, redirects, asked: std::sync::Mutex::new(Vec::new()) }
     }
 
     fn tmpdir(n: &str) -> PathBuf {
@@ -1362,7 +1397,7 @@ mod tests {
         assert_eq!(s.blocked_by_robots, 1);
         assert!(s.failed.is_empty(), "{:?}", s.failed);
         assert!(!d.join("spool").exists());
-        assert!(!fake.asked.borrow().iter().any(|u| u.contains("/secret/x.html")));
+        assert!(!fake.asked.lock().unwrap().iter().any(|u| u.contains("/secret/x.html")));
 
         assert!(crate::zim::verify_checksum(&s.zim).unwrap());
         let mut r = Reader::open(&s.zim).unwrap();
@@ -1392,6 +1427,75 @@ mod tests {
         let found = crate::retrieval::search(&d.join("text"), "how much water do I store per person", 3);
         assert!(!found.is_empty());
         assert_eq!(found[0].heading, "Water page");
+    }
+
+
+    /// Wraps a fetcher and records how many requests were in flight at once.
+    struct Probe<'a> {
+        inner: &'a Fake,
+        now: std::sync::atomic::AtomicUsize,
+        most: std::sync::atomic::AtomicUsize,
+    }
+    impl Fetcher for Probe<'_> {
+        fn get(&self, url: &str, max: usize) -> Result<Response, String> {
+            let n = self.now.fetch_add(1, Ordering::SeqCst) + 1;
+            self.most.fetch_max(n, Ordering::SeqCst);
+            std::thread::sleep(std::time::Duration::from_millis(25));
+            let r = self.inner.get(url, max);
+            self.now.fetch_sub(1, Ordering::SeqCst);
+            r
+        }
+    }
+
+    fn probe(f: &Fake) -> Probe<'_> {
+        Probe { inner: f, now: std::sync::atomic::AtomicUsize::new(0), most: std::sync::atomic::AtomicUsize::new(0) }
+    }
+
+    #[test]
+    fn fast_mode_saves_the_same_archive_as_normal_mode() {
+        let cancel = AtomicBool::new(false);
+        let d1 = tmpdir("slow");
+        let f1 = site();
+        let p1 = probe(&f1);
+        let s1 = run(&opts(), &p1, &d1.join("a.zim"), &d1.join("a.md"), &d1.join("sp"), &cancel, &mut |_| {}).unwrap();
+        let d2 = tmpdir("fast");
+        let f2 = site();
+        let p2 = probe(&f2);
+        let mut o = opts().fast();
+        o.delay_ms = 0;
+        let s2 = run(&o, &p2, &d2.join("a.zim"), &d2.join("a.md"), &d2.join("sp"), &cancel, &mut |_| {}).unwrap();
+        assert_eq!(p1.most.load(Ordering::SeqCst), 1, "normal mode must fetch one at a time");
+        assert!(p2.most.load(Ordering::SeqCst) > 1, "fast mode should fetch several at once");
+        assert_eq!((s1.pages, s1.files, s1.bytes, s1.blocked_by_robots), (s2.pages, s2.files, s2.bytes, s2.blocked_by_robots));
+        assert_eq!(std::fs::read(&s1.zim).unwrap().len(), std::fs::read(&s2.zim).unwrap().len());
+        assert_eq!(std::fs::read_to_string(d1.join("a.md")).unwrap(), std::fs::read_to_string(d2.join("a.md")).unwrap());
+        assert!(!f2.asked.lock().unwrap().iter().any(|u| u.contains("/secret/x.html")), "robots.txt must still be obeyed in fast mode");
+    }
+
+    #[test]
+    fn fast_mode_still_stops_at_the_page_limit() {
+        let cancel = AtomicBool::new(false);
+        let d = tmpdir("fastlimit");
+        let f = site();
+        let mut o = opts().fast();
+        o.delay_ms = 0;
+        o.max_pages = 2;
+        let s = run(&o, &f, &d.join("a.zim"), &d.join("a.md"), &d.join("sp"), &cancel, &mut |_| {}).unwrap();
+        assert_eq!(s.pages, 2);
+        assert!(s.hit_limit);
+    }
+
+    #[test]
+    fn a_site_that_asks_for_a_crawl_delay_is_fetched_one_at_a_time_even_in_fast_mode() {
+        let cancel = AtomicBool::new(false);
+        let d = tmpdir("delay");
+        let mut f = site();
+        f.pages.insert("https://example.com/robots.txt".into(), ("text/plain".into(), b"User-agent: *\nCrawl-delay: 0.01\nDisallow: /secret/\n".to_vec()));
+        let p = probe(&f);
+        let mut o = opts().fast();
+        o.delay_ms = 0;
+        run(&o, &p, &d.join("a.zim"), &d.join("a.md"), &d.join("sp"), &cancel, &mut |_| {}).unwrap();
+        assert_eq!(p.most.load(Ordering::SeqCst), 1);
     }
 
     #[test]

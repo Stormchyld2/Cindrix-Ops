@@ -911,7 +911,7 @@ struct CrawlDto {
 
 /// Save a website into the library as a .zim archive. The only feature that uses the internet.
 #[tauri::command]
-fn crawl_start(url: String, name: String, section: bool, max_pages: usize, max_mb: u64, app: tauri::AppHandle) -> Result<(), String> {
+fn crawl_start(url: String, name: String, section: bool, max_pages: usize, max_mb: u64, fast: bool, app: tauri::AppHandle) -> Result<(), String> {
     let st = app.state::<AppState>();
     {
         let mut c = st.crawl.lock().unwrap();
@@ -943,6 +943,9 @@ fn crawl_start(url: String, name: String, section: bool, max_pages: usize, max_m
         let text = web_text_dir().join(format!("{}.md", final_stem));
         let spool = root().join("user").join("crawl-tmp");
         let mut o = crawl::Options::new(&url, &name);
+        if fast {
+            o = o.fast();
+        }
         o.section_only = section;
         o.max_pages = max_pages.clamp(1, 20_000);
         o.max_mb = max_mb.clamp(10, 100_000);

@@ -19,6 +19,7 @@
 
   // Save a website
   let siteUrl = $state('');
+  let fastSave = $state(false);
   let siteName = $state('');
   let scope = $state('site300');
   let sizeLimit = $state(2000);
@@ -86,7 +87,7 @@
     problem = '';
     const sc = scopes[scope];
     try {
-      await crawlStart(siteUrl.trim(), siteName.trim(), sc.section, sc.pages, sizeLimit);
+      await crawlStart(siteUrl.trim(), siteName.trim(), sc.section, sc.pages, sizeLimit, fastSave);
       await refresh();
     } catch (e) {
       problem = String(e);
@@ -200,6 +201,10 @@
             <option value={50000}>50 GB</option>
           </select>
         </label>
+        <label class="check">
+          <input type="checkbox" bind:checked={fastSave} />
+          <span><b>Fast</b>: fetch several pages at once. Several times quicker, but it puts more load on the website. Use it for sites you own or may copy freely. Sites that ask for a slower pace in their robots.txt still get one page at a time.</span>
+        </label>
         <div><button class="btn primary" onclick={startSite} disabled={!siteUrl.trim() || copy.running}>Save this website</button></div>
       </div>
       {#if crawl.finished}
@@ -294,4 +299,6 @@
   progress { width: 100%; accent-color: var(--blue); }
   .bad { color: #f08a7a; }
   .btn.danger { border-color: #8a3b30; color: #f08a7a; }
+  .check { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; }
+  .check input { margin-top: 3px; flex: none; }
 </style>
