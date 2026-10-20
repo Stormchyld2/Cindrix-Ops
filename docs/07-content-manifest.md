@@ -52,7 +52,7 @@ Notes:
 
 - **Go:** content must stay at or under 100 GB, so a 128 GB stick has room left for the owner's files and backups.
 - **Vault:** content may go up to 3,400 GB on the 4 TB drive.
-- The build script adds up the real file sizes for the chosen edition and fails the build when a budget is exceeded. Today it counts the `library` folder only (models and maps are not counted yet), and the limits are also in `core/src/product.rs`: keep the two in step. The Hub edition has no budget; it serves whatever its drive holds. See [17](17-three-products.md). Today's Go estimate is about 51 GB with the Wikipedia text tier, so it fits with room for more.
+- The build script adds up the real file sizes for the chosen edition and fails the build when a budget is exceeded. Today the drive checker counts everything except `user/` and `music/` (your own music is yours and is never counted), and the limits are also in `core/src/product.rs`: keep the two in step. The Hub edition has no budget; it serves whatever its drive holds. See [17](17-three-products.md). Today's Go estimate is about 51 GB with the Wikipedia text tier, so it fits with room for more.
 
 ## Checking a finished drive
 

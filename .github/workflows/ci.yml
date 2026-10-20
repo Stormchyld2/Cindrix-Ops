@@ -183,6 +183,18 @@ jobs:
           else
             echo "::warning::kiwix-tools not found; the big library will not work in this build"
           fi
+          # ffmpeg (LGPL build) lets the music player play WMA and similar. Optional: the build goes on without it.
+          mkdir -p out/Cindrix/music out/Cindrix/LICENSES
+          ff=$(gh api "repos/BtbN/FFmpeg-Builds/releases/latest" --jq '[.assets[] | select(.name | test("^ffmpeg-master-latest-win64-lgpl\\.zip$"))][0].browser_download_url' || true)
+          if [ -n "$ff" ] && [ "$ff" != "null" ] && curl -fsSL -o ffmpeg.zip "$ff"; then
+            powershell -NoProfile -Command "Expand-Archive -Path ffmpeg.zip -DestinationPath ffmpeg-extract"
+            cp ffmpeg-extract/*/bin/ffmpeg.exe out/Cindrix/engines/ || echo "::warning::ffmpeg.exe not found in the download"
+            cp ffmpeg-extract/*/LICENSE.txt out/Cindrix/LICENSES/ffmpeg-LICENSE.txt 2>/dev/null || true
+            ./out/Cindrix/engines/ffmpeg.exe -hide_banner -encoders 2>&1 | grep -E "libopus| flac " || echo "::warning::this ffmpeg has no libopus; music will convert to FLAC"
+          else
+            echo "::warning::ffmpeg not downloaded; WMA music will not play in this build"
+          fi
+          printf 'Copy your music here (folders like Artist\\Album\\01 - Song.mp3). It is never changed or counted in the size limit.\r\n' > out/Cindrix/music/README.txt
           printf '{ "name": "Cindrix Ops", "edition": "go" }\r\n' > out/Cindrix/cindrix-drive.json
           printf 'Put .zim library files (from Kiwix) in this folder.\r\n' > out/Cindrix/library/README.txt
           if [ ! -f out/Cindrix/engines/llama-server.exe ]; then echo "::error::llama-server.exe missing: $(ls -R out/Cindrix/engines | tr '\n' ' ')"; exit 1; fi

@@ -16,10 +16,14 @@ Cindrix/
     us/street/               US street map tiles
     us/topo/                 elevation contours and shading
     satellite/<state>/<county>/   optional, added in Settings
+  music/                     the owner's own music (any folders; not counted in the size budget)
   user/                      EVERYTHING the user creates (never overwritten by updates)
     family.json
     inventory.csv
     saved-maps/              one folder per map: map.json, picture.png, route.gpx
+    playlists/               one CSV per playlist (path, title, artist, album)
+    music-state.json         what the player remembers: volume, equalizer, queue
+    cache/                   things the program can rebuild; safe to delete: music-index.csv, music/ (converted copies)
     drills/                  progress (json) and debrief notes (md)
     binder/                  last built binder (pdf, export only)
     settings.json

@@ -8,6 +8,8 @@
         { "name": "llama.cpp (llama-server)", "license": "MIT", "status": "in this build", "note": "Runs the model on this computer only." },
         { "name": "Kiwix tools (kiwix-serve)", "license": "GPL-3.0", "status": "in this build", "note": "Serves .zim archives to the built-in reader. Source code: github.com/kiwix/kiwix-tools" },
         { "name": "pdf.js", "license": "Apache-2.0", "status": "in this build", "note": "Shows PDF books in the reader." },
+        { "name": "ffmpeg (converter for WMA and other music formats)", "license": "LGPL-2.1 or later (the LGPL build)", "status": "you add", "note": "Optional. Put ffmpeg(.exe) in the engines folder to play formats the web view cannot. It runs as a separate program on local files only. Source code: ffmpeg.org. Use an LGPL build, not a GPL one." },
+        { "name": "MapLibre GL JS, PMTiles reader, Protomaps basemap styles", "license": "BSD-3-Clause (check each before release)", "status": "in this build", "note": "Draws the street map from .pmtiles files on the drive." },
         { "name": "Tauri, Svelte, Rust libraries", "license": "MIT / Apache-2.0", "status": "in this build", "note": "The program itself is GPL-3.0-or-later." }
       ]
     },

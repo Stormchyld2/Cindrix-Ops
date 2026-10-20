@@ -7,7 +7,7 @@ a size budget and a list of features. Spelling: C-I-N-D-R-I-X.
 
 | Product | What it is | Runs on | Content size |
 |---|---|---|---|
-| **Cindrix Ops Go** | The full app on a 128 GB USB stick: assistant, library, shelf, cards, drills, binder, maps | Windows PC (Android later) | up to 100 GB |
+| **Cindrix Ops Go** | The full app on a 128 GB USB stick: assistant, library, shelf, cards, drills, binder, maps, music | Windows PC (Android later) | up to 100 GB |
 | **Cindrix Ops Vault** | The same app on a 4 TB external drive, with the big archives and saved websites | Windows PC | up to 3400 GB |
 | **Cindrix Ops Hub** (the "internet in a box") | The same program run as a server: it holds the archives on a large drive and shares them over a Wi-Fi hotspot to phones and laptops. It also has a viewer, so ZIM and other files can be opened on the server device itself. | Android tablet first; a Raspberry Pi or mini PC later, if wanted | whatever the drive holds |
 
@@ -21,6 +21,7 @@ The Hub is the same code with a different set of features turned on:
 | Assistant (local model) | on | on | **off by default** (the model is the heaviest and least proven part on Android; OPEN: confirm) |
 | Library: shelf, archives, cards | on | on | on |
 | Maps | on | on | on |
+| Music player (the owner's own music) | on | on | on |
 | Plan screens (inventory, drills, family, binder) | on | on | on |
 | Save a website | on | on | on |
 | Offer to share the archives on the network | normal | normal | prominent |

@@ -10,6 +10,10 @@ param(
 $ErrorActionPreference = 'Stop'
 $lib = Join-Path $Target 'library'
 New-Item -ItemType Directory -Force -Path $lib | Out-Null
+# The owner's own music goes here. It is never counted in the size budget.
+$music = Join-Path $Target 'music'
+New-Item -ItemType Directory -Force -Path $music | Out-Null
+if (-not (Test-Path (Join-Path $music 'README.txt'))) { Set-Content -Path (Join-Path $music 'README.txt') -Value 'Copy your music here (folders like Artist\Album\01 - Song.mp3). It is never changed or counted in the size limit.' -Encoding UTF8 }
 # The marker file is how the program finds this drive on any computer, whatever drive letter it gets.
 if (-not $Name) { $Name = switch ($Edition) { 'vault' { 'Cindrix Ops Vault' } 'hub' { 'Cindrix Ops Hub' } default { 'Cindrix Ops Go' } } }
 $marker = '{ "name": "' + $Name + '", "edition": "' + $Edition + '" }'
