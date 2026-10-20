@@ -15,7 +15,7 @@
   // browsing
   type Mode = 'All' | 'Artists' | 'Albums' | 'Folders';
   const modes: Mode[] = ['All', 'Artists', 'Albums', 'Folders'];
-  let mode: Mode = $state('All');
+  let mode = $state<Mode>('All');
   let text = $state('');
   let artist: string | null = $state(null);
   let album: string | null = $state(null);

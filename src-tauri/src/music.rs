@@ -148,8 +148,8 @@ pub fn serve_music(req: &tauri::http::Request<Vec<u8>>) -> tauri::http::Response
     match route {
         serve::Route::Art(track) => {
             if let Some(a) = tags::read_art(&track) {
-                let mime = if a.mime.is_empty() { "image/jpeg".to_string() } else { a.mime.clone() };
-                return reply(200, None, &mime, a.data);
+                let mime = if a.mime.is_empty() { "image/jpeg" } else { a.mime };
+                return reply(200, None, mime, a.data);
             }
             if let Some(p) = serve::folder_art(&track) {
                 if std::fs::metadata(&p).map(|m| m.len() <= tags::MAX_ART as u64).unwrap_or(false) {
