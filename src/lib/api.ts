@@ -319,12 +319,13 @@ export type ProductInfo = {
   plan: boolean;
   web_saver: boolean;
   serve_archives: boolean;
+  music: boolean;
 };
 
 export async function productInfo(): Promise<ProductInfo> {
   if (inTauri) return call<ProductInfo>('product_info');
   // Browser preview and screenshots: show the full app as Go.
-  return { id: 'go', name: 'Cindrix Ops Go', budget_gb: 100, assistant: true, library: true, maps: true, plan: true, web_saver: true, serve_archives: false };
+  return { id: 'go', name: 'Cindrix Ops Go', budget_gb: 100, assistant: true, library: true, maps: true, plan: true, web_saver: true, serve_archives: false, music: true };
 }
 
 export async function driveRescan(): Promise<void> {
@@ -411,4 +412,137 @@ export type Sources = { note?: string; groups: SourceGroup[] };
 export async function sourcesList(): Promise<Sources> {
   if (inTauri) return JSON.parse(await call<string>('sources_list')) as Sources;
   return { groups: [{ title: 'Program and tools', items: [{ name: 'llama.cpp (llama-server)', license: 'MIT', status: 'in this build', note: 'Runs the model on this computer only.' }] }] };
+}
+
+
+// ---------- music ----------
+export type MusicTrack = { rel: string; title: string; artist: string; album: string; track: number; year: number; ext: string; convert: boolean };
+export type MusicStatus = {
+  folder_exists: boolean; scanning: boolean; scanned_once: boolean; seen: number; count: number; read: number; reused: number; skipped: number;
+  converter: 'opus' | 'flac' | 'none' | 'unknown'; needs_converter: boolean; cache_bytes: number;
+};
+export type MusicQuery = { text?: string; artist?: string | null; album?: string | null; folder?: string | null; direct?: boolean };
+export type MusicFacet = { name: string; sub: string; folder: string; count: number };
+export type MusicEntry = { path: string; title: string; artist: string; album: string };
+export type PlaylistMeta = { name: string; count: number };
+
+// A tiny made-up library for the browser preview and the screenshots: each track is a generated tone.
+const sampleTracks: MusicTrack[] = [
+  { rel: 'Sample Artist/First Light/01 - Dawn.mp3', title: 'Dawn', artist: 'Sample Artist', album: 'First Light', track: 1, year: 2020, ext: 'mp3', convert: false },
+  { rel: 'Sample Artist/First Light/02 - Noon.flac', title: 'Noon', artist: 'Sample Artist', album: 'First Light', track: 2, year: 2020, ext: 'flac', convert: false },
+  { rel: 'Sample Artist/First Light/03 - Dusk.wma', title: 'Dusk', artist: 'Sample Artist', album: 'First Light', track: 3, year: 2020, ext: 'wma', convert: true },
+  { rel: 'Other Band/Night Shift/01 - Lamp.ogg', title: 'Lamp', artist: 'Other Band', album: 'Night Shift', track: 1, year: 2018, ext: 'ogg', convert: false },
+  { rel: 'Other Band/Night Shift/02 - Moth.wav', title: 'Moth', artist: 'Other Band', album: 'Night Shift', track: 2, year: 2018, ext: 'wav', convert: false },
+  { rel: 'Loose song.m4a', title: 'Loose song', artist: '', album: '', track: 0, year: 0, ext: 'm4a', convert: false },
+];
+const memPlaylists: Record<string, MusicEntry[]> = {};
+let memMusicState = '{}';
+
+function previewMatch(t: MusicTrack, q: MusicQuery): boolean {
+  const words = (q.text ?? '').toLowerCase().split(/\s+/).filter(Boolean);
+  const hay = `${t.title} ${t.artist} ${t.album} ${t.rel}`.toLowerCase();
+  if (!words.every((w) => hay.includes(w))) return false;
+  if (q.artist != null && t.artist !== q.artist) return false;
+  if (q.album != null && t.album !== q.album) return false;
+  if (q.folder != null) {
+    const dir = t.rel.includes('/') ? t.rel.slice(0, t.rel.lastIndexOf('/')) : '';
+    if (q.direct ? dir !== q.folder : !(q.folder === '' || dir === q.folder || dir.startsWith(q.folder + '/'))) return false;
+  }
+  return true;
+}
+
+export async function musicStatus(): Promise<MusicStatus> {
+  if (inTauri) return call<MusicStatus>('music_status');
+  return { folder_exists: true, scanning: false, scanned_once: true, seen: sampleTracks.length, count: sampleTracks.length, read: sampleTracks.length, reused: 0, skipped: 0, converter: 'opus', needs_converter: true, cache_bytes: 0 };
+}
+export async function musicScan(): Promise<void> {
+  if (inTauri) await call<void>('music_scan');
+}
+export async function musicQuery(q: MusicQuery, offset: number, limit: number): Promise<{ total: number; tracks: MusicTrack[] }> {
+  if (inTauri) return call('music_query', { args: q, offset, limit });
+  const all = sampleTracks.filter((t) => previewMatch(t, q));
+  return { total: all.length, tracks: all.slice(offset, offset + limit) };
+}
+export async function musicFacets(kind: 'artists' | 'albums' | 'folders', prefix?: string): Promise<MusicFacet[]> {
+  if (inTauri) return call<MusicFacet[]>('music_facets', { kind, prefix: prefix ?? null });
+  const out = new Map<string, MusicFacet>();
+  for (const t of sampleTracks) {
+    if (kind === 'artists') { const k = t.artist; const f = out.get(k) ?? { name: k, sub: '', folder: '', count: 0 }; f.count++; out.set(k, f); }
+    else if (kind === 'albums') { if (!t.album) continue; const k = t.artist + '|' + t.album; const f = out.get(k) ?? { name: t.album, sub: t.artist, folder: '', count: 0 }; f.count++; out.set(k, f); }
+    else {
+      const dir = t.rel.includes('/') ? t.rel.slice(0, t.rel.lastIndexOf('/')) : '';
+      const pre = prefix ? prefix + '/' : '';
+      if (!dir.startsWith(pre) || dir === (prefix ?? '')) continue;
+      const first = dir.slice(pre.length).split('/')[0];
+      const k = pre + first; const f = out.get(k) ?? { name: first, sub: '', folder: k, count: 0 }; f.count++; out.set(k, f);
+    }
+  }
+  return [...out.values()];
+}
+export async function musicResolve(rels: string[]): Promise<MusicTrack[]> {
+  if (inTauri) return call<MusicTrack[]>('music_resolve', { rels });
+  return rels.map((r) => sampleTracks.find((t) => t.rel === r)).filter((t): t is MusicTrack => !!t);
+}
+
+function wavTone(freq: number, seconds: number): string {
+  const rate = 8000, n = rate * seconds, buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+  const str = (o: number, t: string) => { for (let i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)); };
+  str(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); str(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); str(36, 'data'); v.setUint32(40, n * 2, true);
+  for (let i = 0; i < n; i++) v.setInt16(44 + i * 2, Math.round(Math.sin((2 * Math.PI * freq * i) / rate) * 6000), true);
+  return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+}
+const toneCache = new Map<string, string>();
+
+function encodeRel(rel: string): string {
+  return rel.split('/').map(encodeURIComponent).join('/');
+}
+
+/** An address the audio element can play. Converts the file first if the web view cannot play it. */
+export async function musicSource(rel: string): Promise<string> {
+  if (!inTauri) {
+    let u = toneCache.get(rel);
+    if (!u) { u = wavTone(220 + (sampleTracks.findIndex((t) => t.rel === rel) + 1) * 55, 30); toneCache.set(rel, u); }
+    return u;
+  }
+  const path = await call<string>('music_prepare', { rel });
+  const { convertFileSrc } = await import('@tauri-apps/api/core');
+  // `t/` and `c/` paths are already encoded by the program.
+  return convertFileSrc(path, 'cindrix-music');
+}
+/** The cover picture for a track (embedded or in its folder), or null in the browser preview. */
+export async function musicArtUrl(rel: string): Promise<string | null> {
+  if (!inTauri) return null;
+  const { convertFileSrc } = await import('@tauri-apps/api/core');
+  return convertFileSrc('a/' + encodeRel(rel), 'cindrix-music');
+}
+
+export async function musicPlaylists(): Promise<PlaylistMeta[]> {
+  if (inTauri) return call<PlaylistMeta[]>('music_playlists');
+  return Object.entries(memPlaylists).map(([name, e]) => ({ name, count: e.length })).sort((a, b) => a.name.localeCompare(b.name));
+}
+export async function musicPlaylistLoad(name: string): Promise<MusicEntry[]> {
+  if (inTauri) return call<MusicEntry[]>('music_playlist_load', { name });
+  if (!memPlaylists[name]) throw 'There is no such playlist.';
+  return memPlaylists[name];
+}
+export async function musicPlaylistSave(name: string, entries: MusicEntry[]): Promise<void> {
+  if (inTauri) return call<void>('music_playlist_save', { name, entries });
+  memPlaylists[name] = entries;
+}
+export async function musicPlaylistDelete(name: string): Promise<void> {
+  if (inTauri) return call<void>('music_playlist_delete', { name });
+  delete memPlaylists[name];
+}
+export async function musicStateLoad(): Promise<string> {
+  if (inTauri) return call<string>('music_state_load');
+  return memMusicState;
+}
+export async function musicStateSave(json: string): Promise<void> {
+  if (inTauri) return call<void>('music_state_save', { json });
+  memMusicState = json;
+}
+export async function musicClearCache(): Promise<number> {
+  if (inTauri) return call<number>('music_clear_cache');
+  return 0;
 }

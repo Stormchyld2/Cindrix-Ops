@@ -92,6 +92,26 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   await page.getByRole('button', { name: 'Add', exact: true }).click();
   await page.getByText(/latitude between -90 and 90/).waitFor();
 
+  // Music: browse, play a generated tone, watch the clock advance, use the equalizer.
+  await page.getByRole('button', { name: 'Music', exact: true }).click();
+  await page.getByRole('button', { name: 'Play Dawn' }).waitFor();
+  await shoot(page, `${label}-2d-music-library`);
+  await page.getByRole('button', { name: 'Artists', exact: true }).click();
+  await page.getByRole('button', { name: /Other Band/ }).click();
+  await page.getByRole('button', { name: 'Play Lamp' }).waitFor();
+  await page.getByRole('button', { name: 'Play Moth' }).click();
+  await page.getByRole('button', { name: 'Pause' }).waitFor();
+  await page.waitForFunction(() => /^0:(0[1-9]|[1-5]\d)/.test(document.querySelector('.mini .time')?.textContent ?? ''), null, { timeout: 15000 });
+  await shoot(page, `${label}-2e-music-playing`);
+  await page.getByRole('tab', { name: /^Queue/ }).click();
+  await shoot(page, `${label}-2f-music-queue`);
+  await page.getByRole('tab', { name: 'Equalizer' }).click();
+  await page.getByLabel('1 kHz').fill('6');
+  await page.getByLabel('62 Hz').fill('9');
+  await page.getByRole('button', { name: 'Pause' }).waitFor();
+  await shoot(page, `${label}-2g-music-eq`);
+  await page.getByRole('button', { name: 'Pause' }).click();
+
   await page.getByRole('button', { name: 'Plan', exact: true }).click();
   await shoot(page, `${label}-3-start`);
 

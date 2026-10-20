@@ -12,6 +12,8 @@
   import Drills from './views/Drills.svelte';
   import Binder from './views/Binder.svelte';
   import Settings from './views/Settings.svelte';
+  import Music from './views/Music.svelte';
+  import MiniPlayer from './lib/MiniPlayer.svelte';
   import { onMount } from 'svelte';
   import { modelStatus, libraryStatus, productInfo, type ModelStatus, type ProductInfo } from './lib/api';
   let ms: ModelStatus | null = $state(null);
@@ -21,8 +23,8 @@
   async function poll() { ms = await modelStatus(); const l = await libraryStatus(); sharing = l.shared; online = l.online; product = await productInfo(); }
   onMount(() => { const t = setInterval(poll, 3000); poll(); return () => clearInterval(t); });
 
-  type Group = 'Ask' | 'Library' | 'Maps' | 'Plan' | 'Settings';
-  const allGroups: Group[] = ['Ask', 'Library', 'Maps', 'Plan', 'Settings'];
+  type Group = 'Ask' | 'Library' | 'Maps' | 'Music' | 'Plan' | 'Settings';
+  const allGroups: Group[] = ['Ask', 'Library', 'Maps', 'Music', 'Plan', 'Settings'];
   // Each product switches parts of the program on or off (core/src/product.rs).
   const groups = $derived(
     allGroups.filter((g) => {
@@ -30,6 +32,7 @@
       if (g === 'Ask') return product.assistant;
       if (g === 'Library') return product.library;
       if (g === 'Maps') return product.maps;
+      if (g === 'Music') return product.music;
       if (g === 'Plan') return product.plan;
       return true;
     })
@@ -106,6 +109,8 @@
       {/if}
     {:else if group === 'Maps'}
       <Maps />
+    {:else if group === 'Music'}
+      <Music />
     {:else if group === 'Plan'}
       {#if plan === 'Start'}
         <Start go={goPlan} />
@@ -126,6 +131,8 @@
       <Soon title={group} />
     {/if}
   </main>
+
+  {#if product?.music !== false}<MiniPlayer open={() => (group = 'Music')} />{/if}
 
   <footer class="no-print">
     <span><b class="dot">●</b> Library on this drive</span>
