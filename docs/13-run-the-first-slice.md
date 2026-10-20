@@ -56,3 +56,12 @@ The Windows download now also contains:
 - `library/` (empty). Put Kiwix `.zim` files here, or run `scripts/build-drive.ps1 -Target <folder>` to download them. Answers then draw on them as well as on the small built-in library.
 
 Honest status: the code is tested with fake servers and builds on GitHub, but nobody has run it with a real model or real archives yet. The Kiwix search output format is parsed from documentation, so it is the most likely thing to need a fix on first real use.
+
+
+## Update: putting a drive together
+
+1. Format the drive exFAT.
+2. `powershell -File scripts\build-drive.ps1 -Target D:\ -Edition go -DryRun` shows exactly what would be downloaded and the total. Drop `-DryRun` to download. It continues unfinished files if run again, and refuses to start if the total would pass the edition's limit.
+3. `scripts\get-maps.ps1 -Target D:\` for the street map.
+4. Copy the portable app folder (from the Cindrix-windows-portable download) onto the drive.
+5. Open the app. Start shows a Setup check that says what is missing.

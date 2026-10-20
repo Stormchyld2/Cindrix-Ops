@@ -69,3 +69,19 @@ It exits with 1 when anything must be fixed. It does not yet check checksums aga
 
 - **Add a .zim file (planned next):** an "Add archive" button on the Archives tab that copies a chosen .zim into `library/` and restarts the reader. It shows what the file says about itself (name, size, license) and warns if the license looks non-commercial. This is for the owner's private use. Built drives still go through the manifest rules.
 - **Website to .zim:** not built into the app for now. The free tools for it (Kiwix's Zimit crawler, or `zimwriterfs`) need a web crawler or Docker and a lot of internet time. The user guide will explain how to make one on a computer with internet and then add it with the button. Copying other people's sites also raises permission questions, so we do not ship any such copies.
+
+
+## Measured sizes (from the real servers, 2026-10-20)
+
+`scripts\build-drive.ps1 -DryRun` asks the servers for real file sizes, and CI runs it on every push. Measured today:
+
+| Item | Real size |
+|---|---|
+| Qwen3.5 2B Q4_K_M / 4B Q4_K_M / 9B Q4_K_M | 1.19 / 2.55 / 5.29 GiB |
+| Wikipedia English, no pictures (the Go tier) | 49 GB (the 10 GB estimate above was too low) |
+| Wikipedia English, with pictures (the Vault tier) | 119 GB |
+| WikiMed / WikEM | 1.7 GB / 0.35 GB |
+| US Army publications (armypubs) / Ready.gov | 7.7 GB / 1.9 GB |
+| Gutenberg English / Wikisource / Wikibooks / DIY Stack Exchange | 206 / 8.0 / 5.8 / 1.9 GB |
+
+Go downloads come to about 64.5 GB, so with the street map (about 15 GB) it stays under the 100 GB limit with room to spare. Vault with every optional item is about 356 GB plus maps. Maps (script `get-maps.ps1`), the emergency cards and the guide are not downloaded by `build-drive.ps1`. Smaller US-government PDFs (canning guide, rainwater guide, field manuals) are listed in the manifest as "manual": download them by hand and put them in `library\manuals` after checking the license.
