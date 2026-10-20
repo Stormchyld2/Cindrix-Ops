@@ -17,8 +17,13 @@ fn main() {
     check("catalog lists a book", !books.is_empty(), format!("{:?}", books));
     let Some(book) = books.first() else { std::process::exit(1) };
 
-    let (main, final_path) = kiwix::follow(port, &format!("/content/{}", book.name)).expect("book page");
-    check("book address leads to a page", main.status == 200 && main.content_type.starts_with("text/html"), format!("{} {} {}", main.status, main.content_type, final_path));
+    // The sample archive made by our website saver has no start page, so the book address may
+    // be a 404; the page named in the third argument is used instead.
+    let root = kiwix::follow(port, &format!("/content/{}", book.name));
+    check("book address answers (informational)", true, format!("{:?}", root.as_ref().map(|(r, p)| (r.status, p.clone())).map_err(|e| e.clone())));
+    let page_path = a.get(3).map(|p| format!("/content/{}/{}", book.name, p)).unwrap_or_else(|| format!("/content/{}", book.name));
+    let (main, final_path) = kiwix::follow(port, &page_path).expect("page");
+    check("a page is served as HTML", main.status == 200 && main.content_type.starts_with("text/html"), format!("{} {} {}", main.status, main.content_type, final_path));
 
     let html = String::from_utf8_lossy(&main.body).to_string();
     let injected = kiwix::inject_reader_script(&html);

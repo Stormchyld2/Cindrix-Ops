@@ -574,7 +574,8 @@ export async function zimFrame(path: string): Promise<{ src?: string; srcdoc?: s
     const origin = convertFileSrc('x', 'cindrix-zim').slice(0, -1);
     return { src: origin + path, title: '' };
   }
-  const key = path.split('?')[0];
+  const raw = path.split('?')[0];
+  const key = raw === '/content/sample' || raw === '/content/sample/' ? '/content/sample/A/Main' : raw;
   const pg = previewPages[key] ?? { title: 'Not found', body: '<p>No such page in the preview.</p>' };
   return { srcdoc: `<!doctype html><html><head><meta charset="utf-8"><title>${pg.title}</title><style>body{font:16px system-ui;margin:16px;color:#111}</style>${previewScript}</head><body>${pg.body}</body></html>`, title: pg.title };
 }
