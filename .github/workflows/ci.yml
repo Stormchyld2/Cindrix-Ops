@@ -147,7 +147,7 @@ jobs:
               pid2=$!
               sleep 3
               cout=$(cd "$GITHUB_WORKSPACE/core" && cargo run -q --example cross_check -- 8098 "$z" 2>&1); ccode=$?
-              echo "::notice::cross (exit $ccode): $(echo "$cout" | tr '\n' '|' | head -c 3000)"
+              { echo "== cross $(basename $z) exit $ccode"; echo "$cout"; echo "-- serve2"; head -20 serve2.log; } >> "$RUNNER_TEMP/zimlog.txt"
               [ $ccode -ne 0 ] && bad "our reader and kiwix-serve disagree on $(basename $z)"
               kill $pid2 2>/dev/null
             done
@@ -155,7 +155,7 @@ jobs:
             pid=$!
             sleep 3
             pout=$(cd "$GITHUB_WORKSPACE/core" && cargo run -q --example probe_kiwix -- 8099 "Boil water" example.test/index.html 2>&1); pcode=$?
-            echo "::notice::probe (exit $pcode): $(echo "$pout" | tr '\n' '|' | head -c 3000)"
+            { echo "== probe exit $pcode"; echo "$pout"; echo "-- serve"; head -20 serve.log; } >> "$RUNNER_TEMP/zimlog.txt"
             [ $pcode -ne 0 ] && bad "the in-app reader's assumptions do not hold against the real kiwix-serve"
             kill $pid 2>/dev/null
             head -20 serve.log | while IFS= read -r l; do echo "::notice::serve: $l"; done
@@ -163,6 +163,12 @@ jobs:
             bad "kiwix-serve could not be downloaded"
           fi
           exit $fail
+      - name: Keep the detailed log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zim-check-log
+          path: ${{ runner.temp }}/zimlog.txt
 
   windows:
     name: Windows app build
