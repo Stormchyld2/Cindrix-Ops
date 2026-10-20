@@ -21,5 +21,6 @@ Status: first draft, before any code. Items marked **TO TEST** have not been tri
 17. [Three products, one code base](17-three-products.md)
 18. [Maps](18-maps.md): saved maps, the tile viewer, getting map data
 19. [Music](19-music.md): the music player, formats, the converter, playlists
+20. [Archive reader](20-archive-reader.md): the in-app Kiwix reader
 
 Mockups of every screen are in [`../mockups`](../mockups).
