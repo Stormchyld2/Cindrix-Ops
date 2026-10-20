@@ -226,14 +226,41 @@ pub fn best_chunk(title: &str, text: &str, question: &str) -> String {
 }
 
 /// Search the archives and return up to `limit` passages. Each is the best-matching part of its article.
+/// Names of every archive the library server holds.
+fn book_names(port: u16) -> Vec<String> {
+    match get(port, "/catalog/v2/entries?count=500") {
+        Ok((200, body)) => parse_catalog(&String::from_utf8_lossy(&body)).into_iter().map(|b| b.name).collect(),
+        _ => vec![],
+    }
+}
+
+/// Search EVERY archive on the drive, not just one: each book is asked on its own, and the
+/// results are mixed best-first so that a small archive (a saved website, a repair manual) is
+/// not buried by Wikipedia. Falls back to one all-library search if the book list is unavailable.
 pub fn search(port: u16, question: &str, limit: usize) -> Vec<Passage> {
-    let path = format!("/search?pattern={}&pageLength={}&format=xml", url_encode(question), limit);
-    let xml = match get(port, &path) {
-        Ok((200, body)) => String::from_utf8_lossy(&body).to_string(),
-        _ => return vec![],
+    let q = url_encode(question);
+    let names = book_names(port);
+    let mut hits: Vec<(usize, String, String)> = Vec::new(); // (rank inside its book, title, link)
+    let queries: Vec<String> = if names.is_empty() {
+        vec![format!("/search?pattern={}&pageLength={}&format=xml", q, limit)]
+    } else {
+        names.iter().map(|n| format!("/search?content={}&pattern={}&pageLength={}&format=xml", url_encode(n), q, limit)).collect()
     };
+    for path in queries {
+        if let Ok((200, body)) = get(port, &path) {
+            for (rank, (title, link)) in parse_search(&String::from_utf8_lossy(&body)).into_iter().take(limit).enumerate() {
+                if !hits.iter().any(|h| h.2 == link) {
+                    hits.push((rank, title, link));
+                }
+            }
+        }
+    }
+    hits.sort_by_key(|h| h.0); // stable: books keep their order within the same rank
     let mut passages = Vec::new();
-    for (rank, (title, link)) in parse_search(&xml).into_iter().take(limit).enumerate() {
+    for (rank, title, link) in hits.into_iter() {
+        if passages.len() >= limit {
+            break;
+        }
         let link = if link.starts_with('/') { link } else { format!("/{}", link) };
         if let Ok((200, body)) = get(port, &link) {
             let text = html_to_text(&String::from_utf8_lossy(&body));
@@ -557,5 +584,35 @@ mod tests {
         assert!(both.starts_with("<head><base"));
         // multi-byte text before the head cannot split a character
         assert!(inject_reader_script("<html>é<head></head>").contains("<script>"));
+    }
+
+    #[test]
+    fn the_assistant_searches_every_archive() {
+        let l = TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = l.local_addr().unwrap().port();
+        std::thread::spawn(move || {
+            for stream in l.incoming().flatten() {
+                let mut s = stream;
+                let mut buf = [0u8; 2048];
+                let n = s.read(&mut buf).unwrap_or(0);
+                let line = String::from_utf8_lossy(&buf[..n]).lines().next().unwrap_or("").to_string();
+                let article = format!("<html><body><p>{}</p></body></html>", "Boil water for one minute to make it safe to drink. ".repeat(4));
+                let body = if line.contains("/catalog/v2/entries") {
+                    "<feed><entry><title>Wiki</title><link type=\"text/html\" href=\"/content/wiki\"/></entry><entry><title>Manual</title><link type=\"text/html\" href=\"/content/manual\"/></entry></feed>".to_string()
+                } else if line.contains("/search?content=wiki") {
+                    "<item><title>Water in Wiki</title><link>/content/wiki/A/Water</link></item><item><title>Wiki two</title><link>/content/wiki/A/Two</link></item>".to_string()
+                } else if line.contains("/search?content=manual") {
+                    "<item><title>Water in Manual</title><link>/content/manual/A/Water</link></item>".to_string()
+                } else {
+                    article
+                };
+                let _ = write!(s, "HTTP/1.0 200 OK\r\nContent-Length: {}\r\n\r\n{}", body.len(), body);
+            }
+        });
+        let p = search(port, "how do I make water safe", 3);
+        let sources: Vec<&str> = p.iter().map(|x| x.source.as_str()).collect();
+        assert_eq!(p.len(), 3, "{:?}", sources);
+        // the small archive's best hit is not pushed out by the big one's second hit
+        assert!(sources.contains(&"manual") && sources.contains(&"wiki"), "{:?}", sources);
     }
 }

@@ -3,40 +3,61 @@
 The reader is the screen inside the app (Library, then Archives) where ZIM files are read:
 Wikipedia, medical guides, repair manuals and the websites you saved yourself.
 
-## How it works
+## Built in: no Kiwix program needed
 
-Kiwix's own program, `kiwix-serve`, still does the hard part: opening ZIM files, decompressing them
-and searching them. The app starts it in the background on this computer only. The reader is **our own
-screen on top of it**, not Kiwix's page:
+The program reads ZIM files itself (`core/src/zimread.rs`, `library.rs`). It understands:
 
-- Back, Forward and Home buttons that follow your path through the archive.
-- A search box with suggestions as you type (article titles), and "Search text" for a full-text search.
-- Bookmarks (the star), kept per archive in `user/zim-bookmarks.json`.
-- Text size (A− and A+, 70 to 200 percent), remembered.
-- An archive picker when more than one is on the drive.
-- Links that go to the internet are not opened; the reader says so. The library works offline.
+- both file layouts (the new one, with all content in one namespace, and the old A / I / - one);
+- stored, **Zstandard** and **XZ** clusters, with 32-bit and 64-bit offsets (`zstd.rs`, `xz.rs`, written
+  for this project with no outside libraries, so they also build for Android);
+- redirects, the archive's own start page and description, title lookup, and title suggestions as you type.
 
-Pages reach the reader through a private address (`cindrix-zim`) that passes only the library parts of
-`kiwix-serve` (articles, its style files, search, suggestions, the list of books) and nothing else
-(`core/src/kiwix.rs`, `proxy_path_ok`, with tests). A small script is added to each page so the
-reader knows which page is open. The web view plays no part in finding files on the disk.
+It does **not** read Kiwix's full-text search index (Xapian). Searching text inside articles still needs
+Kiwix's `kiwix-serve` program; when that is running the reader uses it for "Search text". Without it,
+"Search text" lists articles by title.
 
-"Use the plain Kiwix screen instead" (under the reader) switches to Kiwix's own page, in case a
-particular archive misbehaves in ours.
+The reader screen:
+- Back, Forward and Home buttons that follow your path through the archive;
+- a search box with title suggestions as you type, and "Search text";
+- bookmarks (the star), per archive, in `user/zim-bookmarks.json`;
+- text size (A− and A+), remembered;
+- an archive picker when more than one is on the drive;
+- links that go to the internet are not opened; the reader says so.
 
-## Not built, and why
+Pages reach the web view through a private address (`cindrix-zim`). It serves pages, pictures and
+suggestions from the archives, and passes `kiwix-serve`'s search and style files through only when that
+program is running. A small script is added to each page so the reader knows which page is open.
 
-- **Our own ZIM reader without `kiwix-serve`.** The format is compressed with Zstandard and XZ, which
-  need two outside libraries, and full-text search needs Kiwix's search index format. Possible later;
-  it is what the Android Hub would need, because `kiwix-serve` does not run on Android.
-- Several pages open at once (tabs), find-in-page, printing an article.
-- Large videos inside an archive: they are passed whole, up to 64 MB, so very big ones will not play.
+"Use the plain Kiwix screen instead" (under the reader, only when `kiwix-serve` is running) shows
+Kiwix's own page.
+
+## The assistant searches every archive
+
+When you ask the assistant a question it looks in **every** ZIM file on the drive, not one. Each archive is
+searched on its own and the results are mixed best-first, so a small manual is not buried by Wikipedia.
+- With `kiwix-serve` running: full-text search in each archive, plus the title search below.
+- Always (no Kiwix program needed): the question's words, and pairs and triples of them, are looked up in
+  each archive's titles ("water purification" finds *Water purification*); the best articles are read and
+  the matching part is given to the assistant, which names the archive and article it came from.
+- Title search finds articles whose titles hold the question's words. It will miss an answer buried in an
+  article with an unrelated title; full-text search catches those.
 
 ## Tested and not tested
 
-Tested: the address filter, redirect handling (including a loop and an attempt to leave the library),
-reading the book list, adding the script and base address to a page, and the whole reader flow in a
-browser with a sample archive. The check against a **real kiwix-serve** on GitHub (`probe_kiwix`) tests
-that the book list, main page redirect, suggestions and search answer the way the reader expects.
+Tested here against **real compressed data**: the Zstandard decoder against libzstd on 62 inputs (levels 1
+to 19, many blocks, checksums, several frames, skippable frames) and the XZ decoder against `xz` on 49
+inputs; both survive truncated and corrupted input. The reader against ZIM files in both layouts with
+Zstandard, XZ, stored and 64-bit-offset clusters, and the library and assistant search on top of it. On
+GitHub, the reader is also compared article by article with the real `kiwix-serve` (`cross_check`), and
+`zimcheck` checks the test archives.
 
-**Not tested by a person yet:** the reader in the Windows app with a real Wikipedia archive.
+**Not tested yet:** a real multi-gigabyte Wikipedia file (speed, memory), and the reader in the Windows
+app. Test archives were made by our own script, so the check against Kiwix's tools matters.
+
+## Not built
+
+- Full-text search without Kiwix (reading Xapian indexes). Possible later, and a big job.
+- Archives compressed with zlib or bzip2 (old and rare; the reader says so).
+- Tabs, find-in-page, printing an article. Big videos inside an archive.
+- Sharing the archives over the hotspot **without** `kiwix-serve` (a small web server of our own). That
+  is the next step for the Android tablet Hub, since `kiwix-serve` does not run on Android.

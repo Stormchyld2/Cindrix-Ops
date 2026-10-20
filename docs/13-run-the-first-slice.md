@@ -3,7 +3,7 @@
 What works and what has been tested, so nothing is guessed.
 
 ## Tested (in the workspace, on Linux)
-`core/` is a Rust crate with **no outside dependencies**. `cargo test` in `core/` runs 182 unit tests, the 4 safety-suite tests and 2 real-audio tests (they make MP3, FLAC, OGG, Opus, WAV, M4A and WMA files with ffmpeg, read their tags and covers, and convert the WMA), all passing as of 2026-10-20 (the first slice had 25; later groups added the user folder, calendar, what-fails-next, the shelf, the website saver, the ZIM writer, drive detection and the product setup):
+`core/` is a Rust crate with **no outside dependencies**. `cargo test` in `core/` runs 188 unit tests, the 4 safety-suite tests, 2 real-audio tests, 4 decoder tests, 4 ZIM reader tests and 4 library tests (they make MP3, FLAC, OGG, Opus, WAV, M4A and WMA files with ffmpeg, read their tags and covers, and convert the WMA), all passing as of 2026-10-20 (the first slice had 25; later groups added the user folder, calendar, what-fails-next, the shelf, the website saver, the ZIM writer, drive detection and the product setup):
 - the medication safety check against all 37 cases in `tests/safety/dosing.json`
 - the answer path: dosing question never reaches the model; unknown topic gets "not found"; a model answer containing a dose is replaced; a model failure gives a plain message
 - music: tag and cover readers for every format, the index cache, safe paths, playlists, the converter's arguments and cache (and, with ffmpeg, a real WMA conversion)

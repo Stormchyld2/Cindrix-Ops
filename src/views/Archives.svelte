@@ -217,19 +217,17 @@
     {/if}
   </div>
 
-  {#if st.ready && st.url}
+  {#if st.archives.length > 0 || (st.ready && st.url)}
     <div class="frame panel">
-      {#if plainKiwix}
+      {#if plainKiwix && st.url}
         <iframe title="Offline library" src={st.url} sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
       {:else}
-        <ZimReader ready={st.ready} />
+        <ZimReader ready={st.archives.length > 0 || st.ready} />
       {/if}
     </div>
     <div class="row fine muted">
-      <button class="linkbtn" onclick={() => (plainKiwix = !plainKiwix)}>{plainKiwix ? 'Use the Cindrix reader' : 'Use the plain Kiwix screen instead'}</button>
+      <button class="linkbtn" hidden={!st.url} onclick={() => (plainKiwix = !plainKiwix)}>{plainKiwix ? 'Use the Cindrix reader' : 'Use the plain Kiwix screen instead'}</button>
     </div>
-  {:else if st.archives.length > 0}
-    <div class="panel"><strong>Starting the library…</strong><p class="muted">{st.archives.length} archive{st.archives.length === 1 ? '' : 's'} found. This can take a few seconds.</p></div>
   {/if}
 
   {#if st.ready}

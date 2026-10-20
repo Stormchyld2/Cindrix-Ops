@@ -561,7 +561,15 @@ async fn ask_stream(question: String, on_event: Channel<StreamEvent>, app: tauri
             if let Some(k) = kport {
                 p.extend(kiwix::search(k, &question, 2));
             }
+            // every archive on the drive, by title (needs no Kiwix program)
+            p.extend(zimview::library().passages(&question, 2, 3));
             p.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+            // the same article found two ways counts once
+            let mut seen: Vec<String> = Vec::new();
+            p.retain(|x| {
+                let k = x.heading.to_lowercase();
+                if seen.contains(&k) { false } else { seen.push(k); true }
+            });
             p.truncate(3);
             p
         };

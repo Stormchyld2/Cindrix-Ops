@@ -113,7 +113,7 @@
     saveMarks();
   }
   function removeMark(b: ZimBookmark) { bookmarks = bookmarks.filter((x) => x !== b); saveMarks(); }
-  const shown = (b: ZimBookmark) => decodeURIComponent(b.title || b.path);
+  const shown = (b: ZimBookmark) => { try { return decodeURIComponent(b.title || b.path); } catch { return b.title || b.path; } };
 </script>
 
 <div class="reader">
