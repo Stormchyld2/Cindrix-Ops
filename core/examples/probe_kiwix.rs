@@ -34,7 +34,8 @@ fn main() {
 
     let s = kiwix::get_full(port, &format!("/search?content={}&pattern=water&format=xml", kiwix::url_encode(&book.name))).expect("search");
     let hits = kiwix::parse_search(&String::from_utf8_lossy(&s.body));
-    check("search answers", s.status == 200, format!("{} {} hits, first {:?}", s.status, hits.len(), hits.first()));
+    // An archive without a full-text index (like the website saver's) answers 404; that is normal.
+    check("search answers or says there is no index", s.status == 200 || s.status == 404, format!("{} {} hits, first {:?}", s.status, hits.len(), hits.first()));
 
     let skin = kiwix::get_full(port, "/skin/kiwix.css");
     check("skin files are reachable (informational)", true, format!("{:?}", skin.map(|r| r.status)));
