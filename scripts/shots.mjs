@@ -63,6 +63,23 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   await page.getByRole('button', { name: '‹ Shelf' }).click();
   await page.getByRole('button', { name: 'Archives', exact: true }).click();
   await shoot(page, `${label}-1f-archives`);
+  // The in-app archive reader: follow a link, go back, search, bookmark, and meet an outside link.
+  const zim = page.frameLocator('iframe[title="Archive page"]');
+  await zim.getByRole('heading', { name: 'Sample library' }).waitFor();
+  await zim.getByRole('link', { name: 'Water' }).click();
+  await zim.getByText('Boil water for one minute').waitFor();
+  await page.getByRole('button', { name: 'Bookmark this page' }).click();
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await zim.getByRole('heading', { name: 'Sample library' }).waitFor();
+  await zim.getByRole('link', { name: 'An outside link' }).click();
+  await page.getByText(/not opened/).waitFor();
+  await page.getByLabel('Search this archive').fill('fir');
+  await page.getByRole('option', { name: 'Fire' }).click();
+  await zim.getByText('Keep fuel and tinder dry').waitFor();
+  await page.getByRole('button', { name: /^Bookmarks/ }).click();
+  await page.getByRole('button', { name: 'Water', exact: true }).waitFor();
+  await shoot(page, `${label}-1g-archive-reader`);
+  await page.getByRole('button', { name: /^Bookmarks/ }).click();
   await page.getByRole('button', { name: 'Emergency cards', exact: true }).click();
   await page.getByRole('button', { name: /Low blood sugar/ }).click();
   await shoot(page, `${label}-2-library`);

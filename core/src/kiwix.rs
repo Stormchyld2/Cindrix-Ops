@@ -249,6 +249,168 @@ pub fn search(port: u16, question: &str, limit: usize) -> Vec<Passage> {
     passages
 }
 
+// ---------- the in-app reader: a safe window onto kiwix-serve ----------
+
+/// What kiwix-serve answered, with the headers the reader needs.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Reply {
+    pub status: u16,
+    pub content_type: String,
+    pub location: Option<String>,
+    pub body: Vec<u8>,
+}
+
+/// Biggest page or picture handed to the reader.
+pub const MAX_BODY: u64 = 64 * 1024 * 1024;
+
+fn parse_head(head: &str) -> Option<(u16, String, Option<String>)> {
+    let mut lines = head.lines();
+    let status: u16 = lines.next()?.split_whitespace().nth(1)?.parse().ok()?;
+    let (mut ct, mut loc) = (String::new(), None);
+    for l in lines {
+        if let Some((k, v)) = l.split_once(':') {
+            match k.trim().to_ascii_lowercase().as_str() {
+                "content-type" => ct = v.trim().to_string(),
+                "location" => loc = Some(v.trim().to_string()),
+                _ => {}
+            }
+        }
+    }
+    Some((status, ct, loc))
+}
+
+/// Like `get`, but keeps the content type and any redirect, and caps the size.
+pub fn get_full(port: u16, path: &str) -> Result<Reply, String> {
+    let addr = ("127.0.0.1", port).to_socket_addrs().map_err(|e| e.to_string())?.next().ok_or("no address")?;
+    let mut s = TcpStream::connect_timeout(&addr, Duration::from_secs(3)).map_err(|e| e.to_string())?;
+    s.set_read_timeout(Some(Duration::from_secs(20))).ok();
+    let req = format!("GET {} HTTP/1.0\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n", path);
+    s.write_all(req.as_bytes()).map_err(|e| e.to_string())?;
+    let mut raw = Vec::new();
+    s.take(MAX_BODY + 65536).read_to_end(&mut raw).map_err(|e| e.to_string())?;
+    let split = raw.windows(4).position(|w| w == b"\r\n\r\n").ok_or("bad response")?;
+    let head = String::from_utf8_lossy(&raw[..split]).to_string();
+    let (status, content_type, location) = parse_head(&head).ok_or("bad status")?;
+    let body = raw[split + 4..].to_vec();
+    if body.len() as u64 > MAX_BODY {
+        return Err("that file is too large to show here".into());
+    }
+    Ok(Reply { status, content_type, location, body })
+}
+
+/// Only these parts of the library server may be reached from the reader, and only with plain
+/// printable characters (so a request line cannot be split or smuggled).
+pub fn proxy_path_ok(path: &str) -> bool {
+    const ALLOWED: [&str; 5] = ["/content/", "/skin/", "/suggest?", "/search?", "/catalog/v2/"];
+    path.len() <= 2048
+        && path.bytes().all(|b| (0x21..=0x7e).contains(&b))
+        && !path.contains("/../")
+        && !path.contains("%2e%2e")
+        && !path.contains("%2E%2E")
+        && ALLOWED.iter().any(|p| path.starts_with(p))
+}
+
+/// Fetch a path, following up to four redirects that stay on this server. Returns the reply and
+/// the path it finally came from (kiwix-serve redirects a book to its main page).
+pub fn follow(port: u16, path: &str) -> Result<(Reply, String), String> {
+    let mut cur = path.to_string();
+    for _ in 0..5 {
+        if !proxy_path_ok(&cur) {
+            return Err("that address is not part of the library".into());
+        }
+        let r = get_full(port, &cur)?;
+        if (300..400).contains(&r.status) {
+            let Some(loc) = r.location else { return Ok((Reply { location: None, ..r }, cur)) };
+            let own = format!("http://127.0.0.1:{}", port);
+            let next = if let Some(rest) = loc.strip_prefix(&own) { rest.to_string() } else { loc };
+            if next.starts_with('/') {
+                cur = next;
+                continue;
+            }
+            return Err("the library tried to send you to another site".into());
+        }
+        return Ok((r, cur));
+    }
+    Err("too many redirects".into())
+}
+
+/// One archive known to kiwix-serve.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Book {
+    /// The name used in addresses: `/content/<name>/...`
+    pub name: String,
+    pub title: String,
+}
+
+/// Read kiwix-serve's catalog (`/catalog/v2/entries`) for the books it serves.
+pub fn parse_catalog(xml: &str) -> Vec<Book> {
+    let mut out = Vec::new();
+    let mut rest = xml;
+    while let Some(i) = rest.find("<entry>") {
+        let after = &rest[i + 7..];
+        let end = after.find("</entry>").unwrap_or(after.len());
+        let e = &after[..end];
+        // the address in the text/html link is the dependable source of the name
+        let mut name = None;
+        let mut scan = e;
+        while let Some(l) = scan.find("<link ") {
+            let tag_end = scan[l..].find('>').map(|x| l + x).unwrap_or(scan.len());
+            let tag = &scan[l..tag_end];
+            if tag.contains("text/html") {
+                if let Some(h) = between(tag, "href=\"", "\"") {
+                    if let Some(n) = h.strip_prefix("/content/") {
+                        name = Some(n.trim_end_matches('/').split('/').next().unwrap_or("").to_string());
+                        break;
+                    }
+                }
+            }
+            scan = &scan[tag_end.min(scan.len())..];
+        }
+        let name = name.or_else(|| between(e, "<name>", "</name>").map(|n| n.trim().to_string()));
+        if let Some(name) = name.filter(|n| !n.is_empty()) {
+            let title = between(e, "<title>", "</title>").map(|t| decode_entities(t).trim().to_string()).filter(|t| !t.is_empty()).unwrap_or_else(|| name.replace('_', " "));
+            out.push(Book { name, title });
+        }
+        rest = &after[end..];
+    }
+    out
+}
+
+/// The small script put into every page shown in the reader. It tells the reader which page
+/// is open (for Back, Forward and bookmarks), keeps links that leave the library from opening,
+/// and handles the text-size setting.
+pub const READER_SCRIPT: &str = "<script>(function(){\
+var O=location.origin;\
+function tell(){try{parent.postMessage({cx:'page',url:document.baseURI,title:document.title||''},'*')}catch(e){}}\
+document.addEventListener('click',function(e){var a=e.target&&e.target.closest?e.target.closest('a[href]'):null;if(!a)return;var h=a.href;\
+if(/^(https?|ftp|mailto|tel):/i.test(h)&&h.indexOf(O)!==0){e.preventDefault();try{parent.postMessage({cx:'external',url:h},'*')}catch(x){}}},true);\
+addEventListener('message',function(e){var d=e.data;if(d&&d.cx==='zoom'){document.documentElement.style.zoom=d.v}});\
+if(document.readyState==='complete')tell();else addEventListener('load',tell);\
+})();</script>";
+
+/// Put a snippet into an HTML page, right after `<head>` (or at the very start).
+pub fn inject_head(html: &str, snippet: &str) -> String {
+    let lower = html.to_ascii_lowercase();
+    if let Some(i) = lower.find("<head") {
+        if let Some(j) = lower[i..].find('>') {
+            let at = i + j + 1;
+            return format!("{}{}{}", &html[..at], snippet, &html[at..]);
+        }
+    }
+    format!("{}{}", snippet, html)
+}
+
+/// Put the reader script into an HTML page.
+pub fn inject_reader_script(html: &str) -> String {
+    inject_head(html, READER_SCRIPT)
+}
+
+/// A `<base>` tag, so a page that was reached through a redirect finds its pictures and links.
+pub fn base_tag(url: &str) -> String {
+    let safe: String = url.chars().map(|c| match c { '"' => "%22".to_string(), '<' => "%3C".to_string(), '>' => "%3E".to_string(), '&' => "&amp;".to_string(), c => c.to_string() }).collect();
+    format!("<base href=\"{}\">", safe)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -322,5 +484,78 @@ mod tests {
         assert_eq!(p[0].heading, "Water purification");
         assert_eq!(p[0].source, "wiki en");
         assert!(p[0].text.contains("Boil water"));
+    }
+
+    #[test]
+    fn head_lines_are_read() {
+        let (st, ct, loc) = parse_head("HTTP/1.1 302 Found\r\nContent-Type: text/html; charset=utf-8\r\nLocation: /content/wiki/A/Main\r\nX: y").unwrap();
+        assert_eq!((st, ct.as_str(), loc.as_deref()), (302, "text/html; charset=utf-8", Some("/content/wiki/A/Main")));
+        assert!(parse_head("garbage").is_none());
+    }
+
+    #[test]
+    fn the_reader_can_only_reach_the_library_parts_of_the_server() {
+        for ok in ["/content/wiki/A/Water", "/skin/kiwix.css", "/suggest?content=wiki&term=water", "/search?content=wiki&pattern=x", "/catalog/v2/entries"] {
+            assert!(proxy_path_ok(ok), "{}", ok);
+        }
+        for bad in ["", "/", "/admin", "/random", "/content/../etc", "/content/a%2e%2e/b", "/content/a b", "/content/a\r\nHost: x", "/content/a\nb", "http://evil/content/x", "//evil/content/", &format!("/content/{}", "a".repeat(3000))] {
+            assert!(!proxy_path_ok(bad), "{:?}", bad);
+        }
+    }
+
+    #[test]
+    fn follows_redirects_on_this_server_only() {
+        let l = TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = l.local_addr().unwrap().port();
+        std::thread::spawn(move || {
+            for stream in l.incoming().flatten() {
+                let mut s = stream;
+                let mut buf = [0u8; 2048];
+                let n = s.read(&mut buf).unwrap_or(0);
+                let req = String::from_utf8_lossy(&buf[..n]).to_string();
+                let line = req.lines().next().unwrap_or("").to_string();
+                let out = if line.starts_with("GET /content/book ") {
+                    "HTTP/1.0 302 Found\r\nLocation: /content/book/A/Main\r\nContent-Length: 0\r\n\r\n".to_string()
+                } else if line.starts_with("GET /content/away ") {
+                    "HTTP/1.0 302 Found\r\nLocation: http://example.com/x\r\nContent-Length: 0\r\n\r\n".to_string()
+                } else if line.starts_with("GET /content/loop ") {
+                    "HTTP/1.0 302 Found\r\nLocation: /content/loop\r\nContent-Length: 0\r\n\r\n".to_string()
+                } else {
+                    let body = "<html><head><title>Main</title></head><body>hi</body></html>";
+                    format!("HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nContent-Length: {}\r\n\r\n{}", body.len(), body)
+                };
+                let _ = s.write_all(out.as_bytes());
+            }
+        });
+        let (r, final_path) = follow(port, "/content/book").unwrap();
+        assert_eq!((r.status, final_path.as_str(), r.content_type.as_str()), (200, "/content/book/A/Main", "text/html"));
+        assert!(String::from_utf8_lossy(&r.body).contains("hi"));
+        assert!(follow(port, "/content/away").unwrap_err().contains("another site"));
+        assert!(follow(port, "/content/loop").unwrap_err().contains("redirects"));
+        assert!(follow(port, "/admin").is_err());
+    }
+
+    #[test]
+    fn the_catalog_gives_book_names_and_titles() {
+        let xml = r#"<feed><entry><title>Wikipedia &amp; more</title><name>wikipedia_en_x</name><link rel="alternate" type="text/html" href="/content/wikipedia_en_x_2025-01"/><link type="application/x-zim" href="/x.zim"/></entry><entry><title></title><name>fallback_book</name></entry></feed>"#;
+        let b = parse_catalog(xml);
+        assert_eq!(b.len(), 2);
+        assert_eq!((b[0].name.as_str(), b[0].title.as_str()), ("wikipedia_en_x_2025-01", "Wikipedia & more"));
+        assert_eq!((b[1].name.as_str(), b[1].title.as_str()), ("fallback_book", "fallback book"));
+        assert!(parse_catalog("<feed></feed>").is_empty());
+    }
+
+    #[test]
+    fn the_reader_script_goes_into_the_head() {
+        let h = inject_reader_script("<!DOCTYPE html><HTML><HEAD lang=x><title>T</title></HEAD><body>b</body></HTML>");
+        let at = h.find("<script>").unwrap();
+        assert!(h[..at].ends_with("<HEAD lang=x>"));
+        assert!(h.contains("<title>T</title>"));
+        assert!(inject_reader_script("plain").starts_with("<script>"));
+        assert_eq!(base_tag("http://h/a\"><script>"), "<base href=\"http://h/a%22%3E%3Cscript%3E\">");
+        let both = inject_head(&inject_head("<head></head>", READER_SCRIPT), &base_tag("http://h/x/"));
+        assert!(both.starts_with("<head><base"));
+        // multi-byte text before the head cannot split a character
+        assert!(inject_reader_script("<html>é<head></head>").contains("<script>"));
     }
 }

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
+  import ZimReader from './ZimReader.svelte';
   import {
     libraryStatus, libraryShare, driveRescan, crawlStart, crawlStatus, crawlCancel, archiveAdd, archiveCopyStatus, archiveRemove,
     type LibraryStatus, type CrawlStatus, type CopyStatus,
@@ -14,6 +15,7 @@
   let looking = $state(false);
   let removing: string | null = $state(null);
   let problem = $state('');
+  let plainKiwix = $state(false);
 
   // Save a website
   let siteUrl = $state('');
@@ -217,7 +219,14 @@
 
   {#if st.ready && st.url}
     <div class="frame panel">
-      <iframe title="Offline library" src={st.url} sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+      {#if plainKiwix}
+        <iframe title="Offline library" src={st.url} sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+      {:else}
+        <ZimReader ready={st.ready} />
+      {/if}
+    </div>
+    <div class="row fine muted">
+      <button class="linkbtn" onclick={() => (plainKiwix = !plainKiwix)}>{plainKiwix ? 'Use the Cindrix reader' : 'Use the plain Kiwix screen instead'}</button>
     </div>
   {:else if st.archives.length > 0}
     <div class="panel"><strong>Starting the library…</strong><p class="muted">{st.archives.length} archive{st.archives.length === 1 ? '' : 's'} found. This can take a few seconds.</p></div>
@@ -270,6 +279,7 @@
   .share p { margin: 8px 0 0; }
   .addr { font-family: var(--mono); font-size: 16px; color: var(--blue); word-break: break-all; }
   .fine { font-size: 12px; }
+  .linkbtn { background: none; border: 0; color: var(--link); text-decoration: underline; padding: 0; font: inherit; cursor: pointer; }
   code { font-family: var(--mono); }
   .dlg { padding: 18px; display: flex; flex-direction: column; gap: 10px; }
   .end { justify-content: flex-end; }

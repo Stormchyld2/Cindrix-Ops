@@ -19,6 +19,7 @@ use tauri_plugin_dialog::DialogExt;
 
 mod fetch;
 mod music;
+mod zimview;
 use std::time::Duration;
 use tauri::ipc::Channel;
 use tauri::Manager;
@@ -1164,6 +1165,10 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .register_uri_scheme_protocol("cindrix-tiles", |_ctx, request| serve_tile(&request))
         .register_uri_scheme_protocol("cindrix-music", |_ctx, request| music::serve_music(&request))
+        .register_asynchronous_uri_scheme_protocol("cindrix-zim", |ctx, request, responder| {
+            let app = ctx.app_handle().clone();
+            std::thread::spawn(move || responder.respond(zimview::serve(&app, &request)));
+        })
         .manage(AppState::default())
         .setup(|app| {
             let handle = app.handle().clone();
@@ -1201,6 +1206,9 @@ pub fn run() {
             map_export_gpx,
             route_stats,
             map_packs,
+            zimview::zim_books,
+            zimview::zim_bookmarks_load,
+            zimview::zim_bookmarks_save,
             music::music_status,
             music::music_scan,
             music::music_query,

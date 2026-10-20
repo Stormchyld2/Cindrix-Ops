@@ -241,7 +241,8 @@ export type LibraryStatus = {
 
 export async function libraryStatus(): Promise<LibraryStatus> {
   if (inTauri) return call<LibraryStatus>('library_status');
-  return { archives: [], ready: false, url: null, shared: false, lan_url: null, drive: null, folder: '', online: false };
+  // Browser preview: pretend the library is ready so the reader screen can be shown with its sample archive.
+  return { archives: [], ready: true, url: 'preview', shared: false, lan_url: null, drive: null, folder: '', online: false };
 }
 
 export async function libraryShare(enable: boolean): Promise<void> {
@@ -545,4 +546,63 @@ export async function musicStateSave(json: string): Promise<void> {
 export async function musicClearCache(): Promise<number> {
   if (inTauri) return call<number>('music_clear_cache');
   return 0;
+}
+
+
+// ---------- the in-app archive reader ----------
+export type ZimBook = { name: string; title: string };
+export type ZimBookmark = { book: string; path: string; title: string };
+export type ZimSuggestion = { title: string; path: string };
+
+const previewPages: Record<string, { title: string; body: string }> = {
+  '/content/sample/A/Main': { title: 'Sample library', body: '<h1>Sample library</h1><p>This is a made-up archive for the browser preview.</p><ul><li><a href="/content/sample/A/Water">Water</a></li><li><a href="/content/sample/A/Fire">Fire</a></li></ul><p><a href="https://example.org/outside">An outside link</a></p>' },
+  '/content/sample/A/Water': { title: 'Water', body: '<h1>Water</h1><p>Boil water for one minute to make it safe to drink.</p><p>Back to <a href="/content/sample/A/Main">the main page</a>.</p>' },
+  '/content/sample/A/Fire': { title: 'Fire', body: '<h1>Fire</h1><p>Keep fuel and tinder dry. Never use a fire or stove indoors.</p><p><a href="/content/sample/A/Water">Water</a></p>' },
+};
+const previewScript = `<script>document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;e.preventDefault();var h=a.getAttribute('href');if(h.indexOf('/content/')===0)parent.postMessage({cx:'nav',path:h},'*');else parent.postMessage({cx:'external',url:h},'*')},true);addEventListener('message',function(e){if(e.data&&e.data.cx==='zoom')document.documentElement.style.zoom=e.data.v});<\/script>`;
+let memZimBookmarks = '{}';
+
+export async function zimBooks(): Promise<ZimBook[]> {
+  if (inTauri) return call<ZimBook[]>('zim_books');
+  return [{ name: 'sample', title: 'Sample library (preview)' }];
+}
+/** What to put in the reader's frame for a library path: an address (desktop app) or the page itself (browser preview). */
+export async function zimFrame(path: string): Promise<{ src?: string; srcdoc?: string; title: string }> {
+  if (inTauri) {
+    const { convertFileSrc } = await import('@tauri-apps/api/core');
+    // convertFileSrc encodes the slashes, so take the address of the root and add the path to it
+    const origin = convertFileSrc('x', 'cindrix-zim').slice(0, -1);
+    return { src: origin + path, title: '' };
+  }
+  const key = path.split('?')[0];
+  const pg = previewPages[key] ?? { title: 'Not found', body: '<p>No such page in the preview.</p>' };
+  return { srcdoc: `<!doctype html><html><head><meta charset="utf-8"><title>${pg.title}</title><style>body{font:16px system-ui;margin:16px;color:#111}</style>${previewScript}</head><body>${pg.body}</body></html>`, title: pg.title };
+}
+/** The address the reader sits at, to turn a page address from the frame back into a library path. */
+export async function zimOrigin(): Promise<string> {
+  if (!inTauri) return '';
+  const { convertFileSrc } = await import('@tauri-apps/api/core');
+  return convertFileSrc('x', 'cindrix-zim').slice(0, -1);
+}
+export async function zimSuggest(book: string, term: string): Promise<ZimSuggestion[]> {
+  if (!inTauri) {
+    const t = term.toLowerCase();
+    return Object.entries(previewPages).filter(([, v]) => v.title.toLowerCase().includes(t)).map(([p, v]) => ({ title: v.title, path: p }));
+  }
+  const origin = await zimOrigin();
+  const r = await fetch(`${origin}/suggest?content=${encodeURIComponent(book)}&term=${encodeURIComponent(term)}`);
+  if (!r.ok) return [];
+  const j = (await r.json()) as { value?: string; label?: string; path?: string }[];
+  return j
+    .filter((x) => x.path)
+    .slice(0, 12)
+    .map((x) => ({ title: (x.value || x.label || x.path || '').replace(/<[^>]+>/g, ''), path: `/content/${book}/${x.path}` }));
+}
+export async function zimBookmarksLoad(): Promise<string> {
+  if (inTauri) return call<string>('zim_bookmarks_load');
+  return memZimBookmarks;
+}
+export async function zimBookmarksSave(json: string): Promise<void> {
+  if (inTauri) return call<void>('zim_bookmarks_save', { json });
+  memZimBookmarks = json;
 }
