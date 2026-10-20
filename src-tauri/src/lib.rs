@@ -18,6 +18,7 @@ use std::sync::{Arc, Mutex};
 use tauri_plugin_dialog::DialogExt;
 
 mod fetch;
+mod music;
 use std::time::Duration;
 use tauri::ipc::Channel;
 use tauri::Manager;
@@ -121,6 +122,8 @@ struct AppState {
     crawl: Mutex<CrawlDto>,
     crawl_cancel: Arc<AtomicBool>,
     copy: Mutex<CopyDto>,
+    music: Mutex<music::MusicState>,
+    music_cancel: AtomicBool,
 }
 
 impl AppState {
@@ -261,6 +264,7 @@ struct ProductDto {
     plan: bool,
     web_saver: bool,
     serve_archives: bool,
+    music: bool,
 }
 
 /// Which product this is, from the drive marker. No marker (for example a dev run) counts as Go.
@@ -278,6 +282,7 @@ fn product_info(state: tauri::State<'_, AppState>) -> ProductDto {
         plan: f.plan,
         web_saver: f.web_saver,
         serve_archives: f.serve_archives,
+        music: f.music,
     }
 }
 
@@ -1158,6 +1163,7 @@ pub fn run() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .register_uri_scheme_protocol("cindrix-tiles", |_ctx, request| serve_tile(&request))
+        .register_uri_scheme_protocol("cindrix-music", |_ctx, request| music::serve_music(&request))
         .manage(AppState::default())
         .setup(|app| {
             let handle = app.handle().clone();
@@ -1166,6 +1172,9 @@ pub fn run() {
                 detect_drive(&st);
                 start_library(&st, false);
                 start_model(&st, None);
+                if st.drive.lock().unwrap().as_ref().map(|d| d.product().features().music).unwrap_or(true) {
+                    music::start_scan(&handle);
+                }
                 // No Cindrix drive yet? Keep looking, so plugging it in later (or into another
                 // port, with another drive letter) just works.
                 while st.drive.lock().unwrap().is_none() && std::env::var("CINDRIX_ROOT").is_err() {
@@ -1173,6 +1182,7 @@ pub fn run() {
                     if detect_drive(&st) {
                         start_library(&st, false);
                         start_model(&st, None);
+                        music::start_scan(&handle);
                     }
                 }
             });
@@ -1191,6 +1201,19 @@ pub fn run() {
             map_export_gpx,
             route_stats,
             map_packs,
+            music::music_status,
+            music::music_scan,
+            music::music_query,
+            music::music_facets,
+            music::music_resolve,
+            music::music_prepare,
+            music::music_clear_cache,
+            music::music_playlists,
+            music::music_playlist_load,
+            music::music_playlist_save,
+            music::music_playlist_delete,
+            music::music_state_load,
+            music::music_state_save,
             library_share,
             drive_rescan,
             drills_list,

@@ -127,8 +127,8 @@ pub fn check_drive(dir: &Path) -> Report {
         }
     }
 
-    // Size budget, over everything except the owner's own files.
-    let files = walk(&root, &["user"]);
+    // Size budget, over everything except the owner's own files (user/ and music/).
+    let files = walk(&root, &["user", "music"]);
     let bytes: u64 = files.iter().map(|(_, n)| *n).sum();
     r.content_gb = bytes as f64 / 1_073_741_824.0;
     if let Err(e) = check_budget(r.product, r.content_gb) {

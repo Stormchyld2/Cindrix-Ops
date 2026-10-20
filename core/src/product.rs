@@ -32,6 +32,8 @@ pub struct Features {
     /// Offer to share the archives on the local network. Always off until the person turns it
     /// on and confirms; this flag only says whether the offer is made prominently.
     pub serve_archives: bool,
+    /// Music player (the owner's own music in `music/`, not counted in the size budget).
+    pub music: bool,
 }
 
 impl Product {
@@ -81,6 +83,7 @@ impl Product {
                 plan: true,
                 web_saver: true,
                 serve_archives: false,
+                music: true,
             },
             // The Hub is the same program run as a server on a tablet or small computer. The
             // model is the heaviest and least proven part on Android, so it is off by default;
@@ -92,6 +95,7 @@ impl Product {
                 plan: true,
                 web_saver: true,
                 serve_archives: true,
+                music: true,
             },
         }
     }

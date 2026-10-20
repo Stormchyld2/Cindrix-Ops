@@ -14,6 +14,7 @@ pub mod kiwix;
 pub mod llama;
 pub mod maps;
 pub mod md5;
+pub mod media;
 pub mod modelhost;
 pub mod pipeline;
 pub mod png;

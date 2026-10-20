@@ -10,8 +10,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+      - name: Install ffmpeg (the music tests make real audio files with it)
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - name: Test core (includes tests/safety/dosing.json)
         working-directory: core
+        env:
+          CINDRIX_REQUIRE_FFMPEG: "1"
         run: cargo test --all-targets
 
   crypto:
