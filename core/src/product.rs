@@ -85,11 +85,11 @@ impl Product {
                 serve_archives: false,
                 music: true,
             },
-            // The Hub is the same program run as a server on a tablet or small computer. The
-            // model is the heaviest and least proven part on Android, so it is off by default;
-            // the viewer, the shelf and the archive server are the point. OPEN: confirm.
+            // The Hub is the same program run as a server on a phone, tablet or small computer.
+            // The assistant is on by default (confirmed by the owner); it still needs a model file
+            // and enough memory, and says so plainly when it has neither.
             Product::Hub => Features {
-                assistant: false,
+                assistant: true,
                 library: true,
                 maps: true,
                 plan: true,
@@ -164,10 +164,13 @@ mod tests {
     }
 
     #[test]
-    fn go_and_vault_have_the_same_features_and_hub_has_no_assistant() {
+    fn go_and_vault_have_the_same_features_and_every_edition_has_music_and_assistant() {
         assert_eq!(Product::Go.features(), Product::Vault.features());
         assert!(Product::Go.features().assistant);
-        assert!(!Product::Hub.features().assistant);
+        assert!(Product::Hub.features().assistant);
+        for p in [Product::Go, Product::Vault, Product::Hub] {
+            assert!(p.features().music);
+        }
         assert!(Product::Hub.features().library);
     }
 }

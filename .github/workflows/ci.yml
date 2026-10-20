@@ -171,6 +171,27 @@ jobs:
           name: zim-check-log
           path: ${{ runner.temp }}/zimlog.txt
 
+  drive-plan:
+    name: Drive builder finds every download (dry run)
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dry run for each edition (asks the real servers; downloads nothing)
+        shell: powershell
+        run: |
+          $fail = 0
+          foreach ($ed in 'go','vault') {
+            $out = & powershell -NoProfile -File scripts\build-drive.ps1 -Target "$env:RUNNER_TEMP\$ed" -Edition $ed -DryRun 2>&1 | Out-String
+            $code = $LASTEXITCODE
+            Write-Host $out
+            $text = ($out -split "`r?`n" | Where-Object { $_.Trim() } | ForEach-Object { $_.Trim() }) -join ' | '
+            if ($text.Length -gt 3500) { $text = $text.Substring(0, 3500) }
+            Write-Host "::notice::plan $ed (exit $code): $text"
+            if ($code -ne 0) { Write-Host "::error::drive plan for $ed failed (exit $code): $text"; $fail = 1 }
+          }
+          exit $fail
+
   windows:
     name: Windows app build
     runs-on: windows-latest

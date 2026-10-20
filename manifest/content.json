@@ -1,13 +1,13 @@
 {
   "version": 1,
-  "note": "Sizes are estimates. File names, URLs and checksums are filled in by the build script.",
+  "note": "Sizes are estimates until you run scripts\\build-drive.ps1 -DryRun, which asks the servers for the real ones. 'source.kind': kiwix = newest dated file in a Kiwix folder; huggingface = one file; script/bundled/manual = not downloaded by build-drive.ps1.",
   "items": [
     {
       "id": "qwen35-2b",
       "name": "Qwen3.5 2B Q4 GGUF",
       "category": "models",
       "license": "Apache-2.0",
-      "size_estimate_gb": 1.5,
+      "size_estimate_gb": 1.28,
       "required": true,
       "tier": "all",
       "source_url": null,
@@ -15,14 +15,21 @@
       "editions": [
         "go",
         "vault"
-      ]
+      ],
+      "source": {
+        "kind": "huggingface",
+        "repo": "unsloth/Qwen3.5-2B-GGUF",
+        "file": "Qwen3.5-2B-Q4_K_M.gguf",
+        "bytes": 1280835840,
+        "dest": "models"
+      }
     },
     {
       "id": "qwen35-4b",
       "name": "Qwen3.5 4B Q4 GGUF",
       "category": "models",
       "license": "Apache-2.0",
-      "size_estimate_gb": 3,
+      "size_estimate_gb": 2.74,
       "required": true,
       "tier": "all",
       "source_url": null,
@@ -30,14 +37,21 @@
       "editions": [
         "go",
         "vault"
-      ]
+      ],
+      "source": {
+        "kind": "huggingface",
+        "repo": "unsloth/Qwen3.5-4B-GGUF",
+        "file": "Qwen3.5-4B-Q4_K_M.gguf",
+        "bytes": 2740937888,
+        "dest": "models"
+      }
     },
     {
       "id": "qwen35-9b",
       "name": "Qwen3.5 9B Q4 GGUF (optional, 16 GB+ machines)",
       "category": "models",
       "license": "Apache-2.0",
-      "size_estimate_gb": 6,
+      "size_estimate_gb": 5.68,
       "required": false,
       "tier": "all",
       "source_url": null,
@@ -45,7 +59,14 @@
       "editions": [
         "go",
         "vault"
-      ]
+      ],
+      "source": {
+        "kind": "huggingface",
+        "repo": "unsloth/Qwen3.5-9B-GGUF",
+        "file": "Qwen3.5-9B-Q4_K_M.gguf",
+        "bytes": 5680522464,
+        "dest": "models"
+      }
     },
     {
       "id": "wikipedia-en-nopic",
@@ -60,7 +81,13 @@
       "editions": [
         "go",
         "vault"
-      ]
+      ],
+      "source": {
+        "kind": "kiwix",
+        "dir": "wikipedia",
+        "prefix": "wikipedia_en_all_nopic_",
+        "dest": "library"
+      }
     },
     {
       "id": "wikipedia-en-maxi",
@@ -74,7 +101,13 @@
       "sha256": null,
       "editions": [
         "vault"
-      ]
+      ],
+      "source": {
+        "kind": "kiwix",
+        "dir": "wikipedia",
+        "prefix": "wikipedia_en_all_maxi_",
+        "dest": "library"
+      }
     },
     {
       "id": "wikimed",
@@ -89,7 +122,13 @@
       "editions": [
         "go",
         "vault"
-      ]
+      ],
+      "source": {
+        "kind": "kiwix",
+        "dir": "wikipedia",
+        "prefix": "wikipedia_en_medicine_maxi_",
+        "dest": "library"
+      }
     },
     {
       "id": "wikem",
@@ -104,7 +143,13 @@
       "editions": [
         "go",
         "vault"
-      ]
+      ],
+      "source": {
+        "kind": "kiwix",
+        "dir": "wikem",
+        "prefix": "wikem_en_all_maxi_",
+        "dest": "library"
+      }
     },
     {
       "id": "appropedia",
@@ -119,7 +164,13 @@
       "editions": [
         "go",
         "vault"
-      ]
+      ],
+      "source": {
+        "kind": "kiwix",
+        "dir": "other",
+        "prefix": "appropedia_en_all_maxi_",
+        "dest": "library"
+      }
     },
     {
       "id": "us-army-manuals",
@@ -134,7 +185,11 @@
       "editions": [
         "go",
         "vault"
-      ]
+      ],
+      "source": {
+        "kind": "manual",
+        "how": "download by hand from source_url (verify the license first) and put the file in library\\manuals"
+      }
     },
     {
       "id": "fema-guides",
@@ -149,7 +204,11 @@
       "editions": [
         "go",
         "vault"
-      ]
+      ],
+      "source": {
+        "kind": "manual",
+        "how": "download by hand from source_url (verify the license first) and put the file in library\\manuals"
+      }
     },
     {
       "id": "cdc-fda-guidance",
@@ -164,7 +223,11 @@
       "editions": [
         "go",
         "vault"
-      ]
+      ],
+      "source": {
+        "kind": "manual",
+        "how": "download by hand from source_url (verify the license first) and put the file in library\\manuals"
+      }
     },
     {
       "id": "osm-us-street",
@@ -179,7 +242,11 @@
       "editions": [
         "go",
         "vault"
-      ]
+      ],
+      "source": {
+        "kind": "script",
+        "how": "scripts\\get-maps.ps1 -Target <drive>"
+      }
     },
     {
       "id": "us-topo",
@@ -194,7 +261,11 @@
       "editions": [
         "go",
         "vault"
-      ]
+      ],
+      "source": {
+        "kind": "script",
+        "how": "not automated yet (topo layer is not built)"
+      }
     },
     {
       "id": "cindrix-cards",
@@ -209,7 +280,11 @@
       "editions": [
         "go",
         "vault"
-      ]
+      ],
+      "source": {
+        "kind": "bundled",
+        "how": "ships inside the program's content folder"
+      }
     },
     {
       "id": "cindrix-guide",
@@ -224,7 +299,11 @@
       "editions": [
         "go",
         "vault"
-      ]
+      ],
+      "source": {
+        "kind": "bundled",
+        "how": "ships inside the program's content folder"
+      }
     },
     {
       "id": "usda-home-canning",
@@ -240,7 +319,11 @@
       "editions": [
         "go",
         "vault"
-      ]
+      ],
+      "source": {
+        "kind": "manual",
+        "how": "download by hand from source_url (verify the license first) and put the file in library\\manuals"
+      }
     },
     {
       "id": "twdb-rainwater",
@@ -256,7 +339,11 @@
       "editions": [
         "go",
         "vault"
-      ]
+      ],
+      "source": {
+        "kind": "manual",
+        "how": "download by hand from source_url (verify the license first) and put the file in library\\manuals"
+      }
     },
     {
       "id": "nuclear-war-survival-skills",
@@ -272,7 +359,11 @@
       "editions": [
         "go",
         "vault"
-      ]
+      ],
+      "source": {
+        "kind": "manual",
+        "how": "download by hand from source_url (verify the license first) and put the file in library\\manuals"
+      }
     },
     {
       "id": "psych-first-aid",
@@ -288,7 +379,11 @@
       "editions": [
         "go",
         "vault"
-      ]
+      ],
+      "source": {
+        "kind": "manual",
+        "how": "download by hand from source_url (verify the license first) and put the file in library\\manuals"
+      }
     },
     {
       "id": "army-tm-9-8000",
@@ -304,7 +399,11 @@
       "editions": [
         "go",
         "vault"
-      ]
+      ],
+      "source": {
+        "kind": "manual",
+        "how": "download by hand from source_url (verify the license first) and put the file in library\\manuals"
+      }
     },
     {
       "id": "fm-21-76-1",
@@ -320,7 +419,11 @@
       "editions": [
         "go",
         "vault"
-      ]
+      ],
+      "source": {
+        "kind": "manual",
+        "how": "download by hand from source_url (verify the license first) and put the file in library\\manuals"
+      }
     },
     {
       "id": "gutenberg-en",
@@ -335,7 +438,13 @@
       ],
       "source_url": null,
       "sha256": null,
-      "status": "estimate; check license in the ZIM metadata"
+      "status": "estimate; check license in the ZIM metadata",
+      "source": {
+        "kind": "kiwix",
+        "dir": "gutenberg",
+        "prefix": "gutenberg_en_all_",
+        "dest": "library"
+      }
     },
     {
       "id": "wikibooks-en",
@@ -350,7 +459,13 @@
       ],
       "source_url": null,
       "sha256": null,
-      "status": "estimate; check license in the ZIM metadata"
+      "status": "estimate; check license in the ZIM metadata",
+      "source": {
+        "kind": "kiwix",
+        "dir": "wikibooks",
+        "prefix": "wikibooks_en_all_maxi_",
+        "dest": "library"
+      }
     },
     {
       "id": "wikisource-en",
@@ -365,7 +480,13 @@
       ],
       "source_url": null,
       "sha256": null,
-      "status": "estimate; check license in the ZIM metadata"
+      "status": "estimate; check license in the ZIM metadata",
+      "source": {
+        "kind": "kiwix",
+        "dir": "wikisource",
+        "prefix": "wikisource_en_all_maxi_",
+        "dest": "library"
+      }
     },
     {
       "id": "stackexchange-diy",
@@ -380,7 +501,13 @@
       ],
       "source_url": null,
       "sha256": null,
-      "status": "estimate; check license in the ZIM metadata"
+      "status": "estimate; check license in the ZIM metadata",
+      "source": {
+        "kind": "kiwix",
+        "dir": "stack_exchange",
+        "prefix": "diy.stackexchange.com_en_all_",
+        "dest": "library"
+      }
     },
     {
       "id": "naip-home-state",
@@ -395,7 +522,11 @@
       ],
       "source_url": null,
       "sha256": null,
-      "status": "estimate; check license in the ZIM metadata"
+      "status": "estimate; check license in the ZIM metadata",
+      "source": {
+        "kind": "manual",
+        "how": "choose your state or county; far too large for a whole-US copy"
+      }
     }
   ],
   "editions": {
