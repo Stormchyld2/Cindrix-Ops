@@ -4,36 +4,117 @@
     {
       "title": "Program and tools",
       "items": [
-        { "name": "Qwen3.5 model files", "license": "Apache-2.0", "status": "you add", "note": "Put a .gguf model file in the models folder. License text and notice come with the model." },
-        { "name": "llama.cpp (llama-server)", "license": "MIT", "status": "in this build", "note": "Runs the model on this computer only." },
-        { "name": "Kiwix tools (kiwix-serve)", "license": "GPL-3.0", "status": "in this build", "note": "Serves .zim archives to the built-in reader. Source code: github.com/kiwix/kiwix-tools" },
-        { "name": "pdf.js", "license": "Apache-2.0", "status": "in this build", "note": "Shows PDF books in the reader." },
-        { "name": "ffmpeg (converter for WMA and other music formats)", "license": "LGPL-2.1 or later (the LGPL build)", "status": "you add", "note": "Optional. Put ffmpeg(.exe) in the engines folder to play formats the web view cannot. It runs as a separate program on local files only. Source code: ffmpeg.org. Use an LGPL build, not a GPL one." },
-        { "name": "MapLibre GL JS, PMTiles reader, Protomaps basemap styles", "license": "BSD-3-Clause (check each before release)", "status": "in this build", "note": "Draws the street map from .pmtiles files on the drive." },
-        { "name": "Tauri, Svelte, Rust libraries", "license": "MIT / Apache-2.0", "status": "in this build", "note": "The program itself is GPL-3.0-or-later." }
+        {
+          "name": "Qwen3.5 model files",
+          "license": "Apache-2.0",
+          "status": "you add",
+          "note": "Put a .gguf model file in the models folder. License text and notice come with the model."
+        },
+        {
+          "name": "llama.cpp (llama-server)",
+          "license": "MIT",
+          "status": "in this build",
+          "note": "Runs the model on this computer only."
+        },
+        {
+          "name": "Kiwix tools (kiwix-serve)",
+          "license": "GPL-3.0",
+          "status": "in this build",
+          "note": "Serves .zim archives to the built-in reader. Source code: github.com/kiwix/kiwix-tools"
+        },
+        {
+          "name": "pdf.js",
+          "license": "Apache-2.0",
+          "status": "in this build",
+          "note": "Shows PDF books in the reader."
+        },
+        {
+          "name": "ffmpeg (converter for WMA and other music formats)",
+          "license": "LGPL-2.1 or later (the LGPL build)",
+          "status": "you add",
+          "note": "Optional. Put ffmpeg(.exe) in the engines folder to play formats the web view cannot. It runs as a separate program on local files only. Source code: ffmpeg.org. Use an LGPL build, not a GPL one."
+        },
+        {
+          "name": "MapLibre GL JS, PMTiles reader, Protomaps basemap styles",
+          "license": "BSD-3-Clause (check each before release)",
+          "status": "in this build",
+          "note": "Draws the street map from .pmtiles files on the drive."
+        },
+        {
+          "name": "Tauri, Svelte, Rust libraries",
+          "license": "MIT / Apache-2.0",
+          "status": "in this build",
+          "note": "The program itself is GPL-3.0-or-later."
+        }
       ]
     },
     {
       "title": "Content written for this project",
       "items": [
-        { "name": "Emergency cards, sample library, drills", "license": "Written for this project", "status": "in this build", "note": "All are DRAFTS until a clinician or qualified reviewer has signed them off. Not medical or legal advice." }
+        {
+          "name": "Emergency cards, sample library, drills",
+          "license": "Written for this project",
+          "status": "in this build",
+          "note": "All are DRAFTS until a clinician or qualified reviewer has signed them off. Not medical or legal advice."
+        },
+        {
+          "name": "Academy course (7 modules)",
+          "license": "Written for this project, from public-domain US government manuals",
+          "status": "in this build",
+          "note": "Based on US Army field manuals (FM 21-76, FM 3-25.26, FM 3-05.70), FEMA/Ready.gov, CDC and Red Cross public guidance. Each lesson names its source. All are DRAFTS until a qualified reviewer signs them off. Not medical or legal advice."
+        }
       ]
     },
     {
       "title": "Planned for the drive (you may add these)",
       "items": [
-        { "name": "Wikipedia, WikiMed, WikEM", "license": "CC BY-SA 4.0", "status": "you add", "note": "Credit and link required. Changes must be shared the same way. Download .zim files from the Kiwix library." },
-        { "name": "US Army and FEMA manuals, CDC and FDA guidance", "license": "Public domain (US government)", "status": "planned", "note": "Only items marked approved for public release. Edition and date listed." },
-        { "name": "Project Gutenberg titles", "license": "Public domain", "status": "planned", "note": "Only titles checked as public domain in the US." },
-        { "name": "OpenStreetMap data", "license": "ODbL 1.0", "status": "planned", "note": "© OpenStreetMap contributors is shown on every map." },
-        { "name": "USGS NAIP aerial photos", "license": "Public domain (US government)", "status": "planned", "note": "Optional per-county download in Settings, US only." }
+        {
+          "name": "Wikipedia, WikiMed, WikEM",
+          "license": "CC BY-SA 4.0",
+          "status": "you add",
+          "note": "Credit and link required. Changes must be shared the same way. Download .zim files from the Kiwix library."
+        },
+        {
+          "name": "US Army and FEMA manuals, CDC and FDA guidance",
+          "license": "Public domain (US government)",
+          "status": "planned",
+          "note": "Only items marked approved for public release. Edition and date listed."
+        },
+        {
+          "name": "Project Gutenberg titles",
+          "license": "Public domain",
+          "status": "planned",
+          "note": "Only titles checked as public domain in the US."
+        },
+        {
+          "name": "OpenStreetMap data",
+          "license": "ODbL 1.0",
+          "status": "planned",
+          "note": "\u00a9 OpenStreetMap contributors is shown on every map."
+        },
+        {
+          "name": "USGS NAIP aerial photos",
+          "license": "Public domain (US government)",
+          "status": "planned",
+          "note": "Optional per-county download in Settings, US only."
+        }
       ]
     },
     {
       "title": "Left out on purpose",
       "items": [
-        { "name": "wikiHow, iFixit, Hesperian Health Guides", "license": "Non-commercial", "status": "not included", "note": "Fine for your own use if you add them yourself, but they are not sold with this product. Hesperian needs written permission to include." },
-        { "name": "Weapons, explosives and booby-trap manuals", "license": "n/a", "status": "not included", "note": "Not part of this product." }
+        {
+          "name": "wikiHow, iFixit, Hesperian Health Guides",
+          "license": "Non-commercial",
+          "status": "not included",
+          "note": "Fine for your own use if you add them yourself, but they are not sold with this product. Hesperian needs written permission to include."
+        },
+        {
+          "name": "Weapons, explosives and booby-trap manuals",
+          "license": "n/a",
+          "status": "not included",
+          "note": "Not part of this product."
+        }
       ]
     }
   ]

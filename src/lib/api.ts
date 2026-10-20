@@ -405,6 +405,42 @@ export async function drillSave(drill: string, seconds: number, done: number, to
   if (d) { d.last = { date: new Date().toISOString().slice(0, 10), seconds, done, total, notes }; d.times_done++; }
 }
 
+
+// ---------- academy (the text course) ----------
+export type AcademyLessonMeta = { id: string; title: string; minutes: number; status: string; source: string; questions: number; tries: number; best_score: number; total: number; last_date: string };
+export type AcademyModule = { id: string; title: string; summary: string; lessons: AcademyLessonMeta[] };
+export type AcademyBlock = { kind: 'heading' | 'para' | 'note' | 'bullets' | 'steps'; text: string; items: string[] };
+export type AcademyQuestion = { text: string; options: string[]; correct: number; explain: string };
+export type AcademyLesson = { id: string; title: string; minutes: number; status: string; source: string; blocks: AcademyBlock[]; quiz: AcademyQuestion[] };
+
+const previewLesson: AcademyLesson = {
+  id: '01-first-72-hours/01-water-first', title: 'Water comes first', minutes: 6, status: 'draft', source: 'Preview sample',
+  blocks: [
+    { kind: 'para', text: 'A person can last about three days without water, but thinking and judgment fail much sooner.', items: [] },
+    { kind: 'heading', text: 'What to do', items: [] },
+    { kind: 'bullets', text: '', items: ['Fill clean containers before the supply stops', 'Know where your backup water is'] },
+    { kind: 'note', text: 'Plan on about one gallon per person per day.', items: [] },
+  ],
+  quiz: [{ text: 'How long can a person last without water?', options: ['About three weeks', 'About three days'], correct: 1, explain: 'The rule of threes: 3 minutes without air, 3 hours without shelter in harsh weather, 3 days without water, 3 weeks without food.' }],
+};
+let memAcademy: Record<string, { tries: number; best: number; total: number }> = {};
+
+export async function academyList(): Promise<AcademyModule[]> {
+  if (inTauri) return call<AcademyModule[]>('academy_list');
+  const r = memAcademy[previewLesson.id];
+  return [{ id: '01-first-72-hours', title: 'The first 72 hours', summary: 'Water, shelter and a plan for the first three days.', lessons: [{ id: previewLesson.id, title: previewLesson.title, minutes: previewLesson.minutes, status: 'draft', source: previewLesson.source, questions: previewLesson.quiz.length, tries: r?.tries ?? 0, best_score: r?.best ?? 0, total: r?.total ?? 0, last_date: r ? 'today' : '' }] }];
+}
+export async function academyLesson(id: string): Promise<AcademyLesson> {
+  if (inTauri) return call<AcademyLesson>('academy_lesson', { id });
+  return previewLesson;
+}
+export async function academySave(lesson: string, score: number, total: number): Promise<void> {
+  if (inTauri) return call<void>('academy_save', { lesson, score, total });
+  const r = memAcademy[lesson] ?? { tries: 0, best: 0, total };
+  r.tries++; r.best = Math.max(r.best, score); r.total = total;
+  memAcademy[lesson] = r;
+}
+
 // ---------- sources and licenses ----------
 export type SourceItem = { name: string; license: string; status: string; note: string };
 export type SourceGroup = { title: string; items: SourceItem[] };

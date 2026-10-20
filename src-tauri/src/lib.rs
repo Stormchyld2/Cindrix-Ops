@@ -3,6 +3,7 @@ use cindrix_core::userdata::{self, UserDir};
 use cindrix_core::hardware::{self, Size};
 use cindrix_core::llama::LlamaModel;
 use cindrix_core::crawl;
+use cindrix_core::academy;
 use cindrix_core::drills;
 use cindrix_core::drive::{self, DriveInfo};
 use cindrix_core::kiwix::{self, KiwixHost};
@@ -1109,6 +1110,109 @@ fn archive_remove(name: String, app: tauri::AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+// ---------- academy ----------
+
+#[derive(Serialize)]
+struct BlockDto {
+    kind: &'static str,
+    text: String,
+    items: Vec<String>,
+}
+
+#[derive(Serialize)]
+struct QuestionDto {
+    text: String,
+    options: Vec<String>,
+    correct: usize,
+    explain: String,
+}
+
+#[derive(Serialize)]
+struct LessonDto {
+    id: String,
+    title: String,
+    minutes: u32,
+    status: String,
+    source: String,
+    questions: usize,
+    tries: usize,
+    best_score: u32,
+    total: u32,
+    last_date: String,
+}
+
+#[derive(Serialize)]
+struct ModuleDto {
+    id: String,
+    title: String,
+    summary: String,
+    lessons: Vec<LessonDto>,
+}
+
+#[derive(Serialize)]
+struct LessonBodyDto {
+    id: String,
+    title: String,
+    minutes: u32,
+    status: String,
+    source: String,
+    blocks: Vec<BlockDto>,
+    quiz: Vec<QuestionDto>,
+}
+
+#[tauri::command]
+fn academy_list() -> Result<Vec<ModuleDto>, String> {
+    let results = academy::Log::new(&root().join("user")).list()?;
+    Ok(academy::load(&content_dir().join("academy"))
+        .into_iter()
+        .map(|m| ModuleDto {
+            id: m.id,
+            title: m.title,
+            summary: m.summary,
+            lessons: m
+                .lessons
+                .into_iter()
+                .map(|l| {
+                    let p = academy::progress_for(&results, &l.id);
+                    LessonDto { questions: l.quiz.len(), tries: p.tries, best_score: p.best_score, total: p.total, last_date: p.last_date, id: l.id, title: l.title, minutes: l.minutes, status: l.status, source: l.source }
+                })
+                .collect(),
+        })
+        .collect())
+}
+
+/// One lesson, found by id in the loaded course (the id is never turned into a file path).
+#[tauri::command]
+fn academy_lesson(id: String) -> Result<LessonBodyDto, String> {
+    let l = academy::load(&content_dir().join("academy"))
+        .into_iter()
+        .flat_map(|m| m.lessons)
+        .find(|l| l.id == id)
+        .ok_or("There is no such lesson.")?;
+    let blocks = l
+        .body
+        .into_iter()
+        .map(|b| match b {
+            academy::Block::Heading(t) => BlockDto { kind: "heading", text: t, items: vec![] },
+            academy::Block::Para(t) => BlockDto { kind: "para", text: t, items: vec![] },
+            academy::Block::Note(t) => BlockDto { kind: "note", text: t, items: vec![] },
+            academy::Block::Bullets(v) => BlockDto { kind: "bullets", text: String::new(), items: v },
+            academy::Block::Steps(v) => BlockDto { kind: "steps", text: String::new(), items: v },
+        })
+        .collect();
+    let quiz = l.quiz.into_iter().map(|q| QuestionDto { text: q.text, options: q.options, correct: q.correct, explain: q.explain }).collect();
+    Ok(LessonBodyDto { id: l.id, title: l.title, minutes: l.minutes, status: l.status, source: l.source, blocks, quiz })
+}
+
+#[tauri::command]
+fn academy_save(lesson: String, score: u32, total: u32) -> Result<(), String> {
+    let known = academy::load(&content_dir().join("academy")).iter().any(|m| m.lessons.iter().any(|l| l.id == lesson));
+    if !known {
+        return Err("There is no such lesson.".into());
+    }
+    academy::Log::new(&root().join("user")).add(academy::Result_ { date: calendar::today_string(), lesson, score, total })
+}
+
 // ---------- drills ----------
 
 #[derive(Serialize)]
@@ -1232,6 +1336,9 @@ pub fn run() {
             music::music_state_save,
             library_share,
             drive_rescan,
+            academy_list,
+            academy_lesson,
+            academy_save,
             drills_list,
             drill_save,
             sources_list,

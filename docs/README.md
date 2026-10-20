@@ -24,3 +24,4 @@ Status: first draft, before any code. Items marked **TO TEST** have not been tri
 20. [Archive reader](20-archive-reader.md): the in-app Kiwix reader
 
 Mockups of every screen are in [`../mockups`](../mockups).
+- [21. Academy](21-academy.md)

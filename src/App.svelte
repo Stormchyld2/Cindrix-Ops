@@ -2,6 +2,7 @@
   import Ask from './views/Ask.svelte';
   import Library from './views/Library.svelte';
   import Start from './views/Start.svelte';
+  import Academy from './views/Academy.svelte';
   import Inventory from './views/Inventory.svelte';
   import Family from './views/Family.svelte';
   import Cascade from './views/Cascade.svelte';
@@ -23,8 +24,8 @@
   async function poll() { ms = await modelStatus(); const l = await libraryStatus(); sharing = l.shared; online = l.online; product = await productInfo(); }
   onMount(() => { const t = setInterval(poll, 3000); poll(); return () => clearInterval(t); });
 
-  type Group = 'Ask' | 'Library' | 'Maps' | 'Music' | 'Plan' | 'Settings';
-  const allGroups: Group[] = ['Ask', 'Library', 'Maps', 'Music', 'Plan', 'Settings'];
+  type Group = 'Ask' | 'Library' | 'Academy' | 'Maps' | 'Music' | 'Plan' | 'Settings';
+  const allGroups: Group[] = ['Ask', 'Library', 'Academy', 'Maps', 'Music', 'Plan', 'Settings'];
   // Each product switches parts of the program on or off (core/src/product.rs).
   const groups = $derived(
     allGroups.filter((g) => {
@@ -107,6 +108,8 @@
       {:else}
         <Library bind:cardToOpen />
       {/if}
+    {:else if group === 'Academy'}
+      <Academy />
     {:else if group === 'Maps'}
       <Maps />
     {:else if group === 'Music'}

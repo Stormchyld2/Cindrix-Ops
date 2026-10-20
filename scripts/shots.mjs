@@ -109,6 +109,20 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   await page.getByRole('button', { name: 'Add', exact: true }).click();
   await page.getByText(/latitude between -90 and 90/).waitFor();
 
+  // Academy: open a lesson, read it, take the quiz, see the score saved.
+  await page.getByRole('button', { name: 'Academy', exact: true }).click();
+  await page.getByRole('heading', { name: 'Academy' }).waitFor();
+  await shoot(page, `${label}-2c1-academy-list`);
+  await page.getByRole('button', { name: /Water comes first/ }).click();
+  await page.getByRole('heading', { name: 'Water comes first' }).waitFor();
+  await page.getByRole('button', { name: 'Take the quiz' }).click();
+  await page.getByRole('radio', { name: 'About three days' }).check();
+  await page.getByRole('button', { name: 'Check answers' }).click();
+  await page.getByText('1 of 1 correct').waitFor();
+  await shoot(page, `${label}-2c2-academy-quiz`);
+  await page.getByRole('button', { name: 'Save result' }).click();
+  await page.getByText('Saved: 1 of 1.').waitFor();
+
   // Music: browse, play a generated tone, watch the clock advance, use the equalizer.
   await page.getByRole('button', { name: 'Music', exact: true }).click();
   await page.getByRole('button', { name: 'Play Dawn' }).waitFor();
