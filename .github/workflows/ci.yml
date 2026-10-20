@@ -146,13 +146,17 @@ jobs:
               kt/kiwix-serve --port 8098 --address 127.0.0.1 "$z" > serve2.log 2>&1 &
               pid2=$!
               sleep 3
-              (cd "$GITHUB_WORKSPACE/core" && cargo run -q --example cross_check -- 8098 "$z" 2>&1 | while IFS= read -r l; do echo "::notice::cross: $l"; done; exit ${PIPESTATUS[0]}) || bad "our reader and kiwix-serve disagree on $(basename $z)"
+              cout=$(cd "$GITHUB_WORKSPACE/core" && cargo run -q --example cross_check -- 8098 "$z" 2>&1); ccode=$?
+              echo "::notice::cross (exit $ccode): $(echo "$cout" | tr '\n' '|' | head -c 3000)"
+              [ $ccode -ne 0 ] && bad "our reader and kiwix-serve disagree on $(basename $z)"
               kill $pid2 2>/dev/null
             done
             kt/kiwix-serve --port 8099 --address 127.0.0.1 zim/sample.zim > serve.log 2>&1 &
             pid=$!
             sleep 3
-            (cd "$GITHUB_WORKSPACE/core" && cargo run -q --example probe_kiwix -- 8099 "Boil water" example.test/index.html 2>&1 | while IFS= read -r l; do echo "::notice::probe: $l"; done; exit ${PIPESTATUS[0]}) || bad "the in-app reader's assumptions do not hold against the real kiwix-serve"
+            pout=$(cd "$GITHUB_WORKSPACE/core" && cargo run -q --example probe_kiwix -- 8099 "Boil water" example.test/index.html 2>&1); pcode=$?
+            echo "::notice::probe (exit $pcode): $(echo "$pout" | tr '\n' '|' | head -c 3000)"
+            [ $pcode -ne 0 ] && bad "the in-app reader's assumptions do not hold against the real kiwix-serve"
             kill $pid 2>/dev/null
             head -20 serve.log | while IFS= read -r l; do echo "::notice::serve: $l"; done
           else

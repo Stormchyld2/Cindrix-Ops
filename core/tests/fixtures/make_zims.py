@@ -46,9 +46,10 @@ def build(path, layout, comp, extended=False, big_clusters=False):
     entries.append(dict(ns=I, url="pic.png", title="", mime="image/png", group=2, data=PNG))
     entries.append(dict(ns=C, url="Water_alias", title="Water alias", mime=None, redirect=(C, "Water")))
     entries.append(dict(ns=C, url="Fire_redirect", title="", mime=None, redirect=(C, "Fire")))
-    meta = {"Title": "Cindrix sample", "Language": "eng", "Creator": "tests", "Description": "A tiny archive for the reader tests"}
+    meta = {"Title": "Cindrix sample", "Language": "eng", "Creator": "tests", "Description": "A tiny archive for the reader tests", "Name": "cindrix_sample", "Publisher": "Cindrix Ops tests", "Date": "2026-10-20"}
     for k, v in meta.items():
         entries.append(dict(ns=b"M", url=k, title="", mime="text/plain", group=1, data=v.encode()))
+    entries.append(dict(ns=b"M", url="Illustration_48x48@1", title="", mime="image/png", group=2, data=PNG))
     if new:
         entries.append(dict(ns=b"W", url="mainPage", title="", mime=None, redirect=(C, "Main_Page")))
     entries.sort(key=lambda e: (e["ns"], e["url"].encode()))

@@ -597,7 +597,7 @@ export async function zimSuggest(book: string, term: string): Promise<ZimSuggest
   return j
     .filter((x) => x.path)
     .slice(0, 12)
-    .map((x) => ({ title: (x.value || x.label || x.path || '').replace(/<[^>]+>/g, ''), path: `/content/${encodeURIComponent(book)}/${x.path.split('/').map(encodeURIComponent).join('/')}` }));
+    .map((x) => ({ title: (x.value || x.label || x.path || '').replace(/<[^>]+>/g, ''), path: `/content/${encodeURIComponent(book)}/${(x.path as string).split('/').map(encodeURIComponent).join('/')}` }));
 }
 export async function zimBookmarksLoad(): Promise<string> {
   if (inTauri) return call<string>('zim_bookmarks_load');
