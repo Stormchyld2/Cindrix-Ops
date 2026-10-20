@@ -162,7 +162,7 @@ jobs:
           else
             bad "kiwix-serve could not be downloaded"
           fi
-          if [ $fail -ne 0 ]; then sed -n '/== probe/,$p' "$RUNNER_TEMP/zimlog.txt" | tr '\n' '|' | fold -w 1800 | head -6 | while IFS= read -r l; do echo "::error::LOG ${l}"; done; fi
+          if [ $fail -ne 0 ]; then sed -n '/== probe/,$p' "$RUNNER_TEMP/zimlog.txt" | tr '\n' '|' | fold -w 1800 | head -6 | while IFS= read -r l || [ -n "$l" ]; do echo "::error::LOG ${l}"; done; fi
           exit $fail
       - name: Keep the detailed log
         if: always()
