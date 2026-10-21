@@ -16,7 +16,16 @@ jobs:
         working-directory: core
         env:
           CINDRIX_REQUIRE_FFMPEG: "1"
-        run: cargo test --all-targets
+        run: |
+          cargo test --all-targets 2>&1 | tee test.log
+          code=${PIPESTATUS[0]}
+          if [ "$code" -ne 0 ]; then
+            # say which tests failed in the run's annotations, where it can be read without the full log
+            grep -E "^test .* FAILED$|panicked at" test.log | head -20 | while IFS= read -r l; do echo "::error::$l"; done
+            grep -A3 "panicked at" test.log | head -30 | tr '\n' ' ' | sed 's/^/::error::/'; echo
+            grep -E "^error(\[|:)" test.log | head -5 | while IFS= read -r l; do echo "::error::$l"; done
+          fi
+          exit $code
 
   crypto:
     name: Passphrase lock tests
