@@ -1,5 +1,7 @@
 # 17. Three products, one code base
 
+> **Update 2026-10-21:** Vault is now the core program only, reading content from the drive; Vault and Hub are two hosts for the same drive, reached from other devices by a browser tab. See [24](24-hosts-libraries-browser-clients.md). The product table below describes the earlier plan where it differs.
+
 **DECIDED (owner, 2026-10-18).** Three products: Cindrix Ops Go, Cindrix Ops Vault, Cindrix Ops Hub.
 All three are **one program**. The drive's marker file (`cindrix-drive.json`, field `edition`:
 `go`, `vault` or `hub`) says which one it is, and `core/src/product.rs` turns that word into a name,

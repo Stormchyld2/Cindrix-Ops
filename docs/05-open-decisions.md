@@ -25,3 +25,9 @@
 ## Decided 2026-10-20
 - **Windows first.** Android, the Hub's web server and the other editions wait until the Windows version has been tested for real. See [22](22-real-test.md).
 - The Diabetes Pack is deferred (decision 10).
+
+## Decided 2026-10-21
+- Vault is the core program only, installed on the laptop and reading content from the drive; Vault and Hub are two hosts for the same exFAT drive. Go keeps program and content on one stick. See [24](24-hosts-libraries-browser-clients.md).
+- Other devices use a browser tab, not an app. The drive also carries a rescue copy of the portable Windows build and the Android app.
+- The program lists every Cindrix drive (marker file) and asks before reading one: Always, This time only or Never, remembered by an id in the marker. No default pick, except that "Always" is suggested for the main library drive.
+- **OPEN:** what counts as the "main" drive; whether guests in a browser may use Shelf, Ask and music (doc 17 said archives only); whether Hub borrows a Vault laptop's assistant.

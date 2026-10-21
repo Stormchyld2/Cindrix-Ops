@@ -17,6 +17,19 @@ Windows comes first; Android and iPhone wrap it later.
 - `crypto/`: passphrase lock. `content/`: shipped sample content. `docs/`: design docs, numbered.
 - `mockups/`: design mockups. Match them when changing a screen.
 
+## Direction (decided 2026-10-21, not built yet; details in `docs/24-hosts-libraries-browser-clients.md`)
+
+- Go carries program and content on one stick. Vault and Hub are one exFAT drive of content; the program
+  runs on a host (Windows laptop for Vault, Android phone for Hub). The drive also holds a rescue copy of
+  the portable Windows build and the Android app.
+- Other devices use a browser tab, never a client app. Keep `src/lib/api.ts` the only place the interface
+  reaches the backend, and put new logic in `core/` so a second (HTTP) transport can use it too.
+- Only drives with `cindrix-drive.json` count as libraries, are remembered by the marker's `id` (not the
+  drive letter), and the person is asked before one is read. Several libraries can be on at once.
+- Sharing stays off at every start. Guests are read-only; the family page, inventory and the person's own
+  notes are never shared. Do not rely on browser features that need HTTPS.
+- Windows first: the web server and Android wait for the real Windows test (doc 22).
+
 ## Checks (CI runs these; see `.github/workflows/ci.yml`)
 
 - `cd core && cargo test --all-targets` (the music tests want `ffmpeg`)

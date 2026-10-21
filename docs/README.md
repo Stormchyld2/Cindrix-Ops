@@ -27,3 +27,4 @@ Mockups of every screen are in [`../mockups`](../mockups).
 - [21. Academy](21-academy.md)
 - [22. Real test](22-real-test.md)
 - [23. Ghostnet, search and settings](23-ghostnet-search-settings.md): the offline internet tab, what the assistant searches, every setting
+- [24. Hosts, libraries and browser clients](24-hosts-libraries-browser-clients.md): Vault and Hub as hosts for one drive, asking before reading a drive, browser tabs as clients
