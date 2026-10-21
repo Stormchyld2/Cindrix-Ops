@@ -61,7 +61,7 @@ fn detect_drive(state: &AppState) -> bool {
     let prog = program_dir();
     // only the drives the person has said may be read count; a new one waits for an answer
     let enabled = state.libs.lock().unwrap().refresh(&prog);
-    let (r, info) = drive::choose(&prog, &enabled);
+    let (r, info) = cindrix_core::libraries::primary(&prog, &enabled);
     *ROOT_OVERRIDE.lock().unwrap() = if r != prog { Some(r) } else { None };
     *state.drive.lock().unwrap() = info;
     root() != before

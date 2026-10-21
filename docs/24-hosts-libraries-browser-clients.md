@@ -109,8 +109,9 @@ steps 3 onward wait for the real Windows test (doc 22).
    listed; nothing is read from one until it is answered; archives from every library that may be read
    are served and searched together (the first library's copy wins when two share a file name) and
    labeled by library on the Archives screen; Ask also searches loose files in every allowed library. The
-   primary library (the program's own drive, else Vault, else the first allowed) still holds your files,
-   settings, models and engines. **Not yet:** Shelf books, music and maps from the other libraries,
+   primary library still holds your files, settings, models and engines: an allowed Vault drive first,
+   then an allowed Hub drive, then the program's own drive, then the first allowed one. (The downloadable
+   build is a folder with a Go marker, so without the Vault-first rule it would have stayed the main drive.) **Not yet:** Shelf books, music and maps from the other libraries,
    labels on Ghostnet results, and removing an archive that lives in a non-primary library.
 2. **One transport seam.** Move command logic that is still in `lib.rs` into `core/`, and put the Tauri
    calls behind an interface in `api.ts` so a second transport can be added without touching screens.

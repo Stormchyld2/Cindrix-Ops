@@ -181,6 +181,20 @@ pub fn enabled(libs: &[Library]) -> Vec<DriveInfo> {
     libs.iter().filter(|l| l.state.enabled()).map(|l| l.info.clone()).collect()
 }
 
+/// Which library holds the person's own files, settings, models and engines. The main drive
+/// wins: an allowed Vault drive first, then an allowed Hub drive, even when the program itself
+/// sits in a folder that carries a marker (the downloadable Windows build does, as a Go drive).
+/// Otherwise the usual rule applies (`drive::choose`): the program's own drive, else the first
+/// allowed one, else the folder the program is in.
+pub fn primary(program_dir: &Path, enabled: &[DriveInfo]) -> (PathBuf, Option<DriveInfo>) {
+    for edition in ["vault", "hub"] {
+        if let Some(d) = enabled.iter().find(|d| d.edition == edition) {
+            return (d.root.clone(), Some(d.clone()));
+        }
+    }
+    drive::choose(program_dir, enabled)
+}
+
 /// Find the drives on this computer and work out where each stands.
 pub fn scan(program_dir: &Path, reg: &Registry, once: &HashSet<PathBuf>) -> Vec<Library> {
     classify(&drive::find_all(), program_dir, reg, once)
@@ -353,6 +367,44 @@ mod tests {
         let prog = tmp("prog-e");
         let found = drive::find_in(&[plain]);
         assert!(classify(&found, &prog, &Registry::default(), &HashSet::new()).is_empty());
+    }
+
+    #[test]
+    fn the_main_drive_is_primary_even_when_the_program_folder_carries_a_marker() {
+        // the downloadable build is a folder with a Go marker; the 4 TB drive is Vault
+        let (prog, own) = drive_with("portable", "go", "go");
+        let (_v, vault) = drive_with("main-vault", "vault", "vault");
+        let libs = classify(&[vault.clone()], &prog, &Registry::default(), &HashSet::new());
+        // not yet answered: nothing is read from the Vault, so the program's own folder is used
+        let (root, info) = primary(&prog, &enabled(&libs));
+        assert_eq!(root, own.root);
+        assert_eq!(info.unwrap().edition, "go");
+        // answered "always": the Vault drive becomes the one that holds your files
+        let mut reg = Registry::load(&tmp("main-reg").join("libraries.txt"));
+        reg.set("vault", "Vault", Answer::Always).unwrap();
+        let libs = classify(&[vault.clone()], &prog, &reg, &HashSet::new());
+        let (root, info) = primary(&prog, &enabled(&libs));
+        assert_eq!(root, vault.root);
+        assert_eq!(info.unwrap().edition, "vault");
+        // refused: back to the program's own folder
+        reg.set("vault", "Vault", Answer::Never).unwrap();
+        let libs = classify(&[vault], &prog, &reg, &HashSet::new());
+        assert_eq!(primary(&prog, &enabled(&libs)).0, own.root);
+    }
+
+    #[test]
+    fn vault_before_hub_before_the_programs_own_drive() {
+        let (prog, _own) = drive_with("own-go", "go", "go");
+        let (_h, hub) = drive_with("a-hub", "hub", "hub");
+        let (_v, vault) = drive_with("a-vault", "vault", "vault");
+        let (_g, go) = drive_with("other-go", "go", "other");
+        assert_eq!(primary(&prog, &[go.clone(), hub.clone()]).0, hub.root);
+        assert_eq!(primary(&prog, &[go, hub, vault.clone()]).0, vault.root);
+        // nothing allowed at all: the folder the program runs from
+        let plain = tmp("plain-prog");
+        let (root, info) = primary(&plain, &[]);
+        assert_eq!(root, plain);
+        assert!(info.is_none());
     }
 
     #[test]
