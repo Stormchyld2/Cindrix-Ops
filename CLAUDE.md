@@ -26,8 +26,10 @@ Windows comes first; Android and iPhone wrap it later.
   reaches the backend, and put new logic in `core/` so a second (HTTP) transport can use it too.
 - Only drives with `cindrix-drive.json` count as libraries, are remembered by the marker's `id` (not the
   drive letter), and the person is asked before one is read. Several libraries can be on at once.
-- Sharing stays off at every start. Guests are read-only; the family page, inventory and the person's own
-  notes are never shared. Do not rely on browser features that need HTTPS.
+- Sharing stays off at every start. Guests are read-only and get all library content (archives, Shelf,
+  music, maps, Academy, Ask); the family page, inventory and the person's own notes stay host-only.
+  Do not rely on browser features that need HTTPS.
+- The Hub assistant is on by default with the model file on the drive; memory on the phone is the limit.
 - Windows first: the web server and Android wait for the real Windows test (doc 22).
 
 ## Checks (CI runs these; see `.github/workflows/ci.yml`)

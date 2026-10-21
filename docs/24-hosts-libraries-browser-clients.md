@@ -35,8 +35,8 @@ browser tab to reach a host; they install nothing.
 - The marker gets a new `id` field (random, written by `scripts/build-drive.ps1`), so a drive is
   remembered by its id and not by its drive letter, which Windows reassigns.
 - When a marked drive appears the person is asked: **Always**, **This time only** or **Never**. No
-  answer is pre-picked for the person, with one exception: for the main library drive (a drive whose
-  marker says `vault` or `hub`) "Always" is suggested. OPEN: confirm that is what "main drive" means.
+  answer is pre-picked for the person, with one exception: for the main library drive, the 4 TB
+  external drive (marker says `vault` or `hub`), "Always" is suggested.
 - Settings gets a library list: each library on or off, forget a remembered answer.
 - Several libraries can be on at once (for example Go stick and Vault drive). Search merges them and
   labels each result with its library.
@@ -65,9 +65,12 @@ Design points:
   not depend on browser features that need a secure connection (installing as an app, service workers).
 - **Guests are read-only by default.** Changing settings, adding or removing archives, the library list
   and "Save a website" are host-only, behind a PIN.
-- **Never shared, as doc 17 already decided:** the family page, inventory and the person's own notes.
-  OPEN: doc 17 said only the archives are served. Whether guests may also use Shelf reading, Ask and
-  music is a new decision for the owner.
+- **All library content is shared to browsers** (owner, 2026-10-21): archives, Shelf, music, maps,
+  Academy, cards and drills, and Ask. This replaces doc 17's "archives only". The person's own private
+  pages, the family page, inventory and notes under `user/`, are not content and stay host-only unless the
+  owner says otherwise. OPEN: confirm that reading.
+- **Content lives in one of two places:** the stripped-down set on Go, or the full set on the 4 TB drive
+  that a host shares.
 - **Per-device state** (bookmarks, open tabs, text size) is kept in each browser. The host holds only
   shared things.
 - **Ask on a shared host** is limited to one or two questions at a time, with a queue, so a phone is not
@@ -104,8 +107,13 @@ steps 3 onward wait for the real Windows test (doc 22).
    custom schemes become ordinary HTTP paths; file upload (`shelf_add`) stays host-only.
 4. **Sharing screen:** address, QR code, PIN, who is connected.
 5. **Android wrap and the Note 10 tests** below.
-6. Later, and only if wanted: Hub using a Vault laptop's assistant over the network. Doc 17 has the Hub
-   assistant off by default because the model is the heaviest and least proven part on Android.
+6. **The assistant on the phone.** The owner expects the Note 10 to run it, with the model file on the
+   drive. That keeps the phone's storage free, but not its memory: a model has to be loaded into RAM to
+   run, so the Note 10's RAM (8 GB; the Note 10+ has 12 GB), shared with Android, the hotspot and the
+   server, is the limit, and the drive's read speed decides how long loading takes. The `llama-server`
+   engine also has to be built for Android. Test this early (below). The Hub assistant stays on by default
+   (`product.rs`); if a model proves too heavy, a smaller one or a setting to turn it off is the fallback.
+   Later, if wanted: Hub using a Vault laptop's assistant over the network.
 
 ## To test on real hardware (none done)
 
@@ -114,3 +122,6 @@ steps 3 onward wait for the real Windows test (doc 22).
 - Whether the Note 10 can keep a hotspot up and serve several readers at once, and for how long.
 - Whether the phone can be on Wi-Fi and run a hotspot at the same time (many phones cannot).
 - Performance with several readers, spinning disk against SSD.
+- The assistant on the Note 10: which model size loads, how long loading takes from the drive, how fast
+  answers come, and what happens to the hotspot and server while it runs. Several people asking at once
+  go through the queue.

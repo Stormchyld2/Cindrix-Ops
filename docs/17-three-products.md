@@ -20,7 +20,7 @@ The Hub is the same code with a different set of features turned on:
 
 | Feature | Go | Vault | Hub |
 |---|---|---|---|
-| Assistant (local model) | on | on | **off by default** (the model is the heaviest and least proven part on Android; OPEN: confirm) |
+| Assistant (local model) | on | on | on (confirmed by the owner; the model file sits on the drive. The heaviest and least proven part on Android, so to test early, see [24](24-hosts-libraries-browser-clients.md)) |
 | Library: shelf, archives, cards | on | on | on |
 | Maps | on | on | on |
 | Music player (the owner's own music) | on | on | on |
@@ -30,7 +30,7 @@ The Hub is the same code with a different set of features turned on:
 | Content budget | 100 GB | 3400 GB | none |
 
 Sharing is never switched on by itself, in any product: it stays off until the person turns it on and
-confirms (doc 14). Only the archives are served, not the shelf, inventory, family page or assistant.
+confirms (doc 14). (Superseded 2026-10-21: all library content is now shared to browsers, see [24](24-hosts-libraries-browser-clients.md). The family page, inventory and notes stay host-only.)
 
 Built so far (base program): `core/src/product.rs` (products, features, budgets, `check_budget`),
 `DriveInfo::product()`, a `product_info` command in the Tauri shell, the interface showing the product

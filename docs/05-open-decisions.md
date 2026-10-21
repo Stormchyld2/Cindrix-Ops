@@ -30,4 +30,6 @@
 - Vault is the core program only, installed on the laptop and reading content from the drive; Vault and Hub are two hosts for the same exFAT drive. Go keeps program and content on one stick. See [24](24-hosts-libraries-browser-clients.md).
 - Other devices use a browser tab, not an app. The drive also carries a rescue copy of the portable Windows build and the Android app.
 - The program lists every Cindrix drive (marker file) and asks before reading one: Always, This time only or Never, remembered by an id in the marker. No default pick, except that "Always" is suggested for the main library drive.
-- **OPEN:** what counts as the "main" drive; whether guests in a browser may use Shelf, Ask and music (doc 17 said archives only); whether Hub borrows a Vault laptop's assistant.
+- The "main" drive is the 4 TB external drive. All library content (archives, Shelf, music, maps, Academy, cards, drills, Ask) is shared to browsers, replacing doc 17's "archives only". Content lives on Go (stripped down) or on the 4 TB drive.
+- The Hub assistant stays on by default, with the model file on the drive. Memory, not storage, is the limit on the Note 10; to test early. See [24](24-hosts-libraries-browser-clients.md).
+- **OPEN:** whether the family page, inventory and notes (not content) stay host-only, as planned; whether Hub borrows a Vault laptop's assistant later.
