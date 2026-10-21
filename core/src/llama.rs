@@ -409,8 +409,24 @@ mod end_to_end {
         let port = l.local_addr().unwrap().port();
         std::thread::spawn(move || {
             if let Ok((mut s, _)) = l.accept() {
-                let mut buf = vec![0u8; 8192];
-                let _ = s.read(&mut buf);
+                // Read the whole request (head and body) before answering. Closing with part of the
+                // request still unread makes the connection reset, which can cut the reply short.
+                let mut buf = Vec::new();
+                let mut tmp = [0u8; 1024];
+                loop {
+                    let n = s.read(&mut tmp).unwrap_or(0);
+                    buf.extend_from_slice(&tmp[..n]);
+                    let text = String::from_utf8_lossy(&buf).to_string();
+                    if let Some(h) = text.find("\r\n\r\n") {
+                        let cl: usize = text.to_lowercase().split("content-length:").nth(1).and_then(|x| x.split("\r\n").next()).and_then(|x| x.trim().parse().ok()).unwrap_or(0);
+                        if buf.len() >= h + 4 + cl {
+                            break;
+                        }
+                    }
+                    if n == 0 {
+                        break;
+                    }
+                }
                 let _ = s.write_all(b"HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nTransfer-Encoding: chunked\r\n\r\n");
                 for t in tokens {
                     let ev = format!("data: {{\"choices\":[{{\"delta\":{{\"content\":\"{}\"}}}}]}}\n\n", t);
