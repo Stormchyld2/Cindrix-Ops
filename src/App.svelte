@@ -17,13 +17,30 @@
   import Music from './views/Music.svelte';
   import MiniPlayer from './lib/MiniPlayer.svelte';
   import { onMount } from 'svelte';
-  import { modelStatus, libraryStatus, productInfo, type ModelStatus, type ProductInfo } from './lib/api';
+  import { modelStatus, libraryStatus, productInfo, librariesList, libraryAnswer, type ModelStatus, type ProductInfo, type LibraryEntry } from './lib/api';
   import { settings, applyUiScale } from './lib/settings.svelte';
   let ms: ModelStatus | null = $state(null);
   let sharing = $state(false);
   let online = $state(false);
   let product: ProductInfo | null = $state(null);
-  async function poll() { ms = await modelStatus(); const l = await libraryStatus(); sharing = l.shared; online = l.online; product = await productInfo(); }
+  // The Cindrix drives plugged in. A drive nobody has answered for is asked about before anything is read from it.
+  let libs: LibraryEntry[] = $state([]);
+  let dismissed: string[] = $state([]);
+  let libNote = $state('');
+  const asking = $derived(libs.find((l) => l.state === 'ask' && l.present && !dismissed.includes(l.path)));
+  async function poll() {
+    ms = await modelStatus();
+    const l = await libraryStatus();
+    sharing = l.shared;
+    online = l.online;
+    product = await productInfo();
+    libs = await librariesList();
+  }
+  async function answerLib(path: string, a: 'always' | 'once' | 'never') {
+    libNote = '';
+    try { await libraryAnswer(path, a); } catch (e) { libNote = String(e); }
+    await poll();
+  }
   onMount(() => {
     const t = setInterval(poll, 3000);
     poll();
@@ -114,6 +131,10 @@
     {/if}
   </header>
 
+  {#if libNote}
+    <div class="warn libnote" role="status">{libNote} <button class="btn" onclick={() => (libNote = '')}>OK</button></div>
+  {/if}
+
   <main>
     {#if group === 'Ask'}
       <Ask {openCard} />
@@ -154,6 +175,25 @@
     {/if}
   </main>
 
+  {#if asking}
+    {@const a = asking}
+    <dialog open aria-label="A Cindrix drive was found">
+      <div class="dlg">
+        <h2>A Cindrix drive was found</h2>
+        <p><strong>{a.name}</strong>{a.edition ? ' · ' + a.edition + ' edition' : ''}</p>
+        <p class="path">{a.path}</p>
+        <p>Do you want the program to read the library, archives and files on it? Nothing on it is ever run, and nothing is read until you say yes.</p>
+        <div class="row end">
+          <button class="btn" onclick={() => (dismissed = [...dismissed, a.path])}>Not now</button>
+          <button class="btn" onclick={() => answerLib(a.path, 'never')}>Never use it</button>
+          <button class="btn" onclick={() => answerLib(a.path, 'once')}>Just this time</button>
+          <button class="btn" class:primary={a.suggest_always} onclick={() => answerLib(a.path, 'always')}>Always use it{a.suggest_always ? ' (suggested)' : ''}</button>
+        </div>
+        <p class="muted fine">You can change this later in Settings, Drive.</p>
+      </div>
+    </dialog>
+  {/if}
+
   {#if product?.music !== false && settings.values.showMiniPlayer}<MiniPlayer open={() => (group = 'Music')} />{/if}
 
   {#if settings.values.showStatusBar}
@@ -167,6 +207,13 @@
 </div>
 
 <style>
+  .dlg { padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+  .dlg h2 { margin: 0; }
+  .dlg p { margin: 0; }
+  .dlg .path { font-family: var(--mono); font-size: 12px; word-break: break-all; color: var(--muted, #9aa7b4); }
+  .dlg .fine { font-size: 12px; }
+  .dlg .end { justify-content: flex-end; }
+  .libnote { margin: 8px 16px 0; display: flex; gap: 12px; align-items: center; justify-content: space-between; }
   .shell { min-height: 100vh; display: flex; flex-direction: column; }
   header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px 24px;
     padding: 12px 24px; background: var(--panel2); border-bottom: 1px solid var(--line); border-top: 3px solid var(--accent); }

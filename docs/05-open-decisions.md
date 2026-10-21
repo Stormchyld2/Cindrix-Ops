@@ -32,4 +32,5 @@
 - The program lists every Cindrix drive (marker file) and asks before reading one: Always, This time only or Never, remembered by an id in the marker. No default pick, except that "Always" is suggested for the main library drive.
 - The "main" drive is the 4 TB external drive. All library content (archives, Shelf, music, maps, Academy, cards, drills, Ask) is shared to browsers, replacing doc 17's "archives only". Content lives on Go (stripped down) or on the 4 TB drive.
 - The Hub assistant stays on by default, with the model file on the drive. Memory, not storage, is the limit on the Note 10; to test early. See [24](24-hosts-libraries-browser-clients.md).
+- The marker's `id` for the owner's drives is the edition word (`vault`, `go`, `hub`); a marker without an id uses its edition word. Built 2026-10-21 (doc 24, plan step 1).
 - **OPEN:** whether the family page, inventory and notes (not content) stay host-only, as planned; whether Hub borrows a Vault laptop's assistant later.

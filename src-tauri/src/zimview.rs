@@ -3,7 +3,7 @@
 //! the web view, puts a small script into each page (so the reader knows which page is open and
 //! can stop links leaving the library), and nothing else. See `core/src/kiwix.rs`.
 
-use super::{library_dir, root, AppState};
+use super::{root, AppState};
 use cindrix_core::library::{self, Library};
 use cindrix_core::{fsio, kiwix};
 use std::sync::{Arc, Mutex};
@@ -30,7 +30,7 @@ static LIB: Mutex<Option<(String, Arc<Library>)>> = Mutex::new(None);
 
 /// The archives on the drive, read directly. Reopened only when a file is added, removed or replaced.
 pub fn library() -> Arc<Library> {
-    let files = kiwix::zim_files(&library_dir());
+    let files = super::libs::all_zim_files();
     let sig = library::signature(&files);
     let mut g = LIB.lock().unwrap_or_else(|e| e.into_inner());
     if let Some((s, l)) = g.as_ref() {

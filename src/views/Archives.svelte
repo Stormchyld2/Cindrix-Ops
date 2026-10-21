@@ -8,6 +8,7 @@
   let { openGhostnet }: { openGhostnet: () => void } = $props();
 
   let st: LibraryStatus = $state({ archives: [], ready: false, url: null, shared: false, lan_url: null, drive: null, folder: '', online: false });
+  const manyLibraries = $derived(new Set(st.archives.map((a) => a.library)).size > 1);
   let crawl: CrawlStatus = $state({ running: false, phase: '', pages: 0, files: 0, mb: 0, queued: 0, current: '', failed: 0, finished: false, ok: false, message: '', file: '', blocked: 0, hit_limit: false });
   let copy: CopyStatus = $state({ running: false, finished: false, ok: false, name: '', copied_mb: 0, total_mb: 0, message: '' });
   let timer: ReturnType<typeof setInterval> | undefined;
@@ -149,11 +150,12 @@
       <p class="muted">None found in <code>{st.folder}\library</code> (subfolders are searched too). Use <b>+ Add archive</b> to copy a .zim file from your computer (you can download them from the Kiwix library while you have internet), or save a website below. Only add archives whose license lets you keep a copy.</p>
     {:else}
       <ul class="list">
-        {#each st.archives as a (a.file)}
+        {#each st.archives as a (a.library + '/' + a.file)}
           <li>
             <div class="grow">
               <strong>{a.file}</strong>
               <span class="muted"> · {size(a.mb)}{a.articles ? ' · ' + a.articles.toLocaleString() + ' items' : ''}</span>
+              {#if manyLibraries && a.library}<span class="tagline">On {a.library}</span>{/if}
               {#if a.saved_site}<span class="tagline">Saved website · the assistant can read it</span>{/if}
               {#if a.note}<div class="warn small">{a.note}</div>{/if}
             </div>
@@ -162,7 +164,7 @@
                 <button class="btn" onclick={() => (removing = null)}>Keep</button>
                 <button class="btn danger" onclick={() => removeArchive(a.file)}>Remove from drive</button>
               </span>
-            {:else}
+            {:else if a.removable}
               <button class="btn" onclick={() => (removing = a.file)} disabled={copy.running || crawl.running}>Remove</button>
             {/if}
           </li>

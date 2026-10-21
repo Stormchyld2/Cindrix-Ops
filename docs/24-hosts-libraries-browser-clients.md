@@ -32,8 +32,13 @@ browser tab to reach a host; they install nothing.
 - A drive counts as a library only if it carries the marker file, `cindrix-drive.json`. The laptop's own
   disk and random USB sticks never trigger a question. Any other folder can still be added by hand in
   Settings so Ask can search loose files.
-- The marker gets a new `id` field (random, written by `scripts/build-drive.ps1`), so a drive is
-  remembered by its id and not by its drive letter, which Windows reassigns.
+- The marker has an `id` field, so a drive is remembered by its id and not by its drive letter, which
+  Windows reassigns. The owner's drives use the plain edition word: `vault`, `go`, `hub` (decided
+  2026-10-21). `scripts/build-drive.ps1` writes it; a marker with no `id` is known by its edition word, so
+  an existing drive already counts as `vault`. Two drives with the same id are still two libraries (told
+  apart by where they are plugged in), but one remembered answer covers both.
+- The answers are kept in a small plain file on this computer (`libraries.txt` under `%APPDATA%\Cindrix`),
+  not on the drive, because they say what this computer trusts.
 - When a marked drive appears the person is asked: **Always**, **This time only** or **Never**. No
   answer is pre-picked for the person, with one exception: for the main library drive, the 4 TB
   external drive (marker says `vault` or `hub`), "Always" is suggested.
@@ -98,8 +103,15 @@ Design points:
 Windows first (doc 5, 2026-10-20): steps 1 and 2 belong to the Windows program and Vault needs them;
 steps 3 onward wait for the real Windows test (doc 22).
 
-1. **Libraries.** Add `id` to the marker; replace the single drive root with a list of libraries; the
-   ask-first prompt; Settings library list; merged, labeled search. Tests in `core/`.
+1. **Libraries. BUILT (2026-10-21), not yet run on real drives.** `core/src/libraries.rs` (the rules and
+   the remembered answers, with tests), `src-tauri/src/libs.rs` (the commands), the question in
+   `src/App.svelte`, the library list in Settings, Drive. What it does today: every drive with a marker is
+   listed; nothing is read from one until it is answered; archives from every library that may be read
+   are served and searched together (the first library's copy wins when two share a file name) and
+   labeled by library on the Archives screen; Ask also searches loose files in every allowed library. The
+   primary library (the program's own drive, else Vault, else the first allowed) still holds your files,
+   settings, models and engines. **Not yet:** Shelf books, music and maps from the other libraries,
+   labels on Ghostnet results, and removing an archive that lives in a non-primary library.
 2. **One transport seam.** Move command logic that is still in `lib.rs` into `core/`, and put the Tauri
    calls behind an interface in `api.ts` so a second transport can be added without touching screens.
 3. **Read-only HTTP server** over `core/`, and a browser build of the same Svelte interface using the HTTP

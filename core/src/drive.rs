@@ -14,6 +14,10 @@ pub struct DriveInfo {
     pub name: String,
     /// "go", "vault", "hub", or "" when the marker does not say.
     pub edition: String,
+    /// What the program remembers the drive by (instead of its drive letter, which changes).
+    /// The marker's `id` field, which for the owner's drives is simply `vault`, `go` or `hub`.
+    /// A marker without one is known by its edition word, and failing that by `cindrix`.
+    pub id: String,
 }
 
 impl DriveInfo {
@@ -49,15 +53,36 @@ fn field(json: &str, key: &str) -> String {
     out
 }
 
+/// A drive's id: lower case letters, digits, `-` and `_` only. Falls back to the edition word,
+/// then to `cindrix`, so every drive has one.
+pub fn clean_id(raw: &str, edition: &str) -> String {
+    let tidy = |s: &str| -> String {
+        s.trim()
+            .to_lowercase()
+            .chars()
+            .filter(|c| c.is_ascii_alphanumeric() || *c == '-' || *c == '_')
+            .take(40)
+            .collect()
+    };
+    let id = tidy(raw);
+    if !id.is_empty() {
+        return id;
+    }
+    let id = tidy(edition);
+    if !id.is_empty() { id } else { "cindrix".to_string() }
+}
+
 /// Is `dir` itself, or its `Cindrix` subfolder, a Cindrix drive?
 pub fn check(dir: &Path) -> Option<DriveInfo> {
     for root in [dir.to_path_buf(), dir.join("Cindrix")] {
         let marker = root.join(MARKER);
         if let Ok(text) = fs::read_to_string(&marker) {
             let name = field(&text, "name");
+            let edition = field(&text, "edition").to_lowercase();
             return Some(DriveInfo {
                 name: if name.is_empty() { "Cindrix drive".to_string() } else { name },
-                edition: field(&text, "edition").to_lowercase(),
+                id: clean_id(&field(&text, "id"), &edition),
+                edition,
                 root,
             });
         }
@@ -146,6 +171,23 @@ mod tests {
         assert_eq!(field(j, "edition"), "Vault");
         assert_eq!(field(j, "missing"), "");
         assert_eq!(field("not json", "name"), "");
+    }
+
+    #[test]
+    fn a_drive_is_known_by_its_marker_id() {
+        let a = tmp("id-a");
+        fs::write(a.join(MARKER), r#"{"name":"Vault","edition":"vault","id":"vault"}"#).unwrap();
+        assert_eq!(check(&a).unwrap().id, "vault");
+        // no id: the edition word stands in; no edition either: a plain default
+        let b = tmp("id-b");
+        fs::write(b.join(MARKER), r#"{"name":"Go","edition":"Go"}"#).unwrap();
+        assert_eq!(check(&b).unwrap().id, "go");
+        let c = tmp("id-c");
+        fs::write(c.join(MARKER), r#"{"name":"Old"}"#).unwrap();
+        assert_eq!(check(&c).unwrap().id, "cindrix");
+        // odd characters are dropped, so an id is always safe to store in a plain file
+        assert_eq!(clean_id("  My Vault!\t\n#2 ", "vault"), "myvault2");
+        assert_eq!(clean_id("!!!", "hub"), "hub");
     }
 
     #[test]

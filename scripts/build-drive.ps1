@@ -18,6 +18,7 @@ param(
   [Parameter(Mandatory=$true)][string]$Target,
   [ValidateSet('go','vault','hub')][string]$Edition = 'go',
   [string]$Name = '',
+  [string]$Id = '',      # what the program remembers this drive by; by default the edition word (vault, go or hub)
   [switch]$Optional,     # also fetch items the manifest marks as not required
   [string[]]$Only = @(), # fetch just these item ids, for example: -Only qwen35-2b,fema-guides,wikem
   [switch]$DryRun,       # only work out sizes and print the plan
@@ -35,7 +36,8 @@ if (-not $DryRun) {
   $music = Join-Path $Target 'music\README.txt'
   if (-not (Test-Path $music)) { Set-Content -Path $music -Value 'Copy your music here (folders like Artist\Album\01 - Song.mp3). It is never changed or counted in the size limit.' -Encoding UTF8 }
   if (-not $Name) { $Name = switch ($Edition) { 'vault' { 'Cindrix Ops Vault' } 'hub' { 'Cindrix Ops Hub' } default { 'Cindrix Ops Go' } } }
-  Set-Content -Path (Join-Path $Target 'cindrix-drive.json') -Value ('{ "name": "' + $Name + '", "edition": "' + $Edition + '" }') -Encoding UTF8
+  if (-not $Id) { $Id = $Edition }
+  Set-Content -Path (Join-Path $Target 'cindrix-drive.json') -Value ('{ "name": "' + $Name + '", "edition": "' + $Edition + '", "id": "' + $Id + '" }') -Encoding UTF8
 }
 
 # 2. Which items belong to this edition. Go takes tier A (Wikipedia without pictures); Vault takes tier B and V.

@@ -2,7 +2,8 @@
   import { onMount, onDestroy } from 'svelte';
   import {
     modelStatus, listModels, selectModel, libraryStatus, sourcesList, pickFolder,
-    type ModelStatus, type ModelChoice, type LibraryStatus, type Sources,
+    librariesList, libraryAnswer, libraryForget,
+    type ModelStatus, type ModelChoice, type LibraryStatus, type Sources, type LibraryEntry,
   } from '../lib/api';
   import { settings, RANGES, SCREENS, type Settings } from '../lib/settings.svelte';
 
@@ -18,6 +19,8 @@
   let ms = $state<ModelStatus | null>(null);
   let models: ModelChoice[] = $state([]);
   let lib = $state<LibraryStatus | null>(null);
+  let libs: LibraryEntry[] = $state([]);
+  let libMsg = $state('');
   let sources: Sources = $state({ groups: [] });
   let switching = $state('');
   let error = $state('');
@@ -27,10 +30,28 @@
     try {
       ms = await modelStatus();
       lib = await libraryStatus();
+      libs = await librariesList();
     } catch (e) {
       error = String(e);
     }
   }
+  async function libAnswer(path: string, a: 'always' | 'once' | 'never') {
+    libMsg = '';
+    try { await libraryAnswer(path, a); } catch (e) { libMsg = String(e); }
+    await refresh();
+  }
+  async function libForget(id: string) {
+    libMsg = '';
+    try { await libraryForget(id); } catch (e) { libMsg = String(e); }
+    await refresh();
+  }
+  const libText: Record<string, string> = {
+    own: 'The drive this program is running from. It is always read.',
+    always: 'Read every time it is plugged in.',
+    once: 'Read just this time, until the program is closed.',
+    never: 'Never read.',
+    ask: 'Waiting for your answer.',
+  };
   onMount(async () => {
     await refresh();
     models = await listModels();
@@ -237,6 +258,35 @@
       <div class="row"><button class="btn" onclick={openArchives}>Archives and saving websites →</button></div>
     </div>
     <div class="panel">
+      <div class="label">LIBRARIES</div>
+      <p class="muted fine">A library is a Cindrix drive. The program asks before it reads one, and remembers your answer for that drive whatever drive letter it gets. Archives and loose files from every library you allow are searched together. Your own files and settings are kept on the main one.</p>
+      {#if libMsg}<p class="warn">{libMsg}</p>{/if}
+      {#if libs.length === 0}
+        <p class="muted">No Cindrix drives found yet. Plug one in; this list updates by itself.</p>
+      {:else}
+        <ul class="liblist">
+          {#each libs as l (l.path || l.id)}
+            <li>
+              <div class="libinfo">
+                <strong>{l.name}</strong>{l.edition ? ' · ' + l.edition + ' edition' : ''}
+                <div class="muted fine path">{l.present ? l.path : 'Not plugged in now'}</div>
+                <div class="fine">{libText[l.state]}</div>
+              </div>
+              <span class="row">
+                {#if l.present && l.state !== 'own'}
+                  {#if l.state !== 'always'}<button class="btn" onclick={() => libAnswer(l.path, 'always')}>Always use it</button>{/if}
+                  {#if l.state !== 'never'}<button class="btn" onclick={() => libAnswer(l.path, 'never')}>Never use it</button>{/if}
+                {/if}
+                {#if l.state === 'always' || l.state === 'never' || l.state === 'once'}
+                  <button class="btn" onclick={() => libForget(l.id)}>Ask me again</button>
+                {/if}
+              </span>
+            </li>
+          {/each}
+        </ul>
+      {/if}
+    </div>
+    <div class="panel">
       <div class="label">SATELLITE MAPS BY COUNTY</div>
       <p class="muted">Optional aerial photos for the Maps page (US counties, from the USGS NAIP program), downloaded once while you have internet. Arrives with Maps.</p>
     </div>
@@ -276,6 +326,9 @@
 
 <style>
   .wrap { display: flex; flex-direction: column; gap: 14px; }
+  .liblist { list-style: none; padding: 0; margin: 10px 0 0; display: flex; flex-direction: column; gap: 10px; }
+  .liblist li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 10px 0; border-top: 1px solid var(--line); }
+  .libinfo { flex: 1; min-width: 220px; }
   .tabs { display: flex; flex-wrap: wrap; gap: 6px; }
   .tabs button { padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line2); background: transparent; color: var(--text); font: inherit; cursor: pointer; }
   .tabs button.on { background: var(--panel2); border-color: var(--blue); color: var(--blue); }

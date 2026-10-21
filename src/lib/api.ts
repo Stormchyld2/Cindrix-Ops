@@ -234,7 +234,7 @@ export async function marksSetLast(book: string, page: number): Promise<void> {
 }
 
 // ---------- archives (ZIM files) and sharing ----------
-export type ArchiveInfo = { file: string; mb: number; articles: number; saved_site: boolean; note: string };
+export type ArchiveInfo = { file: string; mb: number; articles: number; saved_site: boolean; note: string; library: string; removable: boolean };
 export type DriveInfo = { name: string; edition: string; path: string };
 export type LibraryStatus = {
   archives: ArchiveInfo[];
@@ -339,6 +339,28 @@ export async function productInfo(): Promise<ProductInfo> {
 
 export async function driveRescan(): Promise<void> {
   if (inTauri) await call<void>('drive_rescan');
+}
+
+// ---------- libraries: the Cindrix drives plugged in, and what the person said about each ----------
+export type LibraryState = 'own' | 'always' | 'once' | 'never' | 'ask';
+export type LibraryEntry = {
+  id: string; name: string; edition: string; path: string;
+  state: LibraryState; enabled: boolean; present: boolean; suggest_always: boolean;
+};
+
+export async function librariesList(): Promise<LibraryEntry[]> {
+  if (inTauri) return call<LibraryEntry[]>('libraries_list');
+  return []; // browser preview: no drives
+}
+
+/** "always", "once" (just this time) or "never" for the drive at `path`. */
+export async function libraryAnswer(path: string, answer: 'always' | 'once' | 'never'): Promise<void> {
+  if (inTauri) await call<void>('library_answer', { path, answer });
+}
+
+/** Forget what was said about a drive, so it is asked about again. */
+export async function libraryForget(id: string): Promise<void> {
+  if (inTauri) await call<void>('library_forget', { id });
 }
 
 export type CrawlStatus = {

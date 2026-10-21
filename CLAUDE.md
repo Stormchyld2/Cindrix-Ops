@@ -8,10 +8,12 @@ Windows comes first; Android and iPhone wrap it later.
 
 - `core/`: Rust library, **standard library only** (no outside crates; zstd and xz decoders are
   our own so it also builds for Android). All logic that can be tested lives here.
+  `drive.rs` (finding drives by marker) and `libraries.rs` (which drives may be read, remembered answers),
   `retrieval.rs` (keyword passages for the assistant), `shelf.rs` (books), `library.rs` and
   `zimread.rs` (ZIM archives read directly), `kiwix.rs` (kiwix-serve helpers), `pipeline.rs` (ask).
 - `src-tauri/src/lib.rs`: Tauri commands and app state. `zimview.rs` serves the `cindrix-zim`
-  address for the archive reader. `music.rs` is the music player's side.
+  address for the archive reader. `music.rs` is the music player's side. `libs.rs` is the drive
+  question and the library list (`all_zim_files()` is the one place archives are listed from).
 - `src/`: Svelte 5 interface. `App.svelte` holds the top navigation; screens are in `src/views/`;
   `src/lib/api.ts` is the only place that calls Tauri commands.
 - `crypto/`: passphrase lock. `content/`: shipped sample content. `docs/`: design docs, numbered.
@@ -24,8 +26,9 @@ Windows comes first; Android and iPhone wrap it later.
   the portable Windows build and the Android app.
 - Other devices use a browser tab, never a client app. Keep `src/lib/api.ts` the only place the interface
   reaches the backend, and put new logic in `core/` so a second (HTTP) transport can use it too.
-- Only drives with `cindrix-drive.json` count as libraries, are remembered by the marker's `id` (not the
-  drive letter), and the person is asked before one is read. Several libraries can be on at once.
+- Only drives with `cindrix-drive.json` count as libraries, are remembered by the marker's `id` (the
+  edition word: `vault`, `go`, `hub`; not the drive letter), and the person is asked before one is read.
+  Several libraries can be on at once. (Built for archives and loose files; see doc 24.)
 - Sharing stays off at every start. Guests are read-only and get all library content (archives, Shelf,
   music, maps, Academy, Ask); the family page, inventory and the person's own notes stay host-only.
   Do not rely on browser features that need HTTPS.

@@ -21,6 +21,7 @@ use std::sync::{Arc, Mutex};
 use tauri_plugin_dialog::DialogExt;
 
 mod fetch;
+mod libs;
 mod music;
 mod settings;
 mod zimview;
@@ -58,7 +59,9 @@ fn detect_drive(state: &AppState) -> bool {
     }
     let before = root();
     let prog = program_dir();
-    let (r, info) = drive::choose(&prog, &drive::find_all());
+    // only the drives the person has said may be read count; a new one waits for an answer
+    let enabled = state.libs.lock().unwrap().refresh(&prog);
+    let (r, info) = drive::choose(&prog, &enabled);
     *ROOT_OVERRIDE.lock().unwrap() = if r != prog { Some(r) } else { None };
     *state.drive.lock().unwrap() = info;
     root() != before
@@ -126,6 +129,7 @@ struct AppState {
     kiwix_zims: Mutex<Vec<PathBuf>>,
     status: Mutex<ModelStatus>,
     drive: Mutex<Option<DriveInfo>>,
+    libs: Mutex<libs::LibState>,
     crawl: Mutex<CrawlDto>,
     crawl_cancel: Arc<AtomicBool>,
     copy: Mutex<CopyDto>,
@@ -172,7 +176,7 @@ fn library_dir() -> PathBuf {
 fn start_library(state: &AppState, share: bool) {
     state.stop_kiwix();
     *state.kiwix_shared.lock().unwrap() = false;
-    let zims = kiwix::zim_files(&library_dir());
+    let zims = libs::all_zim_files();
     *state.kiwix_zims.lock().unwrap() = zims.clone();
     let name = if cfg!(windows) { "kiwix-serve.exe" } else { "kiwix-serve" };
     let engine = drive_or_program("engines").join(name);
@@ -198,6 +202,10 @@ struct ArchiveDto {
     /// Saved from a website by this app, so the assistant can read it
     saved_site: bool,
     note: String,
+    /// The library (drive) it is in, by name
+    library: String,
+    /// Only archives in the main library can be removed from here
+    removable: bool,
 }
 
 #[derive(Serialize)]
@@ -238,7 +246,8 @@ fn license_note(file: &str) -> String {
 }
 
 fn archive_list() -> Vec<ArchiveDto> {
-    kiwix::zim_files(&library_dir())
+    let main = library_dir();
+    libs::all_zim_files()
         .into_iter()
         .filter_map(|p| {
             let file = p.file_name()?.to_string_lossy().to_string();
@@ -248,6 +257,8 @@ fn archive_list() -> Vec<ArchiveDto> {
             Some(ArchiveDto {
                 saved_site: web_text_dir().join(format!("{}.md", stem)).exists(),
                 note: license_note(&file),
+                library: libs::library_name_of(&p),
+                removable: p.starts_with(&main),
                 file,
                 mb,
                 articles,
@@ -444,19 +455,22 @@ fn library_status(state: tauri::State<'_, AppState>) -> LibraryStatus {
 /// Look for the Cindrix drive again (after plugging it in, or moving to another computer).
 #[tauri::command]
 fn drive_rescan(app: tauri::AppHandle) {
-    std::thread::spawn(move || {
-        let st = app.state::<AppState>();
-        let moved = detect_drive(&st);
-        // archives added (or removed) since the library server started need a restart of it
-        let changed = *st.kiwix_zims.lock().unwrap() != kiwix::zim_files(&library_dir());
-        if moved || changed {
-            let shared = *st.kiwix_shared.lock().unwrap();
-            start_library(&st, shared);
-        }
-        if moved {
-            start_model(&st, None);
-        }
-    });
+    std::thread::spawn(move || rescan_now(&app));
+}
+
+/// Look at the drives again and restart what depends on them (also after a drive question is answered).
+fn rescan_now(app: &tauri::AppHandle) {
+    let st = app.state::<AppState>();
+    let moved = detect_drive(&st);
+    // archives added (or removed) since the library server started need a restart of it
+    let changed = *st.kiwix_zims.lock().unwrap() != libs::all_zim_files();
+    if moved || changed {
+        let shared = *st.kiwix_shared.lock().unwrap();
+        start_library(&st, shared);
+    }
+    if moved {
+        start_model(&st, None);
+    }
 }
 
 /// Turn sharing the library with other devices on the same network on or off. Off by default.
@@ -595,6 +609,7 @@ async fn ask_stream(question: String, on_event: Channel<StreamEvent>, app: tauri
             if use_files {
                 // loose text, Markdown and web page files anywhere on the drive, and in the folders added in Settings
                 let mut roots = vec![root()];
+                roots.extend(libs::other_roots(&root()));
                 roots.extend(settings::folders("extraFolders"));
                 let lim = filesearch::Limits { budget: Duration::from_millis(budget_ms), ..filesearch::Limits::default() };
                 p.extend(filesearch::search(&root(), &roots, &question, 2, &lim).0);
@@ -1381,9 +1396,9 @@ pub fn run() {
                 if st.drive.lock().unwrap().as_ref().map(|d| d.product().features().music).unwrap_or(true) && settings::flag("scanMusicOnStart", true) {
                     music::start_scan(&handle);
                 }
-                // No Cindrix drive yet? Keep looking, so plugging it in later (or into another
-                // port, with another drive letter) just works.
-                while st.drive.lock().unwrap().is_none() && std::env::var("CINDRIX_ROOT").is_err() {
+                // Keep looking for drives, so plugging one in later (or into another port, with
+                // another drive letter) just works. A new drive is asked about, not read.
+                while std::env::var("CINDRIX_ROOT").is_err() {
                     std::thread::sleep(Duration::from_secs(8));
                     if detect_drive(&st) {
                         start_library(&st, false);
@@ -1405,7 +1420,7 @@ pub fn run() {
                     if !settings::flag("autoRestartLibrary", true) {
                         continue;
                     }
-                    let now = kiwix::zim_files(&library_dir());
+                    let now = libs::all_zim_files();
                     let running = st.kiwix_zims.lock().unwrap().clone();
                     if watch.should_restart(&now, &running) {
                         let shared = *st.kiwix_shared.lock().unwrap();
@@ -1420,6 +1435,9 @@ pub fn run() {
             ask_stream,
             model_status,
             library_status,
+            libs::libraries_list,
+            libs::library_answer,
+            libs::library_forget,
             product_info,
             maps_list,
             map_load,

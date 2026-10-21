@@ -13,6 +13,7 @@ pub mod fsio;
 pub mod hardware;
 pub mod inventory;
 pub mod kiwix;
+pub mod libraries;
 pub mod library;
 pub mod llama;
 pub mod maps;
