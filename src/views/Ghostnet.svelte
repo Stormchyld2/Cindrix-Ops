@@ -33,6 +33,8 @@
   let hits: ZimHit[] = $state([]);
   let searching = $state(false);
   let plain = $state(false);
+  // set when one archive is opened in the library server (kiwix-serve) instead of the built-in reader
+  let plainUrl: string | null = $state(null);
   let titles: Record<string, string> = $state({});
   let debounce: ReturnType<typeof setTimeout> | undefined;
   let poll: ReturnType<typeof setInterval> | undefined;
@@ -123,6 +125,15 @@
   // new archives copied onto the drive show up by themselves
   async function refreshBooks() {
     try { books = await zimBooks(); } catch { /* keep what we have */ }
+    // the library server may have started since this screen opened
+    if (!st?.url) { try { st = await libraryStatus(); } catch { /* the link just stays hidden */ } }
+  }
+  /** Some archives (saved websites that need a web browser's own features) show blank in the built-in
+   *  reader but work in the library server, which is a proper web server. Open this one there. */
+  function openInServer() {
+    if (!st?.url || !bookHere) return;
+    plainUrl = `${st.url}content/${encodeURIComponent(bookHere)}`;
+    plain = true;
   }
 
   function save() {
@@ -337,7 +348,7 @@
 
   <div class="view panel">
     {#if plain && st?.url}
-      <iframe title="Plain Kiwix screen" src={st.url} sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+      <iframe title="Plain Kiwix screen" src={plainUrl ?? st.url} sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
     {:else if loc?.t === 'page'}
       <iframe bind:this={frame} title="Archive page" {src} {srcdoc} sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
     {:else if loc?.t === 'results'}
@@ -395,7 +406,12 @@
   </div>
   <div class="row fine muted">
     {#if st?.url && st.url !== 'preview'}
-      <button class="linkbtn" onclick={() => (plain = !plain)}>{plain ? 'Back to Ghostnet' : 'Use the plain Kiwix screen instead'}</button>
+      {#if !plain && bookHere}
+        <span>Page blank or broken?</span>
+        <button class="linkbtn" onclick={openInServer}>Open {bookTitle(bookHere)} in the library server</button>
+        <span>·</span>
+      {/if}
+      <button class="linkbtn" onclick={() => { plainUrl = null; plain = !plain; }}>{plain ? 'Back to Ghostnet' : 'Use the plain Kiwix screen instead'}</button>
     {/if}
   </div>
 </section>

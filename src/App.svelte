@@ -135,7 +135,7 @@
     <div class="warn libnote" role="status">{libNote} <button class="btn" onclick={() => (libNote = '')}>OK</button></div>
   {/if}
 
-  <main>
+  <main class:wide={group === 'Ghostnet'}>
     {#if group === 'Ask'}
       <Ask {openCard} />
     {:else if group === 'Library'}
@@ -229,6 +229,8 @@
   .subnav button { padding: 6px 10px; background: transparent; border: 0; border-bottom: 2px solid transparent; color: var(--muted); font-family: var(--mono); text-transform: uppercase; letter-spacing: .1em; font-size: 12px; }
   .subnav button.on { color: var(--blue); border-bottom-color: var(--blue); font-weight: 600; }
   main { flex: 1; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; max-width: 1040px; width: 100%; margin: 0 auto; }
+  /* the offline browser gets the whole window, so pages have room */
+  main.wide { max-width: none; padding: 14px 16px; }
   footer { display: flex; flex-wrap: wrap; gap: 6px 22px; padding: 9px 24px; background: var(--panel2); border-top: 1px solid var(--line);
     font-family: var(--mono); font-size: 12px; color: var(--muted); }
   footer .right { margin-left: auto; }

@@ -3,7 +3,7 @@
 //! All the real work (reading tags, the index, safe paths, playlists, converting) is in the
 //! core's `media` module, which has its own tests.
 
-use super::{drive_or_program, root, AppState};
+use super::{drive_or_program, engine_file, root, AppState};
 use cindrix_core::fsio;
 use cindrix_core::maps;
 use cindrix_core::media::{self, convert, playlist, serve, tags, Class, Query, Track};
@@ -39,7 +39,7 @@ fn index_file() -> PathBuf {
     root().join("user").join("cache").join("music-index.csv")
 }
 fn ffmpeg_path() -> PathBuf {
-    drive_or_program("engines").join(convert::engine_name())
+    engine_file(convert::engine_name())
 }
 fn user_dir() -> PathBuf {
     root().join("user")

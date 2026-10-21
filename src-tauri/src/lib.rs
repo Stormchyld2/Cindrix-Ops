@@ -67,10 +67,36 @@ fn detect_drive(state: &AppState) -> bool {
     root() != before
 }
 
-/// A folder of the drive, or the same folder next to the program if the drive does not have it.
+fn has_files(p: &std::path::Path) -> bool {
+    std::fs::read_dir(p).map(|mut rd| rd.next().is_some()).unwrap_or(false)
+}
+
+/// A folder of the main drive, or the same folder next to the program. The drive's folder wins
+/// when it has anything in it; an empty one (a freshly set up drive has empty `engines` and
+/// `models` folders) does not hide what came with the program.
 fn drive_or_program(name: &str) -> PathBuf {
     let a = root().join(name);
-    if a.exists() { a } else { program_dir().join(name) }
+    let b = program_dir().join(name);
+    if has_files(&a) {
+        a
+    } else if has_files(&b) {
+        b
+    } else if a.exists() {
+        a
+    } else {
+        b
+    }
+}
+
+/// A helper program (the assistant engine, the library server, the music converter): the one on
+/// the main drive, else the one next to the program.
+fn engine_file(file: &str) -> PathBuf {
+    let a = root().join("engines").join(file);
+    if a.exists() {
+        return a;
+    }
+    let b = program_dir().join("engines").join(file);
+    if b.exists() { b } else { a }
 }
 
 fn content_dir() -> PathBuf {
@@ -166,7 +192,7 @@ impl AppState {
 
 fn engine_path() -> PathBuf {
     let name = if cfg!(windows) { "llama-server.exe" } else { "llama-server" };
-    drive_or_program("engines").join(name)
+    engine_file(name)
 }
 
 fn library_dir() -> PathBuf {
@@ -179,7 +205,7 @@ fn start_library(state: &AppState, share: bool) {
     let zims = libs::all_zim_files();
     *state.kiwix_zims.lock().unwrap() = zims.clone();
     let name = if cfg!(windows) { "kiwix-serve.exe" } else { "kiwix-serve" };
-    let engine = drive_or_program("engines").join(name);
+    let engine = engine_file(name);
     if zims.is_empty() || !engine.exists() {
         return;
     }
@@ -482,8 +508,19 @@ fn library_share(enable: bool, app: tauri::AppHandle) {
     });
 }
 
+/// The models folder: the main drive's when it holds a model, else the one next to the program.
 fn models_dir() -> PathBuf {
-    drive_or_program("models")
+    let has_model = |p: &std::path::Path| {
+        std::fs::read_dir(p)
+            .map(|rd| rd.flatten().any(|e| e.file_name().to_str().map(|n| hardware::size_of(n).is_some()).unwrap_or(false)))
+            .unwrap_or(false)
+    };
+    let a = root().join("models");
+    if has_model(&a) {
+        return a;
+    }
+    let b = program_dir().join("models");
+    if has_model(&b) || !a.exists() { b } else { a }
 }
 
 fn model_files() -> Vec<String> {
