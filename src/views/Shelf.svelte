@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { shelfList, shelfAdd, shelfUpdate, shelfRemove, shelfScanDrive, type Book } from '../lib/api';
   import Reader from './Reader.svelte';
+  import { settings } from '../lib/settings.svelte';
 
   let books: Book[] = $state([]);
   let filter = $state('All');
@@ -44,7 +45,7 @@
     }
     scanning = false;
   }
-  onMount(async () => { await refresh(); await scan(true); });
+  onMount(async () => { await refresh(); if (settings.values.autoScanShelf) await scan(true); });
 
   let categories = $derived(['All', ...Array.from(new Set(books.map((b) => b.category))).sort()]);
   let shown = $derived(books.filter((b) => filter === 'All' || b.category === filter));

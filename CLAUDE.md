@@ -1,0 +1,35 @@
+# Cindrix Ops: notes for Claude
+
+Offline survival-library program. One code base, three products (Go, Vault, Hub); the drive's
+`cindrix-drive.json` says which one it is, and `core/src/product.rs` turns that into feature flags.
+Windows comes first; Android and iPhone wrap it later.
+
+## Layout
+
+- `core/`: Rust library, **standard library only** (no outside crates; zstd and xz decoders are
+  our own so it also builds for Android). All logic that can be tested lives here.
+  `retrieval.rs` (keyword passages for the assistant), `shelf.rs` (books), `library.rs` and
+  `zimread.rs` (ZIM archives read directly), `kiwix.rs` (kiwix-serve helpers), `pipeline.rs` (ask).
+- `src-tauri/src/lib.rs`: Tauri commands and app state. `zimview.rs` serves the `cindrix-zim`
+  address for the archive reader. `music.rs` is the music player's side.
+- `src/`: Svelte 5 interface. `App.svelte` holds the top navigation; screens are in `src/views/`;
+  `src/lib/api.ts` is the only place that calls Tauri commands.
+- `crypto/`: passphrase lock. `content/`: shipped sample content. `docs/`: design docs, numbered.
+- `mockups/`: design mockups. Match them when changing a screen.
+
+## Checks (CI runs these; see `.github/workflows/ci.yml`)
+
+- `cd core && cargo test --all-targets` (the music tests want `ffmpeg`)
+- `cd crypto && cargo test`
+- `npm install && npm run check && npm run build`
+- The Windows app is built only in CI (`npx tauri build --no-bundle`).
+
+## Rules that matter
+
+- The app never uses the internet, except "Save a website" while it runs. Nothing new may phone out.
+- UI text is plain words for a non-technical person. No jargon, no blame in error messages.
+- The assistant never gives medicine or insulin doses (`core/tests/safety/dosing.json`).
+- Products switch screens on or off through `Features` in `product.rs`, not by asking which product.
+- A user's own files live under `user/` on the drive as plain files. Never overwrite a damaged file
+  silently; use `fsio::backup_then_write` / `write_atomic`.
+- Add a test in `core/` for every new piece of logic, and keep `docs/` in step with what is built.

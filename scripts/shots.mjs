@@ -63,7 +63,11 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   await page.getByRole('button', { name: '‹ Shelf' }).click();
   await page.getByRole('button', { name: 'Archives', exact: true }).click();
   await shoot(page, `${label}-1f-archives`);
-  // The in-app archive reader: follow a link, go back, search, bookmark, and meet an outside link.
+  // Ghostnet, the offline internet: the start page, the browser, bookmarks, tabs and a search across every archive.
+  await page.getByRole('button', { name: 'Ghostnet', exact: true }).click();
+  await page.getByRole('button', { name: /Sample library \(preview\)/ }).waitFor();
+  await shoot(page, `${label}-1g-ghostnet-start`);
+  await page.getByRole('button', { name: /Sample library \(preview\)/ }).click();
   const zim = page.frameLocator('iframe[title="Archive page"]');
   await zim.getByRole('heading', { name: 'Sample library' }).waitFor();
   await zim.getByRole('link', { name: 'Water' }).click();
@@ -73,13 +77,19 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   await zim.getByRole('heading', { name: 'Sample library' }).waitFor();
   await zim.getByRole('link', { name: 'An outside link' }).click();
   await page.getByText(/not opened/).waitFor();
-  await page.getByLabel('Search this archive').fill('fir');
-  await page.getByRole('option', { name: 'Fire' }).click();
+  await page.getByLabel('Search every archive').fill('fir');
+  await page.getByRole('option', { name: /Fire/ }).click();
   await zim.getByText('Keep fuel and tinder dry').waitFor();
+  await page.getByRole('button', { name: 'New tab' }).click();
+  await page.getByLabel('Search every archive').fill('water');
+  await page.getByRole('button', { name: 'Search', exact: true }).click();
+  await page.getByRole('heading', { name: /Results for/ }).waitFor();
+  await shoot(page, `${label}-1h-ghostnet-search`);
   await page.getByRole('button', { name: /^Bookmarks/ }).click();
-  await page.getByRole('button', { name: 'Water', exact: true }).waitFor();
-  await shoot(page, `${label}-1g-archive-reader`);
+  await page.getByRole('button', { name: /^Water/ }).waitFor();
+  await shoot(page, `${label}-1i-ghostnet-bookmarks`);
   await page.getByRole('button', { name: /^Bookmarks/ }).click();
+  await page.getByRole('button', { name: 'Library', exact: true }).click();
   await page.getByRole('button', { name: 'Emergency cards', exact: true }).click();
   await page.getByRole('button', { name: /Low blood sugar/ }).click();
   await shoot(page, `${label}-2-library`);
@@ -177,6 +187,16 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
 
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await shoot(page, `${label}-9d-settings`);
+  await page.getByRole('tab', { name: 'Assistant' }).click();
+  await shoot(page, `${label}-9d2-settings-assistant`);
+  // a setting changes what the program does: with file search off, Ask no longer says it looks in files and folders
+  await page.getByLabel(/Files and folders on the drive/).uncheck();
+  await page.getByRole('button', { name: 'Ask', exact: true }).click();
+  await page.getByText(/It looks in the emergency cards/).waitFor();
+  if ((await page.locator('main').innerText()).includes('files and folders')) throw new Error('turning off file search did not change what Ask says');
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await page.getByRole('tab', { name: 'Plan' }).click();
+  await shoot(page, `${label}-9d3-settings-plan`);
   await page.getByRole('tab', { name: 'Sources and licenses' }).click();
   await shoot(page, `${label}-9e-sources`);
 

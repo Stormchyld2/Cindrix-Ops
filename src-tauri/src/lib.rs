@@ -6,7 +6,9 @@ use cindrix_core::crawl;
 use cindrix_core::academy;
 use cindrix_core::drills;
 use cindrix_core::drive::{self, DriveInfo};
+use cindrix_core::filesearch;
 use cindrix_core::kiwix::{self, KiwixHost};
+use cindrix_core::library;
 use cindrix_core::maps::{self, MapStore};
 use cindrix_core::modelhost::ModelHost;
 use cindrix_core::product::Product;
@@ -20,6 +22,7 @@ use tauri_plugin_dialog::DialogExt;
 
 mod fetch;
 mod music;
+mod settings;
 mod zimview;
 use std::time::Duration;
 use tauri::ipc::Channel;
@@ -562,16 +565,40 @@ async fn ask_stream(question: String, on_event: Channel<StreamEvent>, app: tauri
         let lib = content_dir().join("library-sample");
         let port = *app.state::<AppState>().port.lock().unwrap();
         let kport = *app.state::<AppState>().kiwix_port.lock().unwrap();
+        // What the assistant may search is the owner's choice (Settings, Assistant). All on by default.
+        let use_books = settings::flag("searchBooks", true);
+        let use_archives = settings::flag("searchArchives", true);
+        let use_files = settings::flag("searchFiles", true);
+        let use_sites = settings::flag("searchSavedSites", true);
+        let keep = settings::number("answerSources", 3, 1, 6) as usize;
+        let budget_ms = match settings::choice("searchSpeed", "normal", &["quick", "normal", "thorough"]).as_str() {
+            "quick" => 1000,
+            "thorough" => 8000,
+            _ => 2500,
+        };
         let passages = || {
             let mut p = cindrix_core::retrieval::search(&lib, &question, 3);
-            p.extend(bundled_shelf().search(&question, 2));
-            p.extend(user_shelf().search(&question, 2));
-            p.extend(cindrix_core::retrieval::search(&web_text_dir(), &question, 2));
-            if let Some(k) = kport {
-                p.extend(kiwix::search(k, &question, 2));
+            if use_books {
+                p.extend(bundled_shelf().search(&question, 2));
+                p.extend(user_shelf().search(&question, 2));
             }
-            // every archive on the drive, by title (needs no Kiwix program)
-            p.extend(zimview::library().passages(&question, 2, 3));
+            if use_sites {
+                p.extend(cindrix_core::retrieval::search(&web_text_dir(), &question, 2));
+            }
+            if use_archives {
+                if let Some(k) = kport {
+                    p.extend(kiwix::search(k, &question, 2));
+                }
+                // every archive on the drive, by title (needs no Kiwix program)
+                p.extend(zimview::library().passages(&question, 2, 3));
+            }
+            if use_files {
+                // loose text, Markdown and web page files anywhere on the drive, and in the folders added in Settings
+                let mut roots = vec![root()];
+                roots.extend(settings::folders("extraFolders"));
+                let lim = filesearch::Limits { budget: Duration::from_millis(budget_ms), ..filesearch::Limits::default() };
+                p.extend(filesearch::search(&root(), &roots, &question, 2, &lim).0);
+            }
             p.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
             // the same article found two ways counts once
             let mut seen: Vec<String> = Vec::new();
@@ -579,8 +606,13 @@ async fn ask_stream(question: String, on_event: Channel<StreamEvent>, app: tauri
                 let k = x.heading.to_lowercase();
                 if seen.contains(&k) { false } else { seen.push(k); true }
             });
-            p.truncate(3);
+            p.truncate(keep);
             p
+        };
+        let max_tokens = match settings::choice("answerLength", "normal", &["short", "normal", "long"]).as_str() {
+            "short" => 350,
+            "long" => 1400,
+            _ => 700,
         };
         let mut emit = |e: pipeline::Event| {
             let ev = match e {
@@ -590,7 +622,7 @@ async fn ask_stream(question: String, on_event: Channel<StreamEvent>, app: tauri
             let _ = on_event.send(ev);
         };
         let r = match port {
-            Some(p) => pipeline::answer_stream_with(&question, &passages, &LlamaModel { port: p, max_tokens: 700 }, &mut emit),
+            Some(p) => pipeline::answer_stream_with(&question, &passages, &LlamaModel { port: p, max_tokens }, &mut emit),
             None => pipeline::answer_stream_with(&question, &passages, &pipeline::NoModel, &mut emit),
         };
         Ok(reply_dto(r))
@@ -814,19 +846,19 @@ impl From<ItemDto> for Item {
     }
 }
 
-fn to_dto(i: &Item) -> ItemDto {
+fn to_dto(i: &Item, t: &inventory::Thresholds) -> ItemDto {
     let (y, m) = calendar::today_ym();
     ItemDto {
         id: i.id.clone(), category: i.category.clone(), name: i.name.clone(), location: i.location.clone(),
         quantity: i.quantity, unit: i.unit.clone(), use_per_day: i.use_per_day, use_by: i.use_by.clone(), notes: i.notes.clone(),
-        status: match inventory::status(i, y, m) { Status::Ok => "ok", Status::Check => "check", Status::ActNow => "act" }.to_string(),
+        status: match inventory::status_with(i, y, m, t) { Status::Ok => "ok", Status::Check => "check", Status::ActNow => "act" }.to_string(),
         days_left: inventory::days_left(i),
     }
 }
 
 #[tauri::command]
 fn inventory_list() -> Result<Vec<ItemDto>, String> {
-    Ok(user().load_inventory()?.iter().map(to_dto).collect())
+    { let t = settings::thresholds(); Ok(user().load_inventory()?.iter().map(|i| to_dto(i, &t)).collect()) }
 }
 
 /// Create (empty id) or replace an item.
@@ -844,7 +876,7 @@ fn inventory_save_item(item: ItemDto) -> Result<Vec<ItemDto>, String> {
         items.push(it);
     }
     u.save_inventory(&items)?;
-    Ok(items.iter().map(to_dto).collect())
+    { let t = settings::thresholds(); Ok(items.iter().map(|i| to_dto(i, &t)).collect()) }
 }
 
 #[tauri::command]
@@ -852,7 +884,7 @@ fn inventory_delete(ids: Vec<String>) -> Result<Vec<ItemDto>, String> {
     let u = user();
     let items = inventory::delete_ids(u.load_inventory()?, &ids);
     u.save_inventory(&items)?;
-    Ok(items.iter().map(to_dto).collect())
+    { let t = settings::thresholds(); Ok(items.iter().map(|i| to_dto(i, &t)).collect()) }
 }
 
 #[derive(Serialize)]
@@ -882,7 +914,7 @@ fn what_fails_next() -> Result<CascadeDto, String> {
     let (y, m) = calendar::today_ym();
     Ok(CascadeDto {
         runs_out: cascade::runs_out_first(&items).into_iter().map(|r| RunsOutDto { name: r.name, location: r.location, days: r.days }).collect(),
-        expiring: cascade::expiring(&items, y, m, 3).into_iter().map(|e| ExpiringDto { name: e.name, months: e.months }).collect(),
+        expiring: cascade::expiring(&items, y, m, settings::thresholds().check_months).into_iter().map(|e| ExpiringDto { name: e.name, months: e.months }).collect(),
         water_days: cascade::category_days(&items, "Water"),
         food_days: cascade::category_days(&items, "Food"),
     })
@@ -1052,6 +1084,17 @@ struct CopyDto {
     copied_mb: u64,
     total_mb: u64,
     message: String,
+}
+
+/// Let the owner pick a folder on this computer (Settings: folders for the assistant to search).
+#[tauri::command]
+async fn pick_folder(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    let picked = tauri::async_runtime::spawn_blocking(move || app.dialog().file().blocking_pick_folder())
+        .await
+        .map_err(|e| e.to_string())?;
+    let Some(fp) = picked else { return Ok(None) };
+    let p = fp.into_path().map_err(|e| e.to_string())?;
+    Ok(Some(p.to_string_lossy().to_string()))
 }
 
 /// Ask for a .zim file and copy it into the library (in the background; poll `archive_copy_status`).
@@ -1331,7 +1374,7 @@ pub fn run() {
                 detect_drive(&st);
                 start_library(&st, false);
                 start_model(&st, None);
-                if st.drive.lock().unwrap().as_ref().map(|d| d.product().features().music).unwrap_or(true) {
+                if st.drive.lock().unwrap().as_ref().map(|d| d.product().features().music).unwrap_or(true) && settings::flag("scanMusicOnStart", true) {
                     music::start_scan(&handle);
                 }
                 // No Cindrix drive yet? Keep looking, so plugging it in later (or into another
@@ -1341,7 +1384,28 @@ pub fn run() {
                     if detect_drive(&st) {
                         start_library(&st, false);
                         start_model(&st, None);
-                        music::start_scan(&handle);
+                        if settings::flag("scanMusicOnStart", true) {
+                            music::start_scan(&handle);
+                        }
+                    }
+                }
+            });
+            // Archives copied into (or taken out of) the library folder while the program runs are
+            // picked up by themselves: the library server is restarted once the files stop changing.
+            let watcher = app.handle().clone();
+            std::thread::spawn(move || {
+                let st = watcher.state::<AppState>();
+                let mut watch = library::SettleWatch::default();
+                loop {
+                    std::thread::sleep(Duration::from_secs(5));
+                    if !settings::flag("autoRestartLibrary", true) {
+                        continue;
+                    }
+                    let now = kiwix::zim_files(&library_dir());
+                    let running = st.kiwix_zims.lock().unwrap().clone();
+                    if watch.should_restart(&now, &running) {
+                        let shared = *st.kiwix_shared.lock().unwrap();
+                        start_library(&st, shared);
                     }
                 }
             });
@@ -1363,6 +1427,9 @@ pub fn run() {
             zimview::zim_books,
             zimview::zim_bookmarks_load,
             zimview::zim_bookmarks_save,
+            zimview::zim_search_all,
+            settings::settings_load,
+            settings::settings_save,
             music::music_status,
             music::music_scan,
             music::music_query,
@@ -1388,6 +1455,7 @@ pub fn run() {
             crawl_status,
             crawl_cancel,
             archive_add,
+            pick_folder,
             archive_copy_status,
             archive_remove,
             shelf_list,

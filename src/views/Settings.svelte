@@ -1,11 +1,19 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { modelStatus, listModels, selectModel, libraryStatus, sourcesList, type ModelStatus, type ModelChoice, type LibraryStatus, type Sources } from '../lib/api';
+  import {
+    modelStatus, listModels, selectModel, libraryStatus, sourcesList, pickFolder,
+    type ModelStatus, type ModelChoice, type LibraryStatus, type Sources,
+  } from '../lib/api';
+  import { settings, RANGES, SCREENS, type Settings } from '../lib/settings.svelte';
 
   let { openArchives }: { openArchives: () => void } = $props();
 
-  const tabs = ['Assistant', 'Drive', 'Sources and licenses', 'About'] as const;
-  let tab: (typeof tabs)[number] = $state('Assistant');
+  const tabs = ['General', 'Assistant', 'Library', 'Ghostnet', 'Music', 'Maps', 'Plan', 'Drive', 'Sources and licenses', 'About'] as const;
+  let tab: (typeof tabs)[number] = $state('General');
+
+  type BoolKey = { [K in keyof Settings]: Settings[K] extends boolean ? K : never }[keyof Settings];
+  type NumKey = { [K in keyof Settings]: Settings[K] extends number ? K : never }[keyof Settings];
+  type ChoiceKey = 'startScreen' | 'answerLength' | 'searchSpeed' | 'ghostnetStart' | 'mapUnits';
 
   let ms = $state<ModelStatus | null>(null);
   let models: ModelChoice[] = $state([]);
@@ -43,13 +51,56 @@
     await refresh();
   }
 
+  async function addFolder() {
+    error = '';
+    try {
+      const p = await pickFolder();
+      if (p && !settings.values.extraFolders.includes(p)) settings.set('extraFolders', [...settings.values.extraFolders, p]);
+    } catch (e) {
+      error = String(e);
+    }
+  }
+  function removeFolder(p: string) {
+    settings.set('extraFolders', settings.values.extraFolders.filter((x) => x !== p));
+  }
+
   const badge = (s: string) => (s === 'in this build' ? 'ok' : s === 'not included' ? 'no' : 'later');
+  const screenName = (s: string) => (s === 'Plan' ? 'Plan (inventory, drills, family)' : s);
 </script>
+
+{#snippet toggle(key: BoolKey, title: string, help: string)}
+  <label class="setting">
+    <input type="checkbox" checked={settings.values[key]} onchange={(e) => settings.set(key, e.currentTarget.checked)} />
+    <span><b>{title}</b><span class="help">{help}</span></span>
+  </label>
+{/snippet}
+
+{#snippet slider(key: NumKey, title: string, unit: string, help: string)}
+  <label class="setting col">
+    <span><b>{title}:</b> {settings.values[key]} {unit}</span>
+    <input type="range" min={RANGES[key][0]} max={RANGES[key][1]} step="1" value={settings.values[key]} oninput={(e) => settings.set(key, Number(e.currentTarget.value))} />
+    <span class="help">{help}</span>
+  </label>
+{/snippet}
+
+{#snippet choose(key: ChoiceKey, title: string, help: string, options: [string, string][])}
+  <label class="setting col">
+    <span><b>{title}</b></span>
+    <select class="input narrow" value={settings.values[key]} onchange={(e) => settings.set(key, e.currentTarget.value as Settings[ChoiceKey])}>
+      {#each options as [value, label]}<option {value}>{label}</option>{/each}
+    </select>
+    <span class="help">{help}</span>
+  </label>
+{/snippet}
+
+{#snippet reset(keys: (keyof Settings)[])}
+  <div class="row"><button class="btn" onclick={() => settings.reset(keys)}>Put these back to the usual</button></div>
+{/snippet}
 
 <section class="wrap">
   <div>
     <h1>Settings</h1>
-    <p class="sub">The assistant, the drive, where everything came from, and how this program is meant to be used.</p>
+    <p class="sub">Change how the program looks and behaves. Changes apply straight away and are kept on the drive, so they travel with it.</p>
   </div>
 
   <div class="tabs" role="tablist">
@@ -58,8 +109,21 @@
     {/each}
   </div>
   {#if error}<div class="warn">{error}</div>{/if}
+  {#if settings.saveError}<div class="warn" role="alert">{settings.saveError}</div>{/if}
 
-  {#if tab === 'Assistant'}
+  {#if tab === 'General'}
+    <div class="panel">
+      <div class="label">LOOK AND FEEL</div>
+      {@render slider('uiScale', 'Interface size', '%', 'Makes everything bigger or smaller. 100 is the usual size. Go higher if the text is hard to read.')}
+      {@render toggle('showStatusBar', 'Show the status bar at the bottom', 'The strip that says which model is loaded and whether the app is using the network.')}
+    </div>
+    <div class="panel">
+      <div class="label">STARTING UP</div>
+      {@render choose('startScreen', 'Open on this screen', 'The screen you see when the program starts. If your edition does not have it, the first one it does have opens.',
+        SCREENS.map((s) => [s, screenName(s)] as [string, string]))}
+    </div>
+    {@render reset(['uiScale', 'showStatusBar', 'startScreen'])}
+  {:else if tab === 'Assistant'}
     <div class="panel">
       <div class="label">THE ASSISTANT</div>
       {#if ms}
@@ -92,6 +156,74 @@
       <div class="row"><button class="btn" onclick={async () => { models = await listModels(); await refresh(); }}>Look again</button></div>
       <p class="muted fine">The assistant never gives medicine or insulin doses. It points to your doctor's written plan.</p>
     </div>
+    <div class="panel">
+      <div class="label">WHAT IT MAY LOOK IN</div>
+      <p class="muted fine">The emergency cards are always searched. Turn off anything you do not want it to use.</p>
+      {@render toggle('searchBooks', 'Your books on the Shelf', 'Books you added or that were found on the drive, once their text has been read.')}
+      {@render toggle('searchArchives', 'The archives (Wikipedia, guides, saved websites as archives)', 'Every .zim file on the drive, searched by title, and by full text when the library server is running.')}
+      {@render toggle('searchFiles', 'Files and folders on the drive', 'Text, Markdown and web page files anywhere on the drive and in the folders you add below. PDFs are read through the Shelf.')}
+      {@render toggle('searchSavedSites', 'Websites you saved with the website saver', 'The plain-text copies made when a site is saved.')}
+    </div>
+    <div class="panel">
+      <div class="label">HOW IT ANSWERS</div>
+      {@render slider('answerSources', 'Passages it reads', '', 'How many pieces of text it reads before answering. More can help with hard questions, but it is slower and needs more memory.')}
+      {@render choose('answerLength', 'Answer length', 'Short answers finish sooner. Long answers can explain more.', [['short', 'Short'], ['normal', 'Normal'], ['long', 'Long']])}
+      {@render choose('searchSpeed', 'How long to look through files', 'Searching loose files is done fresh for each question. Quick stops after about a second; thorough keeps going for about eight, which a very large drive may need.', [['quick', 'Quick'], ['normal', 'Normal'], ['thorough', 'Thorough']])}
+      {@render toggle('showSourceChips', 'Show where each answer came from', 'The small labels under an answer naming the page or file it used.')}
+    </div>
+    <div class="panel">
+      <div class="label">EXTRA FOLDERS TO SEARCH</div>
+      <p class="muted fine">The whole drive is already searched. Add folders that are somewhere else, such as a folder of documents on this computer. Only folders that exist are used, and nothing is copied.</p>
+      {#if settings.values.extraFolders.length}
+        <ul class="list">
+          {#each settings.values.extraFolders as f (f)}
+            <li><div class="grow path">{f}</div><button class="btn" onclick={() => removeFolder(f)}>Remove</button></li>
+          {/each}
+        </ul>
+      {/if}
+      <div class="row"><button class="btn" onclick={addFolder}>Add a folder…</button></div>
+    </div>
+    {@render reset(['searchBooks', 'searchArchives', 'searchFiles', 'searchSavedSites', 'answerSources', 'answerLength', 'searchSpeed', 'showSourceChips', 'extraFolders'])}
+  {:else if tab === 'Library'}
+    <div class="panel">
+      <div class="label">BOOKS AND ARCHIVES</div>
+      {@render toggle('autoScanShelf', 'Put books from the drive on the Shelf automatically', 'When you open the Shelf, books in the library, books and manuals folders are added. A book you remove is not put back.')}
+      {@render toggle('autoRestartLibrary', 'Pick up new archives by themselves', 'When you copy a .zim file into the library folder, the library server restarts once the copy has finished. Turn off to restart it only with the Look for the drive button.')}
+      <div class="row"><button class="btn" onclick={openArchives}>Archives, saving websites and sharing →</button></div>
+      <p class="muted fine">Sharing the library with other devices is never turned on by a setting. It is off every time the program starts, and you turn it on in Archives.</p>
+    </div>
+    {@render reset(['autoScanShelf', 'autoRestartLibrary'])}
+  {:else if tab === 'Ghostnet'}
+    <div class="panel">
+      <div class="label">GHOSTNET, THE OFFLINE INTERNET</div>
+      {@render choose('ghostnetStart', 'A new tab opens on', 'The Ghostnet home shows every archive. Or go straight into the first archive on the drive.', [['archives', 'The Ghostnet home'], ['first', 'The first archive']])}
+      {@render toggle('ghostnetRestoreTabs', 'Remember my open tabs', 'Reopen the tabs, and the pages in them, the next time you open the program.')}
+      <p class="muted fine">Text size and bookmarks in Ghostnet are kept automatically.</p>
+    </div>
+    {@render reset(['ghostnetStart', 'ghostnetRestoreTabs'])}
+  {:else if tab === 'Music'}
+    <div class="panel">
+      <div class="label">MUSIC</div>
+      {@render toggle('showMiniPlayer', 'Show the small player at the bottom', 'Lets you pause or skip from any screen while music plays.')}
+      {@render toggle('scanMusicOnStart', 'Look through the music folder when the program starts', 'Keeps the list up to date. Turn off if the music folder is huge and you would rather scan it yourself with Look again.')}
+      <p class="muted fine">Volume, equalizer and playback order are kept by the player itself.</p>
+    </div>
+    {@render reset(['showMiniPlayer', 'scanMusicOnStart'])}
+  {:else if tab === 'Maps'}
+    <div class="panel">
+      <div class="label">MAPS</div>
+      {@render choose('mapUnits', 'Distances', 'Used for the scale on the map and for route lengths.', [['imperial', 'Miles and feet'], ['metric', 'Kilometres and metres']])}
+    </div>
+    {@render reset(['mapUnits'])}
+  {:else if tab === 'Plan'}
+    <div class="panel">
+      <div class="label">WHEN STOCK NEEDS ATTENTION</div>
+      <p class="muted fine">These set when an item in your inventory turns amber (check) or red (act now). They apply to the Inventory and What fails screens.</p>
+      {@render slider('planActDays', 'Act now when it will run out in under', 'days', 'The red line.')}
+      {@render slider('planCheckDays', 'Check when it will run out in under', 'days', 'The amber line. It is never lower than the red one.')}
+      {@render slider('planExpiryMonths', 'Check when the use-by date is within', 'months', 'Items already past their date are always act now.')}
+    </div>
+    {@render reset(['planActDays', 'planCheckDays', 'planExpiryMonths'])}
   {:else if tab === 'Drive'}
     <div class="panel">
       <div class="label">THE DRIVE</div>
@@ -101,12 +233,17 @@
         <p><strong>No Cindrix drive found.</strong> Using the folder next to the program.</p>
       {/if}
       <p class="path">{lib?.folder}</p>
-      <p class="muted fine">Everything you enter (family page, inventory, drill results, your books) is saved in the <code>user</code> folder here, as plain files you can copy. The program finds the drive by a marker file, whatever drive letter it gets.</p>
+      <p class="muted fine">Everything you enter (family page, inventory, drill results, your books, these settings) is saved in the <code>user</code> folder here, as plain files you can copy. The program finds the drive by a marker file, whatever drive letter it gets.</p>
       <div class="row"><button class="btn" onclick={openArchives}>Archives and saving websites →</button></div>
     </div>
     <div class="panel">
       <div class="label">SATELLITE MAPS BY COUNTY</div>
       <p class="muted">Optional aerial photos for the Maps page (US counties, from the USGS NAIP program), downloaded once while you have internet. Arrives with Maps.</p>
+    </div>
+    <div class="panel">
+      <div class="label">ALL SETTINGS</div>
+      <p class="muted fine">Put every setting in the program back to what it ships with. Your books, inventory, family page and music are not touched.</p>
+      <div class="row"><button class="btn danger" onclick={() => settings.reset()}>Reset every setting</button></div>
     </div>
   {:else if tab === 'Sources and licenses'}
     {#if sources.note}<p class="muted">{sources.note}</p>{/if}
@@ -149,6 +286,13 @@
   .fine { font-size: 12px; }
   .path { font-family: var(--mono); word-break: break-all; margin: 4px 0; }
   code { font-family: var(--mono); }
+  .setting { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-top: 1px solid var(--line); cursor: pointer; }
+  .setting:first-of-type { border-top: 0; }
+  .setting.col { flex-direction: column; gap: 6px; align-items: stretch; }
+  .setting input[type='checkbox'] { margin-top: 4px; flex: none; width: 18px; height: 18px; }
+  .setting input[type='range'] { width: min(420px, 100%); accent-color: var(--blue); }
+  .setting .help { display: block; margin-top: 2px; font-size: 12px; color: var(--muted); font-weight: 400; }
+  .narrow { max-width: 360px; }
   .side { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; font-size: 12px; }
   .lic { font-family: var(--mono); }
   .st { padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line2); }

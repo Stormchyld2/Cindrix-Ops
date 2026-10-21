@@ -144,12 +144,54 @@ pub fn serve(app: &tauri::AppHandle, req: &tauri::http::Request<Vec<u8>>) -> tau
 pub struct BookDto {
     name: String,
     title: String,
+    /// The archive's own one-line description, when it has one.
+    description: String,
+    articles: u32,
+    mb: u64,
 }
 
 /// The archives on the drive, with the names used in their addresses.
 #[tauri::command]
 pub fn zim_books() -> Vec<BookDto> {
-    library().books.iter().map(|b| BookDto { name: b.name.clone(), title: b.title.clone() }).collect()
+    library()
+        .books
+        .iter()
+        .map(|b| BookDto {
+            name: b.name.clone(),
+            title: b.title.clone(),
+            description: b.archive.metadata("Description").unwrap_or_default().chars().take(400).collect(),
+            articles: b.archive.articles,
+            mb: std::fs::metadata(&b.file).map(|m| m.len() / 1_048_576).unwrap_or(0),
+        })
+        .collect()
+}
+
+#[derive(Serialize)]
+pub struct HitDto {
+    book: String,
+    book_title: String,
+    title: String,
+    /// The reader's address for the page.
+    path: String,
+}
+
+/// Titles matching the words in every archive at once, best of each first.
+#[tauri::command]
+pub async fn zim_search_all(term: String) -> Result<Vec<HitDto>, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        library()
+            .suggest_all(&term, 6, 36)
+            .into_iter()
+            .map(|h| HitDto {
+                path: format!("/content/{}/{}", library::encode_path(&h.book), library::encode_path(&h.address)),
+                book: h.book,
+                book_title: h.book_title,
+                title: h.title,
+            })
+            .collect()
+    })
+    .await
+    .map_err(|e| e.to_string())
 }
 
 fn bookmarks_file() -> std::path::PathBuf {

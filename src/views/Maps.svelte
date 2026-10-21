@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { mapsList, mapLoad, mapSave, mapDelete, mapExportGpx, routeStats, mapPacks, tileUrl, type MapMeta, type LatLon, type RouteStats, type Pack } from '../lib/api';
   import type { Map as MLMap, Marker, StyleSpecification, GeoJSONSource } from 'maplibre-gl';
+  import { settings } from '../lib/settings.svelte';
 
   type Pin = { id: number; label: string; kind: 'pin' | 'rendezvous'; lat: number; lon: number };
   type Area = { label: string; points: LatLon[] };
@@ -107,7 +108,7 @@
       // Open on the area the pack covers (the whole US for a US pack, one town for a small test pack).
       if (area) m.fitBounds([[area.w, area.s], [area.e, area.n]], { padding: 20, duration: 0, maxZoom: Math.min(area.maxZoom, 15) });
       m.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'top-right');
-      m.addControl(new maplibregl.ScaleControl({ unit: 'imperial' }), 'bottom-left');
+      m.addControl(new maplibregl.ScaleControl({ unit: settings.values.mapUnits === 'metric' ? 'metric' : 'imperial' }), 'bottom-left');
       m.on('error', (e) => {
         tileError = 'The map could not read its tiles: ' + String((e as { error?: Error }).error?.message ?? e);
       });
@@ -424,7 +425,7 @@
             <text x={view.x(p.lon) + 10} y={view.y(p.lat) + 4} fill="#ece7de" font-size="12">{p.label}</text>
           {/each}
           <line x1={PAD} y1={H - 14} x2={PAD + view.barPx} y2={H - 14} stroke="#b5ada0" stroke-width="2" />
-          <text x={PAD + view.barPx + 8} y={H - 10} fill="#b5ada0" font-size="11">{view.barKm} km ({(view.barKm * 0.621371).toFixed(view.barKm < 1 ? 2 : 1)} mi)</text>
+          <text x={PAD + view.barPx + 8} y={H - 10} fill="#b5ada0" font-size="11">{settings.values.mapUnits === 'metric' ? `${view.barKm} km` : `${(view.barKm * 0.621371).toFixed(view.barKm < 1 ? 2 : 1)} mi`}</text>
           <text x={W - 24} y="22" fill="#b5ada0" font-size="12" text-anchor="middle">N ↑</text>
         {:else}
           <text x={W / 2} y={H / 2} fill="#9a9388" font-size="14" text-anchor="middle">Add a point below to start your plan.</text>
@@ -433,7 +434,7 @@
     {/if}
 
     {#if stats}
-      <p class="stat"><strong>Route:</strong> {stats.km.toFixed(1)} km ({stats.miles.toFixed(1)} miles) in a straight line through {routePoints.length} points. Real roads will be longer.</p>
+      <p class="stat"><strong>Route:</strong> {settings.values.mapUnits === 'metric' ? `${stats.km.toFixed(1)} km` : `${stats.miles.toFixed(1)} miles`} in a straight line through {routePoints.length} points. Real roads will be longer.</p>
     {/if}
 
     <div class="grid2">

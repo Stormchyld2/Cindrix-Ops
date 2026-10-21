@@ -43,6 +43,35 @@ pub fn signature(files: &[PathBuf]) -> String {
         .join("|")
 }
 
+/// Decides when the library server should be restarted because archives were added or removed.
+/// Call `should_restart` every few seconds. It says yes only when the list of files differs from
+/// what the server runs with AND the files have not changed since the previous call, so an
+/// archive that is still being copied in (its size keeps growing) is waited for, not restarted on.
+#[derive(Default)]
+pub struct SettleWatch {
+    last: Option<String>,
+}
+
+impl SettleWatch {
+    pub fn should_restart(&mut self, now: &[PathBuf], running: &[PathBuf]) -> bool {
+        let sig = signature(now);
+        let steady = self.last.as_deref() == Some(sig.as_str());
+        self.last = Some(sig);
+        steady && now != running
+    }
+}
+
+/// One title found by searching every archive at once.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Hit {
+    /// The archive's name as used in addresses.
+    pub book: String,
+    pub book_title: String,
+    /// The page's address inside the archive.
+    pub address: String,
+    pub title: String,
+}
+
 impl Library {
     /// Open every readable archive. A file that cannot be read is left out, not an error.
     pub fn open(files: &[PathBuf]) -> Library {
@@ -78,6 +107,51 @@ impl Library {
         let items = b.archive.suggest(term.trim(), 12).unwrap_or_default();
         let parts: Vec<String> = items.iter().map(|(addr, title)| format!("{{\"value\":{},\"label\":{},\"path\":{}}}", json_str(title), json_str(title), json_str(addr))).collect();
         format!("[{}]", parts.join(","))
+    }
+
+    /// Titles matching `term` in EVERY archive, for the Ghostnet search box. Up to `per_book` come
+    /// from each archive and the list alternates between archives (everyone's best first), so a
+    /// huge encyclopedia does not push a small manual off the list. At most `total` are returned.
+    pub fn suggest_all(&self, term: &str, per_book: usize, total: usize) -> Vec<Hit> {
+        let term = term.trim();
+        if term.chars().count() < 2 || per_book == 0 {
+            return vec![];
+        }
+        let words: Vec<String> = term.split_whitespace().map(|w| w.to_string()).collect();
+        let mut lists: Vec<Vec<Hit>> = Vec::new();
+        for b in &self.books {
+            let mut found = b.archive.suggest(term, per_book).unwrap_or_default();
+            // a title that merely contains the words ("Purification of water") for archives small enough to scan
+            if found.len() < per_book && b.archive.articles <= 50_000 {
+                for h in b.archive.search_titles(&words, per_book, 50_000).unwrap_or_default() {
+                    if found.len() >= per_book {
+                        break;
+                    }
+                    if !found.iter().any(|f| f.0 == h.0) {
+                        found.push(h);
+                    }
+                }
+            }
+            lists.push(found.into_iter().map(|(address, title)| Hit { book: b.name.clone(), book_title: b.title.clone(), address, title }).collect());
+        }
+        let mut out: Vec<Hit> = Vec::new();
+        let mut rank = 0;
+        loop {
+            let mut any = false;
+            for l in &lists {
+                if let Some(h) = l.get(rank) {
+                    out.push(h.clone());
+                    any = true;
+                    if out.len() >= total {
+                        return out;
+                    }
+                }
+            }
+            if !any {
+                return out;
+            }
+            rank += 1;
+        }
     }
 
     /// A simple results page for a typed search, by title.

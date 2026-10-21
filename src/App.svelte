@@ -10,6 +10,7 @@
   import Maps from './views/Maps.svelte';
   import Shelf from './views/Shelf.svelte';
   import Archives from './views/Archives.svelte';
+  import Ghostnet from './views/Ghostnet.svelte';
   import Drills from './views/Drills.svelte';
   import Binder from './views/Binder.svelte';
   import Settings from './views/Settings.svelte';
@@ -17,21 +18,34 @@
   import MiniPlayer from './lib/MiniPlayer.svelte';
   import { onMount } from 'svelte';
   import { modelStatus, libraryStatus, productInfo, type ModelStatus, type ProductInfo } from './lib/api';
+  import { settings, applyUiScale } from './lib/settings.svelte';
   let ms: ModelStatus | null = $state(null);
   let sharing = $state(false);
   let online = $state(false);
   let product: ProductInfo | null = $state(null);
   async function poll() { ms = await modelStatus(); const l = await libraryStatus(); sharing = l.shared; online = l.online; product = await productInfo(); }
-  onMount(() => { const t = setInterval(poll, 3000); poll(); return () => clearInterval(t); });
+  onMount(() => {
+    const t = setInterval(poll, 3000);
+    poll();
+    // the saved settings: open on the screen the owner chose
+    void settings.load().then(() => {
+      const want = settings.values.startScreen;
+      if (group === 'Ask' && want !== 'Ask') group = want;
+    });
+    return () => clearInterval(t);
+  });
+  // interface size (Settings, General)
+  $effect(() => { if (settings.loaded) void applyUiScale(settings.values.uiScale); });
 
-  type Group = 'Ask' | 'Library' | 'Academy' | 'Maps' | 'Music' | 'Plan' | 'Settings';
-  const allGroups: Group[] = ['Ask', 'Library', 'Academy', 'Maps', 'Music', 'Plan', 'Settings'];
+  // Ghostnet is the offline internet: the archives read like web pages. It goes with the library.
+  type Group = 'Ask' | 'Library' | 'Ghostnet' | 'Academy' | 'Maps' | 'Music' | 'Plan' | 'Settings';
+  const allGroups: Group[] = ['Ask', 'Library', 'Ghostnet', 'Academy', 'Maps', 'Music', 'Plan', 'Settings'];
   // Each product switches parts of the program on or off (core/src/product.rs).
   const groups = $derived(
     allGroups.filter((g) => {
       if (!product) return true;
       if (g === 'Ask') return product.assistant;
-      if (g === 'Library') return product.library;
+      if (g === 'Library' || g === 'Ghostnet') return product.library;
       if (g === 'Maps') return product.maps;
       if (g === 'Music') return product.music;
       if (g === 'Plan') return product.plan;
@@ -56,6 +70,9 @@
   function openArchives() {
     lib = 'Archives';
     group = 'Library';
+  }
+  function openGhostnet() {
+    group = 'Ghostnet';
   }
   function goPlan(tab: string) {
     group = 'Plan';
@@ -104,10 +121,12 @@
       {#if lib === 'Shelf'}
         <Shelf />
       {:else if lib === 'Archives'}
-        <Archives />
+        <Archives {openGhostnet} />
       {:else}
         <Library bind:cardToOpen />
       {/if}
+    {:else if group === 'Ghostnet'}
+      <Ghostnet {openArchives} />
     {:else if group === 'Academy'}
       <Academy />
     {:else if group === 'Maps'}
@@ -135,14 +154,16 @@
     {/if}
   </main>
 
-  {#if product?.music !== false}<MiniPlayer open={() => (group = 'Music')} />{/if}
+  {#if product?.music !== false && settings.values.showMiniPlayer}<MiniPlayer open={() => (group = 'Music')} />{/if}
 
+  {#if settings.values.showStatusBar}
   <footer class="no-print">
     <span><b class="dot">●</b> Library on this drive</span>
     <span>Model: {ms?.state === 'ready' ? ms.model : ms?.state === 'loading' ? 'loading…' : 'none loaded'}</span>
     <span class:warn-text={sharing || online}>{online ? 'Saving a website: the app is using the internet right now, and only for that.' : sharing ? 'Sharing the library with your network (read only). Everything else stays on this device.' : 'This app only talks to itself on this device.'}</span>
     <span class="right">{product ? product.name + ' · ' : ''}Sample content</span>
   </footer>
+  {/if}
 </div>
 
 <style>

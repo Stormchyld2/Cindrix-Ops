@@ -65,3 +65,47 @@ fn the_signature_changes_with_the_files() {
     assert_eq!(a, signature(&zims()));
     assert_ne!(a, signature(&zims()[..2]));
 }
+
+#[test]
+fn searching_every_archive_at_once_alternates_between_them() {
+    let lib = Library::open(&zims());
+    let hits = lib.suggest_all("water", 2, 10);
+    assert!(!hits.is_empty());
+    // every archive is represented and the first three results are one from each
+    let first: Vec<&str> = hits.iter().take(3).map(|h| h.book.as_str()).collect();
+    assert_eq!(first, vec!["new-zstd", "new-xz", "old-zstd"], "{:?}", hits);
+    assert!(hits.iter().all(|h| h.book_title == "Cindrix sample" && !h.address.is_empty() && !h.title.is_empty()));
+    // at most `per_book` from each archive, and at most `total` overall
+    assert!(hits.iter().filter(|h| h.book == "new-zstd").count() <= 2);
+    assert_eq!(lib.suggest_all("water", 2, 2).len(), 2);
+    // too short, or nothing there
+    assert!(lib.suggest_all("w", 2, 10).is_empty());
+    assert!(lib.suggest_all("zzzzqqqq", 2, 10).is_empty());
+    // a title that only contains the word is found too
+    assert!(lib.suggest_all("purification", 3, 10).iter().any(|h| h.title == "Water purification"));
+}
+
+#[test]
+fn the_library_server_restarts_only_once_new_archives_have_settled() {
+    use cindrix_core::library::SettleWatch;
+    let dir = std::env::temp_dir().join(format!("cindrix-settle-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let a = zims()[0].clone();
+    let b = dir.join("new.zim");
+    std::fs::write(&b, b"partial").unwrap();
+    let running = vec![a.clone()];
+    let mut w = SettleWatch::default();
+    // first look: nothing to compare with yet
+    assert!(!w.should_restart(&[a.clone(), b.clone()], &running));
+    // the file is still growing (a copy in progress): wait
+    std::fs::write(&b, b"partial and more").unwrap();
+    assert!(!w.should_restart(&[a.clone(), b.clone()], &running));
+    // unchanged since the last look: restart
+    assert!(w.should_restart(&[a.clone(), b.clone()], &running));
+    // once the server runs with both, no more restarts
+    assert!(!w.should_restart(&[a.clone(), b.clone()], &[a.clone(), b.clone()]));
+    // a removed archive counts as a change too, after it settles
+    let _ = w.should_restart(&[a.clone()], &[a.clone(), b.clone()]);
+    assert!(w.should_restart(&[a.clone()], &[a.clone(), b.clone()]));
+    let _ = std::fs::remove_dir_all(&dir);
+}

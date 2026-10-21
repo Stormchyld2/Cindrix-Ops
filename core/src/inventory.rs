@@ -130,15 +130,38 @@ pub fn months_until(item: &Item, year: i32, month: u32) -> Option<i32> {
     Some((y - year) * 12 + (m - month as i32))
 }
 
-/// Status for the Inventory screen.
+/// When an item turns "check" or "act now". The defaults are what the program ships with; the
+/// owner can change them in Settings (Plan).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Thresholds {
+    /// Fewer days left than this: act now.
+    pub act_days: f64,
+    /// Fewer days left than this: check.
+    pub check_days: f64,
+    /// Use-by month this many months away or less: check. (Already past: act now.)
+    pub check_months: i32,
+}
+
+impl Default for Thresholds {
+    fn default() -> Thresholds {
+        Thresholds { act_days: 7.0, check_days: 14.0, check_months: 3 }
+    }
+}
+
+/// Status for the Inventory screen, with the program's standard thresholds.
 pub fn status(item: &Item, year: i32, month: u32) -> Status {
+    status_with(item, year, month, &Thresholds::default())
+}
+
+/// Status for the Inventory screen, with the owner's thresholds.
+pub fn status_with(item: &Item, year: i32, month: u32, t: &Thresholds) -> Status {
     let expiry = months_until(item, year, month);
     let days = days_left(item);
     match (expiry, days) {
         (Some(e), _) if e < 0 => Status::ActNow,
-        (_, Some(d)) if d < 7.0 => Status::ActNow,
-        (Some(e), _) if e <= 3 => Status::Check,
-        (_, Some(d)) if d < 14.0 => Status::Check,
+        (_, Some(d)) if d < t.act_days => Status::ActNow,
+        (Some(e), _) if e <= t.check_months => Status::Check,
+        (_, Some(d)) if d < t.check_days => Status::Check,
         _ => Status::Ok,
     }
 }
@@ -179,6 +202,22 @@ mod tests {
         assert_eq!(status(&i, 2027, 12), Status::ActNow);
         assert_eq!(status(&i, 2027, 9), Status::Check);
         assert_eq!(status(&i, 2026, 1), Status::Ok);
+    }
+
+    #[test]
+    fn owner_thresholds_move_the_lines() {
+        let mut i = sample(); // 8 gal at 2 a day: 4 days
+        // 4 days is "act now" by default, but only "check" if act-now is set to 3 days
+        let calm = Thresholds { act_days: 3.0, check_days: 10.0, check_months: 3 };
+        assert_eq!(status_with(&i, 2026, 10, &Thresholds::default()), Status::ActNow);
+        assert_eq!(status_with(&i, 2026, 10, &calm), Status::Check);
+        i.quantity = 40.0; // 20 days
+        assert_eq!(status_with(&i, 2026, 10, &Thresholds::default()), Status::Ok);
+        assert_eq!(status_with(&i, 2026, 10, &Thresholds { act_days: 7.0, check_days: 30.0, check_months: 3 }), Status::Check);
+        // the use-by window: 2027-11 is 13 months from 2026-10
+        i.use_per_day = 0.0;
+        assert_eq!(status_with(&i, 2026, 10, &Thresholds { act_days: 7.0, check_days: 14.0, check_months: 12 }), Status::Ok);
+        assert_eq!(status_with(&i, 2026, 10, &Thresholds { act_days: 7.0, check_days: 14.0, check_months: 13 }), Status::Check);
     }
 
     #[test]

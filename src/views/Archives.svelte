@@ -1,10 +1,11 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import ZimReader from './ZimReader.svelte';
   import {
     libraryStatus, libraryShare, driveRescan, crawlStart, crawlStatus, crawlCancel, archiveAdd, archiveCopyStatus, archiveRemove,
     type LibraryStatus, type CrawlStatus, type CopyStatus,
   } from '../lib/api';
+
+  let { openGhostnet }: { openGhostnet: () => void } = $props();
 
   let st: LibraryStatus = $state({ archives: [], ready: false, url: null, shared: false, lan_url: null, drive: null, folder: '', online: false });
   let crawl: CrawlStatus = $state({ running: false, phase: '', pages: 0, files: 0, mb: 0, queued: 0, current: '', failed: 0, finished: false, ok: false, message: '', file: '', blocked: 0, hit_limit: false });
@@ -15,7 +16,6 @@
   let looking = $state(false);
   let removing: string | null = $state(null);
   let problem = $state('');
-  let plainKiwix = $state(false);
 
   // Save a website
   let siteUrl = $state('');
@@ -101,8 +101,9 @@
   <div class="top">
     <div>
       <h1>Archives</h1>
-      <p class="sub">The big offline library: Wikipedia, medical guides, books and websites you saved, stored on this drive as .zim files. Read them here, no internet needed.</p>
+      <p class="sub">The big offline library: Wikipedia, medical guides, books and websites you saved, stored on this drive as .zim files. Read them in Ghostnet, no internet needed. New archives you copy into the library folder are picked up by themselves.</p>
     </div>
+    <button class="btn primary" onclick={openGhostnet}>Read them in Ghostnet →</button>
   </div>
 
   <div class="panel drive">
@@ -222,19 +223,6 @@
     {/if}
   </div>
 
-  {#if st.archives.length > 0 || (st.ready && st.url)}
-    <div class="frame panel">
-      {#if plainKiwix && st.url}
-        <iframe title="Offline library" src={st.url} sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
-      {:else}
-        <ZimReader ready={st.archives.length > 0 || st.ready} />
-      {/if}
-    </div>
-    <div class="row fine muted">
-      <button class="linkbtn" hidden={!st.url} onclick={() => (plainKiwix = !plainKiwix)}>{plainKiwix ? 'Use the Cindrix reader' : 'Use the plain Kiwix screen instead'}</button>
-    </div>
-  {/if}
-
   {#if st.ready}
     <div class="panel share">
       <div class="head">
@@ -276,13 +264,11 @@
 
 <style>
   .wrap { display: flex; flex-direction: column; gap: 14px; flex: 1; }
-  .frame { padding: 0; overflow: hidden; height: min(70vh, 720px); min-height: 360px; }
-  iframe { width: 100%; height: 100%; border: 0; background: #fff; }
+  .top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 10px 16px; }
   .head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
   .share p { margin: 8px 0 0; }
   .addr { font-family: var(--mono); font-size: 16px; color: var(--blue); word-break: break-all; }
   .fine { font-size: 12px; }
-  .linkbtn { background: none; border: 0; color: var(--link); text-decoration: underline; padding: 0; font: inherit; cursor: pointer; }
   code { font-family: var(--mono); }
   .dlg { padding: 18px; display: flex; flex-direction: column; gap: 10px; }
   .end { justify-content: flex-end; }

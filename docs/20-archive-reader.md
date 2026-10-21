@@ -1,7 +1,8 @@
 # 20. The archive reader
 
-The reader is the screen inside the app (Library, then Archives) where ZIM files are read:
-Wikipedia, medical guides, repair manuals and the websites you saved yourself.
+The reader is the **Ghostnet** screen (its own tab in the top menu) where ZIM files are read like web
+pages: Wikipedia, medical guides, repair manuals and the websites you saved yourself. Adding, removing,
+saving websites and sharing stay in Library, then Archives. See [23](23-ghostnet-search-settings.md).
 
 ## Built in: no Kiwix program needed
 
@@ -58,6 +59,6 @@ app. Test archives were made by our own script, so the check against Kiwix's too
 
 - Full-text search without Kiwix (reading Xapian indexes). Possible later, and a big job.
 - Archives compressed with zlib or bzip2 (old and rare; the reader says so).
-- Tabs, find-in-page, printing an article. Big videos inside an archive.
+- Find-in-page and printing an article. Big videos inside an archive. (Tabs are built: see doc 23.)
 - Sharing the archives over the hotspot **without** `kiwix-serve` (a small web server of our own). That
   is the next step for the Android tablet Hub, since `kiwix-serve` does not run on Android.

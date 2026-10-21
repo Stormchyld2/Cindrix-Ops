@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { ask, modelStatus, type Reply, type ModelStatus } from '../lib/api';
+  import { settings } from '../lib/settings.svelte';
 
   let { openCard }: { openCard: (id: string) => void } = $props();
 
@@ -9,6 +10,16 @@
   let busy = $state(false);
   let status: ModelStatus | null = $state(null);
   let timer: ReturnType<typeof setInterval> | undefined;
+
+  // what the assistant is allowed to look in (Settings, Assistant)
+  const searching = $derived(
+    [
+      settings.values.searchBooks && 'your books',
+      settings.values.searchArchives && 'the archives',
+      settings.values.searchFiles && 'files and folders',
+      settings.values.searchSavedSites && 'saved websites',
+    ].filter((x): x is string => typeof x === 'string'),
+  );
 
   async function refresh() {
     status = await modelStatus();
@@ -48,13 +59,13 @@
 {/if}
 <section class="chat">
   {#if thread.length === 0}
-    <p class="muted">Ask a question. Answers come only from the library on this drive and show where they came from.</p>
+    <p class="muted">Ask a question. Answers come only from the library on this drive and show where they came from. It looks in the emergency cards{searching.length ? ', ' + searching.join(', ') : ''}. You can change that in Settings.</p>
   {/if}
   {#each thread as m}
     <div class="msg {m.who}">
       <div class="label">{m.who === 'you' ? 'YOU' : 'CINDRIX'}</div>
       <div class="text">{m.text}</div>
-      {#if m.reply?.sources.length}
+      {#if settings.values.showSourceChips && m.reply?.sources.length}
         <div class="sources">Sources: {#each m.reply.sources as s}<span class="chip">{s}</span>{/each}</div>
       {/if}
       {#if m.reply?.card}

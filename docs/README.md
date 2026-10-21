@@ -21,7 +21,9 @@ Status: first draft, before any code. Items marked **TO TEST** have not been tri
 17. [Three products, one code base](17-three-products.md)
 18. [Maps](18-maps.md): saved maps, the tile viewer, getting map data
 19. [Music](19-music.md): the music player, formats, the converter, playlists
-20. [Archive reader](20-archive-reader.md): the in-app Kiwix reader
+20. [Archive reader](20-archive-reader.md): reading ZIM archives inside the app
 
 Mockups of every screen are in [`../mockups`](../mockups).
 - [21. Academy](21-academy.md)
+- [22. Real test](22-real-test.md)
+- [23. Ghostnet, search and settings](23-ghostnet-search-settings.md): the offline internet tab, what the assistant searches, every setting

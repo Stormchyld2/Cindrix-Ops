@@ -1,6 +1,7 @@
 <script lang="ts">
   import { whatFailsNext, type Cascade } from '../lib/api';
   import { onMount } from 'svelte';
+  import { settings } from '../lib/settings.svelte';
 
   let { go }: { go: (tab: string) => void } = $props();
 
@@ -19,7 +20,7 @@
     return d == null ? 'Not set' : d < 10 ? d.toFixed(1) + ' days' : Math.round(d) + ' days';
   }
   function tone(d: number): string {
-    return d < 7 ? 'act' : d < 14 ? 'check' : 'ok';
+    return d < settings.values.planActDays ? 'act' : d < settings.values.planCheckDays ? 'check' : 'ok';
   }
 </script>
 

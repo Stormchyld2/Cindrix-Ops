@@ -8,6 +8,7 @@ pub mod crawl;
 pub mod drills;
 pub mod drive;
 pub mod drivecheck;
+pub mod filesearch;
 pub mod fsio;
 pub mod hardware;
 pub mod inventory;

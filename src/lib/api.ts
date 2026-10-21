@@ -594,7 +594,8 @@ export async function musicClearCache(): Promise<number> {
 
 
 // ---------- the in-app archive reader ----------
-export type ZimBook = { name: string; title: string };
+export type ZimBook = { name: string; title: string; description: string; articles: number; mb: number };
+export type ZimHit = { book: string; book_title: string; title: string; path: string };
 export type ZimBookmark = { book: string; path: string; title: string };
 export type ZimSuggestion = { title: string; path: string };
 
@@ -608,7 +609,13 @@ let memZimBookmarks = '{}';
 
 export async function zimBooks(): Promise<ZimBook[]> {
   if (inTauri) return call<ZimBook[]>('zim_books');
-  return [{ name: 'sample', title: 'Sample library (preview)' }];
+  return [{ name: 'sample', title: 'Sample library (preview)', description: 'A made-up archive for the browser preview.', articles: 3, mb: 1 }];
+}
+/** Titles matching the words in every archive at once (best of each archive first). */
+export async function zimSearchAll(term: string): Promise<ZimHit[]> {
+  if (inTauri) return call<ZimHit[]>('zim_search_all', { term });
+  const t = term.toLowerCase();
+  return Object.entries(previewPages).filter(([, v]) => v.title.toLowerCase().includes(t)).map(([p, v]) => ({ book: 'sample', book_title: 'Sample library (preview)', title: v.title, path: p }));
 }
 /** What to put in the reader's frame for a library path: an address (desktop app) or the page itself (browser preview). */
 export async function zimFrame(path: string): Promise<{ src?: string; srcdoc?: string; title: string }> {
@@ -650,4 +657,23 @@ export async function zimBookmarksLoad(): Promise<string> {
 export async function zimBookmarksSave(json: string): Promise<void> {
   if (inTauri) return call<void>('zim_bookmarks_save', { json });
   memZimBookmarks = json;
+}
+
+
+// ---------- settings ----------
+let memSettings = '{}';
+/** The settings file's text ("{}" when nothing is saved yet). */
+export async function settingsLoad(): Promise<string> {
+  if (inTauri) return call<string>('settings_load');
+  return memSettings;
+}
+export async function settingsSave(json: string): Promise<void> {
+  if (inTauri) return call<void>('settings_save', { json });
+  memSettings = json;
+}
+
+/** Let the owner pick a folder on this computer. Resolves with its path, or null if cancelled. */
+export async function pickFolder(): Promise<string | null> {
+  if (!inTauri) throw 'Choosing a folder works in the desktop app, not in the browser preview.';
+  return call<string | null>('pick_folder');
 }
