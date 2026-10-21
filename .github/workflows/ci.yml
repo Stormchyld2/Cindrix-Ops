@@ -172,13 +172,13 @@ jobs:
           path: ${{ runner.temp }}/zimlog.txt
 
   search-check:
-    name: Assistant search works against real kiwix-serve and a real Wikipedia archive
+    name: Assistant search works against real kiwix-serve and real archives
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - name: Get kiwix-serve and a small real archive
+      - name: Get kiwix-serve and the two small real archives used in the first test
         shell: bash
         run: |
           set -e
@@ -188,30 +188,34 @@ jobs:
           [ -n "$kt" ] || { echo "::error::no kiwix-tools linux download found"; exit 1; }
           curl -fsSL -o kt.tgz "https://download.kiwix.org/release/kiwix-tools/$kt"
           mkdir -p kt && tar xzf kt.tgz -C kt --strip-components=1
-          curl -fsSL https://download.kiwix.org/zim/wikipedia/ -o wp.html
-          zim=""
-          # smallest real Wikipedia archives first; the 100-article ones are a few MB to a few hundred MB
-          for kind in wikipedia_en_100_mini wikipedia_en_100_nopic wikipedia_en_100_maxi wikipedia_en_simple_all_mini; do
-            zim=$(grep -oE "${kind}_[0-9-]+\.zim" wp.html | sort -uV | tail -n1 || true)
-            [ -n "$zim" ] && break
-          done
-          [ -n "$zim" ] || { echo "::error::no small Wikipedia archive found in the Kiwix download listing"; exit 1; }
-          echo "::notice::archive: $zim ($kt)"
-          curl -fsSL -o real.zim "https://download.kiwix.org/zim/wikipedia/$zim"
-          ls -l real.zim
-      - name: Run the assistant's search against it
+          # the same archives docs/22-real-test.md tells you to download (the drive plan job proves they exist)
+          get() {
+            curl -fsSL "https://download.kiwix.org/zim/$1/" -o list.html
+            f=$(grep -oE "$2[0-9-]+\.zim" list.html | sort -uV | tail -n1 || true)
+            if [ -z "$f" ]; then
+              echo "::error::no $2*.zim in zim/$1"
+              echo "::notice::names seen: $(grep -oE '[A-Za-z0-9._-]+\.zim' list.html | sort -u | head -40 | tr '\n' ' ')"
+              exit 1
+            fi
+            echo "::notice::archive: $1/$f ($kt)"
+            curl -fsSL -o "$f" "https://download.kiwix.org/zim/$1/$f"
+          }
+          get zimit ready.gov_en_all_
+          get other wikem_en_all_maxi_
+          ls -l *.zim
+      - name: Run the assistant's search against them
         shell: bash
         run: |
           cd "$RUNNER_TEMP"
-          ./kt/kiwix-serve --port 8097 --address 127.0.0.1 real.zim > serve.log 2>&1 &
+          ./kt/kiwix-serve --port 8097 --address 127.0.0.1 ready.gov*.zim wikem*.zim > serve.log 2>&1 &
           for i in $(seq 1 60); do curl -sf http://127.0.0.1:8097/catalog/v2/entries > /dev/null && break; sleep 1; done
           cd "$GITHUB_WORKSPACE/core"
           set +e
           cargo run -q --example probe_search -- 8097 \
-            "What is the Earth?" "Tell me about World War II" "Who was Albert Einstein?" "How does the Sun produce energy?" "How do I purify water by boiling?" \
+            "What should I put in an emergency kit?" "How do I prepare for a flood?" "How do I treat a burn?" "What is anaphylaxis?" "How do I purify water by boiling?" \
             > "$RUNNER_TEMP/search-log.txt" 2>&1
           code=$?
-          head -60 "$RUNNER_TEMP/search-log.txt" | while IFS= read -r l; do echo "::notice::${l}"; done
+          head -70 "$RUNNER_TEMP/search-log.txt" | while IFS= read -r l; do echo "::notice::${l}"; done
           echo "probe exit $code"
           exit $code
       - name: Keep the log
