@@ -16,6 +16,7 @@
   import Settings from './views/Settings.svelte';
   import Music from './views/Music.svelte';
   import MiniPlayer from './lib/MiniPlayer.svelte';
+  import Splash from './lib/Splash.svelte';
   import { onMount } from 'svelte';
   import { modelStatus, libraryStatus, productInfo, librariesList, libraryAnswer, type ModelStatus, type ProductInfo, type LibraryEntry } from './lib/api';
   import { settings, applyUiScale } from './lib/settings.svelte';
@@ -27,6 +28,9 @@
   let libs: LibraryEntry[] = $state([]);
   let dismissed: string[] = $state([]);
   let libNote = $state('');
+  // The loading screen shows in the real program, and in a browser tab only when the address ends with ?splash.
+  const showSplash = typeof window !== 'undefined' && ('__TAURI_INTERNALS__' in window || new URLSearchParams(window.location.search).has('splash'));
+  let polled = $state(false);
   const asking = $derived(libs.find((l) => l.state === 'ask' && l.present && !dismissed.includes(l.path)));
   async function poll() {
     ms = await modelStatus();
@@ -35,6 +39,7 @@
     online = l.online;
     product = await productInfo();
     libs = await librariesList();
+    polled = true;
   }
   async function answerLib(path: string, a: 'always' | 'once' | 'never') {
     libNote = '';
@@ -96,6 +101,8 @@
     if ((planTabs as readonly string[]).includes(tab)) plan = tab as (typeof planTabs)[number];
   }
 </script>
+
+{#if showSplash}<Splash ready={polled && settings.loaded} />{/if}
 
 <div class="shell">
   <header class="no-print">

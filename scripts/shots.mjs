@@ -36,6 +36,18 @@ async function shoot(page, name) {
   out.push(name);
 }
 
+// The loading screen (it only shows in a browser tab when the address ends with ?splash).
+{
+  const page = await browser.newPage({ viewport: { width: 1180, height: 780 } });
+  await page.goto(url + '?splash');
+  await page.getByText('Loading...').waitFor();
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: 'shots/splash.png' });
+  out.push('splash');
+  await page.waitForSelector('.splash', { state: 'detached', timeout: 10000 });
+  await page.close();
+}
+
 for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone', { width: 390, height: 800 }]]) {
   const page = await browser.newPage({ viewport: size });
   const errors = [];

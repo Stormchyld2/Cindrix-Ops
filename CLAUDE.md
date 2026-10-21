@@ -15,7 +15,7 @@ Windows comes first; Android and iPhone wrap it later.
   address for the archive reader. `music.rs` is the music player's side. `libs.rs` is the drive
   question and the library list (`all_zim_files()` is the one place archives are listed from).
 - `src/`: Svelte 5 interface. `App.svelte` holds the top navigation; screens are in `src/views/`;
-  `src/lib/api.ts` is the only place that calls Tauri commands.
+  `src/lib/api.ts` is the only place that calls Tauri commands. `src/lib/Splash.svelte` is the loading screen (logo and background are in `public/`); it shows in the real program, and in a browser only with `?splash`.
 - `crypto/`: passphrase lock. `content/`: shipped sample content. `docs/`: design docs, numbered.
 - `mockups/`: design mockups. Match them when changing a screen.
 
