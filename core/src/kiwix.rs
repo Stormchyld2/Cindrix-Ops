@@ -447,47 +447,119 @@ fn book_names(port: u16) -> Vec<String> {
 /// not buried by Wikipedia. Falls back to one all-library search if the book list is unavailable.
 pub fn search(port: u16, question: &str, limit: usize) -> Vec<Passage> {
     let names = book_names(port);
-    let mut hits: Vec<(usize, String, String)> = Vec::new(); // (rank inside its book, title, link)
-    // No book list: one search over the whole library (no title fallback, which needs a book name).
+    let keys = {
+        let k = keywords(question);
+        if k.is_empty() { retrieval::tokens(question) } else { k }
+    };
+    // No book list: one search over the whole library (no title search, which needs a book name).
     let targets: Vec<Option<String>> = if names.is_empty() { vec![None] } else { names.into_iter().map(Some).collect() };
-    for target in targets {
+    // candidates: (book number, rank inside its book, title, link)
+    let mut cands: Vec<(usize, usize, String, String)> = Vec::new();
+    for (bi, target) in targets.iter().enumerate() {
         for (rank, (title, link)) in book_hits(port, target.as_deref(), question, limit).into_iter().enumerate() {
-            if !hits.iter().any(|h| h.2 == link) {
-                hits.push((rank, title, link));
+            if !cands.iter().any(|c| c.3 == link) {
+                cands.push((bi, rank, title, link));
             }
         }
     }
-    hits.sort_by_key(|h| h.0); // stable: books keep their order within the same rank
-    let mut passages = Vec::new();
-    for (rank, title, link) in hits.into_iter() {
-        if passages.len() >= limit {
-            break;
-        }
+    cands.sort_by_key(|c| (c.1, c.0)); // everyone's best first, so the fetch cap never starves a small archive
+    let mut scored: Vec<(usize, Passage)> = Vec::new();
+    for (bi, rank, title, link) in cands.into_iter().take(MAX_FETCH) {
         // `follow` also refuses any address outside the library and follows kiwix-serve's redirects
-        if let Ok((reply, path)) = follow(port, &link) {
-            if reply.status != 200 {
-                continue;
-            }
-            let text = html_to_text(&String::from_utf8_lossy(&reply.body));
-            if text.len() < 80 {
-                continue;
-            }
-            let text = best_chunk(&title, &text, question);
-            // /content/<book>/A/<article>
-            let book = path.trim_start_matches("/content/").split('/').next().unwrap_or("library").replace('_', " ");
-            passages.push(Passage { source: book, heading: title, text, score: 6.0 - rank as f64 });
+        let Ok((reply, path)) = follow(port, &link) else { continue };
+        if reply.status != 200 {
+            continue;
+        }
+        let text = html_to_text(&String::from_utf8_lossy(&reply.body));
+        if text.len() < 80 {
+            continue;
+        }
+        let text = best_chunk(&title, &text, question);
+        // /content/<book>/A/<article>
+        let book = path.trim_start_matches("/content/").split('/').next().unwrap_or("library").replace('_', " ");
+        // Our own measure of how well the page answers the question (the search engine's order only
+        // says which pages contain the words), kept in the range 3 to 8.
+        let score = 3.0 + 0.5 * relevance(&keys, &title, &text).min(10.0) - 0.01 * rank as f64;
+        scored.push((bi, Passage { source: book, heading: title, text, score }));
+    }
+    scored.sort_by(|a, b| b.1.score.partial_cmp(&a.1.score).unwrap_or(std::cmp::Ordering::Equal));
+    // The best page of every archive first, so a small archive is not buried by Wikipedia; then the best of the rest.
+    let (mut chosen, mut rest, mut seen): (Vec<Passage>, Vec<Passage>, Vec<usize>) = (Vec::new(), Vec::new(), Vec::new());
+    for (bi, p) in scored {
+        if seen.contains(&bi) {
+            rest.push(p);
+        } else {
+            seen.push(bi);
+            chosen.push(p);
         }
     }
-    passages
+    chosen.extend(rest);
+    chosen.truncate(limit);
+    chosen
 }
 
-/// Up to `limit` (title, link) matches for the question in one book (or in the whole library
-/// when `book` is None). Order of attempts, stopping at the first that finds something:
-/// 1. full-text search with the question's key words,
-/// 2. full-text search with just its two longest words (a long query may match nothing),
-/// 3. title search (`/suggest`), one key word at a time. It works on every archive, including
-///    ones saved without a search index, where steps 1 and 2 answer with an error.
+/// Most pages fetched for one question, across all archives.
+const MAX_FETCH: usize = 24;
+
+/// Language codes used in the addresses of translated pages.
+const LANGS: &[&str] = &[
+    "ar", "bg", "bn", "ca", "cs", "da", "de", "el", "es", "fa", "fi", "fr", "he", "hi", "hr", "ht", "hu", "id", "it", "ja", "ko", "ms", "nl", "no", "pl", "pt", "ro", "ru", "sk", "sr", "sv", "sw", "ta", "th", "tl", "tr", "uk", "ur", "vi", "zh",
+];
+
+/// True for the address of a translated page: a language code as a path part after the first,
+/// like `.../Anaphylaxis_(peds)/de` (a wiki sub-page) or `.../www.ready.gov/ar/node/6015` (a
+/// site's language folder). A real archive holds many of these, and a German or Arabic page
+/// is no help to a reader (or a small model) working in English.
+pub fn is_translation(link: &str) -> bool {
+    let path = link.split(['?', '#']).next().unwrap_or("");
+    let rest = path.strip_prefix("/content/").unwrap_or(path);
+    // the first part is the book; what follows is the page's own address
+    rest.split('/').skip(1).enumerate().any(|(i, part)| {
+        let base = part.split('-').next().unwrap_or("");
+        let tail = &part[base.len()..];
+        i >= 1 && LANGS.contains(&base) && (tail.is_empty() || (tail.len() <= 5 && tail[1..].bytes().all(|b| b.is_ascii_lowercase())))
+    })
+}
+
+/// A word matches a key word when they are the same, or one begins with the other (so "burns"
+/// and "treating" match "burn" and "treat"). Short words must match exactly.
+fn loosely(word: &str, key: &str) -> bool {
+    word == key || (key.chars().count() >= 4 && word.starts_with(key)) || (word.chars().count() >= 4 && key.starts_with(word))
+}
+
+/// How well a page answers the question: 3 for each key word in its title, and up to 3 for each
+/// key word in the part of the text that was picked.
+fn relevance(keys: &[String], title: &str, text: &str) -> f64 {
+    let (ht, tt) = (retrieval::tokens(title), retrieval::tokens(text));
+    let mut s = 0.0;
+    for k in keys {
+        if ht.iter().any(|w| loosely(w, k)) {
+            s += 3.0;
+        }
+        s += (tt.iter().filter(|w| loosely(w, k)).count() as f64).min(3.0);
+    }
+    s
+}
+
+fn merge(into: &mut Vec<(String, String)>, list: Vec<(String, String)>) {
+    for (title, link) in list {
+        if !into.iter().any(|f| f.1 == link) {
+            into.push((title, link));
+        }
+    }
+}
+
+/// Candidate (title, link) matches for the question in one book (or in the whole library when
+/// `book` is None), up to three times `limit`:
+/// - full-text search with the question's key words (then with just its two longest words, if
+///   the first finds nothing: a long query can match no page),
+/// - title search (`/suggest`), one key word at a time. It adds the page that is simply *called*
+///   "Burns" when the question is about treating a burn, and it is the only way into an archive
+///   saved without a search index, where full-text search answers with an error.
+/// The two lists are interleaved. Translated pages come last, or are dropped when there are
+/// original pages.
 fn book_hits(port: u16, book: Option<&str>, question: &str, limit: usize) -> Vec<(String, String)> {
+    let want = (limit * 3).max(4);
     let kw = keywords(question);
     let mut by_length = kw.clone();
     by_length.sort_by(|a, b| b.chars().count().cmp(&a.chars().count())); // stable: ties keep the order asked
@@ -500,37 +572,42 @@ fn book_hits(port: u16, book: Option<&str>, question: &str, limit: usize) -> Vec
             patterns.push(by_length.iter().take(2).cloned().collect::<Vec<_>>().join(" "));
         }
     }
+    let mut full_text: Vec<(String, String)> = Vec::new();
     for pat in patterns.iter().filter(|p| !p.is_empty()) {
         let path = match book {
-            Some(n) => format!("/search?content={}&pattern={}&pageLength={}&format=xml", url_encode(n), url_encode(pat), limit),
-            None => format!("/search?pattern={}&pageLength={}&format=xml", url_encode(pat), limit),
+            Some(n) => format!("/search?content={}&pattern={}&pageLength={}&format=xml", url_encode(n), url_encode(pat), want * 2),
+            None => format!("/search?pattern={}&pageLength={}&format=xml", url_encode(pat), want * 2),
         };
         if let Ok((200, body)) = get(port, &path) {
-            let mut found = parse_search(&String::from_utf8_lossy(&body));
+            let found = parse_search(&String::from_utf8_lossy(&body));
             if !found.is_empty() {
-                found.truncate(limit);
-                return found;
-            }
-        }
-    }
-    let mut found: Vec<(String, String)> = Vec::new();
-    if let Some(n) = book {
-        for term in by_length.iter().take(3) {
-            let path = format!("/suggest?content={}&term={}&count={}", url_encode(n), url_encode(term), limit);
-            if let Ok((200, body)) = get(port, &path) {
-                for (title, link) in parse_suggest(&String::from_utf8_lossy(&body), n) {
-                    if !found.iter().any(|f| f.1 == link) {
-                        found.push((title, link));
-                    }
-                }
-            }
-            if found.len() >= limit {
+                merge(&mut full_text, found);
                 break;
             }
         }
     }
-    found.truncate(limit);
-    found
+    let mut titles: Vec<(String, String)> = Vec::new();
+    if let Some(n) = book {
+        for term in by_length.iter().take(3) {
+            let path = format!("/suggest?content={}&term={}&count={}", url_encode(n), url_encode(term), want);
+            if let Ok((200, body)) = get(port, &path) {
+                merge(&mut titles, parse_suggest(&String::from_utf8_lossy(&body), n));
+            }
+        }
+    }
+    let mut all: Vec<(String, String)> = Vec::new();
+    let (mut a, mut t) = (full_text.into_iter(), titles.into_iter());
+    loop {
+        let (x, y) = (a.next(), t.next());
+        if x.is_none() && y.is_none() {
+            break;
+        }
+        merge(&mut all, x.into_iter().chain(y).collect());
+    }
+    let (originals, translations): (Vec<_>, Vec<_>) = all.into_iter().partition(|h| !is_translation(&h.1));
+    let mut out = if originals.is_empty() { translations } else { originals };
+    out.truncate(want);
+    out
 }
 
 // ---------- the in-app reader: a safe window onto kiwix-serve ----------
@@ -937,6 +1014,98 @@ mod tests {
         assert_eq!(r[1], ("Emergency Contraception".to_string(), "/content/wikem/Emergency_Contraception".to_string()));
         assert_eq!(r[2].0, "a < b & c");
         assert_eq!(plain_label("x &lt;i&gt;y&lt;/i&gt; z"), "x y z");
+    }
+
+    #[test]
+    fn translated_pages_are_recognised_from_real_addresses() {
+        // seen in the real WikEM and Ready.gov archives
+        for t in [
+            "/content/wikem_en_all_maxi_2026-07/Anaphylaxis_(peds)/de",
+            "/content/wikem_en_all_maxi_2026-07/Water_Purification/ru",
+            "/content/ready.gov_en_all_2026-10/www.ready.gov/ar/node/6015",
+            "/content/ready.gov_en_all_2026-10/www.ready.gov/ht/kids/prepare-pedro",
+            "/content/b/A/Some_page/zh-hans",
+            "/content/b/A/Some_page/pt-br?x=1",
+        ] {
+            assert!(is_translation(t), "{}", t);
+        }
+        for o in [
+            "/content/wikem_en_all_maxi_2026-07/Anaphylaxis",
+            "/content/wikem_en_all_maxi_2026-07/Anaphylaxis_(peds)",
+            "/content/ready.gov_en_all_2026-10/www.ready.gov/kids/prepare-pedro",
+            "/content/ready.gov_en_all_2026-10/www.ready.gov/alerts",
+            "/content/ready.gov_en_all_2026-10/www.ready.gov/kit",
+            "/content/wikipedia_en/A/It",
+            "/content/de/A/Water", // a book that happens to be called "de" is not a translation of one page
+            "/content/b/de",
+            "/content/b/A/Word_de_word",
+        ] {
+            assert!(!is_translation(o), "{}", o);
+        }
+    }
+
+    #[test]
+    fn original_pages_come_before_their_translations() {
+        let (port, _) = recording_server(|line| {
+            if line.contains("/catalog/v2/entries") {
+                ok("<feed><entry><title>WikEM</title><link type=\"text/html\" href=\"/content/wikem\"/></entry></feed>")
+            } else if line.contains("/search?") {
+                ok("<rss><channel>\
+                    <item><title>Anaphylaxis (peds)/de</title><link>/content/wikem/Anaphylaxis_(peds)/de</link></item>\
+                    <item><title>Anaphylaxis/ru</title><link>/content/wikem/Anaphylaxis/ru</link></item>\
+                    <item><title>Anaphylaxis</title><link>/content/wikem/Anaphylaxis</link></item></channel></rss>")
+            } else if line.contains("/suggest?") {
+                ok("[]")
+            } else if line.contains("/content/wikem/Anaphylaxis ") {
+                ok("<html><body><p>Anaphylaxis is a severe allergic reaction. Give adrenaline into the thigh muscle at once and call for help. Lie the person flat.</p></body></html>")
+            } else {
+                ok("<html><body><p>Das ist eine maschinell uebersetzte Seite ueber Anaphylaxie und Adrenalin, die kein Englisch enthaelt, aber lang genug ist.</p></body></html>")
+            }
+        });
+        let p = search(port, "What is anaphylaxis?", 3);
+        assert_eq!(p.iter().map(|x| x.heading.as_str()).collect::<Vec<_>>(), vec!["Anaphylaxis"]);
+    }
+
+    #[test]
+    fn translations_are_kept_only_when_nothing_else_exists() {
+        let (port, _) = recording_server(|line| {
+            if line.contains("/catalog/v2/entries") {
+                ok("<feed><entry><title>W</title><link type=\"text/html\" href=\"/content/w\"/></entry></feed>")
+            } else if line.contains("/search?") {
+                ok("<rss><channel><item><title>Wasser/de</title><link>/content/w/Wasser/de</link></item></channel></rss>")
+            } else if line.contains("/suggest?") {
+                ok("[]")
+            } else {
+                ok(&article())
+            }
+        });
+        let p = search(port, "wasser", 2);
+        assert_eq!(p.len(), 1);
+    }
+
+    #[test]
+    fn a_page_called_what_you_asked_about_beats_a_passing_mention() {
+        // The full-text engine returns the page with the most mentions; the page named "Burns" is the better answer.
+        let (port, _) = recording_server(|line| {
+            if line.contains("/catalog/v2/entries") {
+                ok("<feed><entry><title>WikEM</title><link type=\"text/html\" href=\"/content/wikem\"/></entry></feed>")
+            } else if line.contains("/search?") {
+                ok("<rss><channel><item><title>Hydrofluoric acid</title><link>/content/wikem/Hydrofluoric_acid</link></item></channel></rss>")
+            } else if line.contains("/suggest?") {
+                if line.contains("term=burn&") {
+                    ok(r#"[{"value":"Burns","label":"&lt;b&gt;Burn&lt;/b&gt;s","kind":"path","path":"Burns"}]"#)
+                } else {
+                    ok("[]")
+                }
+            } else if line.contains("/content/wikem/Burns ") {
+                ok("<html><body><p>Cool the burn under cool running water for twenty minutes. Do not use ice. Cover it with a clean dry dressing and treat pain.</p></body></html>")
+            } else {
+                ok("<html><body><p>Hydrofluoric acid is used to etch glass and as a rust remover. Skin contact can cause a deep chemical injury that needs urgent care.</p></body></html>")
+            }
+        });
+        let p = search(port, "How do I treat a burn?", 2);
+        assert_eq!(p.iter().map(|x| x.heading.as_str()).collect::<Vec<_>>(), vec!["Burns", "Hydrofluoric acid"]);
+        assert!(p[0].score > p[1].score);
     }
 
     // A fake kiwix-serve that records what it was asked, for the search fallbacks.
