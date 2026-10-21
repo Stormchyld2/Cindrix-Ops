@@ -28,6 +28,7 @@ const url = process.env.URL ?? 'http://localhost:4173/';
 mkdirSync('shots', { recursive: true });
 const browser = await chromium.launch();
 const out = [];
+let failed = false;
 
 async function shoot(page, name) {
   await page.waitForTimeout(250);
@@ -41,6 +42,7 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   page.on('pageerror', (e) => errors.push(String(e)));
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
   await page.goto(url);
+  try {
   await shoot(page, `${label}-1-ask`);
 
   await page.getByRole('button', { name: 'Library', exact: true }).click();
@@ -86,7 +88,7 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   await page.getByRole('heading', { name: /Results for/ }).waitFor();
   await shoot(page, `${label}-1h-ghostnet-search`);
   await page.getByRole('button', { name: /^Bookmarks/ }).click();
-  await page.getByRole('button', { name: /^Water/ }).waitFor();
+  await page.locator('.marks').getByRole('button', { name: /^Water/ }).waitFor();
   await shoot(page, `${label}-1i-ghostnet-bookmarks`);
   await page.getByRole('button', { name: /^Bookmarks/ }).click();
   await page.getByRole('button', { name: 'Library', exact: true }).click();
@@ -200,8 +202,16 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   await page.getByRole('tab', { name: 'Sources and licenses' }).click();
   await shoot(page, `${label}-9e-sources`);
 
+  } catch (e) {
+    // GitHub shows these as annotations on the job, so a failure can be read without the full log
+    const msg = String((e && e.message) || e).split('\n').filter(Boolean).slice(0, 5).join(' | ').slice(0, 700);
+    console.log(`::error::screenshots (${label}): ${msg}`);
+    try { await page.screenshot({ path: `shots/FAILED-${label}.png`, fullPage: true }); } catch { /* nothing more to do */ }
+    failed = true;
+  }
   if (errors.length) console.log(label, 'console errors:', errors);
   await page.close();
 }
 await browser.close();
 console.log('screenshots:', out.join(', '));
+if (failed) process.exit(1);

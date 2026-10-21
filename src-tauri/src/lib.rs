@@ -858,7 +858,9 @@ fn to_dto(i: &Item, t: &inventory::Thresholds) -> ItemDto {
 
 #[tauri::command]
 fn inventory_list() -> Result<Vec<ItemDto>, String> {
-    { let t = settings::thresholds(); Ok(user().load_inventory()?.iter().map(|i| to_dto(i, &t)).collect()) }
+    let t = settings::thresholds();
+    let items = user().load_inventory()?;
+    Ok(items.iter().map(|i| to_dto(i, &t)).collect())
 }
 
 /// Create (empty id) or replace an item.
@@ -876,7 +878,8 @@ fn inventory_save_item(item: ItemDto) -> Result<Vec<ItemDto>, String> {
         items.push(it);
     }
     u.save_inventory(&items)?;
-    { let t = settings::thresholds(); Ok(items.iter().map(|i| to_dto(i, &t)).collect()) }
+    let t = settings::thresholds();
+    Ok(items.iter().map(|i| to_dto(i, &t)).collect())
 }
 
 #[tauri::command]
@@ -884,7 +887,8 @@ fn inventory_delete(ids: Vec<String>) -> Result<Vec<ItemDto>, String> {
     let u = user();
     let items = inventory::delete_ids(u.load_inventory()?, &ids);
     u.save_inventory(&items)?;
-    { let t = settings::thresholds(); Ok(items.iter().map(|i| to_dto(i, &t)).collect()) }
+    let t = settings::thresholds();
+    Ok(items.iter().map(|i| to_dto(i, &t)).collect())
 }
 
 #[derive(Serialize)]
