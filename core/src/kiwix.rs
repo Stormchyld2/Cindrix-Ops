@@ -309,6 +309,29 @@ fn json_string(obj: &str, key: &str) -> Option<String> {
     None
 }
 
+/// Plain text from a suggestion label. kiwix-serve marks the matching part with `<b>` tags, and
+/// sends them escaped (`&lt;b&gt;`), so entities are decoded first and then real tags are dropped.
+/// A `<` that does not start a tag (as in "a < b") is kept.
+fn plain_label(s: &str) -> String {
+    let t = decode_entities(s);
+    let mut out = String::new();
+    let mut rest = t.as_str();
+    while let Some(i) = rest.find('<') {
+        out.push_str(&rest[..i]);
+        let after = &rest[i + 1..];
+        let looks_like_tag = after.chars().next().map(|c| c.is_ascii_alphabetic() || c == '/').unwrap_or(false);
+        match (looks_like_tag, after.find('>')) {
+            (true, Some(j)) => rest = &after[j + 1..],
+            _ => {
+                out.push('<');
+                rest = after;
+            }
+        }
+    }
+    out.push_str(rest);
+    out.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
 /// (title, link) for each title match in kiwix-serve's `/suggest` JSON. This is the fallback
 /// when full-text search is not available (an archive with no search index answers a search with an error).
 pub fn parse_suggest(json: &str, book: &str) -> Vec<(String, String)> {
@@ -318,7 +341,12 @@ pub fn parse_suggest(json: &str, book: &str) -> Vec<(String, String)> {
             continue; // the "containing ..." entry, not an article
         }
         let Some(path) = json_string(obj, "path").map(|p| p.trim().to_string()).filter(|p| !p.is_empty()) else { continue };
-        let title = json_string(obj, "label").or_else(|| json_string(obj, "value")).unwrap_or_else(|| path.clone());
+        // `value` is the plain title; `label` is the same text with the match highlighted
+        let title = json_string(obj, "value")
+            .map(|v| v.trim().to_string())
+            .filter(|v| !v.is_empty())
+            .or_else(|| json_string(obj, "label").map(|l| plain_label(&l)).filter(|l| !l.is_empty()))
+            .unwrap_or_else(|| path.clone());
         // Some versions give the whole address, others the path inside the archive.
         let link = if path.starts_with("/content/") || path.starts_with("http") { link_path(&path) } else { link_path(&format!("/content/{}/{}", book, path.trim_start_matches('/'))) };
         if link.len() > 1 {
@@ -890,12 +918,25 @@ mod tests {
             vec![
                 ("Water purification".to_string(), "/content/wiki_en/A/Water_purification".to_string()),
                 ("Café \"Water\" {x}".to_string(), "/content/wiki_en/Caf%C3%A9%20page".to_string()),
-                ("emoji".to_string(), "/content/other/A/Smile".to_string()),
+                ("A😀".to_string(), "/content/other/A/Smile".to_string()),
             ]
         );
         assert_eq!(json_string(r#"{"label":"A😀"}"#, "label").unwrap(), "A😀");
         assert!(parse_suggest("[]", "b").is_empty());
         assert!(parse_suggest("not json at all", "b").is_empty());
+    }
+
+    #[test]
+    fn highlighted_suggestion_labels_become_plain_titles() {
+        // as the real kiwix-serve 3.8 sends them: tags escaped inside the JSON text
+        let json = r#"[{"value":"Emergency Alerts | Ready.gov","label":"&lt;b&gt;Emergency&lt;/b&gt; Alerts | Ready.gov","kind":"path","path":"/content/ready.gov_en_all_2026-10/www.ready.gov/alerts"},
+            {"label":"&lt;b&gt;Emergency&lt;/b&gt; Contraception","kind":"path","path":"Emergency_Contraception"},
+            {"label":"a < b &amp; c","kind":"path","path":"Less_than"}]"#;
+        let r = parse_suggest(json, "wikem");
+        assert_eq!(r[0], ("Emergency Alerts | Ready.gov".to_string(), "/content/ready.gov_en_all_2026-10/www.ready.gov/alerts".to_string()));
+        assert_eq!(r[1], ("Emergency Contraception".to_string(), "/content/wikem/Emergency_Contraception".to_string()));
+        assert_eq!(r[2].0, "a < b & c");
+        assert_eq!(plain_label("x &lt;i&gt;y&lt;/i&gt; z"), "x y z");
     }
 
     // A fake kiwix-serve that records what it was asked, for the search fallbacks.

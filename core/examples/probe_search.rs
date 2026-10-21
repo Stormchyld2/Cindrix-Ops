@@ -1,7 +1,7 @@
 //! Runs the assistant's own library search against a real kiwix-serve and prints what happened
 //! at each step, so a mismatch with the real output format is visible in the log:
 //!   cargo run --example probe_search -- <port> "<question>" ["<question>" ...]
-//! Exit code 1 if none of the questions produced a passage.
+//! Exit code 1 if fewer than half of the questions produced a passage.
 use cindrix_core::kiwix;
 
 fn head(s: &[u8], n: usize) -> String {
@@ -24,7 +24,8 @@ fn main() {
         println!("catalog start: {}", head(&cat.body, 400));
     }
 
-    let mut any = false;
+    let asked = questions.len();
+    let mut answered = 0usize;
     for q in questions {
         println!("\n=== {}", q);
         let kw = kiwix::keywords(q);
@@ -50,9 +51,7 @@ fn main() {
                     Ok(r) => {
                         let hits = kiwix::parse_suggest(&String::from_utf8_lossy(&r.body), &b.name);
                         println!("[{}] title search '{}': status {} -> {} hit(s) {:?}", b.name, term, r.status, hits.len(), hits.first());
-                        if hits.is_empty() {
-                            println!("[{}]   raw start: {}", b.name, head(&r.body, 400));
-                        }
+                        println!("[{}]   suggest raw start: {}", b.name, head(&r.body, 300));
                     }
                     Err(e) => println!("[{}] title search: error {}", b.name, e),
                 }
@@ -64,11 +63,14 @@ fn main() {
         for p in &passages {
             println!("  - {} / {} (score {}): {}", p.source, p.heading, p.score, head(p.text.as_bytes(), 160));
         }
-        any |= !passages.is_empty();
+        if !passages.is_empty() {
+            answered += 1;
+        }
     }
-    if !any {
-        println!("\nFAIL: no question produced a passage");
+    println!("\nSUMMARY: {} of {} questions produced passages", answered, asked);
+    if answered * 2 < asked {
+        println!("FAIL: fewer than half of the questions produced a passage");
         std::process::exit(1);
     }
-    println!("\nok");
+    println!("ok");
 }

@@ -215,7 +215,8 @@ jobs:
             "What should I put in an emergency kit?" "How do I prepare for a flood?" "How do I treat a burn?" "What is anaphylaxis?" "How do I purify water by boiling?" \
             > "$RUNNER_TEMP/search-log.txt" 2>&1
           code=$?
-          head -70 "$RUNNER_TEMP/search-log.txt" | while IFS= read -r l; do echo "::notice::${l}"; done
+          # GitHub shows at most 10 notices per step, so the log goes out as a few long ones (read them in order)
+          grep -E "^(===|key words|assistant search|  - |SUMMARY|FAIL|ok|\[.*(full-text|title search|first raw item|suggest raw))" "$RUNNER_TEMP/search-log.txt" | cut -c1-420 | tr '\n' '|' | fold -w 2800 | head -9 | while IFS= read -r l || [ -n "$l" ]; do echo "::notice::LOG ${l}"; done
           echo "probe exit $code"
           exit $code
       - name: Keep the log
