@@ -48,6 +48,9 @@ The build is found from the list the Protomaps builds page reads (`build-metadat
 
 Still **not tried by a person**: the Windows run on your own machine. The `pmtiles extract` options `--bbox` and `--maxzoom` are as documented at docs.protomaps.com/pmtiles/cli.
 
+## First real test (2026-10-20)
+The map "did not load correctly" with the small test pack. Likely cause: the viewer opened on the middle of the US at zoom 3.5, while the pack holds only a small area. It now reads the pack's header and opens on the area the pack covers (shown in the note above the map). If the map still looks wrong, the error line under the note and a screenshot say why. **TO TEST.**
+
 ## What to check first when you run it
 1. The extract finishes and `check_drive` passes.
 2. Open the app, Maps: the map should draw, and Pins add on click. If it stays blank, the error line under the map says what failed. The likeliest causes are the page-security setting blocking the tile address on Windows, the style not matching the tile layout, or the map library and `pmtiles` plugin disagreeing on version.

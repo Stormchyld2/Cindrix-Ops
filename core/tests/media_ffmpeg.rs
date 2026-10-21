@@ -101,3 +101,39 @@ fn covers_embedded_in_real_files_are_found() {
         assert!(art.data.starts_with(&[0xFF, 0xD8]), "{}", name);
     }
 }
+
+/// WAV files the web view's own decoder may refuse (24-bit, floating point, 8-bit, mu-law, with
+/// a big metadata chunk) must still come out playable through the converter, because the player
+/// falls back to it when the built-in decoder fails. Also: our tag reader must not choke on them.
+#[test]
+fn awkward_wav_files_convert_and_read() {
+    let Some(ff) = ffmpeg() else { return };
+    let d = std::env::temp_dir().join(format!("cindrix-wav-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&d);
+    let music = d.join("music");
+    let cache = d.join("cache");
+    std::fs::create_dir_all(&music).unwrap();
+    let target = convert::pick_target(&ff).expect("ffmpeg runs");
+    let cases: [(&str, &[&str]); 6] = [
+        ("pcm24.wav", &["-c:a", "pcm_s24le"]),
+        ("pcm32.wav", &["-c:a", "pcm_s32le"]),
+        ("float32.wav", &["-c:a", "pcm_f32le"]),
+        ("pcm8.wav", &["-c:a", "pcm_u8"]),
+        ("mulaw.wav", &["-c:a", "pcm_mulaw", "-ar", "8000"]),
+        ("stereo48k.wav", &["-c:a", "pcm_s16le", "-ac", "2", "-ar", "48000", "-metadata", "title=Stereo", "-metadata", "artist=Someone"]),
+    ];
+    for (name, codec) in cases {
+        let f = make(&ff, &music, name, codec);
+        let t = tags::read_tags(&f); // must not panic or hang
+        let _ = t;
+        assert_eq!(media::class_of(&f), Some(Class::Native));
+        let out = convert::convert(&ff, &f, name, &cache, target).unwrap_or_else(|e| panic!("{}: {}", name, e));
+        let bytes = std::fs::read(cache.join(&out)).unwrap();
+        assert!(bytes.len() > 1000, "{}: converted file is {} bytes", name, bytes.len());
+        match target {
+            convert::Target::Flac => assert_eq!(&bytes[..4], b"fLaC", "{}", name),
+            convert::Target::Opus => assert_eq!(&bytes[..4], b"OggS", "{}", name),
+        }
+    }
+    let _ = std::fs::remove_dir_all(&d);
+}

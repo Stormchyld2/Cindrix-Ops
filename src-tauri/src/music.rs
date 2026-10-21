@@ -310,13 +310,15 @@ pub fn music_resolve(state: tauri::State<'_, AppState>, rels: Vec<String>) -> Ve
 /// plays itself, `c/<name>` for a converted copy. Converting can take a while, so this runs
 /// off the main thread.
 #[tauri::command]
-pub async fn music_prepare(state: tauri::State<'_, AppState>, rel: String) -> Result<String, String> {
+pub async fn music_prepare(state: tauri::State<'_, AppState>, rel: String, force_convert: Option<bool>) -> Result<String, String> {
     let dir = music_dir();
     let Some(path) = serve::resolve_track(&dir, &rel) else {
         return Err("That file is no longer in the music folder.".into());
     };
     let class = media::class_of(&path).ok_or("That is not a music file.")?;
-    if class == Class::Native {
+    // `force_convert`: the web view has already refused this file (a WAV with 24-bit or floating
+    // point samples, an unusual MP4, ...), so it goes through the converter like a WMA would.
+    if class == Class::Native && force_convert != Some(true) {
         let enc: Vec<String> = rel.split('/').map(url_part).collect();
         return Ok(format!("t/{}", enc.join("/")));
     }
@@ -335,7 +337,11 @@ pub async fn music_prepare(state: tauri::State<'_, AppState>, rel: String) -> Re
         };
         let Some(tg) = tg else {
             return Err::<(String, Option<convert::Target>), String>(
-                "This kind of file needs the converter (ffmpeg), which is not on this drive. Copy ffmpeg into the engines folder, or convert the file to MP3 or FLAC.".into(),
+                if force_convert == Some(true) {
+                    "The built-in player could not read this file, and the converter (ffmpeg) that could fix it is not on this drive. Copy ffmpeg.exe into the engines folder, or convert the file to MP3 or FLAC (16-bit).".to_string()
+                } else {
+                    "This kind of file needs the converter (ffmpeg), which is not on this drive. Copy ffmpeg into the engines folder, or convert the file to MP3 or FLAC.".to_string()
+                },
             );
         };
         let _g = CONVERT_LOCK.lock().unwrap_or_else(|e| e.into_inner());

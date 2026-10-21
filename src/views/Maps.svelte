@@ -18,6 +18,8 @@
   let draftLabel = $state('');
   let message = $state('');
   let error = $state('');
+  /** What the open map file covers, read from its header. */
+  let packInfo = $state('');
   let stats: RouteStats | null = $state(null);
   let confirmDelete = $state(false);
 
@@ -39,7 +41,7 @@
   let map: MLMap | null = null;
   let markers: Marker[] = [];
   let ml: typeof import('maplibre-gl') | null = null;
-  let protocolAdded = false;
+  let protocol: import('pmtiles').Protocol | null = null;
 
   onMount(async () => {
     await refresh();
@@ -60,20 +62,34 @@
 
   async function initMap(pack: Pack, el: HTMLDivElement) {
     try {
-      const [maplibregl, { Protocol }, { layers, namedFlavor }] = await Promise.all([
+      const [maplibregl, { Protocol, PMTiles }, { layers, namedFlavor }] = await Promise.all([
         import('maplibre-gl'),
         import('pmtiles'),
         import('@protomaps/basemaps'),
       ]);
       await import('maplibre-gl/dist/maplibre-gl.css');
       ml = maplibregl;
-      if (!protocolAdded) {
-        const protocol = new Protocol();
+      if (!protocol) {
+        protocol = new Protocol();
         // The cast keeps this compiling whichever handler signature the two libraries agree on.
         maplibregl.addProtocol('pmtiles', protocol.tile as never);
-        protocolAdded = true;
       }
       const url = await tileUrl(pack.rel);
+      // Read the file's header first: it says which area and zoom levels the pack really holds.
+      // A pack cut for one town has nothing to show at the whole-country view the map used to open on.
+      const archive = new PMTiles(url);
+      protocol.add(archive);
+      let area: { w: number; s: number; e: number; n: number; minZoom: number; maxZoom: number } | null = null;
+      try {
+        const h = await archive.getHeader();
+        if ([h.minLon, h.minLat, h.maxLon, h.maxLat].every((v) => Number.isFinite(v)) && h.maxLon > h.minLon && h.maxLat > h.minLat) {
+          area = { w: h.minLon, s: h.minLat, e: h.maxLon, n: h.maxLat, minZoom: h.minZoom, maxZoom: h.maxZoom };
+          packInfo = `${pack.name}: covers ${h.minLat.toFixed(2)}, ${h.minLon.toFixed(2)} to ${h.maxLat.toFixed(2)}, ${h.maxLon.toFixed(2)}; zoom ${h.minZoom} to ${h.maxZoom}.`;
+        }
+      } catch (e) {
+        tileError = 'The map file could not be read: ' + String((e as Error)?.message ?? e) + ' The file may be damaged or incomplete; cut it again with scripts\\get-maps.ps1.';
+        return;
+      }
       // No glyph (font) files ship yet, so the text layers are left out: roads, water, land and
       // buildings are drawn, place names are not. Pin labels are drawn by this screen instead.
       const style = {
@@ -81,7 +97,15 @@
         sources: { protomaps: { type: 'vector', url: 'pmtiles://' + url, attribution: '© OpenStreetMap contributors' } },
         layers: layers('protomaps', namedFlavor('dark'), { lang: 'en' }).filter((l) => l.type !== 'symbol'),
       } as unknown as StyleSpecification;
-      const m = new maplibregl.Map({ container: el, style, center: [-98.5, 39.8], zoom: 3.5, attributionControl: { compact: true } });
+      const m = new maplibregl.Map({
+        container: el,
+        style,
+        center: area ? [(area.w + area.e) / 2, (area.s + area.n) / 2] : [-98.5, 39.8],
+        zoom: area ? Math.max(area.minZoom, 3) : 3.5,
+        attributionControl: { compact: true },
+      });
+      // Open on the area the pack covers (the whole US for a US pack, one town for a small test pack).
+      if (area) m.fitBounds([[area.w, area.s], [area.e, area.n]], { padding: 20, duration: 0, maxZoom: Math.min(area.maxZoom, 15) });
       m.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'top-right');
       m.addControl(new maplibregl.ScaleControl({ unit: 'imperial' }), 'bottom-left');
       m.on('error', (e) => {
@@ -338,7 +362,7 @@
 
 {#if street}
   <div class="warn">
-    <strong>Map: {street.name}</strong> ({street.mb} MB, from this drive). Roads, water, land and buildings are drawn; place names are not yet. Positions you place are approximate, and routes are straight lines between your points: this app does not plan roads and does not yet steer routes around no-go areas.
+    <strong>Map: {street.name}</strong> ({street.mb} MB, from this drive).{#if packInfo} This pack covers {packInfo.replace(street.name + ': covers ', '')}{/if} Roads, water, land and buildings are drawn; place names are not yet. Positions you place are approximate, and routes are straight lines between your points: this app does not plan roads and does not yet steer routes around no-go areas.
   </div>
 {:else}
   <div class="warn">

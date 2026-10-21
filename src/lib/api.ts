@@ -536,13 +536,13 @@ function encodeRel(rel: string): string {
 }
 
 /** An address the audio element can play. Converts the file first if the web view cannot play it. */
-export async function musicSource(rel: string): Promise<string> {
+export async function musicSource(rel: string, forceConvert = false): Promise<string> {
   if (!inTauri) {
     let u = toneCache.get(rel);
     if (!u) { u = wavTone(220 + (sampleTracks.findIndex((t) => t.rel === rel) + 1) * 55, 30); toneCache.set(rel, u); }
     return u;
   }
-  const path = await call<string>('music_prepare', { rel });
+  const path = await call<string>('music_prepare', { rel, forceConvert });
   const { convertFileSrc } = await import('@tauri-apps/api/core');
   // `t/` and `c/` paths are already encoded by the program.
   return convertFileSrc(path, 'cindrix-music');
