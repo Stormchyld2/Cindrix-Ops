@@ -1,8 +1,8 @@
 # 20. The archive reader
 
-The reader is the **Ghostnet** screen (its own tab in the top menu) where ZIM files are read like web
+The reader is the **Intel** screen (its own tab in the top menu) where ZIM files are read like web
 pages: Wikipedia, medical guides, repair manuals and the websites you saved yourself. Adding, removing,
-saving websites and sharing stay in Library, then Archives. See [23](23-ghostnet-search-settings.md).
+saving websites and sharing stay in Library, then Archives. See [23](23-intel-search-settings.md).
 
 ## Built in: no Kiwix program needed
 

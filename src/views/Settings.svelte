@@ -9,12 +9,12 @@
 
   let { openArchives }: { openArchives: () => void } = $props();
 
-  const tabs = ['General', 'Assistant', 'Library', 'Ghostnet', 'Music', 'Maps', 'Plan', 'Drive', 'Sources and licenses', 'About'] as const;
+  const tabs = ['General', 'Assistant', 'Library', 'Intel', 'Music', 'Maps', 'Plan', 'Drive', 'Sources and licenses', 'About'] as const;
   let tab: (typeof tabs)[number] = $state('General');
 
   type BoolKey = { [K in keyof Settings]: Settings[K] extends boolean ? K : never }[keyof Settings];
   type NumKey = { [K in keyof Settings]: Settings[K] extends number ? K : never }[keyof Settings];
-  type ChoiceKey = 'startScreen' | 'answerLength' | 'searchSpeed' | 'ghostnetStart' | 'mapUnits';
+  type ChoiceKey = 'startScreen' | 'answerLength' | 'searchSpeed' | 'intelStart' | 'mapUnits';
 
   let ms = $state<ModelStatus | null>(null);
   let models: ModelChoice[] = $state([]);
@@ -214,14 +214,14 @@
       <p class="muted fine">Sharing the library with other devices is never turned on by a setting. It is off every time the program starts, and you turn it on in Archives.</p>
     </div>
     {@render reset(['autoScanShelf', 'autoRestartLibrary'])}
-  {:else if tab === 'Ghostnet'}
+  {:else if tab === 'Intel'}
     <div class="panel">
-      <div class="label">GHOSTNET, THE OFFLINE INTERNET</div>
-      {@render choose('ghostnetStart', 'A new tab opens on', 'The Ghostnet home shows every archive. Or go straight into the first archive on the drive.', [['archives', 'The Ghostnet home'], ['first', 'The first archive']])}
-      {@render toggle('ghostnetRestoreTabs', 'Remember my open tabs', 'Reopen the tabs, and the pages in them, the next time you open the program.')}
-      <p class="muted fine">Text size and bookmarks in Ghostnet are kept automatically.</p>
+      <div class="label">INTEL, THE OFFLINE INTERNET</div>
+      {@render choose('intelStart', 'A new tab opens on', 'The Intel home shows every archive. Or go straight into the first archive on the drive.', [['archives', 'The Intel home'], ['first', 'The first archive']])}
+      {@render toggle('intelRestoreTabs', 'Remember my open tabs', 'Reopen the tabs, and the pages in them, the next time you open the program.')}
+      <p class="muted fine">Text size and bookmarks in Intel are kept automatically.</p>
     </div>
-    {@render reset(['ghostnetStart', 'ghostnetRestoreTabs'])}
+    {@render reset(['intelStart', 'intelRestoreTabs'])}
   {:else if tab === 'Music'}
     <div class="panel">
       <div class="label">MUSIC</div>

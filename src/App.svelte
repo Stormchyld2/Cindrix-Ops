@@ -10,7 +10,7 @@
   import Maps from './views/Maps.svelte';
   import Shelf from './views/Shelf.svelte';
   import Archives from './views/Archives.svelte';
-  import Ghostnet from './views/Ghostnet.svelte';
+  import Intel from './views/Intel.svelte';
   import Drills from './views/Drills.svelte';
   import Binder from './views/Binder.svelte';
   import Settings from './views/Settings.svelte';
@@ -59,15 +59,15 @@
   // interface size (Settings, General)
   $effect(() => { if (settings.loaded) void applyUiScale(settings.values.uiScale); });
 
-  // Ghostnet is the offline internet: the archives read like web pages. It goes with the library.
-  type Group = 'Ask' | 'Library' | 'Ghostnet' | 'Academy' | 'Maps' | 'Music' | 'Plan' | 'Settings';
-  const allGroups: Group[] = ['Ask', 'Library', 'Ghostnet', 'Academy', 'Maps', 'Music', 'Plan', 'Settings'];
+  // Intel is the offline internet: the archives read like web pages. It goes with the library.
+  type Group = 'Ask' | 'Library' | 'Intel' | 'Academy' | 'Maps' | 'Music' | 'Plan' | 'Settings';
+  const allGroups: Group[] = ['Ask', 'Library', 'Intel', 'Academy', 'Maps', 'Music', 'Plan', 'Settings'];
   // Each product switches parts of the program on or off (core/src/product.rs).
   const groups = $derived(
     allGroups.filter((g) => {
       if (!product) return true;
       if (g === 'Ask') return product.assistant;
-      if (g === 'Library' || g === 'Ghostnet') return product.library;
+      if (g === 'Library' || g === 'Intel') return product.library;
       if (g === 'Maps') return product.maps;
       if (g === 'Music') return product.music;
       if (g === 'Plan') return product.plan;
@@ -93,8 +93,8 @@
     lib = 'Archives';
     group = 'Library';
   }
-  function openGhostnet() {
-    group = 'Ghostnet';
+  function openIntel() {
+    group = 'Intel';
   }
   function goPlan(tab: string) {
     group = 'Plan';
@@ -142,19 +142,19 @@
     <div class="warn libnote" role="status">{libNote} <button class="btn" onclick={() => (libNote = '')}>OK</button></div>
   {/if}
 
-  <main class:wide={group === 'Ghostnet'}>
+  <main class:wide={group === 'Intel'}>
     {#if group === 'Ask'}
       <Ask {openCard} />
     {:else if group === 'Library'}
       {#if lib === 'Shelf'}
         <Shelf />
       {:else if lib === 'Archives'}
-        <Archives {openGhostnet} />
+        <Archives {openIntel} />
       {:else}
         <Library bind:cardToOpen />
       {/if}
-    {:else if group === 'Ghostnet'}
-      <Ghostnet {openArchives} />
+    {:else if group === 'Intel'}
+      <Intel {openArchives} />
     {:else if group === 'Academy'}
       <Academy />
     {:else if group === 'Maps'}

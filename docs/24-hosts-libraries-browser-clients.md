@@ -87,7 +87,7 @@ Design points:
 
 - The interface reaches the backend through one file, `src/lib/api.ts`. That is the seam this plan uses.
 - The backend is about 75 Tauri commands in `src-tauri/src/lib.rs` (library, Ask, Shelf, inventory,
-  Academy, music, maps, settings, Ghostnet and others), plus three custom address schemes the interface
+  Academy, music, maps, settings, Intel and others), plus three custom address schemes the interface
   uses directly: `cindrix-tiles` (maps), `cindrix-music` and `cindrix-zim` (`zimview.rs`).
 - `kiwix-serve` is already an HTTP server. `library_share` can already offer the archives on the local
   network; it is off at every start.
@@ -112,7 +112,7 @@ steps 3 onward wait for the real Windows test (doc 22).
    primary library still holds your files, settings, models and engines: an allowed Vault drive first,
    then an allowed Hub drive, then the program's own drive, then the first allowed one. (The downloadable
    build is a folder with a Go marker, so without the Vault-first rule it would have stayed the main drive.) **Not yet:** Shelf books, music and maps from the other libraries,
-   labels on Ghostnet results, and removing an archive that lives in a non-primary library.
+   labels on Intel results, and removing an archive that lives in a non-primary library.
 2. **One transport seam.** Move command logic that is still in `lib.rs` into `core/`, and put the Tauri
    calls behind an interface in `api.ts` so a second transport can be added without touching screens.
 3. **Read-only HTTP server** over `core/`, and a browser build of the same Svelte interface using the HTTP

@@ -109,7 +109,7 @@ impl Library {
         format!("[{}]", parts.join(","))
     }
 
-    /// Titles matching `term` in EVERY archive, for the Ghostnet search box. Up to `per_book` come
+    /// Titles matching `term` in EVERY archive, for the Intel search box. Up to `per_book` come
     /// from each archive and the list alternates between archives (everyone's best first), so a
     /// huge encyclopedia does not push a small manual off the list. At most `total` are returned.
     pub fn suggest_all(&self, term: &str, per_book: usize, total: usize) -> Vec<Hit> {

@@ -5,7 +5,7 @@
     type LibraryStatus, type CrawlStatus, type CopyStatus,
   } from '../lib/api';
 
-  let { openGhostnet }: { openGhostnet: () => void } = $props();
+  let { openIntel }: { openIntel: () => void } = $props();
 
   let st: LibraryStatus = $state({ archives: [], ready: false, url: null, shared: false, lan_url: null, drive: null, folder: '', online: false });
   const manyLibraries = $derived(new Set(st.archives.map((a) => a.library)).size > 1);
@@ -102,9 +102,9 @@
   <div class="top">
     <div>
       <h1>Archives</h1>
-      <p class="sub">The big offline library: Wikipedia, medical guides, books and websites you saved, stored on this drive as .zim files. Read them in Ghostnet, no internet needed. New archives you copy into the library folder are picked up by themselves.</p>
+      <p class="sub">The big offline library: Wikipedia, medical guides, books and websites you saved, stored on this drive as .zim files. Read them in Intel, no internet needed. New archives you copy into the library folder are picked up by themselves.</p>
     </div>
-    <button class="btn primary" onclick={openGhostnet}>Read them in Ghostnet →</button>
+    <button class="btn primary" onclick={openIntel}>Read them in Intel →</button>
   </div>
 
   <div class="panel drive">

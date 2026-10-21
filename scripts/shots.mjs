@@ -77,10 +77,10 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   await page.getByRole('button', { name: '‹ Shelf' }).click();
   await page.getByRole('button', { name: 'Archives', exact: true }).click();
   await shoot(page, `${label}-1f-archives`);
-  // Ghostnet, the offline internet: the start page, the browser, bookmarks, tabs and a search across every archive.
-  await page.getByRole('button', { name: 'Ghostnet', exact: true }).click();
+  // Intel, the offline internet: the start page, the browser, bookmarks, tabs and a search across every archive.
+  await page.getByRole('button', { name: 'Intel', exact: true }).click();
   await page.getByRole('button', { name: /Sample library \(preview\)/ }).waitFor();
-  await shoot(page, `${label}-1g-ghostnet-start`);
+  await shoot(page, `${label}-1g-intel-start`);
   await page.getByRole('button', { name: /Sample library \(preview\)/ }).click();
   const zim = page.frameLocator('iframe[title="Archive page"]');
   await zim.getByRole('heading', { name: 'Sample library' }).waitFor();
@@ -98,10 +98,10 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   await page.getByLabel('Search every archive').fill('water');
   await page.getByRole('button', { name: 'Search', exact: true }).click();
   await page.getByRole('heading', { name: /Results for/ }).waitFor();
-  await shoot(page, `${label}-1h-ghostnet-search`);
+  await shoot(page, `${label}-1h-intel-search`);
   await page.getByRole('button', { name: /^Bookmarks/ }).click();
   await page.locator('.marks').getByRole('button', { name: /^Water/ }).waitFor();
-  await shoot(page, `${label}-1i-ghostnet-bookmarks`);
+  await shoot(page, `${label}-1i-intel-bookmarks`);
   await page.getByRole('button', { name: /^Bookmarks/ }).click();
   await page.getByRole('button', { name: 'Library', exact: true }).click();
   await page.getByRole('button', { name: 'Emergency cards', exact: true }).click();

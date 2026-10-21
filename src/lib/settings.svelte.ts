@@ -5,7 +5,7 @@
 // match src-tauri/src/settings.rs and the calls in src-tauri/src/lib.rs.
 import { settingsLoad, settingsSave } from './api';
 
-export const SCREENS = ['Ask', 'Library', 'Ghostnet', 'Academy', 'Maps', 'Music', 'Plan'] as const;
+export const SCREENS = ['Ask', 'Library', 'Intel', 'Academy', 'Maps', 'Music', 'Plan'] as const;
 export type Screen = (typeof SCREENS)[number];
 
 export type Settings = {
@@ -26,9 +26,9 @@ export type Settings = {
   // Library
   autoScanShelf: boolean;
   autoRestartLibrary: boolean;
-  // Ghostnet
-  ghostnetStart: 'archives' | 'first';
-  ghostnetRestoreTabs: boolean;
+  // Intel
+  intelStart: 'archives' | 'first';
+  intelRestoreTabs: boolean;
   // Music
   showMiniPlayer: boolean;
   scanMusicOnStart: boolean;
@@ -55,8 +55,8 @@ export const DEFAULTS: Settings = {
   extraFolders: [],
   autoScanShelf: true,
   autoRestartLibrary: true,
-  ghostnetStart: 'archives',
-  ghostnetRestoreTabs: false,
+  intelStart: 'archives',
+  intelRestoreTabs: false,
   showMiniPlayer: true,
   scanMusicOnStart: true,
   mapUnits: 'imperial',
@@ -79,7 +79,7 @@ export const CHOICES: Record<string, readonly string[]> = {
   startScreen: SCREENS,
   answerLength: ['short', 'normal', 'long'],
   searchSpeed: ['quick', 'normal', 'thorough'],
-  ghostnetStart: ['archives', 'first'],
+  intelStart: ['archives', 'first'],
   mapUnits: ['imperial', 'metric'],
 };
 
@@ -87,7 +87,12 @@ export const CHOICES: Record<string, readonly string[]> = {
  *  of the wrong kind gets its default. */
 export function sanitize(raw: unknown): Settings {
   const out: Record<string, unknown> = {};
-  const r = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
+  const r = raw && typeof raw === 'object' ? { ...(raw as Record<string, unknown>) } : {};
+  // Intel was called Ghostnet at first: carry over what was already saved under the old name.
+  for (const [oldKey, newKey] of [['ghostnetStart', 'intelStart'], ['ghostnetRestoreTabs', 'intelRestoreTabs']]) {
+    if (r[newKey] === undefined && r[oldKey] !== undefined) r[newKey] = r[oldKey];
+  }
+  if (r.startScreen === 'Ghostnet') r.startScreen = 'Intel';
   for (const key of Object.keys(DEFAULTS)) {
     const d = (DEFAULTS as Record<string, unknown>)[key];
     const v = r[key];

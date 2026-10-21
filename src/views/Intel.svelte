@@ -6,7 +6,7 @@
   } from '../lib/api';
   import { settings } from '../lib/settings.svelte';
 
-  // Ghostnet is the offline internet: a small browser for the archives (.zim files) on the drive.
+  // Intel is the offline internet: a small browser for the archives (.zim files) on the drive.
   // Pages come from the archives through a private address, so nothing here touches the network.
   let { openArchives }: { openArchives: () => void } = $props();
 
@@ -65,8 +65,8 @@
   }
   function titleOf(t: Tab): string {
     const l = t.history[t.idx];
-    if (!l) return 'Ghostnet';
-    if (l.t === 'start') return 'Ghostnet';
+    if (!l) return 'Intel';
+    if (l.t === 'start') return 'Intel';
     if (l.t === 'results') return 'Search: ' + l.term;
     return titles[l.path] || bookTitle(bookOf(l.path)) || 'Page';
   }
@@ -92,7 +92,7 @@
       const s = JSON.parse(await zimBookmarksLoad()) as { items?: ZimBookmark[]; zoom?: number; tabs?: { history?: unknown; idx?: unknown }[]; current?: number };
       if (Array.isArray(s.items)) bookmarks = s.items.filter((b) => b && typeof b.path === 'string' && typeof b.book === 'string').slice(0, 2000);
       if (typeof s.zoom === 'number') zoom = Math.min(200, Math.max(70, s.zoom));
-      if (settings.values.ghostnetRestoreTabs && Array.isArray(s.tabs)) {
+      if (settings.values.intelRestoreTabs && Array.isArray(s.tabs)) {
         for (const raw of s.tabs.slice(0, MAX_TABS)) {
           const h = Array.isArray(raw?.history) ? (raw.history.map(cleanLoc).filter((l): l is Loc => l !== null) as Loc[]) : [];
           if (!h.length) continue;
@@ -109,7 +109,7 @@
     if (!tabs.length) newTab();
     try { st = await libraryStatus(); } catch { /* the plain Kiwix link just stays hidden */ }
     await refreshBooks();
-    if (!restored && settings.values.ghostnetStart === 'first' && books.length) {
+    if (!restored && settings.values.intelStart === 'first' && books.length) {
       const t = cur();
       if (t && t.history.length === 1 && t.history[0].t === 'start') await go(homeOf(books[0].name));
     }
@@ -138,7 +138,7 @@
 
   function save() {
     const out: Record<string, unknown> = { version: 1, zoom, items: bookmarks };
-    if (settings.values.ghostnetRestoreTabs) {
+    if (settings.values.intelRestoreTabs) {
       out.tabs = tabs.map((t) => {
         const h = t.history.slice(-30);
         return { history: h, idx: Math.max(0, t.idx - (t.history.length - h.length)) };
@@ -224,7 +224,7 @@
     if (!frame || e.source !== frame.contentWindow) return;
     const d = e.data as { cx?: string; url?: string; path?: string; title?: string } | null;
     if (!d || typeof d !== 'object') return;
-    if (d.cx === 'external') { notice = 'That link goes to the internet, so it is not opened. Ghostnet works offline.'; return; }
+    if (d.cx === 'external') { notice = 'That link goes to the internet, so it is not opened. Intel works offline.'; return; }
     if (d.cx === 'nav' && typeof d.path === 'string') { void go({ t: 'page', path: d.path }); return; }
     if (d.cx === 'page' && typeof d.url === 'string') {
       const p = toPath(d.url);
@@ -309,7 +309,7 @@
   <div class="bar">
     <button class="btn" onclick={back} disabled={!tab || tab.idx <= 0} aria-label="Back">←</button>
     <button class="btn" onclick={forward} disabled={!tab || tab.idx >= tab.history.length - 1} aria-label="Forward">→</button>
-    <button class="btn" onclick={() => go({ t: 'start' })} aria-label="Ghostnet home">⌂</button>
+    <button class="btn" onclick={() => go({ t: 'start' })} aria-label="Intel home">⌂</button>
     <div class="find">
       <input class="input" type="search" placeholder="Search every archive" aria-label="Search every archive" bind:value={term} oninput={onType}
         onkeydown={(e) => { if (e.key === 'Enter') submit(); if (e.key === 'Escape') suggestions = []; }} />
@@ -371,7 +371,7 @@
       </div>
     {:else}
       <div class="scroll">
-        <h1>Ghostnet</h1>
+        <h1>Intel</h1>
         <p class="sub">The offline internet. Everything here is stored on this drive, so it works with no signal. Open an archive below, or search all of them at once.</p>
         {#if books.length === 0}
           <div class="empty">
@@ -411,7 +411,7 @@
         <button class="linkbtn" onclick={openInServer}>Open {bookTitle(bookHere)} in the library server</button>
         <span>·</span>
       {/if}
-      <button class="linkbtn" onclick={() => { plainUrl = null; plain = !plain; }}>{plain ? 'Back to Ghostnet' : 'Use the plain Kiwix screen instead'}</button>
+      <button class="linkbtn" onclick={() => { plainUrl = null; plain = !plain; }}>{plain ? 'Back to Intel' : 'Use the plain Kiwix screen instead'}</button>
     {/if}
   </div>
 </section>

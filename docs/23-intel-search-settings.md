@@ -1,12 +1,12 @@
-# 23. Ghostnet, what the assistant searches, and settings
+# 23. Intel, what the assistant searches, and settings
 
-## Ghostnet: the offline internet
+## Intel: the offline internet
 
-Ghostnet is its own tab in the top menu (it goes with the library, so Go, Vault and Hub all have it).
+Intel is its own tab in the top menu (it goes with the library, so Go, Vault and Hub all have it).
 It is a small browser for the ZIM archives on the drive. Nothing in it touches the network.
 
 - **Start page.** One card per archive (title, the archive's own description, number of pages, size),
-  plus your bookmarks. A new tab opens here, or in the first archive (Settings, Ghostnet).
+  plus your bookmarks. A new tab opens here, or in the first archive (Settings, Intel).
 - **Search every archive.** The box at the top searches the titles in all archives at once; matches are
   shown grouped by archive and alternate between archives, so a huge encyclopedia does not push a small
   manual off the list. While an archive is open, "Search inside" searches the words in its pages (full
@@ -52,7 +52,7 @@ One file, `user/settings.json`, on the drive. The list, defaults and ranges are 
 | General | interface size (85 to 150%), start screen, status bar |
 | Assistant | model choice; what it may search (books, archives, files, saved websites); passages read (1 to 6); answer length; how long to look through files; show sources; extra folders |
 | Library | put drive books on the Shelf automatically; pick up new archives by themselves |
-| Ghostnet | what a new tab opens on; remember open tabs |
+| Intel | what a new tab opens on; remember open tabs |
 | Music | small player at the bottom; scan the music folder at start |
 | Maps | miles or kilometres |
 | Plan | act-now days, check days, use-by window in months (Inventory and What fails) |
