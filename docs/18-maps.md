@@ -29,12 +29,24 @@ Status: the saved-map features are built and tested. The tile viewer is **writte
 The map never reaches the internet: tiles come from the file on the drive. The shell's page-security setting allows only the `cindrix-tiles` address for this.
 
 ## Getting map data (run on your PC; needs internet and time)
-```
-powershell -File scripts\get-maps.ps1 -Target D:\Cindrix
-```
-This downloads the `pmtiles` tool from its GitHub releases, finds a recent Protomaps build, and extracts the contiguous US into `maps\us\street\conus.pmtiles` (add `-Regions conus,alaska,hawaii`). It checks the file starts like a real PMTiles v3 file and writes `SOURCE.txt` beside it. `-MaxZoom 14` or `13` gives a much smaller map; each zoom level roughly doubles the size. The planet file is about 120 GB, and the manifest's 15 GB guess for the US at full zoom is **unmeasured**. `check_drive` then verifies the pack (doc 7).
 
-Things in the script taken from memory or documentation and **not tried**: the `build.protomaps.com/<date>.pmtiles` address pattern (the documented list of builds is https://maps.protomaps.com/builds; pass one with `-Source` if the guess fails), the name of the Windows download on the `pmtiles` releases page, and the `--bbox` and `--maxzoom` options of `pmtiles extract` (documented at docs.protomaps.com/pmtiles/cli).
+**A small map of your own area first** (a few MB to a few hundred MB; the right size for a first test):
+```
+powershell -ExecutionPolicy Bypass -File scripts\get-maps.ps1 -Target D:\Cindrix -Bbox:"west,south,east,north" -Name my-area -MaxZoom 14
+```
+Replace `west,south,east,north` with four decimal numbers (US longitudes are negative), for example `-Bbox:"-105.10,39.62,-104.80,39.82"`. To find yours: open openstreetmap.org, zoom to the area, press Export, and read the left, bottom, right and top values. Write `-Bbox:"..."` with the colon so the minus sign is not mistaken for another option.
+
+**The whole contiguous US:**
+```
+powershell -ExecutionPolicy Bypass -File scripts\get-maps.ps1 -Target D:\Cindrix
+```
+The script downloads the `pmtiles` tool from its GitHub releases, finds the newest Protomaps build, and extracts the area into `maps\us\street\<name>.pmtiles` (`conus.pmtiles` for the US; add `-Regions conus,alaska,hawaii`). It checks the file starts like a real PMTiles v3 file and adds a section to `SOURCE.txt` beside it. `-MaxZoom 14` or `13` gives a much smaller map; each zoom level roughly doubles the size. The planet file is about 120 GB, and the manifest's 15 GB guess for the US at full zoom is **unmeasured**. `check_drive` then verifies the pack (doc 7).
+
+**The Windows download already has a test map.** Every Windows build in CI runs this very script for a small area (about 0.3 by 0.2 degrees, zoom 0 to 13) and puts the result in the portable folder's `maps` folder. That area is around Denver, Colorado, chosen only because it is well mapped; it is not anyone's home. If the Maps screen looks empty, pan there, or cut your own area as above. If that CI step failed, the download has no `maps` folder and the log of the "Windows app build" job says why.
+
+The build is found from the list the Protomaps builds page reads (`build-metadata.protomaps.dev/builds.json`), then by trying recent dates on `build.protomaps.com` as a fallback; pass an address with `-Source` if both fail (the documented list is https://maps.protomaps.com/builds, and the Protomaps documentation warns that these addresses may change).
+
+Still **not tried by a person**: the Windows run on your own machine. The `pmtiles extract` options `--bbox` and `--maxzoom` are as documented at docs.protomaps.com/pmtiles/cli.
 
 ## What to check first when you run it
 1. The extract finishes and `check_drive` passes.

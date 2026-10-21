@@ -171,6 +171,58 @@ jobs:
           name: zim-check-log
           path: ${{ runner.temp }}/zimlog.txt
 
+  search-check:
+    name: Assistant search works against real kiwix-serve and a real Wikipedia archive
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Get kiwix-serve and a small real archive
+        shell: bash
+        run: |
+          set -e
+          cd "$RUNNER_TEMP"
+          curl -fsSL https://download.kiwix.org/release/kiwix-tools/ -o kt.html
+          kt=$(grep -oE 'kiwix-tools_linux-x86_64-[0-9.]+\.tar\.gz' kt.html | sort -uV | tail -n1 || true)
+          [ -n "$kt" ] || { echo "::error::no kiwix-tools linux download found"; exit 1; }
+          curl -fsSL -o kt.tgz "https://download.kiwix.org/release/kiwix-tools/$kt"
+          mkdir -p kt && tar xzf kt.tgz -C kt --strip-components=1
+          curl -fsSL https://download.kiwix.org/zim/wikipedia/ -o wp.html
+          zim=""
+          # smallest real Wikipedia archives first; the 100-article ones are a few MB to a few hundred MB
+          for kind in wikipedia_en_100_mini wikipedia_en_100_nopic wikipedia_en_100_maxi wikipedia_en_simple_all_mini; do
+            zim=$(grep -oE "${kind}_[0-9-]+\.zim" wp.html | sort -uV | tail -n1 || true)
+            [ -n "$zim" ] && break
+          done
+          [ -n "$zim" ] || { echo "::error::no small Wikipedia archive found in the Kiwix download listing"; exit 1; }
+          echo "::notice::archive: $zim ($kt)"
+          curl -fsSL -o real.zim "https://download.kiwix.org/zim/wikipedia/$zim"
+          ls -l real.zim
+      - name: Run the assistant's search against it
+        shell: bash
+        run: |
+          cd "$RUNNER_TEMP"
+          ./kt/kiwix-serve --port 8097 --address 127.0.0.1 real.zim > serve.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8097/catalog/v2/entries > /dev/null && break; sleep 1; done
+          cd "$GITHUB_WORKSPACE/core"
+          set +e
+          cargo run -q --example probe_search -- 8097 \
+            "What is the Earth?" "Tell me about World War II" "Who was Albert Einstein?" "How does the Sun produce energy?" "How do I purify water by boiling?" \
+            > "$RUNNER_TEMP/search-log.txt" 2>&1
+          code=$?
+          head -60 "$RUNNER_TEMP/search-log.txt" | while IFS= read -r l; do echo "::notice::${l}"; done
+          echo "probe exit $code"
+          exit $code
+      - name: Keep the log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: search-check-log
+          path: |
+            ${{ runner.temp }}/search-log.txt
+            ${{ runner.temp }}/serve.log
+
   drive-plan:
     name: Drive builder finds every download (dry run)
     runs-on: windows-latest
@@ -190,6 +242,14 @@ jobs:
             Write-Host "::notice::plan $ed (exit $code): $text"
             if ($code -ne 0) { Write-Host "::error::drive plan for $ed failed (exit $code): $text"; $fail = 1 }
           }
+          # the short list used for a first real test (docs/22-real-test.md)
+          $out = & powershell -NoProfile -File scripts\build-drive.ps1 -Target "$env:RUNNER_TEMP\first-test" -Edition go -Only qwen35-2b,fema-guides,wikem -DryRun 2>&1 | Out-String
+          $code = $LASTEXITCODE
+          Write-Host $out
+          $text = ($out -split "`r?`n" | Where-Object { $_.Trim() } | ForEach-Object { $_.Trim() }) -join ' | '
+          if ($text.Length -gt 3500) { $text = $text.Substring(0, 3500) }
+          Write-Host "::notice::plan first-test (exit $code): $text"
+          if ($code -ne 0) { Write-Host "::error::first-test plan failed (exit $code): $text"; $fail = 1 }
           exit $fail
 
   windows:
@@ -249,6 +309,23 @@ jobs:
           if [ ! -f out/Cindrix/engines/llama-server.exe ]; then echo "::error::llama-server.exe missing: $(ls -R out/Cindrix/engines | tr '\n' ' ')"; exit 1; fi
           printf 'Put a Qwen3.5 .gguf model file in this folder (for example a 2B or 4B Q4 file).\r\n' > out/Cindrix/models/README.txt
           printf 'Run cindrix-ops.exe. Needs Microsoft WebView2 (already on Windows 11). Put a model file in the models folder.\r\n' > out/Cindrix/README.txt
+      - name: Include the drive and map scripts (so a downloaded copy can fetch its own library and maps)
+        shell: bash
+        run: |
+          mkdir -p out/Cindrix/scripts out/Cindrix/manifest
+          cp scripts/build-drive.ps1 scripts/get-maps.ps1 out/Cindrix/scripts/
+          cp manifest/content.json out/Cindrix/manifest/
+      - name: Add a small test map (this also runs the real map download script)
+        continue-on-error: true
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Continue'
+          $work = Join-Path $env:RUNNER_TEMP 'mapwork'
+          # A small area at zoom 0 to 13: a few MB, enough to see the map viewer draw roads, water and buildings.
+          powershell -NoProfile -File scripts\get-maps.ps1 -Target $work -Bbox:'-105.10,39.62,-104.80,39.82' -Name test-area -MaxZoom 13
+          if ($LASTEXITCODE -ne 0) { throw "get-maps.ps1 failed (exit $LASTEXITCODE)" }
+          Copy-Item -Recurse -Force (Join-Path $work 'maps') 'out\Cindrix\maps'
+          Get-ChildItem -Recurse 'out\Cindrix\maps' -File | ForEach-Object { Write-Host ("map file: {0} ({1:N1} MB)" -f $_.FullName, ($_.Length / 1MB)) }
       - uses: actions/upload-artifact@v4
         with:
           name: Cindrix-windows-portable

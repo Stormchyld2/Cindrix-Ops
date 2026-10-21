@@ -132,7 +132,55 @@ pub fn decode_entities(s: &str) -> String {
     s.replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", "\"").replace("&#39;", "'").replace("&apos;", "'").replace("&nbsp;", " ").replace("&amp;", "&")
 }
 
-/// (title, link) for each result in kiwix-serve's XML search output.
+/// Percent-encode only the bytes that cannot appear in a request line (spaces, control
+/// characters, anything outside printable ASCII). Everything else, including any `%XX`
+/// already there, is left alone.
+fn encode_unsafe(s: &str) -> String {
+    let mut o = String::new();
+    for b in s.bytes() {
+        if (0x21..=0x7e).contains(&b) {
+            o.push(b as char);
+        } else {
+            o.push_str(&format!("%{:02X}", b));
+        }
+    }
+    o
+}
+
+/// The text inside `<![CDATA[ ... ]]>`, if that is how the value was written.
+fn strip_cdata(s: &str) -> Option<&str> {
+    s.trim().strip_prefix("<![CDATA[").and_then(|x| x.strip_suffix("]]>"))
+}
+
+/// An XML text value: CDATA is taken as it is, anything else has its entities decoded.
+fn xml_text(s: &str) -> String {
+    match strip_cdata(s) {
+        Some(x) => x.trim().to_string(),
+        None => decode_entities(s).trim().to_string(),
+    }
+}
+
+/// The part of a result link the library server is asked for, always starting with `/`.
+/// Depending on the kiwix-serve version a link comes as `/content/book/A/Page` or as a full
+/// `http://host:port/content/book/A/Page`; either way only the path is kept (so the program
+/// only ever talks to its own server), and characters that cannot sit in a request line are encoded.
+pub fn link_path(link: &str) -> String {
+    let text = xml_text(link);
+    let path: String = if let Some(rest) = text.strip_prefix("http://").or_else(|| text.strip_prefix("https://")) {
+        match rest.find('/') {
+            Some(i) => rest[i..].to_string(),
+            None => "/".to_string(),
+        }
+    } else if text.starts_with('/') {
+        text.clone()
+    } else {
+        format!("/{}", text)
+    };
+    encode_unsafe(&path)
+}
+
+/// (title, link) for each result in kiwix-serve's XML search output. Links are paths
+/// (see `link_path`). Titles and links may be plain text or CDATA.
 pub fn parse_search(xml: &str) -> Vec<(String, String)> {
     let mut out = Vec::new();
     let mut rest = xml;
@@ -141,9 +189,141 @@ pub fn parse_search(xml: &str) -> Vec<(String, String)> {
         let end = after.find("</item>").unwrap_or(after.len());
         let item = &after[..end];
         if let (Some(t), Some(l)) = (between(item, "<title>", "</title>"), between(item, "<link>", "</link>")) {
-            out.push((decode_entities(t).trim().to_string(), decode_entities(l).trim().to_string()));
+            let link = link_path(l);
+            if link.len() > 1 {
+                out.push((xml_text(t), link));
+            }
         }
         rest = &after[end..];
+    }
+    out
+}
+
+/// The question as search words: lower case, without little words like "how" and "the",
+/// each word once, in the order asked. A whole sentence is a poor full-text query.
+pub fn keywords(question: &str) -> Vec<String> {
+    // a few more little words than the answer path's list: they only hurt a full-text query
+    const LITTLE: &[&str] = &[
+        "by", "from", "as", "so", "but", "not", "this", "that", "there", "was", "were", "has", "have", "had", "will", "would", "could", "your", "our", "they", "them", "than", "then", "into", "about", "which", "who", "where", "why",
+    ];
+    let mut seen: Vec<String> = Vec::new();
+    for t in retrieval::tokens(question) {
+        if !LITTLE.contains(&t.as_str()) && !seen.contains(&t) {
+            seen.push(t);
+        }
+    }
+    seen
+}
+
+/// The top-level `{ ... }` objects of a JSON array. String contents (which may hold braces
+/// or escaped quotes) are skipped properly.
+fn json_objects(s: &str) -> Vec<&str> {
+    let (mut out, mut depth, mut start, mut in_str, mut esc) = (Vec::new(), 0i32, 0usize, false, false);
+    for (i, &c) in s.as_bytes().iter().enumerate() {
+        if in_str {
+            if esc {
+                esc = false;
+            } else if c == b'\\' {
+                esc = true;
+            } else if c == b'"' {
+                in_str = false;
+            }
+            continue;
+        }
+        match c {
+            b'"' => in_str = true,
+            b'{' => {
+                if depth == 0 {
+                    start = i;
+                }
+                depth += 1;
+            }
+            b'}' if depth > 0 => {
+                depth -= 1;
+                if depth == 0 {
+                    out.push(&s[start..=i]);
+                }
+            }
+            _ => {}
+        }
+    }
+    out
+}
+
+/// Decode a JSON string body: `s` starts just after the opening quote and the decoding stops at the closing one.
+fn json_unescape(s: &str) -> String {
+    let chars: Vec<char> = s.chars().collect();
+    let hex4 = |at: usize| -> Option<u32> {
+        let h: String = chars.get(at..at + 4)?.iter().collect();
+        u32::from_str_radix(&h, 16).ok()
+    };
+    let mut out = String::new();
+    let mut i = 0;
+    while i < chars.len() {
+        match chars[i] {
+            '"' => break,
+            '\\' => {
+                i += 1;
+                match chars.get(i) {
+                    Some('n') => out.push('\n'),
+                    Some('t') => out.push('\t'),
+                    Some('r') => out.push('\r'),
+                    Some('b') => out.push('\u{8}'),
+                    Some('f') => out.push('\u{c}'),
+                    Some('u') => {
+                        if let Some(n) = hex4(i + 1) {
+                            i += 4;
+                            let mut code = n;
+                            // a high surrogate is followed by `\uXXXX`, its low half
+                            if (0xD800..0xDC00).contains(&n) && chars.get(i + 1) == Some(&'\\') && chars.get(i + 2) == Some(&'u') {
+                                if let Some(lo) = hex4(i + 3).filter(|l| (0xDC00..0xE000).contains(l)) {
+                                    code = 0x10000 + ((n - 0xD800) << 10) + (lo - 0xDC00);
+                                    i += 6;
+                                }
+                            }
+                            out.push(char::from_u32(code).unwrap_or('\u{fffd}'));
+                        }
+                    }
+                    Some(c) => out.push(*c), // \" \\ \/ and anything else stand for themselves
+                    None => break,
+                }
+            }
+            c => out.push(c),
+        }
+        i += 1;
+    }
+    out
+}
+
+/// The string value of `"key": "..."` inside one JSON object, if it has one.
+fn json_string(obj: &str, key: &str) -> Option<String> {
+    let pat = format!("\"{}\"", key);
+    let mut from = 0;
+    while let Some(i) = obj[from..].find(&pat) {
+        let after = from + i + pat.len();
+        if let Some(r) = obj[after..].trim_start().strip_prefix(':') {
+            return r.trim_start().strip_prefix('"').map(json_unescape);
+        }
+        from = after;
+    }
+    None
+}
+
+/// (title, link) for each title match in kiwix-serve's `/suggest` JSON. This is the fallback
+/// when full-text search is not available (an archive with no search index answers a search with an error).
+pub fn parse_suggest(json: &str, book: &str) -> Vec<(String, String)> {
+    let mut out = Vec::new();
+    for obj in json_objects(json) {
+        if json_string(obj, "kind").as_deref() == Some("pattern") {
+            continue; // the "containing ..." entry, not an article
+        }
+        let Some(path) = json_string(obj, "path").map(|p| p.trim().to_string()).filter(|p| !p.is_empty()) else { continue };
+        let title = json_string(obj, "label").or_else(|| json_string(obj, "value")).unwrap_or_else(|| path.clone());
+        // Some versions give the whole address, others the path inside the archive.
+        let link = if path.starts_with("/content/") || path.starts_with("http") { link_path(&path) } else { link_path(&format!("/content/{}/{}", book, path.trim_start_matches('/'))) };
+        if link.len() > 1 {
+            out.push((title.trim().to_string(), link));
+        }
     }
     out
 }
@@ -238,20 +418,14 @@ fn book_names(port: u16) -> Vec<String> {
 /// results are mixed best-first so that a small archive (a saved website, a repair manual) is
 /// not buried by Wikipedia. Falls back to one all-library search if the book list is unavailable.
 pub fn search(port: u16, question: &str, limit: usize) -> Vec<Passage> {
-    let q = url_encode(question);
     let names = book_names(port);
     let mut hits: Vec<(usize, String, String)> = Vec::new(); // (rank inside its book, title, link)
-    let queries: Vec<String> = if names.is_empty() {
-        vec![format!("/search?pattern={}&pageLength={}&format=xml", q, limit)]
-    } else {
-        names.iter().map(|n| format!("/search?content={}&pattern={}&pageLength={}&format=xml", url_encode(n), q, limit)).collect()
-    };
-    for path in queries {
-        if let Ok((200, body)) = get(port, &path) {
-            for (rank, (title, link)) in parse_search(&String::from_utf8_lossy(&body)).into_iter().take(limit).enumerate() {
-                if !hits.iter().any(|h| h.2 == link) {
-                    hits.push((rank, title, link));
-                }
+    // No book list: one search over the whole library (no title fallback, which needs a book name).
+    let targets: Vec<Option<String>> = if names.is_empty() { vec![None] } else { names.into_iter().map(Some).collect() };
+    for target in targets {
+        for (rank, (title, link)) in book_hits(port, target.as_deref(), question, limit).into_iter().enumerate() {
+            if !hits.iter().any(|h| h.2 == link) {
+                hits.push((rank, title, link));
             }
         }
     }
@@ -261,19 +435,74 @@ pub fn search(port: u16, question: &str, limit: usize) -> Vec<Passage> {
         if passages.len() >= limit {
             break;
         }
-        let link = if link.starts_with('/') { link } else { format!("/{}", link) };
-        if let Ok((200, body)) = get(port, &link) {
-            let text = html_to_text(&String::from_utf8_lossy(&body));
+        // `follow` also refuses any address outside the library and follows kiwix-serve's redirects
+        if let Ok((reply, path)) = follow(port, &link) {
+            if reply.status != 200 {
+                continue;
+            }
+            let text = html_to_text(&String::from_utf8_lossy(&reply.body));
             if text.len() < 80 {
                 continue;
             }
             let text = best_chunk(&title, &text, question);
             // /content/<book>/A/<article>
-            let book = link.trim_start_matches("/content/").split('/').next().unwrap_or("library").replace('_', " ");
+            let book = path.trim_start_matches("/content/").split('/').next().unwrap_or("library").replace('_', " ");
             passages.push(Passage { source: book, heading: title, text, score: 6.0 - rank as f64 });
         }
     }
     passages
+}
+
+/// Up to `limit` (title, link) matches for the question in one book (or in the whole library
+/// when `book` is None). Order of attempts, stopping at the first that finds something:
+/// 1. full-text search with the question's key words,
+/// 2. full-text search with just its two longest words (a long query may match nothing),
+/// 3. title search (`/suggest`), one key word at a time. It works on every archive, including
+///    ones saved without a search index, where steps 1 and 2 answer with an error.
+fn book_hits(port: u16, book: Option<&str>, question: &str, limit: usize) -> Vec<(String, String)> {
+    let kw = keywords(question);
+    let mut by_length = kw.clone();
+    by_length.sort_by(|a, b| b.chars().count().cmp(&a.chars().count())); // stable: ties keep the order asked
+    let mut patterns: Vec<String> = Vec::new();
+    if kw.is_empty() {
+        patterns.push(question.trim().to_string());
+    } else {
+        patterns.push(kw.iter().take(6).cloned().collect::<Vec<_>>().join(" "));
+        if kw.len() > 2 {
+            patterns.push(by_length.iter().take(2).cloned().collect::<Vec<_>>().join(" "));
+        }
+    }
+    for pat in patterns.iter().filter(|p| !p.is_empty()) {
+        let path = match book {
+            Some(n) => format!("/search?content={}&pattern={}&pageLength={}&format=xml", url_encode(n), url_encode(pat), limit),
+            None => format!("/search?pattern={}&pageLength={}&format=xml", url_encode(pat), limit),
+        };
+        if let Ok((200, body)) = get(port, &path) {
+            let mut found = parse_search(&String::from_utf8_lossy(&body));
+            if !found.is_empty() {
+                found.truncate(limit);
+                return found;
+            }
+        }
+    }
+    let mut found: Vec<(String, String)> = Vec::new();
+    if let Some(n) = book {
+        for term in by_length.iter().take(3) {
+            let path = format!("/suggest?content={}&term={}&count={}", url_encode(n), url_encode(term), limit);
+            if let Ok((200, body)) = get(port, &path) {
+                for (title, link) in parse_suggest(&String::from_utf8_lossy(&body), n) {
+                    if !found.iter().any(|f| f.1 == link) {
+                        found.push((title, link));
+                    }
+                }
+            }
+            if found.len() >= limit {
+                break;
+            }
+        }
+    }
+    found.truncate(limit);
+    found
 }
 
 // ---------- the in-app reader: a safe window onto kiwix-serve ----------
@@ -614,5 +843,163 @@ mod tests {
         assert_eq!(p.len(), 3, "{:?}", sources);
         // the small archive's best hit is not pushed out by the big one's second hit
         assert!(sources.contains(&"manual") && sources.contains(&"wiki"), "{:?}", sources);
+    }
+
+    #[test]
+    fn links_become_paths_whatever_the_server_version_sends() {
+        assert_eq!(link_path("/content/wiki/A/Water"), "/content/wiki/A/Water");
+        assert_eq!(link_path("http://127.0.0.1:8123/content/wiki/A/Water"), "/content/wiki/A/Water");
+        assert_eq!(link_path("https://host.example:8080/content/wiki/A/Water"), "/content/wiki/A/Water");
+        assert_eq!(link_path("content/wiki/A/Water"), "/content/wiki/A/Water");
+        assert_eq!(link_path("  /content/wiki/A/Water &amp; more\n"), "/content/wiki/A/Water%20&%20more");
+        assert_eq!(link_path("/content/wiki/A/Café"), "/content/wiki/A/Caf%C3%A9");
+        assert_eq!(link_path("<![CDATA[http://h/content/b/A/X]]>"), "/content/b/A/X");
+        // a link to another site keeps only its path, so the program still only asks its own server
+        assert_eq!(link_path("http://evil.example/content/b/A/X"), "/content/b/A/X");
+        assert_eq!(link_path("http://evil.example"), "/");
+    }
+
+    #[test]
+    fn results_may_use_cdata_and_full_addresses() {
+        let xml = "<?xml version=\"1.0\"?><rss><channel><title>Search: x</title><link>http://127.0.0.1:8080/search?pattern=x</link>\
+            <item><title><![CDATA[Water & Health]]></title><link>http://127.0.0.1:8080/content/wiki_en/A/Water</link><description>d</description></item>\
+            <item><title>No link here</title></item>\
+            <item><title>Second</title><link>/content/wiki_en/A/Second_page</link></item></channel></rss>";
+        let r = parse_search(xml);
+        // the channel's own title and link are not results; an item without a link is skipped
+        assert_eq!(r, vec![("Water & Health".to_string(), "/content/wiki_en/A/Water".to_string()), ("Second".to_string(), "/content/wiki_en/A/Second_page".to_string())]);
+    }
+
+    #[test]
+    fn a_question_becomes_search_words() {
+        assert_eq!(keywords("How do I purify river water by boiling it?"), vec!["purify", "river", "water", "boiling"]);
+        assert_eq!(keywords("water water WATER"), vec!["water"]);
+        assert!(keywords("how do I").is_empty());
+    }
+
+    #[test]
+    fn suggest_json_is_read() {
+        let json = r#"[{"value":"Water purification","label":"Water purification","kind":"path","path":"A/Water_purification"},
+            {"value":"Café \"Water\" {x}","label":"Café \"Water\" {x}","kind":"path","path":"Café page"},
+            {"value":"A😀","label":"emoji","kind":"path","path":"/content/other/A/Smile"},
+            {"value":"water ","label":"containing 'water'...","kind":"pattern"},
+            {"value":"no path","kind":"path"}]"#;
+        let r = parse_suggest(json, "wiki_en");
+        assert_eq!(
+            r,
+            vec![
+                ("Water purification".to_string(), "/content/wiki_en/A/Water_purification".to_string()),
+                ("Café \"Water\" {x}".to_string(), "/content/wiki_en/Caf%C3%A9%20page".to_string()),
+                ("emoji".to_string(), "/content/other/A/Smile".to_string()),
+            ]
+        );
+        assert_eq!(json_string(r#"{"label":"A😀"}"#, "label").unwrap(), "A😀");
+        assert!(parse_suggest("[]", "b").is_empty());
+        assert!(parse_suggest("not json at all", "b").is_empty());
+    }
+
+    // A fake kiwix-serve that records what it was asked, for the search fallbacks.
+    fn recording_server(handler: impl Fn(&str) -> String + Send + 'static) -> (u16, std::sync::Arc<std::sync::Mutex<Vec<String>>>) {
+        let l = TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = l.local_addr().unwrap().port();
+        let seen = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+        let log = seen.clone();
+        std::thread::spawn(move || {
+            for stream in l.incoming().flatten() {
+                let mut s = stream;
+                let mut buf = [0u8; 4096];
+                let n = s.read(&mut buf).unwrap_or(0);
+                let line = String::from_utf8_lossy(&buf[..n]).lines().next().unwrap_or("").to_string();
+                log.lock().unwrap().push(line.clone());
+                let _ = s.write_all(handler(&line).as_bytes());
+            }
+        });
+        (port, seen)
+    }
+
+    fn ok(body: &str) -> String {
+        format!("HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nContent-Length: {}\r\n\r\n{}", body.len(), body)
+    }
+
+    fn article() -> String {
+        format!("<html><body><p>{}</p></body></html>", "Boil water for one minute to make it safe to drink. ".repeat(4))
+    }
+
+    const CATALOG: &str = "<feed><entry><title>Manual</title><link type=\"text/html\" href=\"/content/manual\"/></entry></feed>";
+
+    #[test]
+    fn a_long_question_is_searched_by_its_key_words_not_as_a_sentence() {
+        let (port, seen) = recording_server(|line| {
+            if line.contains("/catalog/v2/entries") {
+                ok(CATALOG)
+            } else if line.contains("/search?") {
+                // only a short query finds anything, like a real index that wants every word present
+                if line.contains("pattern=boiling%20purify") {
+                    ok("<rss><channel><item><title>Boiling</title><link>http://127.0.0.1:1/content/manual/A/Boiling</link></item></channel></rss>")
+                } else {
+                    ok("<rss><channel></channel></rss>")
+                }
+            } else {
+                ok(&article())
+            }
+        });
+        let p = search(port, "How do I purify river water by boiling it?", 2);
+        assert_eq!(p.len(), 1, "{:?}", seen.lock().unwrap());
+        assert_eq!((p[0].heading.as_str(), p[0].source.as_str()), ("Boiling", "manual"));
+        let lines = seen.lock().unwrap().clone();
+        assert!(lines.iter().all(|l| !l.contains("how%20do")), "the whole sentence was sent: {:?}", lines);
+        assert!(lines.iter().any(|l| l.contains("pattern=purify%20river%20water%20boiling")), "{:?}", lines);
+    }
+
+    #[test]
+    fn an_archive_without_a_search_index_is_found_by_title() {
+        let (port, seen) = recording_server(|line| {
+            if line.contains("/catalog/v2/entries") {
+                ok(CATALOG)
+            } else if line.contains("/search?") {
+                "HTTP/1.0 404 Not Found\r\nContent-Length: 18\r\n\r\nNo search index.\r\n".to_string()
+            } else if line.contains("/suggest?") {
+                if line.contains("term=boiling") {
+                    ok(r#"[{"value":"Boiling water","label":"Boiling water","kind":"path","path":"A/Boiling_water"},{"value":"boiling ","label":"containing 'boiling'...","kind":"pattern"}]"#)
+                } else {
+                    ok("[]")
+                }
+            } else {
+                ok(&article())
+            }
+        });
+        let p = search(port, "how do I purify river water by boiling", 2);
+        assert_eq!(p.len(), 1, "{:?}", seen.lock().unwrap());
+        assert_eq!((p[0].heading.as_str(), p[0].source.as_str()), ("Boiling water", "manual"));
+        assert!(p[0].text.contains("Boil water"));
+    }
+
+    #[test]
+    fn nothing_found_anywhere_is_an_empty_answer_not_a_crash() {
+        let (port, _) = recording_server(|line| {
+            if line.contains("/catalog/v2/entries") {
+                ok(CATALOG)
+            } else if line.contains("/suggest?") {
+                ok("[]")
+            } else {
+                "HTTP/1.0 500 Server Error\r\nContent-Length: 0\r\n\r\n".to_string()
+            }
+        });
+        assert!(search(port, "how do I tune a violin", 2).is_empty());
+    }
+
+    #[test]
+    fn a_result_link_outside_the_library_is_never_fetched() {
+        let (port, seen) = recording_server(|line| {
+            if line.contains("/catalog/v2/entries") {
+                ok(CATALOG)
+            } else if line.contains("/search?") {
+                ok("<rss><channel><item><title>Odd</title><link>/admin/shutdown</link></item></channel></rss>")
+            } else {
+                ok(&article())
+            }
+        });
+        assert!(search(port, "water", 2).is_empty());
+        assert!(!seen.lock().unwrap().iter().any(|l| l.contains("/admin")));
     }
 }

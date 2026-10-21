@@ -4,7 +4,7 @@
 
 An offline survival library for Windows and Android: a local AI assistant that answers from the library on the drive and shows its sources, emergency cards, offline maps, drills, family information, and an inventory.
 
-**Status: first slice in progress. The Rust core is written and tested; the interface and Tauri shell are written but not yet built. See docs/13-run-the-first-slice.md.**
+**Status: first slice in progress. The Rust core is written and tested; the interface and Tauri shell are written but not yet built. See docs/13-run-the-first-slice.md. To run the first real test on Windows: docs/22-real-test.md.**
 
 ## Rules for this project
 - Open-source and free content only (public domain, CC BY / CC BY-SA, Apache 2.0, MIT, GPL where required). No copyrighted books.

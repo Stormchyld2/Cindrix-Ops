@@ -4,6 +4,7 @@
 #   powershell -File scripts\build-drive.ps1 -Target D:\ -Edition go
 #   powershell -File scripts\build-drive.ps1 -Target E:\ -Edition vault -Optional
 #   powershell -File scripts\build-drive.ps1 -Target D:\ -Edition go -DryRun      (asks the servers for real sizes, downloads nothing)
+#   powershell -File scripts\build-drive.ps1 -Target C:\Cindrix -Edition go -Only qwen35-2b,fema-guides,wikem    (a small first test, about 2.5 GB)
 #
 # What it does: makes the folders and the cindrix-drive.json marker, works out each item's real
 # download address and size, refuses to start if the total would pass the edition's size limit,
@@ -18,6 +19,7 @@ param(
   [ValidateSet('go','vault','hub')][string]$Edition = 'go',
   [string]$Name = '',
   [switch]$Optional,     # also fetch items the manifest marks as not required
+  [string[]]$Only = @(), # fetch just these item ids, for example: -Only qwen35-2b,fema-guides,wikem
   [switch]$DryRun,       # only work out sizes and print the plan
   [string]$Manifest = ''
 )
@@ -45,6 +47,15 @@ function Wanted($i) {
   return $true
 }
 $items = @($m.items | Where-Object { Wanted $_ })
+if ($Only.Count) {
+  # A short list for a first test: just the named items, whatever their tier or whether they are required.
+  $ids = @($Only | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+  $unknown = @($ids | Where-Object { @($m.items | ForEach-Object { $_.id }) -notcontains $_ })
+  if ($unknown.Count) { throw "Unknown item id(s): $($unknown -join ', '). Valid ids: $((@($m.items | ForEach-Object { $_.id })) -join ', ')" }
+  $items = @($m.items | Where-Object { $ids -contains $_.id -and $_.editions -contains $Edition })
+  $skipped = @($ids | Where-Object { @($items | ForEach-Object { $_.id }) -notcontains $_ })
+  if ($skipped.Count) { Write-Warning "Not part of the $Edition edition, skipped: $($skipped -join ', ')" }
+}
 
 # 3. Real address and size of each downloadable item.
 function Head($url) {
