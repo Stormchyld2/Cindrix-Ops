@@ -145,7 +145,7 @@
       <p class={copy.ok ? 'muted' : 'bad'}>{copy.ok ? `Added ${copy.name}.` : copy.message}</p>
     {/if}
     {#if st.archives.length === 0}
-      <p class="muted">None yet. Use <b>+ Add archive</b> to copy a .zim file from your computer (you can download them from the Kiwix library while you have internet), or save a website below. Only add archives whose license lets you keep a copy.</p>
+      <p class="muted">None found in <code>{st.folder}\library</code> (subfolders are searched too). Use <b>+ Add archive</b> to copy a .zim file from your computer (you can download them from the Kiwix library while you have internet), or save a website below. Only add archives whose license lets you keep a copy.</p>
     {:else}
       <ul class="list">
         {#each st.archives as a (a.file)}

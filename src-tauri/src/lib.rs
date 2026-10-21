@@ -119,6 +119,8 @@ struct AppState {
     kiwix_host: Mutex<Option<KiwixHost>>,
     kiwix_port: Mutex<Option<u16>>,
     kiwix_shared: Mutex<bool>,
+    /// The archives the library server was started with, to notice when new ones are added.
+    kiwix_zims: Mutex<Vec<PathBuf>>,
     status: Mutex<ModelStatus>,
     drive: Mutex<Option<DriveInfo>>,
     crawl: Mutex<CrawlDto>,
@@ -168,6 +170,7 @@ fn start_library(state: &AppState, share: bool) {
     state.stop_kiwix();
     *state.kiwix_shared.lock().unwrap() = false;
     let zims = kiwix::zim_files(&library_dir());
+    *state.kiwix_zims.lock().unwrap() = zims.clone();
     let name = if cfg!(windows) { "kiwix-serve.exe" } else { "kiwix-serve" };
     let engine = drive_or_program("engines").join(name);
     if zims.is_empty() || !engine.exists() {
@@ -440,9 +443,14 @@ fn library_status(state: tauri::State<'_, AppState>) -> LibraryStatus {
 fn drive_rescan(app: tauri::AppHandle) {
     std::thread::spawn(move || {
         let st = app.state::<AppState>();
-        if detect_drive(&st) {
+        let moved = detect_drive(&st);
+        // archives added (or removed) since the library server started need a restart of it
+        let changed = *st.kiwix_zims.lock().unwrap() != kiwix::zim_files(&library_dir());
+        if moved || changed {
             let shared = *st.kiwix_shared.lock().unwrap();
             start_library(&st, shared);
+        }
+        if moved {
             start_model(&st, None);
         }
     });
@@ -647,6 +655,37 @@ fn shelf_list() -> Result<Vec<BookDto>, String> {
     let mut out: Vec<BookDto> = bs.list()?.into_iter().map(|b| book_dto(b, false, &bs)).collect();
     out.extend(us.list()?.into_iter().map(|b| book_dto(b, true, &us)));
     Ok(out)
+}
+
+#[derive(Serialize)]
+struct DriveScanDto {
+    /// Titles of the books newly put on the shelf.
+    added: Vec<String>,
+    /// Files looked at that were already on the shelf or had been seen before.
+    known: usize,
+    problems: Vec<String>,
+    /// Where the scan looked, for the message when nothing was found.
+    folders: Vec<String>,
+}
+
+/// Put the books found on the drive (PDF, Markdown and text in `library`, `books`, `manuals`)
+/// onto the person's shelf. Safe to call again: each file is added once, and a book the person
+/// removed is not put back. Reading big files takes a while, so this runs off the main thread.
+#[tauri::command]
+async fn shelf_scan_drive() -> Result<DriveScanDto, String> {
+    tauri::async_runtime::spawn_blocking(|| {
+        let r = root();
+        let files = cindrix_core::shelf::drive_book_files(&r);
+        let rep = user_shelf().import_from_drive(&r, &files, &calendar::today_string());
+        Ok(DriveScanDto {
+            added: rep.added,
+            known: rep.known,
+            problems: rep.problems,
+            folders: ["library", "books", "manuals"].iter().map(|d| r.join(d).to_string_lossy().to_string()).collect(),
+        })
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 /// Add a book. The file bytes are the raw request body; the name and category come in headers.
@@ -1352,6 +1391,7 @@ pub fn run() {
             archive_copy_status,
             archive_remove,
             shelf_list,
+            shelf_scan_drive,
             shelf_add,
             shelf_read,
             shelf_update,

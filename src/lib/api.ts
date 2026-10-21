@@ -163,6 +163,14 @@ export async function shelfList(): Promise<Book[]> {
   return memBooks.map((b) => b.meta);
 }
 
+export type DriveScan = { added: string[]; known: number; problems: string[]; folders: string[] };
+
+/** Put the books found on the drive onto the shelf (each is added once). */
+export async function shelfScanDrive(): Promise<DriveScan> {
+  if (inTauri) return call<DriveScan>('shelf_scan_drive');
+  return { added: [], known: 0, problems: [], folders: [] };
+}
+
 /** Add a book from a file the person picked. Throws a readable message if it is refused. */
 export async function shelfAdd(file: File, category = ''): Promise<Book> {
   const bytes = new Uint8Array(await file.arrayBuffer());

@@ -16,11 +16,26 @@ pub struct KiwixHost {
     pub port: u16,
 }
 
-/// All .zim files in a folder.
+/// All .zim files in a folder and its subfolders (up to three levels down), whatever the case of
+/// the extension. Half-finished downloads (`.zim.part`) do not end in `.zim` and are left out.
 pub fn zim_files(dir: &Path) -> Vec<PathBuf> {
-    let mut v: Vec<PathBuf> = std::fs::read_dir(dir)
-        .map(|rd| rd.flatten().map(|e| e.path()).filter(|p| p.extension().and_then(|x| x.to_str()) == Some("zim")).collect())
-        .unwrap_or_default();
+    fn walk(dir: &Path, depth: usize, out: &mut Vec<PathBuf>) {
+        let Ok(rd) = std::fs::read_dir(dir) else { return };
+        for e in rd.flatten() {
+            // `file_type` does not follow links, so a link back up the tree cannot loop
+            let Ok(ft) = e.file_type() else { continue };
+            let p = e.path();
+            if ft.is_dir() {
+                if depth > 0 {
+                    walk(&p, depth - 1, out);
+                }
+            } else if ft.is_file() && p.extension().and_then(|x| x.to_str()).map(|x| x.eq_ignore_ascii_case("zim")).unwrap_or(false) {
+                out.push(p);
+            }
+        }
+    }
+    let mut v = Vec::new();
+    walk(dir, 3, &mut v);
     v.sort();
     v
 }
@@ -776,6 +791,20 @@ pub fn base_tag(url: &str) -> String {
 mod tests {
     use super::*;
     use std::net::TcpListener;
+
+    #[test]
+    fn archives_are_found_in_subfolders_whatever_the_extension_case() {
+        let d = std::env::temp_dir().join(format!("cindrix-zimfind-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(d.join("manuals/deep/deeper/deepest/too_deep")).unwrap();
+        for f in ["a.zim", "B.ZIM", "manuals/c.Zim", "manuals/deep/deeper/d.zim", "manuals/deep/deeper/deepest/too_deep/e.zim", "f.zim.part", "g.zimaa", "h.txt"] {
+            std::fs::write(d.join(f), b"x").unwrap();
+        }
+        let names: Vec<String> = zim_files(&d).iter().map(|p| p.strip_prefix(&d).unwrap().to_string_lossy().replace('\\', "/")).collect();
+        assert_eq!(names, vec!["B.ZIM", "a.zim", "manuals/c.Zim", "manuals/deep/deeper/d.zim"]);
+        assert!(zim_files(&d.join("missing")).is_empty());
+        let _ = std::fs::remove_dir_all(&d);
+    }
 
     #[test]
     fn parses_results() {

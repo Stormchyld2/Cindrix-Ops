@@ -31,7 +31,7 @@
       const n = lib.archives.length;
       out.push(n > 0
         ? { label: 'Library', ok: true, text: `${n} archive${n === 1 ? '' : 's'} found.` }
-        : { label: 'Library', ok: false, text: 'No .zim archives found. Put them in the library folder (or run scripts\\build-drive.ps1), then press Look again in Settings.' });
+        : { label: 'Library', ok: false, text: `No .zim archives found in ${lib.folder}\\library (subfolders are searched too). Put them there (or run scripts\\build-drive.ps1), then press Look again on the Archives screen.` });
     }
     if (ms) {
       out.push(ms.state === 'ready'

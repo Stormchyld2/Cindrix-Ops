@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { shelfList, shelfAdd, shelfUpdate, shelfRemove, type Book } from '../lib/api';
+  import { shelfList, shelfAdd, shelfUpdate, shelfRemove, shelfScanDrive, type Book } from '../lib/api';
   import Reader from './Reader.svelte';
 
   let books: Book[] = $state([]);
@@ -26,7 +26,25 @@
   async function refresh() {
     try { books = await shelfList(); } catch (e) { message = String(e); }
   }
-  onMount(refresh);
+  let scanning = $state(false);
+  /** Put the books found on the drive onto the shelf. `quiet`: say something only when books were added. */
+  async function scan(quiet: boolean) {
+    if (scanning) return;
+    scanning = true;
+    try {
+      const r = await shelfScanDrive();
+      await refresh();
+      const parts: string[] = [];
+      if (r.added.length) parts.push(`Added ${r.added.length} book${r.added.length === 1 ? '' : 's'} from the drive: ${r.added.join(', ')}.`);
+      else if (!quiet) parts.push(r.known > 0 ? `No new books on the drive (${r.known} already on the shelf).` : `No books found on the drive. Put PDF, Markdown or text files in the library, books or manuals folder (looked in ${r.folders.join(', ')}).`);
+      if (r.problems.length) parts.push(...r.problems.slice(0, 3));
+      if (parts.length) message = parts.join(' ');
+    } catch (e) {
+      if (!quiet) message = String(e);
+    }
+    scanning = false;
+  }
+  onMount(async () => { await refresh(); await scan(true); });
 
   let categories = $derived(['All', ...Array.from(new Set(books.map((b) => b.category))).sort()]);
   let shown = $derived(books.filter((b) => filter === 'All' || b.category === filter));
@@ -89,6 +107,7 @@
       </div>
       <div class="row">
         <input bind:this={fileInput} id="add-book" class="sr" type="file" accept=".pdf,.md,.txt,application/pdf" multiple onchange={(e) => addFiles(e.currentTarget.files)} />
+        <button class="btn" onclick={() => scan(false)} disabled={scanning} aria-label="Look for books on the drive">{scanning ? 'Looking…' : 'Look for books on the drive'}</button>
         <label class="btn primary add" for="add-book" aria-label="Add a book from a file">+ Add a book</label>
       </div>
     </div>
@@ -116,7 +135,7 @@
     {#if shown.length === 0}
       <div class="empty panel">
         <strong>Your shelf is empty.</strong>
-        <p class="muted">Drag a PDF here, or use “Add a book”. Books you add stay on this drive and never leave it.</p>
+        <p class="muted">Drag a PDF here, or use “Add a book”. PDF, Markdown and text files in the drive's library, books or manuals folder are put on the shelf automatically; press “Look for books on the drive” after adding some. Books you add stay on this drive and never leave it.</p>
       </div>
     {/if}
 

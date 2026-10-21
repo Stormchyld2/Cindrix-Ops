@@ -109,6 +109,57 @@ pub fn fingerprint(bytes: &[u8]) -> String {
     format!("{:016x}-{}", h, bytes.len())
 }
 
+/// File names that sit on a drive but are not books: the small notes this program's own drive
+/// builder writes, and license texts.
+fn is_not_a_book(name: &str) -> bool {
+    let n = name.to_lowercase();
+    n.starts_with("readme") || n.starts_with("licen") || n.starts_with("copying") || n.starts_with("notice") || n.starts_with("source") || n.ends_with(".part") || n.ends_with(".tmp") || n.starts_with('.')
+}
+
+fn walk_for_books(dir: &Path, depth: usize, out: &mut Vec<PathBuf>) {
+    let Ok(rd) = fs::read_dir(dir) else { return };
+    let mut entries: Vec<_> = rd.flatten().collect();
+    entries.sort_by_key(|e| e.file_name());
+    for e in entries {
+        // `file_type` does not follow links, so a link back up the tree cannot loop
+        let Ok(ft) = e.file_type() else { continue };
+        let path = e.path();
+        let name = e.file_name().to_string_lossy().to_string();
+        if ft.is_dir() {
+            if depth > 0 && !name.starts_with('.') {
+                walk_for_books(&path, depth - 1, out);
+            }
+        } else if ft.is_file() && !is_not_a_book(&name) {
+            let ext = name.rsplit_once('.').map(|x| x.1.to_lowercase()).unwrap_or_default();
+            if matches!(ext.as_str(), "pdf" | "md" | "txt") {
+                out.push(path);
+            }
+        }
+    }
+}
+
+/// PDF, Markdown and text files in the drive's book folders: `library` (and its subfolders, such
+/// as `library/manuals`), `books` and `manuals`, up to four levels deep. `.zim` archives are not
+/// books here (they have their own screen).
+pub fn drive_book_files(root: &Path) -> Vec<PathBuf> {
+    let mut out = Vec::new();
+    for d in ["library", "books", "manuals"] {
+        walk_for_books(&root.join(d), 4, &mut out);
+    }
+    out
+}
+
+/// What one pass of putting the drive's books on the shelf did.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct ImportReport {
+    /// Books newly put on the shelf.
+    pub added: Vec<String>,
+    /// Files that were already on the shelf (the same book), or were looked at before.
+    pub known: usize,
+    /// Files that could not be used, with the reason, one line each.
+    pub problems: Vec<String>,
+}
+
 pub struct Shelf {
     pub dir: PathBuf,
     pub prefix: &'static str,
@@ -142,6 +193,11 @@ impl Shelf {
 
     /// Put a file on the shelf. `today` is "YYYY-MM-DD".
     pub fn add(&self, original_name: &str, bytes: &[u8], category: &str, today: &str) -> Result<Book, String> {
+        self.add_with(original_name, bytes, category, today, "Added by you")
+    }
+
+    /// Like `add`, naming where the book came from (shown as its license line).
+    pub fn add_with(&self, original_name: &str, bytes: &[u8], category: &str, today: &str, license: &str) -> Result<Book, String> {
         if bytes.is_empty() {
             return Err("That file is empty.".into());
         }
@@ -160,7 +216,7 @@ impl Shelf {
         let book = Book {
             id, title: title_from_filename(original_name), author: String::new(),
             category: if category.is_empty() { "Mine".into() } else { category.into() },
-            file, kind: kind.into(), added: today.into(), license: "Added by you".into(), fingerprint: fp,
+            file, kind: kind.into(), added: today.into(), license: license.into(), fingerprint: fp,
         };
         books.push(book.clone());
         if let Err(e) = self.save(&books) {
@@ -168,6 +224,71 @@ impl Shelf {
             return Err(e);
         }
         Ok(book)
+    }
+
+    fn imported_file(&self) -> PathBuf { self.dir.join("drive-imported.txt") }
+
+    /// Put the books found on the drive onto this shelf, once each. A file is remembered by its
+    /// path, size and date, so a book the person later removes is not put back, and the next
+    /// scan costs almost nothing. Changed files (a newer copy) count as new and are added unless
+    /// the same bytes are already on the shelf.
+    pub fn import_from_drive(&self, root: &Path, files: &[PathBuf], today: &str) -> ImportReport {
+        let mut rep = ImportReport::default();
+        let seen_text = fs::read_to_string(self.imported_file()).unwrap_or_default();
+        let mut seen: Vec<String> = seen_text.lines().map(|l| l.to_string()).collect();
+        let mut fresh: Vec<String> = Vec::new();
+        for f in files {
+            let rel = f.strip_prefix(root).unwrap_or(f).to_string_lossy().replace('\\', "/");
+            let Ok(meta) = fs::metadata(f) else { continue };
+            let mtime = meta.modified().ok().and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok()).map(|d| d.as_secs()).unwrap_or(0);
+            let key = format!("{}|{}|{}", rel, meta.len(), mtime);
+            if seen.contains(&key) {
+                rep.known += 1;
+                continue;
+            }
+            let name = f.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+            if meta.len() as usize > MAX_BYTES {
+                rep.problems.push(format!("{}: larger than 400 MB, left off the shelf", rel));
+                seen.push(key.clone());
+                fresh.push(key);
+                continue;
+            }
+            let bytes = match fs::read(f) {
+                Ok(b) => b,
+                Err(e) => {
+                    // could not be read right now (in use, drive busy): try again next time
+                    rep.problems.push(format!("{}: could not be read ({})", rel, e));
+                    continue;
+                }
+            };
+            // the folder it sits in names its category: library/manuals/x.pdf -> "Manuals"
+            let category = {
+                let parts: Vec<&str> = rel.split('/').collect();
+                let folder = if parts.len() >= 3 { parts[parts.len() - 2] } else if parts.len() == 2 && parts[0] != "library" { parts[0] } else { "" };
+                if folder.is_empty() { "Drive library".to_string() } else { title_from_filename(&format!("{}.x", folder)) }
+            };
+            match self.add_with(&name, &bytes, &category, today, "From the drive") {
+                Ok(b) => rep.added.push(b.title),
+                Err(e) if e.starts_with("That book is already on your shelf") => rep.known += 1,
+                Err(e) => rep.problems.push(format!("{}: {}", rel, e)),
+            }
+            seen.push(key.clone());
+            fresh.push(key);
+        }
+        if !fresh.is_empty() {
+            let mut all = seen_text;
+            if !all.is_empty() && !all.ends_with('\n') {
+                all.push('\n');
+            }
+            for k in &fresh {
+                all.push_str(k);
+                all.push('\n');
+            }
+            if let Err(e) = fsio::write_atomic(&self.imported_file(), all.as_bytes()) {
+                rep.problems.push(format!("could not remember which books were added ({}); they may be looked at again", e));
+            }
+        }
+        rep
     }
 
     pub fn update(&self, id: &str, title: &str, author: &str, category: &str) -> Result<(), String> {
@@ -327,6 +448,78 @@ mod tests {
         p
     }
     fn pdf() -> Vec<u8> { b"%PDF-1.4\nfake body".to_vec() }
+
+    fn drive_with_books() -> PathBuf {
+        let root = tmp("drive");
+        fs::create_dir_all(root.join("library/manuals")).unwrap();
+        fs::create_dir_all(root.join("books")).unwrap();
+        fs::create_dir_all(root.join("music")).unwrap();
+        fs::write(root.join("library/manuals/fm_21-76-1.pdf"), pdf()).unwrap();
+        fs::write(root.join("library/first aid.PDF"), b"%PDF-1.4\nother book").unwrap();
+        fs::write(root.join("library/README.txt"), b"Put .zim library files here").unwrap();
+        fs::write(root.join("library/big.zim"), b"not a book").unwrap();
+        fs::write(root.join("library/unfinished.pdf.part"), b"%PDF-1.4 half").unwrap();
+        fs::write(root.join("library/manuals/broken.pdf"), b"this is not a pdf").unwrap();
+        fs::write(root.join("books/notes.md"), b"# Notes\nsome notes").unwrap();
+        fs::write(root.join("music/song.txt"), b"not scanned: music folder").unwrap();
+        root
+    }
+
+    #[test]
+    fn the_drive_scan_finds_books_and_skips_everything_else() {
+        let root = drive_with_books();
+        let names: Vec<String> = drive_book_files(&root).iter().map(|p| p.strip_prefix(&root).unwrap().to_string_lossy().replace('\\', "/")).collect();
+        assert_eq!(names, vec!["library/first aid.PDF", "library/manuals/broken.pdf", "library/manuals/fm_21-76-1.pdf", "books/notes.md"]);
+        assert!(drive_book_files(&root.join("nothing")).is_empty());
+    }
+
+    #[test]
+    fn drive_books_go_on_the_shelf_once_and_stay_removed() {
+        let root = drive_with_books();
+        let shelf = Shelf::new(&tmp("shelf"), "u");
+        let files = drive_book_files(&root);
+        let r = shelf.import_from_drive(&root, &files, "2026-10-20");
+        let mut added = r.added.clone();
+        added.sort();
+        assert_eq!(added, vec!["First Aid", "Fm 21 76 1", "Notes"]);
+        // the broken one is reported, and does not stop the others
+        assert_eq!(r.problems.len(), 1, "{:?}", r.problems);
+        assert!(r.problems[0].contains("broken.pdf"));
+        let books = shelf.list().unwrap();
+        assert_eq!(books.len(), 3);
+        let fm = books.iter().find(|b| b.title == "Fm 21 76 1").unwrap();
+        assert_eq!((fm.category.as_str(), fm.license.as_str()), ("Manuals", "From the drive"));
+        assert_eq!(books.iter().find(|b| b.title == "First Aid").unwrap().category, "Drive library");
+        assert_eq!(books.iter().find(|b| b.title == "Notes").unwrap().category, "Books");
+        assert_eq!(shelf.read(&fm.id).unwrap(), pdf());
+
+        // a second scan finds nothing new and does not report the broken file again
+        let r2 = shelf.import_from_drive(&root, &drive_book_files(&root), "2026-10-21");
+        assert!(r2.added.is_empty() && r2.problems.is_empty(), "{:?}", r2);
+        assert_eq!(r2.known, 4);
+
+        // a book the person removed does not come back
+        shelf.remove(&fm.id).unwrap();
+        let r3 = shelf.import_from_drive(&root, &drive_book_files(&root), "2026-10-22");
+        assert!(r3.added.is_empty());
+        assert_eq!(shelf.list().unwrap().len(), 2);
+
+        // a new file on the drive is picked up
+        fs::write(root.join("library/new guide.pdf"), b"%PDF-1.4\nnew guide").unwrap();
+        let r4 = shelf.import_from_drive(&root, &drive_book_files(&root), "2026-10-23");
+        assert_eq!(r4.added, vec!["New Guide"]);
+    }
+
+    #[test]
+    fn a_book_already_on_the_shelf_is_not_added_twice() {
+        let root = drive_with_books();
+        let shelf = Shelf::new(&tmp("shelf2"), "u");
+        shelf.add("my copy.pdf", &pdf(), "", "2026-10-01").unwrap();
+        let r = shelf.import_from_drive(&root, &drive_book_files(&root), "2026-10-20");
+        assert!(!r.added.contains(&"Fm 21 76 1".to_string()), "{:?}", r);
+        assert_eq!(r.known, 1);
+        assert_eq!(shelf.list().unwrap().len(), 3); // mine + first aid + notes; the manual is the same book as mine
+    }
 
     #[test]
     fn titles_from_file_names() {
