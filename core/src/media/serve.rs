@@ -60,10 +60,13 @@ pub fn route(music_root: &Path, cache_dir: &Path, requested: &str) -> Option<Rou
     }
 }
 
-/// A picture sitting in the same folder as a track: cover, folder, front or album art.
-pub fn folder_art(track: &Path) -> Option<PathBuf> {
-    let dir = track.parent()?;
-    let track_stem = track.file_stem().map(|s| s.to_string_lossy().to_lowercase());
+const COVER_NAMES: [&str; 9] = ["cover", "folder", "front", "albumart", "albumartsmall", "albumartlarge", "album", "art", "thumb"];
+
+/// The best picture in one folder. `stem` is the song's name (a picture named like the song wins), `folder` is
+/// what the folder is called (a picture named like the album is its cover). With no name to go by, a lone picture
+/// counts, and so does one whose name says cover, front, art or album.
+fn best_picture(dir: &Path, stem: Option<&str>, folder: &str) -> Option<PathBuf> {
+    let folder = folder.to_lowercase();
     let mut best: Option<(usize, PathBuf)> = None;
     let mut images: Vec<PathBuf> = Vec::new();
     for e in fs::read_dir(dir).ok()?.flatten() {
@@ -71,16 +74,21 @@ pub fn folder_art(track: &Path) -> Option<PathBuf> {
             continue;
         }
         let name = e.file_name().to_string_lossy().to_lowercase();
-        let Some((stem, ext)) = name.rsplit_once('.') else { continue };
+        let Some((pic, ext)) = name.rsplit_once('.') else { continue };
         if !matches!(ext, "jpg" | "jpeg" | "png") || !valid_part(&name) {
             continue;
         }
         images.push(e.path());
-        // a picture named like the song (Song.wav and Song.jpg) is the best match, then the usual album names
-        let rank = if Some(stem.to_string()) == track_stem {
+        let rank = if Some(pic) == stem {
             Some(0)
+        } else if let Some(r) = COVER_NAMES.iter().position(|s| *s == pic) {
+            Some(r + 1)
+        } else if !folder.is_empty() && pic == folder {
+            Some(COVER_NAMES.len() + 1)
+        } else if ["cover", "front", "albumart", "artwork"].iter().any(|k| pic.contains(k)) {
+            Some(COVER_NAMES.len() + 2)
         } else {
-            ["cover", "folder", "front", "albumart", "albumartsmall", "albumartlarge", "album", "art", "thumb"].iter().position(|s| *s == stem).map(|r| r + 1)
+            None
         };
         if let Some(r) = rank {
             if best.as_ref().map(|(b, _)| r < *b).unwrap_or(true) {
@@ -90,6 +98,32 @@ pub fn folder_art(track: &Path) -> Option<PathBuf> {
     }
     // A folder with one picture and nothing else named: that picture is the cover.
     best.map(|(_, p)| p).or_else(|| if images.len() == 1 { images.pop() } else { None })
+}
+
+/// A picture for a track that has none inside it: one in the same folder (cover, folder, front, the song's or the
+/// album's name), or the album-style picture in the artist's folder above.
+pub fn folder_art(track: &Path) -> Option<PathBuf> {
+    let dir = track.parent()?;
+    let stem = track.file_stem().map(|s| s.to_string_lossy().to_lowercase());
+    let album = dir.file_name().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
+    if let Some(p) = best_picture(dir, stem.as_deref(), &album) {
+        return Some(p);
+    }
+    // the artist's folder: only the usual cover names count there, never "the only picture"
+    let up = dir.parent()?;
+    let artist = up.file_name().map(|s| s.to_string_lossy().to_lowercase()).unwrap_or_default();
+    for e in fs::read_dir(up).ok()?.flatten() {
+        let name = e.file_name().to_string_lossy().to_lowercase();
+        let Some((pic, ext)) = name.rsplit_once('.') else { continue };
+        if e.file_type().map(|t| t.is_file()).unwrap_or(false)
+            && matches!(ext, "jpg" | "jpeg" | "png")
+            && valid_part(&name)
+            && (COVER_NAMES.contains(&pic) || pic == artist)
+        {
+            return Some(e.path());
+        }
+    }
+    None
 }
 
 #[cfg(test)]
@@ -151,6 +185,24 @@ mod tests {
         assert_eq!(folder_art(&track), Some(dir.join("AlbumArtSmall.jpg")));
         fs::write(dir.join("01 - Song (live).png"), b"x").unwrap();
         assert_eq!(folder_art(&track), Some(dir.join("01 - Song (live).png"))); // named like the song wins
+    }
+
+    #[test]
+    fn a_picture_named_like_the_album_or_in_the_artist_folder_is_the_cover() {
+        let (m, _c) = setup("albumname");
+        let artist = m.join("Jason Williams");
+        let dir = artist.join("The Man I'm Tryin To Be");
+        fs::create_dir_all(&dir).unwrap();
+        let track = dir.join("I Need You Here.wav");
+        fs::write(dir.join("one.jpg"), b"x").unwrap();
+        fs::write(dir.join("two.jpg"), b"x").unwrap();
+        assert_eq!(folder_art(&track), None); // two pictures with no useful names
+        fs::write(artist.join("folder.jpg"), b"x").unwrap();
+        assert_eq!(folder_art(&track), Some(artist.join("folder.jpg"))); // the artist's picture
+        fs::write(dir.join("The Man I'm Tryin To Be.png"), b"x").unwrap();
+        assert_eq!(folder_art(&track), Some(dir.join("The Man I'm Tryin To Be.png"))); // named like the album
+        fs::write(dir.join("my front cover.jpg"), b"x").unwrap();
+        assert_eq!(folder_art(&track), Some(dir.join("The Man I'm Tryin To Be.png"))); // the album's name still wins
     }
 
     #[test]

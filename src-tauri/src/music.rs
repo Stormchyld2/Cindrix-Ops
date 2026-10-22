@@ -157,7 +157,7 @@ pub fn serve_music(req: &tauri::http::Request<Vec<u8>>) -> tauri::http::Response
                 return reply(200, None, mime, a.data);
             }
             if let Some(p) = serve::folder_art(&track) {
-                if std::fs::metadata(&p).map(|m| m.len() <= tags::MAX_ART as u64).unwrap_or(false) {
+                if std::fs::metadata(&p).map(|m| m.len() <= 4 * tags::MAX_ART as u64).unwrap_or(false) {
                     if let Ok(bytes) = std::fs::read(&p) {
                         return reply(200, None, image_mime(&p), bytes);
                     }
