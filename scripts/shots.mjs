@@ -152,6 +152,16 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   await shoot(page, `${label}-2c2-academy-quiz`);
   await page.getByRole('button', { name: 'Save result' }).click();
   await page.getByText('Saved: 1 of 1.').waitFor();
+  // Training sign-off: a card for each person on the Family page, then that person's page.
+  await page.getByRole('button', { name: '← Back to the course' }).click();
+  await page.getByRole('button', { name: '← All courses' }).click();
+  await page.getByRole('button', { name: 'Training sign-off' }).click();
+  await page.getByRole('heading', { name: 'Training sign-off' }).waitFor();
+  await page.getByRole('button', { name: /Open the training page for Person 1/ }).waitFor();
+  await shoot(page, `${label}-2c3-training-cards`);
+  await page.getByRole('button', { name: /Open the training page for Person 1/ }).click();
+  await page.getByText('NEXT COURSE').waitFor();
+  await shoot(page, `${label}-2c4-training-person`);
 
   // Music: browse, play a generated tone, watch the clock advance, use the equalizer.
   await page.getByRole('button', { name: 'Music', exact: true }).click();
@@ -233,8 +243,11 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   await page.getByText(/It looks in the emergency cards/).waitFor();
   if ((await page.locator('main').innerText()).includes('files and folders')) throw new Error('turning off file search did not change what Ask says');
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
-  await page.getByRole('tab', { name: 'Plan' }).click();
+  await page.getByRole('tab', { name: 'Plan', exact: true }).click();
   await shoot(page, `${label}-9d3-settings-plan`);
+  await page.getByRole('tab', { name: 'Your own cards and plans' }).click();
+  await page.getByRole('button', { name: 'Open the folder' }).first().waitFor();
+  await shoot(page, `${label}-9d4-settings-own`);
   await page.getByRole('tab', { name: 'Sources and licenses' }).click();
   await shoot(page, `${label}-9e-sources`);
 
