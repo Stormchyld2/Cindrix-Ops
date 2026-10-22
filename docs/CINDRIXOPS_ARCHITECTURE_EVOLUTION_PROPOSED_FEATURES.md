@@ -1,7 +1,7 @@
 # CindrixOps — Architecture Evolution & Proposed Features
 
 **Document status:** PROPOSAL / DISCUSSION ONLY — NOT AUTHORIZATION TO IMPLEMENT  
-**Version:** 0.4  
+**Version:** 0.5  
 **Prepared:** 2026-10-22  
 **Audience:** Project owner, Claude, ChatGPT, future maintainers  
 **Repository location:** `docs/CINDRIXOPS_ARCHITECTURE_EVOLUTION_PROPOSED_FEATURES.md`
@@ -452,6 +452,21 @@ Acceptance tests: package round-trip from exporter to viewer; import without net
 
 Inspect existing Maps code and export pipeline; confirm the canonical `.cmap` v1 manifest schema, compression/extraction strategy, file size thresholds, Bluetooth transport, Android minimum version, and whether the viewer is a separate APK or shared-code application. Maintain a single format implementation for Hub and Vault exporters.
 
+### 16.6 Owner-selected delivery sequence and technology stack (2026-10-22)
+
+**Updated decision:** Build the standalone viewer **for Windows first**, then port/adapt it to Android with **Tauri 2**. Use the established CindrixOps stack: **Svelte, TypeScript, Rust, Tauri 2, JSON, Markdown, and ordinary filesystem storage**. Share the map rendering, package schema, Rust validation, and UI components wherever platform support permits; isolate OS-specific storage, Bluetooth, hotspot, and permissions behind adapters. Avoid introducing a separate UI framework or unrelated data store without explicit justification.
+
+**Windows-first milestones (implementation requested; work not yet completed):**
+1. Audit current CindrixOps Maps components, PMTiles sources, map styles/assets, and exporter behavior; preserve existing functionality.
+2. Create a separate Windows Tauri 2 viewer project or clearly isolated workspace package using shared modules, with no requirement to run the main CindrixOps application.
+3. Specify and implement `.cmap` v1 writer/reader and robust validation; support import/export of complete offline map packages and optional overlays.
+4. Implement local map library, MapLibre rendering, navigation, offline source attribution, and user-facing import errors.
+5. Add Windows filesystem import and local-network transfer first; test interruptions, resumability, authentication, and checksum verification.
+6. Run Rust/frontend checks, Windows builds, and hands-on offline tests; record commit, CI run, and artifact.
+7. Port the proven viewer to Tauri 2 Android; implement Android filesystem access, permissions, hotspot client/server reachability, and only then assess Bluetooth transport.
+
+**Protection clarification:** The `.cmap` extension and proprietary schema provide file association, format validation, and packaging consistency, **not secrecy or DRM**. SHA-256 hashes verify integrity but do not prevent deliberate modification by an adversary. For confidential user maps, consider **optional authenticated encryption** with a user-held key/passphrase and a clearly documented recovery model; preserve an unencrypted option for emergency availability. Encryption and signing choices require explicit owner approval before finalizing v1 interoperability. Never describe a ZIP-compatible package as copy-protected solely because it uses `.cmap`.
+
 ## 17. Proposal status register
 
 | Proposal | Status | Notes |
@@ -468,7 +483,7 @@ Inspect existing Maps code and export pipeline; confirm the canonical `.cmap` v1
 | Security, backups, resilience hardening | Proposed for audit | Existing implementations must be inspected |
 | UI refinements | Proposed | Preserve current brand and navigation unless approved |
 | Health & Holistic Medicine / Illustrated Materia Medica | Concept approved; implementation not authorized | Offline verified botanical photographs, safety/evidence profiles, shared knowledge corpus |
-| Standalone Map Viewer / `.cmap` | Format selected; implementation not authorized | Portable versioned offline map package; hotspot/Bluetooth/local import |
+| Standalone Map Viewer / `.cmap` | Windows-first stack and delivery sequence selected; implementation requested, not yet completed | Tauri 2 + Svelte/TypeScript/Rust; Android after Windows validation; protection model pending |
 
 ---
 
