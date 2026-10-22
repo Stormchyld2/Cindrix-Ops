@@ -10,7 +10,7 @@ Top of the file (between two lines of three dashes):
 | Line | Meaning |
 |---|---|
 | `title:` | The card's name (required) |
-| `kind:` | Which group it sits in: `medical` (first aid and health), `disaster` (weather and big events) or `home` (fire, gas, power, water, staying put) |
+| `kind:` | Which group it sits in: `medical` (first aid and health), `disaster` (weather and big events) `home` (fire, gas, power, water, staying put) or `skills` (navigation, water, shelter, fire, signals) |
 | `status:` | `draft` until a qualified person has read it. `reviewed` only counts if `reviewer:` and `reviewed:` (a date) are filled in; otherwise it shows as a draft |
 
 Body: plain text. `**bold**` for the key words, `1.` for steps, `- ` for lists. Keep a card to one screen.

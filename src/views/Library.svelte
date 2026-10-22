@@ -21,6 +21,7 @@
     ['medical', 'FIRST AID AND HEALTH'],
     ['disaster', 'WEATHER AND DISASTERS'],
     ['home', 'AT HOME: FIRE, GAS, POWER, WATER'],
+    ['skills', 'SKILLS: FIND YOUR WAY, WATER, SHELTER, FIRE, SIGNALS'],
   ];
   const kindOf = (c: Card) => (c.kind === 'emergency' || !GROUPS.some(([k]) => k === c.kind) ? 'medical' : c.kind);
   const shown = $derived(cards.filter((c) => !q.trim() || (c.title + ' ' + c.body).toLowerCase().includes(q.trim().toLowerCase())));

@@ -62,3 +62,11 @@ severe belly pain, object stuck in a wound. Checked against the live pages on th
 Michigan Health (knocked-out tooth, amputation), Kane County Health Department (overdose), CDC (sepsis symptoms), Healthline
 (nosebleed). **Written from standard guidance and not yet read on the live page:** fainting, fever in a child, belly pain,
 object in a wound, and the 911 criteria on the sepsis card. These need the first check by a person.
+
+## Skills cards (2026-10-22)
+22 cards of kind `skills` (new group in Library > Emergency cards): lost (S.T.O.P.), reading a map, compass bearings, direction
+without a compass, pace count, finding water, making water safe, shelter, fire, signalling, radio calls, knots, cold, heat, river
+crossing, weather signs, toilet and hygiene, wild food, wound care, moving as a group, staying calm, the ten essentials.
+They come from general field guidance (US Army field survival manuals and the Ranger Handbook, CDC, NWS, National Park Service, Leave
+No Trace) and were **not checked line by line against those sources** in this session. Each says so in its banner. They do not need
+a 911 line (the test checks that only for medical, disaster and home cards).
