@@ -54,5 +54,6 @@ Windows comes first; Android and iPhone wrap it later.
   silently; use `fsio::backup_then_write` / `write_atomic`.
 - Add a test in `core/` for every new piece of logic, and keep `docs/` in step with what is built.
 - Anything new that is shipped or downloaded needs a line in `content/sources.json` and `licenses/README.md`.
+- `core/src/seeds.rs` is the Seed vault (Plan > Seed vault); its guides are `content/seed-guides`, its course `content/academy/seed-vault`.
 - New cards, plans and categories need no code: a `.md` file in `content/cards` or `content/plans` (templates: `_template-card.md`, `_template-plan.md`, `_template-keep-it-from-failing.md`). Every card needs a `Source:` line.
 - The program opens on the Dashboard. New buttons get hover text automatically; give important ones their own `title`.

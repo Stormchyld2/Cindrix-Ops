@@ -3,7 +3,7 @@
 use cindrix_core::plans;
 use std::path::PathBuf;
 
-const SCREENS: &[&str] = &["Dashboard", "Ask", "Library", "Intel", "Academy", "Maps", "Music", "Inventory", "Cards", "Drills", "Family", "Binder", "What fails", "Start", "Plans"];
+const SCREENS: &[&str] = &["Dashboard", "Ask", "Library", "Intel", "Academy", "Maps", "Music", "Inventory", "Cards", "Drills", "Family", "Binder", "What fails", "Start", "Plans", "Seed vault"];
 const CHECKS: &[&str] = &["water", "food", "family", "inventory", "drill", "maps", "model", "library"];
 
 #[test]

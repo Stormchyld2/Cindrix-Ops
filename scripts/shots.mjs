@@ -191,7 +191,7 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   await shoot(page, `${label}-3-start`);
 
   // What next: plans that carry on after the walkthrough. Open one, follow it, tick a step.
-  await page.getByRole('button', { name: 'What next', exact: true }).click();
+  await page.getByRole('button', { name: 'Plans', exact: true }).click();
   await page.getByRole('heading', { name: 'Plans' }).waitFor();
   await shoot(page, `${label}-3b-plans`);
   await page.getByRole('button', { name: /Open the plan Keep it fresh/ }).click();
@@ -218,7 +218,7 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   await page.getByRole('button', { name: 'Family', exact: true }).click();
   await shoot(page, `${label}-7-family`);
 
-  await page.getByRole('button', { name: 'What fails', exact: true }).click();
+  await page.getByRole('button', { name: 'What fails next', exact: true }).click();
   await shoot(page, `${label}-8-what-fails`);
 
   await page.getByRole('button', { name: 'Drills', exact: true }).click();

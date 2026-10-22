@@ -66,3 +66,6 @@ has permission to reuse the code. This is not legal advice.
 1. Open `content/sources.json` and `manifest/content.json`: every item on the drive needs a source, an edition and a license.
 2. Run `node scripts/collect-licenses.mjs` (the build does this) and read `third-party/rust-crates.csv` for any license that is not MIT, Apache-2.0 or BSD.
 3. Put `LICENSES/` on the drive next to the program, and keep "Licenses and sources" reachable from the app.
+
+## Seed vault guides and course
+Written for this project. Facts are paraphrased in our own words from university extension guidance (Purdue, University of Wisconsin-Madison, Oregon State, Penn State) and USDA pages. Nothing is copied. Drafts, not yet reviewed.

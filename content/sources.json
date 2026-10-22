@@ -80,6 +80,12 @@
           "license": "Written for this project; facts paraphrased from public guidance",
           "status": "in this build",
           "note": "Drafts, not yet reviewed by a qualified person. Sources: Ready.gov / FEMA, CDC, National Weather Service, USDA FSIS, American Red Cross, American Heart Association, Stop the Bleed, Poison Help, WHO oral rehydration guidance, SAMHSA 988. Each card names its source. US government pages are public domain; the Red Cross and other guidance is paraphrased in our own words, not copied."
+        },
+        {
+          "name": "Seed vault guides (12) and the Seed vault course",
+          "license": "Written for this project; facts paraphrased from university extension guidance",
+          "status": "in this build",
+          "note": "Drafts, not yet reviewed. Sources: Purdue Extension, University of Wisconsin-Madison Extension, Oregon State and Penn State Extension, USDA. Seed life numbers are rules of thumb; a germination test is better."
         }
       ]
     },

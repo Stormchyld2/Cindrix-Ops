@@ -62,6 +62,7 @@ export async function ownContent(): Promise<OwnFolder[]> {
   return [
     { key: 'cards', title: 'Emergency cards', help: 'One text file per card.', path: 'user\\cards', files: 0, problems: [] },
     { key: 'plans', title: 'Plans and walkthroughs (including “keep it from failing”)', help: 'One text file per plan.', path: 'user\\plans', files: 0, problems: [] },
+  { key: 'seed-guides', title: 'Seed vault guides', help: 'One text file per guide.', path: 'user\\seed-guides', files: 0, problems: [] },
   ];
 }
 export async function openOwnFolder(key: string): Promise<string> {
@@ -549,6 +550,45 @@ export async function academySave(lesson: string, score: number, total: number, 
   const r = memAcademy[lesson] ?? { tries: 0, best: 0, total };
   r.tries++; r.best = Math.max(r.best, score); r.total = total;
   memAcademy[lesson] = r;
+}
+
+// ---------- seed vault ----------
+export type Seed = {
+  id: string; crop: string; variety: string; kind: string; packets: number; seeds_per_packet: number; year_packed: number;
+  germination: number; tested: string; source: string; location: string; plant_when: string; days_to_harvest: number;
+  target: number; notes: string; status?: string; age?: number | null; years_good?: number;
+};
+let memSeeds: Seed[] = [
+  { id: '1', crop: 'Tomato', variety: 'Brandywine', kind: 'Heirloom', packets: 2, seeds_per_packet: 30, year_packed: 2025, germination: 0, tested: '', source: 'Local seed swap', location: 'Fridge door', plant_when: 'Spring, indoors 6 weeks before last frost', days_to_harvest: 80, target: 3, notes: '' },
+  { id: '2', crop: 'Pole bean', variety: 'Kentucky Wonder', kind: 'Heirloom', packets: 1, seeds_per_packet: 60, year_packed: 2021, germination: 0, tested: '', source: '', location: 'Seed box', plant_when: 'Spring after last frost', days_to_harvest: 65, target: 0, notes: '' },
+];
+function seedDecorate(s: Seed): Seed {
+  const life = /onion|leek|parsnip/i.test(s.crop) ? 1 : /corn|pepper/i.test(s.crop) ? 2 : /bean|carrot|pea/i.test(s.crop) ? 3 : /tomato|beet/i.test(s.crop) ? 4 : 3;
+  const age = s.year_packed ? new Date().getFullYear() - s.year_packed : null;
+  const status = age != null && age > life ? 'replace' : age != null && age >= life ? 'check' : s.target > 0 && s.packets < s.target ? 'check' : 'ok';
+  return { ...s, status, age, years_good: life };
+}
+export async function seedsList(): Promise<Seed[]> {
+  if (inTauri) return call<Seed[]>('seeds_list');
+  return memSeeds.map(seedDecorate);
+}
+export async function seedSave(seed: Seed): Promise<Seed[]> {
+  if (inTauri) return call<Seed[]>('seed_save', { seed });
+  if (!seed.id) seed = { ...seed, id: String(Math.max(0, ...memSeeds.map((s) => Number(s.id) || 0)) + 1) };
+  const at = memSeeds.findIndex((s) => s.id === seed.id);
+  if (at >= 0) memSeeds[at] = seed; else memSeeds.push(seed);
+  return memSeeds.map(seedDecorate);
+}
+export async function seedDelete(ids: string[]): Promise<Seed[]> {
+  if (inTauri) return call<Seed[]>('seed_delete', { ids });
+  memSeeds = memSeeds.filter((s) => !ids.includes(s.id));
+  return memSeeds.map(seedDecorate);
+}
+export async function seedGuides(): Promise<Card[]> {
+  if (inTauri) return call<Card[]>('seed_guides');
+  return [
+    { id: 'start-small', title: 'What to buy first', kind: 'buy', status: 'draft', reviewer: '', reviewed: '', body: '**Start with what you eat.**\n\n1. Beans, corn, squash, potatoes and greens.\n2. Buy open-pollinated seed.\n\nSource: sample.' },
+  ];
 }
 
 // ---------- how much to have ----------

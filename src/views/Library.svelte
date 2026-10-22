@@ -1,6 +1,7 @@
 <script lang="ts">
   import { listCards, type Card } from '../lib/api';
   import { onMount } from 'svelte';
+  import { parts, blocks } from '../lib/cardtext';
 
   let { cardToOpen = $bindable(null) }: { cardToOpen: string | null } = $props();
 
@@ -25,26 +26,6 @@
   const shown = $derived(cards.filter((c) => !q.trim() || (c.title + ' ' + c.body).toLowerCase().includes(q.trim().toLowerCase())));
   const groups = $derived(GROUPS.map(([k, t]) => ({ title: t, list: shown.filter((c) => kindOf(c) === k) })).filter((g) => g.list.length));
 
-  // **bold** inside a line, shown without ever inserting raw HTML
-  function parts(t: string): { b: boolean; t: string }[] {
-    return t.split('**').map((x, i) => ({ b: i % 2 === 1, t: x })).filter((x) => x.t);
-  }
-  type Block = { kind: 'p' | 'ol' | 'ul'; lines: string[] };
-  function blocks(body: string): Block[] {
-    const out: Block[] = [];
-    for (const raw of body.split('\n')) {
-      const line = raw.trim();
-      if (!line) { out.push({ kind: 'p', lines: [] }); continue; }
-      const num = /^\d+\.\s+(.*)$/.exec(line);
-      const dash = /^[-*]\s+(.*)$/.exec(line);
-      const k = num ? 'ol' : dash ? 'ul' : 'p';
-      const text = num ? num[1] : dash ? dash[1] : line;
-      const last = out[out.length - 1];
-      if (last && last.kind === k && last.lines.length && k !== 'p') last.lines.push(text);
-      else out.push({ kind: k, lines: [text] });
-    }
-    return out.filter((b) => b.lines.length);
-  }
 </script>
 
 <section>

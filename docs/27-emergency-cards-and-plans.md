@@ -44,3 +44,14 @@ it off, and when. A lesson counts as learned at 70% or better on its quiz; a les
 counted. Each person has a card, a page (lessons learned and still to learn per course), a sign-off box and the next
 courses to take: finish a course already started, then the next in the usual order. If the Family page is locked the
 names are hidden until its passphrase is typed there (it is not kept).
+
+## Seed vault (Plan > Seed vault)
+* `core/src/seeds.rs`: the seed inventory (`user/seeds.csv`), written with `write_atomic`; a damaged file is an error and
+  is never overwritten. Crop, variety, type, packets, seeds per packet, year packed, last germination test, where kept,
+  when to plant, days to harvest, a goal and notes. Each seed shows **Good**, **Check** or **Replace** from its age
+  against a rule-of-thumb life for the crop (1 to 5 years), its last test, and whether packets are below the goal.
+* Guides: `content/seed-guides/*.md` (12, kinds buy, store, grow, save, each with a `Source:` line). Your own go in
+  `user/seed-guides` (Settings > Your own cards and plans), with a template and how-to.
+* Academy course `seed-vault` (3 modules, 9 lessons, quizzes) and the plan **Build a seed vault**.
+* Easier to find: Plan tabs are named Get ready, Plans, Drills, Family, Binder, Seed vault, What fails next; the Dashboard
+  has a Seed vault tile; the Seed vault page links to the course.

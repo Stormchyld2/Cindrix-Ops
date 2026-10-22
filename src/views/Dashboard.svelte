@@ -86,6 +86,7 @@
     medical: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 8v8M8 12h8',
     family: 'M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM2 20c0-3 3-5 6-5s6 2 6 5M17 11a2.5 2.5 0 1 0 0-5M16 15c3 0 6 1.5 6 5',
     binder: 'M6 3h12v18H6zM9 3v18M12 8h4M12 12h4',
+    seeds: 'M12 21V10M12 10c0-4 3-6 7-6 0 4-3 6-7 6zM12 14c0-3-2-5-6-5 0 3 2 5 6 5z',
     music: 'M9 18V6l11-2v12M9 18a3 3 0 1 1-3-3 3 3 0 0 1 3 3zM20 16a3 3 0 1 1-3-3 3 3 0 0 1 3 3z',
   };
   const tiles = $derived.by(() => {
@@ -101,6 +102,7 @@
       { icon: 'drills', label: 'Drills', tab: 'Drills', show: p ? p.plan : true },
       { icon: 'inventory', label: 'Inventory', tab: 'Inventory', show: p ? p.plan : true },
       { icon: 'family', label: 'Family', tab: 'Family', show: p ? p.plan : true },
+      { icon: 'seeds', label: 'Seed vault', tab: 'Seed vault', show: p ? p.plan : true },
       { icon: 'binder', label: 'Binder', tab: 'Binder', show: p ? p.plan : true },
       { icon: 'music', label: 'Music', tab: 'Music', show: p ? p.music : true },
     ];

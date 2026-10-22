@@ -14,7 +14,7 @@ use cindrix_core::maps::{self, MapStore};
 use cindrix_core::modelhost::ModelHost;
 use cindrix_core::product::Product;
 use cindrix_core::shelf::{Book, Mark, Marks, Shelf};
-use cindrix_core::{calendar, cards, cascade, pipeline, training};
+use cindrix_core::{calendar, cards, cascade, pipeline, seeds, training};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -185,10 +185,13 @@ fn count_md(dir: &std::path::Path) -> usize {
 fn own_content() -> Vec<OwnFolderDto> {
     let r = root().join("user");
     let card_problems = cards::load_dirs(&card_dirs()).problems.into_iter().map(|p| CourseProblemDto { place: p.place, message: p.message }).collect();
+    let seed_dirs: Vec<PathBuf> = vec![content_sub("seed-guides"), root().join("seed-guides"), r.join("seed-guides")].into_iter().filter(|d| d.is_dir()).collect();
+    let seed_problems = cards::load_dirs(&seed_dirs).problems.into_iter().map(|p| CourseProblemDto { place: p.place, message: p.message }).collect();
     let plan_problems = plans::load_all(&plan_dirs()).problems.into_iter().map(|p| CourseProblemDto { place: p.place, message: p.message }).collect();
     vec![
         OwnFolderDto { key: "cards", title: "Emergency cards".into(), help: "One text file per card. Copy the template in the folder, change the words and save it with a new name.".into(), path: r.join("cards").display().to_string(), files: count_md(&r.join("cards")), problems: card_problems },
         OwnFolderDto { key: "plans", title: "Plans and walkthroughs (including “keep it from failing”)".into(), help: "One text file per plan. Copy a template in the folder, change the words and save it with a new name.".into(), path: r.join("plans").display().to_string(), files: count_md(&r.join("plans")), problems: plan_problems },
+        OwnFolderDto { key: "seed-guides", title: "Seed vault guides".into(), help: "One text file per guide. Copy the template in the folder, change the words and save it with a new name. The kind (buy, store, grow or save) decides where it shows.".into(), path: r.join("seed-guides").display().to_string(), files: count_md(&r.join("seed-guides")), problems: seed_problems },
     ]
 }
 
@@ -198,6 +201,7 @@ fn open_own_folder(key: String) -> Result<String, String> {
     let (sub, files): (&str, &[&str]) = match key.as_str() {
         "cards" => ("cards", &["_template-card.md", "_how-to-add-a-card.md"]),
         "plans" => ("plans", &["_template-plan.md", "_template-keep-it-from-failing.md", "_how-to-add-a-plan.md"]),
+        "seed-guides" => ("seed-guides", &["_template-seed-guide.md", "_how-to-add-a-seed-guide.md"]),
         _ => return Err("There is no such folder.".into()),
     };
     let dir = root().join("user").join(sub);
@@ -1610,6 +1614,86 @@ fn academy_save(lesson: String, score: u32, total: u32, person: Option<String>) 
     academy::Log::new(&root().join("user")).add(academy::Result_ { date: calendar::today_string(), lesson, score, total, person: person.unwrap_or_default().trim().to_string() })
 }
 
+// ---------- seed vault ----------
+
+#[derive(Serialize, Deserialize, Clone)]
+struct SeedDto {
+    id: String,
+    crop: String,
+    variety: String,
+    kind: String,
+    packets: f64,
+    seeds_per_packet: f64,
+    year_packed: i32,
+    germination: f64,
+    tested: String,
+    source: String,
+    location: String,
+    plant_when: String,
+    days_to_harvest: f64,
+    target: f64,
+    notes: String,
+    /// "ok", "check" or "replace" (filled in when listing)
+    #[serde(default)]
+    status: String,
+    #[serde(default)]
+    age: Option<i32>,
+    #[serde(default)]
+    years_good: u32,
+}
+
+impl From<SeedDto> for seeds::Seed {
+    fn from(d: SeedDto) -> seeds::Seed {
+        seeds::Seed {
+            id: d.id, crop: d.crop, variety: d.variety, kind: d.kind, packets: d.packets, seeds_per_packet: d.seeds_per_packet,
+            year_packed: d.year_packed, germination: d.germination, tested: d.tested, source: d.source, location: d.location,
+            plant_when: d.plant_when, days_to_harvest: d.days_to_harvest, target: d.target, notes: d.notes,
+        }
+    }
+}
+
+fn seed_dtos(all: Vec<seeds::Seed>) -> Vec<SeedDto> {
+    let (y, _) = calendar::today_ym();
+    all.into_iter()
+        .map(|s| {
+            let status = match seeds::status(&s, y) { seeds::Status::Ok => "ok", seeds::Status::Check => "check", seeds::Status::Replace => "replace" }.to_string();
+            let (age, years_good) = (seeds::age(&s, y), seeds::years_good(&s.crop));
+            SeedDto {
+                id: s.id, crop: s.crop, variety: s.variety, kind: s.kind, packets: s.packets, seeds_per_packet: s.seeds_per_packet,
+                year_packed: s.year_packed, germination: s.germination, tested: s.tested, source: s.source, location: s.location,
+                plant_when: s.plant_when, days_to_harvest: s.days_to_harvest, target: s.target, notes: s.notes, status, age, years_good,
+            }
+        })
+        .collect()
+}
+
+#[tauri::command]
+fn seeds_list() -> Result<Vec<SeedDto>, String> {
+    Ok(seed_dtos(seeds::Vault::new(&root().join("user")).list()?))
+}
+
+#[tauri::command]
+fn seed_save(seed: SeedDto) -> Result<Vec<SeedDto>, String> {
+    Ok(seed_dtos(seeds::Vault::new(&root().join("user")).save(seed.into())?))
+}
+
+#[tauri::command]
+fn seed_delete(ids: Vec<String>) -> Result<Vec<SeedDto>, String> {
+    Ok(seed_dtos(seeds::Vault::new(&root().join("user")).delete(&ids)?))
+}
+
+/// The seed guide cards: the program's own, the drive's `seed-guides` folder and the user's.
+#[tauri::command]
+fn seed_guides() -> Vec<CardDto> {
+    let r = root();
+    let dirs: Vec<PathBuf> = vec![content_sub("seed-guides"), r.join("seed-guides"), r.join("user").join("seed-guides")].into_iter().filter(|d| d.is_dir()).collect();
+    cards::load_dirs(&dirs)
+        .cards
+        .into_iter()
+        .map(|c| CardDto { id: c.id, title: c.title, kind: c.kind, status: c.status, reviewer: c.reviewer, reviewed: c.reviewed, body: c.body })
+        .collect()
+}
+
 // ---------- how much to have ----------
 
 #[derive(Serialize)]
@@ -2000,6 +2084,10 @@ pub fn run() {
             academy_save,
             training_reports,
             stock_needs,
+            seeds_list,
+            seed_save,
+            seed_delete,
+            seed_guides,
             training_enrol,
             training_signoff,
             plans_list,

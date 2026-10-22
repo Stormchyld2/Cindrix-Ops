@@ -16,6 +16,7 @@
   import Settings from './views/Settings.svelte';
   import Dashboard from './views/Dashboard.svelte';
   import Plans from './views/Plans.svelte';
+  import SeedVault from './views/SeedVault.svelte';
   import Music from './views/Music.svelte';
   import MiniPlayer from './lib/MiniPlayer.svelte';
   import Splash from './lib/Splash.svelte';
@@ -88,11 +89,13 @@
       return true;
     })
   );
-  const planTabs = ['Start', 'What next', 'Drills', 'Family', 'Binder', 'What fails'] as const;
+  const planTabs = ['Start', 'What next', 'Drills', 'Family', 'Binder', 'Seed vault', 'What fails'] as const;
 
   let group: Group = $state('Dashboard');
   // If the current screen is switched off for this product, move to the first one that is on.
   $effect(() => { if (groups.length && !groups.includes(group)) group = groups[0]; });
+  // plain names on the buttons; the short ids stay as they are
+  const planLabel: Record<string, string> = { 'Start': 'Get ready', 'What next': 'Plans', 'Drills': 'Drills', 'Family': 'Family', 'Binder': 'Binder', 'Seed vault': 'Seed vault', 'What fails': 'What fails next' };
   let plan: (typeof planTabs)[number] = $state('Start');
   const libTabs = ['Shelf', 'Archives', 'Cards'] as const;
   let lib: (typeof libTabs)[number] = $state('Shelf');
@@ -153,7 +156,7 @@
     {#if group === 'Plan'}
       <div class="subnav">
         {#each planTabs as t}
-          <button class:on={plan === t} onclick={() => (plan = t)}>{t}</button>
+          <button class:on={plan === t} onclick={() => (plan = t)}>{planLabel[t] ?? t}</button>
         {/each}
       </div>
     {/if}
@@ -195,6 +198,8 @@
         <Binder />
       {:else if plan === 'Family'}
         <Family />
+      {:else if plan === 'Seed vault'}
+        <SeedVault go={goTo} />
       {:else}
         <Cascade go={goTo} />
       {/if}

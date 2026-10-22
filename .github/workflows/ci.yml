@@ -368,8 +368,9 @@ jobs:
         shell: bash
         run: |
           mkdir -p pack/content
-          cp -r content/cards content/plans pack/content/
-          printf 'Copy the "content" folder in here onto the top of your Cindrix drive and choose to merge or replace when asked.\r\nNo new folders are needed. Your own cards go in user\\cards and your own plans in user\\plans (Settings, Your own cards and plans, opens them).\r\n' > pack/README.txt
+          cp -r content/cards content/plans content/seed-guides pack/content/
+          mkdir -p pack/content/academy && cp -r content/academy/seed-vault pack/content/academy/
+          printf 'Copy the "content" folder in here onto the top of your Cindrix drive and choose to merge or replace when asked.\r\nNo new folders are needed. Your own cards go in user\\cards, your own plans in user\\plans and your own seed guides in user\\seed-guides (Settings, Your own cards and plans, opens them).\r\n' > pack/README.txt
       - uses: actions/upload-artifact@v4
         with:
           name: Cindrix-content-pack

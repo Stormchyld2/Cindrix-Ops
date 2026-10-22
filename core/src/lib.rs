@@ -32,6 +32,7 @@ pub mod stockplan;
 pub mod suggest;
 pub mod training;
 pub mod safestream;
+pub mod seeds;
 pub mod safety;
 pub mod userdata;
 pub mod xz;
