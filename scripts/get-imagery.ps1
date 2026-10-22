@@ -137,6 +137,7 @@ $client.Timeout = [TimeSpan]::FromSeconds(60)
 $client.DefaultRequestHeaders.UserAgent.ParseAdd('cindrix-ops-offline-library/1.0 (personal offline copy)')
 $format = $null
 $lost = 0
+$script:failed = 0
 foreach ($z in $MinZoom..$MaxZoom) {
   if (Test-Path (Join-Path $work "z$z.fetched")) { Write-Host "Zoom $z already done."; continue }
   $todo = New-Object System.Collections.Generic.List[object]
@@ -151,6 +152,7 @@ foreach ($z in $MinZoom..$MaxZoom) {
       }
     }
   }
+  $failedAtStart = $script:failed
   Write-Host ("Zoom {0}: {1:N0} tiles to fetch..." -f $z, $todo.Count)
   $running = New-Object System.Collections.Generic.List[object]
   $done = 0
@@ -174,7 +176,12 @@ foreach ($z in $MinZoom..$MaxZoom) {
         $running.Add($item)
         continue
       }
-      if ($item.fail) { throw "USGS did not answer for tile $($item.url) after 4 tries. Run this again when the internet is steady; finished tiles are kept." }
+      if ($item.fail) {
+        # leave this one for the next run; the rest carries on (a stray tile should not stop hours of work)
+        $script:failed++
+        if ($script:failed -gt 200) { throw "USGS stopped answering (200 tiles missed). Run this again when the internet is steady; finished tiles are kept." }
+        continue
+      }
       [void][System.IO.Directory]::CreateDirectory((Split-Path $item.base))
       if ($bytes -and $bytes.Length -gt 100) {
         $ext = $null
@@ -194,8 +201,9 @@ foreach ($z in $MinZoom..$MaxZoom) {
     if ($running.Count -ge $Parallel) { & $drain $Parallel }
   }
   & $drain 1
-  Set-Content -LiteralPath (Join-Path $work "z$z.fetched") -Value (Get-Date -Format s)
+  if ($failedAtStart -eq $script:failed) { Set-Content -LiteralPath (Join-Path $work "z$z.fetched") -Value (Get-Date -Format s) }
 }
+if ($script:failed) { Write-Host "$($script:failed) tiles did not answer and were left out. Run the same command again later to fill them in." }
 if ($lost) { Write-Host "$lost tiles were in a different picture format and were left out." }
 
 # ---- step 2: pack the files into one MBTiles file, then one PMTiles file ----
