@@ -21,6 +21,8 @@
   let error = $state('');
   /** What the open map file covers, read from its header. */
   let packInfo = $state('');
+  /** True when the map file covers only part of the country: the grey beyond its edge is simply outside it. */
+  let partial = $state(false);
   let stats: RouteStats | null = $state(null);
   let confirmDelete = $state(false);
 
@@ -118,6 +120,11 @@
         const [bw, bs, be, bn] = e > w && n > s ? [w, s, e, n] : [area.w, area.s, area.e, area.n];
         startBox = { box: [[bw, bs], [be, bn]], maxZoom: Math.min(area.maxZoom, 15) };
         m.fitBounds(startBox.box, { padding: 20, duration: 0, maxZoom: startBox.maxZoom });
+      }
+      // A map file cut for one area has nothing beyond its edge, which shows as grey. Stop the map at the edge.
+      if (area && (area.e - area.w < 40 || area.n - area.s < 20)) {
+        partial = true;
+        m.setMaxBounds([[area.w - 0.2, area.s - 0.2], [area.e + 0.2, area.n + 0.2]]);
       }
       // The map must follow its box when the window or the interface size changes, or part of it stays grey.
       if (typeof ResizeObserver !== 'undefined') {
@@ -431,7 +438,7 @@
 
 {#if street}
   <div class="warn">
-    <strong>Map: {street.name}</strong> ({street.mb} MB, from this drive).{#if packInfo} This pack covers {packInfo.replace(street.name + ': covers ', '')}{/if} Roads, water, land and buildings are drawn; place names are not yet. Positions you place are approximate, and routes are straight lines between your points: this app does not plan roads and does not yet steer routes around no-go areas.
+    <strong>Map: {street.name}</strong> ({street.mb} MB, from this drive).{#if packInfo} This pack covers {packInfo.replace(street.name + ': covers ', '')}{/if}{#if partial} It covers only part of the country, so the map stops at its edge. To cover more, run scripts\get-maps.ps1 again with a bigger area (or without -Bbox for the whole lower 48).{/if} Roads, water, land and buildings are drawn; place names are not yet. Positions you place are approximate, and routes are straight lines between your points: this app does not plan roads and does not yet steer routes around no-go areas.
   </div>
 {:else}
   <div class="warn">
