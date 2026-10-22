@@ -43,6 +43,19 @@
   // for example the whole country at a wide view and one county sharp
   let topoPacks: Pack[] = $derived(packs.filter((p) => p.kind === 'topo'));
   let aerialPacks: Pack[] = $derived(packs.filter((p) => p.kind === 'satellite'));
+  // the colours of the street map: light (the default), dark or black; the choice is remembered on this computer
+  type Look = 'light' | 'dark' | 'black';
+  function loadLook(): Look {
+    try { const v = localStorage.getItem('cindrix-map-look'); if (v === 'light' || v === 'dark' || v === 'black') return v; } catch { /* not remembered */ }
+    return 'light';
+  }
+  let look: Look = $state(loadLook());
+  function chooseLook(v: Look) {
+    look = v;
+    try { localStorage.setItem('cindrix-map-look', v); } catch { /* not remembered */ }
+    // the map is drawn once when it opens, so it is opened again with the new colours
+    location.reload();
+  }
   type MapKind = 'street' | 'topo' | 'aerial';
   let mapKind: MapKind = $state('street');
   let rasterIds: Record<'topo' | 'aerial', string[]> = { topo: [], aerial: [] };
@@ -140,7 +153,7 @@
           m.addLayer({
             id: `poi-${g.id}${sfx}-label`, type: 'symbol', source: src, 'source-layer': 'pois', minzoom: 12.5, filter,
             layout: { visibility: vis, 'text-field': ['coalesce', ['get', 'name'], ''], 'text-font': ['Noto Sans Regular'], 'text-size': 11, 'text-anchor': 'top', 'text-offset': [0, 0.8], 'text-optional': true, 'text-max-width': 8 },
-            paint: { 'text-color': '#ece7de', 'text-halo-color': '#0b0d0c', 'text-halo-width': 1.4 },
+            paint: { 'text-color': look === 'light' ? '#1d2420' : '#ece7de', 'text-halo-color': look === 'light' ? '#ffffff' : '#0b0d0c', 'text-halo-width': 1.4 },
           } as never);
         }
       });
@@ -324,7 +337,7 @@
         // the same drawing rules for every file; the background is drawn once, and each layer name is made different
         layers: (() => {
           const vec = usable.flatMap((_, i) =>
-            layers(srcNames[i], namedFlavor('black'), { lang: 'en' })
+            layers(srcNames[i], namedFlavor(look), { lang: 'en' })
               .filter((l) => keep(l as never) && (i === 0 || (l as { type: string }).type !== 'background'))
               .map((l) => (i === 0 ? l : { ...l, id: (l as { id: string }).id + '-' + i })),
           ) as { id: string; type: string }[];
@@ -771,6 +784,12 @@
             <button class="btn" class:primary={mapKind === 'aerial'} disabled={!aerialPacks.length}
               title={aerialPacks.length ? 'Aerial photos from above, with roads and names drawn on top' : 'No aerial photos on this drive yet. Double-click scripts\\Get-Imagery.bat to put them on it.'}
               onclick={() => (mapKind = 'aerial')}>Aerial</button>
+          </div>
+          <div class="row" role="group" aria-label="Map colours">
+            <span class="muted">COLOURS:</span>
+            {#each [['light', 'Light', 'Paper-map colours: blue water, green parks'], ['dark', 'Dark', 'A dark map with some colour'], ['black', 'Black', 'The darkest, greys only']] as [k, t, tip]}
+              <button class="btn" class:primary={look === k} title={tip} onclick={() => chooseLook(k as Look)}>{t}</button>
+            {/each}
           </div>
           <div class="row find">
             <input class="input grow" type="search" placeholder="Find a place: ZIP code, town and state, park, lake, or latitude and longitude" aria-label="Find a place" bind:value={findTerm}
