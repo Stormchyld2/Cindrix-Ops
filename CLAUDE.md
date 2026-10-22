@@ -16,7 +16,7 @@ Windows comes first; Android and iPhone wrap it later.
   question and the library list (`all_zim_files()` is the one place archives are listed from).
 - `src/`: Svelte 5 interface. `App.svelte` holds the top navigation; screens are in `src/views/`;
   `src/lib/api.ts` is the only place that calls Tauri commands. `src/lib/Splash.svelte` is the loading screen (logo and background are in `public/`); it shows in the real program, and in a browser only with `?splash`.
-- `core/src/routing.rs` (directions by car and on foot from the roads inside the street map), `roadtiles.rs` (reads the roads layer of a `.pmtiles` file) and `inflate.rs` (gzip): see `docs/31-directions.md`.
+- `core/src/routing.rs` (directions by car and on foot from the roads inside the street map), `roadtiles.rs` (reads the roads layer of a `.pmtiles` file) and `inflate.rs` (gzip): see `docs/31-directions.md`. `core/src/phonepack.rs` cuts a view of the map into one `.cmap` file for a phone: `docs/32-phone-map.md`.
 - `core/src/academy.rs` (course folders), `plans.rs` (plan files and progress), `cards.rs` (emergency cards from several `cards` folders), `training.rs` (per-person Academy sign-off) and `stockplan.rs` (how much to have): all read plain files, skip anything with a medicine dose, and are tested in `core/`. People's names come from the Family page.
 - `src/lib/tooltips.ts` gives every button hover text (fallback for new ones); `src/lib/planfacts.ts` works out what plan steps can tick themselves from.
 - `crypto/`: passphrase lock. `content/`: shipped sample content (cards, academy, plans). `docs/`: design docs, numbered. `licenses/`: license texts and credits; `scripts/collect-licenses.mjs` adds the libraries' own at build time.

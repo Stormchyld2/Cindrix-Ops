@@ -511,6 +511,77 @@ async fn directions(from: (f64, f64), to: (f64, f64), avoid: Vec<Vec<(f64, f64)>
     .map_err(|_| "The directions could not be worked out. Please try again.".to_string())?
 }
 
+// ---------- a phone copy of the map (one file to carry, core/src/phonepack.rs) ----------
+
+#[derive(Serialize)]
+struct PhoneZoomDto {
+    zoom: u8,
+    tiles: u64,
+    bytes: u64,
+    too_big: bool,
+}
+
+#[derive(Serialize)]
+struct PhoneKindDto {
+    kind: String,
+    zooms: Vec<PhoneZoomDto>,
+}
+
+fn phone_source(kind: &str) -> Option<cindrix_core::phonepack::Source> {
+    let maps_dir = drive_or_program("maps");
+    let want = if kind == "aerial" { "satellite" } else { kind };
+    let files: Vec<std::path::PathBuf> = maps::packs(&maps_dir).into_iter().filter(|p| p.kind == want).map(|p| maps_dir.join(&p.rel)).collect();
+    if files.is_empty() {
+        None
+    } else {
+        Some(cindrix_core::phonepack::Source { kind: kind.to_string(), files })
+    }
+}
+
+fn phone_bbox(b: (f64, f64, f64, f64)) -> cindrix_core::phonepack::Bbox {
+    cindrix_core::phonepack::Bbox { west: b.0, south: b.1, east: b.2, north: b.3 }
+}
+
+/// How big each kind of map would be for the area, at each level of detail. Kinds with no map files are left out.
+#[tauri::command]
+async fn phone_estimate(west: f64, south: f64, east: f64, north: f64) -> Result<Vec<PhoneKindDto>, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let b = phone_bbox((west, south, east, north));
+        let mut out = Vec::new();
+        for kind in ["street", "topo", "aerial"] {
+            let Some(src) = phone_source(kind) else { continue };
+            let e = cindrix_core::phonepack::estimate(&src, &b)?;
+            out.push(PhoneKindDto {
+                kind: e.kind,
+                zooms: e.zooms.into_iter().map(|z| PhoneZoomDto { zoom: z.zoom, tiles: z.tiles, bytes: z.bytes, too_big: z.too_big }).collect(),
+            });
+        }
+        Ok(out)
+    })
+    .await
+    .map_err(|_| "The sizes could not be worked out. Please try again.".to_string())?
+}
+
+/// Write the phone copy under `user/exports/`. `choices` is (kind, sharpest zoom). Returns the file's path.
+#[tauri::command]
+async fn phone_export(name: String, west: f64, south: f64, east: f64, north: f64, center: (f64, f64), zoom: f64, map_json: String, choices: Vec<(String, u8)>) -> Result<String, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let clean: String = name.chars().map(|c| if c.is_alphanumeric() || c == '-' || c == '_' { c } else { ' ' }).collect::<String>().split_whitespace().collect::<Vec<_>>().join("-");
+        let file = if clean.is_empty() { "phone-map".to_string() } else { clean };
+        let out = root().join("user").join("exports").join(format!("{}.cmap", file));
+        let mut picks = Vec::new();
+        for (kind, max_zoom) in choices {
+            let source = phone_source(&kind).ok_or_else(|| format!("There is no {} map on this drive.", kind))?;
+            picks.push(cindrix_core::phonepack::Choice { source, max_zoom });
+        }
+        let fonts = drive_or_program("maps").join("fonts");
+        cindrix_core::phonepack::build(&out, &name, &phone_bbox((west, south, east, north)), (center, zoom), &map_json, &picks, if fonts.is_dir() { Some(fonts.as_path()) } else { None })?;
+        Ok(out.to_string_lossy().to_string())
+    })
+    .await
+    .map_err(|_| "The phone map could not be made. Please try again.".to_string())?
+}
+
 // ---------- finding a place on the map (offline list on the drive, core/src/places.rs) ----------
 
 #[derive(Serialize)]
@@ -2174,6 +2245,8 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            phone_estimate,
+            phone_export,
             list_cards,
             own_content,
             open_own_folder,

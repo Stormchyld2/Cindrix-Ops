@@ -386,6 +386,22 @@ export async function directions(from: LatLon, to: LatLon, avoid: LatLon[][]): P
   return { car: way(50), foot: way(5), zoom: 14 };
 }
 
+// ---------- a phone copy of the map (one file to carry) ----------
+export type PhoneZoom = { zoom: number; tiles: number; bytes: number; too_big: boolean };
+export type PhoneKind = { kind: 'street' | 'topo' | 'aerial'; zooms: PhoneZoom[] };
+
+/** How big each kind of map would be for an area (west, south, east, north), at each level of detail. */
+export async function phoneEstimate(box: [number, number, number, number]): Promise<PhoneKind[]> {
+  if (inTauri) return call<PhoneKind[]>('phone_estimate', { west: box[0], south: box[1], east: box[2], north: box[3] });
+  return [{ kind: 'street', zooms: [10, 12, 14].map((zoom) => ({ zoom, tiles: 4 ** (zoom - 9), bytes: 40_000 * 4 ** (zoom - 9), too_big: false })) }];
+}
+
+/** Write the phone copy on the drive; returns where the file is. `choices` is each kind with its sharpest level. */
+export async function phoneExport(name: string, box: [number, number, number, number], center: LatLon, zoom: number, mapJson: string, choices: [string, number][]): Promise<string> {
+  if (inTauri) return call<string>('phone_export', { name, west: box[0], south: box[1], east: box[2], north: box[3], center, zoom, mapJson, choices });
+  return 'user/exports/' + name + '.cmap (preview only)';
+}
+
 // ---------- finding a place (a town, a ZIP code, a park, a latitude and longitude) ----------
 export type PlaceHit = { name: string; state: string; kind: string; lat: number; lon: number };
 export type PlaceResults = { places: PlaceHit[]; has_list: boolean; has_addresses: boolean };

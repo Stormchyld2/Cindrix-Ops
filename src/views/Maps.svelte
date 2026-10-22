@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy, untrack } from 'svelte';
   import { toDms, toMgrs } from '../lib/coords';
-  import { mapsList, mapLoad, mapSave, mapDelete, mapExportGpx, routeStats, mapPacks, tileUrl, placeSearch, directions as askDirections, type Directions, type DirRoute, type PlaceHit, type MapMeta, type LatLon, type RouteStats, type Pack } from '../lib/api';
+  import { mapsList, mapLoad, mapSave, mapDelete, mapExportGpx, routeStats, mapPacks, tileUrl, placeSearch, phoneEstimate, phoneExport, directions as askDirections, type PhoneKind, type Directions, type DirRoute, type PlaceHit, type MapMeta, type LatLon, type RouteStats, type Pack } from '../lib/api';
   import type { Map as MLMap, Marker, StyleSpecification, GeoJSONSource } from 'maplibre-gl';
   import { settings } from '../lib/settings.svelte';
   import { POI_GROUPS, kindName, groupOf, distanceKm, compass } from '../lib/mapkinds';
@@ -624,6 +624,58 @@
   let redoStack: string[] = [];
   let canUndo = $state(false);
   let canRedo = $state(false);
+
+  // ---------- a copy of the map for the phone (one file) ----------
+  let phoneOpen = $state(false);
+  let phoneName = $state('');
+  let phoneBox: [number, number, number, number] | null = $state(null);
+  let phoneKinds: PhoneKind[] = $state([]);
+  let phoneUse: Record<string, boolean> = $state({});
+  let phoneZoom: Record<string, number> = $state({});
+  let phoneBusy = $state(false);
+  let phoneMsg = $state('');
+  let phoneErr = $state('');
+  const KIND_WORDS: Record<string, string> = { street: 'Street map', topo: 'Topo (hills, contours)', aerial: 'Aerial photos' };
+  const fmtBytes = (b: number) => (b >= 1073741824 ? (b / 1073741824).toFixed(1) + ' GB' : b >= 1048576 ? Math.round(b / 1048576) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB');
+
+  async function phoneStart() {
+    phoneErr = ''; phoneMsg = '';
+    if (!map) return;
+    const b = map.getBounds();
+    const padX = (b.getEast() - b.getWest()) * 0.1, padY = (b.getNorth() - b.getSouth()) * 0.1;
+    phoneBox = [b.getWest() - padX, Math.max(-85, b.getSouth() - padY), b.getEast() + padX, Math.min(85, b.getNorth() + padY)];
+    phoneOpen = true;
+    phoneBusy = true;
+    try {
+      phoneKinds = await phoneEstimate(phoneBox);
+      for (const k of phoneKinds) {
+        const ok = k.zooms.filter((z) => !z.too_big && z.tiles > 0);
+        if (ok.length) {
+          phoneUse[k.kind] = k.kind === 'street';
+          // the sharpest level that stays under about 300 MB, else the lowest
+          const fit = ok.filter((z) => z.bytes < 300 * 1048576);
+          phoneZoom[k.kind] = (fit.length ? fit[fit.length - 1] : ok[0]).zoom;
+        }
+      }
+      if (!phoneName) phoneName = current ? (saved.find((m) => m.id === current)?.name ?? 'Phone map') : 'Phone map';
+    } catch (e) { phoneErr = String(e); } finally { phoneBusy = false; }
+  }
+  const phoneBytes = (k: PhoneKind) => k.zooms.filter((z) => !z.too_big && z.zoom <= (phoneZoom[k.kind] ?? 0)).reduce((a, z) => a + z.bytes, 0);
+  const phoneTotal = $derived(phoneKinds.filter((k) => phoneUse[k.kind]).reduce((a, k) => a + phoneBytes(k), 0));
+
+  async function phoneMake() {
+    if (!map || !phoneBox) return;
+    phoneErr = ''; phoneMsg = '';
+    const choices: [string, number][] = phoneKinds.filter((k) => phoneUse[k.kind]).map((k) => [k.kind, phoneZoom[k.kind]]);
+    if (!choices.length) { phoneErr = 'Tick at least one kind of map to carry.'; return; }
+    phoneBusy = true;
+    try {
+      const c = map.getCenter();
+      const json = JSON.stringify({ pins, route, nogo, drawings, directions: dirRoute ? { points: dirRoute.points, km: dirRoute.km, minutes: dirRoute.minutes, steps: dirRoute.steps } : null });
+      const where = await phoneExport(phoneName.trim() || 'Phone map', phoneBox, [c.lat, c.lng], map.getZoom(), json, choices);
+      phoneMsg = 'Done. The file is ' + where + ' - copy it to your phone.';
+    } catch (e) { phoneErr = String(e); } finally { phoneBusy = false; }
+  }
   const snapshot = () => JSON.stringify({ pins, route, nogo, drawings });
   function pushUndo() {
     undoStack.push(snapshot());
@@ -1244,6 +1296,40 @@
         <li><span class="muted">Grid</span> {coordHit.mgrs}</li>
       </ul>
     {/if}
+  </div>
+
+  <div class="panel sidebox">
+    <div class="label">Send to phone</div>
+    <p class="muted small">Makes one file of the part of the map you are looking at, to carry on a phone.</p>
+    {#if !phoneOpen}
+      <button class="btn" title="Work out how big a copy of this part of the map would be" onclick={() => void phoneStart()}>Copy this view for my phone</button>
+    {:else}
+      <input class="input" aria-label="Name of the phone map" title="The name the phone map will have" bind:value={phoneName} />
+      {#each phoneKinds as k}
+        {#if k.zooms.some((z) => !z.too_big && z.tiles > 0)}
+          <div class="drow">
+            <label class="grow"><input type="checkbox" bind:checked={phoneUse[k.kind]} /> {KIND_WORDS[k.kind] ?? k.kind}</label>
+            <span class="muted small">{fmtBytes(phoneBytes(k))}</span>
+          </div>
+          {#if phoneUse[k.kind]}
+            <select class="input" aria-label="How sharp" title="Sharper pictures show more but make a bigger file" bind:value={phoneZoom[k.kind]}>
+              {#each k.zooms.filter((z) => !z.too_big && z.tiles > 0) as z}
+                <option value={z.zoom}>Sharpness {z.zoom} (up to {fmtBytes(k.zooms.filter((q) => !q.too_big && q.zoom <= z.zoom).reduce((a, q) => a + q.bytes, 0))})</option>
+              {/each}
+            </select>
+          {/if}
+        {/if}
+      {:else}
+        <p class="muted small">{phoneBusy ? 'Working out the sizes...' : 'No map files were found for this part of the map.'}</p>
+      {/each}
+      <p class="small">The file will be about <b>{fmtBytes(phoneTotal)}</b>. Your pins, drawings, areas to avoid and directions go with it.</p>
+      <div class="drow">
+        <button class="btn" disabled={phoneBusy || phoneTotal === 0} title="Make the file on the drive" onclick={() => void phoneMake()}>{phoneBusy ? 'Working...' : 'Make the file'}</button>
+        <button class="btn" title="Close this box" onclick={() => { phoneOpen = false; phoneMsg = ''; phoneErr = ''; }}>Close</button>
+      </div>
+    {/if}
+    {#if phoneErr}<p class="small" role="alert">{phoneErr}</p>{/if}
+    {#if phoneMsg}<p class="small" role="status">{phoneMsg}</p>{/if}
   </div>
 
   <div class="panel side">

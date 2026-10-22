@@ -13,6 +13,15 @@ type R<T> = Result<T, String>;
 const MAX_DIR: u64 = 16 * 1024 * 1024;
 const MAX_TILE: usize = 8 * 1024 * 1024;
 
+/// The tile (x, y) that holds a position at a zoom level.
+pub fn tile_xy(lat: f64, lon: f64, z: u8) -> (u32, u32) {
+    let n = (1u64 << z) as f64;
+    let x = ((lon + 180.0) / 360.0 * n).floor();
+    let lr = lat.clamp(-85.05, 85.05).to_radians();
+    let y = ((1.0 - (lr.tan() + 1.0 / lr.cos()).ln() / std::f64::consts::PI) / 2.0 * n).floor();
+    (x.clamp(0.0, n - 1.0) as u32, y.clamp(0.0, n - 1.0) as u32)
+}
+
 // ---------- the file ----------
 
 #[derive(Clone, Debug)]
@@ -23,6 +32,8 @@ pub struct Header {
     pub tile_off: u64,
     pub internal_comp: u8,
     pub tile_comp: u8,
+    /// 1 vector (mvt), 2 png, 3 jpeg, 4 webp, 5 avif
+    pub tile_type: u8,
     pub min_zoom: u8,
     pub max_zoom: u8,
     /// west, south, east, north in degrees
@@ -50,6 +61,7 @@ pub fn parse_header(h: &[u8]) -> R<Header> {
         tile_off: u(56),
         internal_comp: h[97],
         tile_comp: h[98],
+        tile_type: h[99],
         min_zoom: h[100],
         max_zoom: h[101],
         bounds: (s(102), s(106), s(110), s(114)),
@@ -164,8 +176,8 @@ impl PmFile {
         Ok(es)
     }
 
-    /// The tile's bytes, uncompressed; None when the file has no such tile.
-    pub fn tile(&mut self, z: u8, x: u32, y: u32) -> R<Option<Vec<u8>>> {
+    /// Where a tile's bytes are in the file: (offset in the tile data, length). None when the file has no such tile.
+    pub fn entry(&mut self, z: u8, x: u32, y: u32) -> R<Option<(u64, u32)>> {
         if z < self.header.min_zoom || z > self.header.max_zoom {
             return Ok(None);
         }
@@ -183,16 +195,26 @@ impl PmFile {
                 len = e.length as u64;
                 continue;
             }
-            if id >= e.tile_id + e.run as u64 {
+            if id >= e.tile_id + e.run as u64 || e.length == 0 {
                 return Ok(None);
             }
-            if e.length == 0 {
-                return Ok(None);
-            }
-            let raw = crate::maps::read_range(&self.path, self.header.tile_off + e.offset, self.header.tile_off + e.offset + e.length as u64 - 1).map_err(|e| e.to_string())?;
-            return unpack(self.header.tile_comp, raw, MAX_TILE).map(Some);
+            return Ok(Some((e.offset, e.length)));
         }
         Err("map file directories are nested too deep".into())
+    }
+
+    /// The tile exactly as stored in the file (still compressed if the file compresses its tiles).
+    pub fn tile_raw(&mut self, z: u8, x: u32, y: u32) -> R<Option<Vec<u8>>> {
+        let Some((off, len)) = self.entry(z, x, y)? else { return Ok(None) };
+        crate::maps::read_range(&self.path, self.header.tile_off + off, self.header.tile_off + off + len as u64 - 1).map(Some).map_err(|e| e.to_string())
+    }
+
+    /// The tile's bytes, uncompressed; None when the file has no such tile.
+    pub fn tile(&mut self, z: u8, x: u32, y: u32) -> R<Option<Vec<u8>>> {
+        match self.tile_raw(z, x, y)? {
+            Some(raw) => unpack(self.header.tile_comp, raw, MAX_TILE).map(Some),
+            None => Ok(None),
+        }
     }
 }
 
