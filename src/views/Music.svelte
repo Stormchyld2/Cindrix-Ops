@@ -235,7 +235,7 @@
           {:else}Converter ready: other formats are converted to {status.converter === 'opus' ? 'Opus (small)' : 'FLAC (large)'} the first time they play.{/if}
         {/if}
         {#if status.cache_bytes > 0}
-          Converted copies use {mb(status.cache_bytes)} MB. <button class="link" onclick={clearCache}>Delete them</button> (your music is not touched; they are made again when needed).
+          Converted copies use {mb(status.cache_bytes)} MB. When a song is one the built-in player cannot play as it is (WMA and a few others, or a file it turns down), the program makes one small copy of it (about 1.2 MB for each minute of music) and plays that. Your own file is never changed. <button class="link" onclick={clearCache}>Delete the copies</button> (they are made again when needed).
         {/if}
       </section>
     {/if}

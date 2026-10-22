@@ -60,8 +60,8 @@
   $effect(() => { if (settings.loaded) void applyUiScale(settings.values.uiScale); });
 
   // Intel is the offline internet: the archives read like web pages. It goes with the library.
-  type Group = 'Ask' | 'Library' | 'Intel' | 'Academy' | 'Maps' | 'Music' | 'Plan' | 'Settings';
-  const allGroups: Group[] = ['Ask', 'Library', 'Intel', 'Academy', 'Maps', 'Music', 'Plan', 'Settings'];
+  type Group = 'Ask' | 'Library' | 'Intel' | 'Academy' | 'Maps' | 'Music' | 'Plan' | 'Inventory' | 'Settings';
+  const allGroups: Group[] = ['Ask', 'Library', 'Intel', 'Academy', 'Maps', 'Music', 'Plan', 'Inventory', 'Settings'];
   // Each product switches parts of the program on or off (core/src/product.rs).
   const groups = $derived(
     allGroups.filter((g) => {
@@ -70,11 +70,11 @@
       if (g === 'Library' || g === 'Intel') return product.library;
       if (g === 'Maps') return product.maps;
       if (g === 'Music') return product.music;
-      if (g === 'Plan') return product.plan;
+      if (g === 'Plan' || g === 'Inventory') return product.plan;
       return true;
     })
   );
-  const planTabs = ['Start', 'Inventory', 'Drills', 'Family', 'Binder', 'What fails'] as const;
+  const planTabs = ['Start', 'Drills', 'Family', 'Binder', 'What fails'] as const;
 
   let group: Group = $state('Ask');
   // If the current screen is switched off for this product, move to the first one that is on.
@@ -97,6 +97,7 @@
     group = 'Intel';
   }
   function goPlan(tab: string) {
+    if (tab === 'Inventory') { group = 'Inventory'; return; }
     group = 'Plan';
     if ((planTabs as readonly string[]).includes(tab)) plan = tab as (typeof planTabs)[number];
   }
@@ -132,7 +133,7 @@
     {#if group === 'Plan'}
       <div class="subnav">
         {#each planTabs as t}
-          <button class:on={plan === t} onclick={() => (plan = t)}>{t === 'Inventory' ? 'Inventory' : t}</button>
+          <button class:on={plan === t} onclick={() => (plan = t)}>{t}</button>
         {/each}
       </div>
     {/if}
@@ -164,8 +165,6 @@
     {:else if group === 'Plan'}
       {#if plan === 'Start'}
         <Start go={goPlan} />
-      {:else if plan === 'Inventory'}
-        <Inventory />
       {:else if plan === 'Drills'}
         <Drills />
       {:else if plan === 'Binder'}
@@ -175,6 +174,8 @@
       {:else}
         <Cascade go={goPlan} />
       {/if}
+    {:else if group === 'Inventory'}
+      <Inventory />
     {:else if group === 'Settings'}
       <Settings {openArchives} />
     {:else}

@@ -238,12 +238,19 @@ class Player {
   async play(): Promise<void> {
     const a = this.audio();
     if (!a.src && this.current) { await this.load(true); return; }
+    const mine = this.token;
     try {
       if (this.ctx && this.ctx.state === 'suspended') await this.ctx.resume();
       await a.play();
     } catch (e) {
+      const name = (e as DOMException)?.name;
+      // Another song, or the same one from a converted copy, has been loaded since: this answer is out of date.
+      if (name === 'AbortError' || mine !== this.token) return;
+      // The built-in decoder refused the file. The error event retries it from a converted copy (see failed()),
+      // so say nothing yet: a message here would stay on screen while the converted copy plays.
+      if (name === 'NotSupportedError' && this.convertedFor !== this.current?.rel) return;
       // A user-gesture rule or a bad file. Leave it paused; the error shows.
-      if ((e as DOMException)?.name !== 'AbortError') this.error = 'Could not start playing this file.';
+      this.error = 'Could not start playing this file.';
     }
   }
   pause() { this.el?.pause(); }
