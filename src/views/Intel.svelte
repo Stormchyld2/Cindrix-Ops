@@ -44,7 +44,7 @@
   const loc = $derived(tab ? tab.history[tab.idx] : undefined);
   // Pages come from the library server (a proper web server, so every kind of archive works) when it is
   // running and the person has not asked for the built-in reader.
-  const serverOn = $derived(settings.values.intelReader === 'server' && !!st?.url && st.url !== 'preview');
+  const serverOn = $derived.by(() => settings.values.intelReader === 'server' && !!st?.url && st.url !== 'preview');
   const here = $derived(loc && loc.t === 'page' ? loc.path : '');
   const bookHere = $derived(bookOf(here));
   const marked = $derived(here !== '' && bookmarks.some((b) => b.path === here));

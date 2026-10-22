@@ -14,7 +14,7 @@
 
   type BoolKey = { [K in keyof Settings]: Settings[K] extends boolean ? K : never }[keyof Settings];
   type NumKey = { [K in keyof Settings]: Settings[K] extends number ? K : never }[keyof Settings];
-  type ChoiceKey = 'startScreen' | 'answerLength' | 'searchSpeed' | 'intelStart' | 'mapUnits';
+  type ChoiceKey = 'startScreen' | 'answerLength' | 'searchSpeed' | 'intelStart' | 'intelReader' | 'mapUnits';
 
   let ms = $state<ModelStatus | null>(null);
   let models: ModelChoice[] = $state([]);
