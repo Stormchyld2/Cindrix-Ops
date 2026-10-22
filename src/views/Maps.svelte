@@ -1138,7 +1138,7 @@
         <button class="link" title="Delete this pin" onclick={() => { pushUndo(); removePin(p.id); }}>remove</button>
       </li>
     {:else}
-      <li class="muted">No pins yet. Choose Pins above, then click the map.</li>
+      <li class="muted">No pins yet. Use Pin (or Meet) on the toolbar over the map, then click the map.</li>
     {/each}
   </ul>
 {/snippet}
@@ -1434,7 +1434,10 @@
 
     <div class="grid2">
       <div>
-        <div class="label">Add a place</div>
+        <div class="label">{street ? 'Your places' : 'Add a place'}</div>
+        {#if street}
+          <p class="muted small">Add them with Pin or Meet on the toolbar over the map, or find a place and press Pin it. Drag a pin to move it.</p>
+        {:else}
         <div class="row">
           <input class="input" placeholder="Label" bind:value={pLabel} aria-label="Place label" />
           <select class="input" bind:value={pKind} aria-label="Kind of place">
@@ -1447,6 +1450,7 @@
           <input class="input" placeholder="Longitude, e.g. -80.1" bind:value={pLon} aria-label="Longitude" inputmode="decimal" />
           <button class="btn" onclick={addPin}>Add</button>
         </div>
+        {/if}
         {@render pinList()}
         {#if route.length > 0}
           <p class="muted">Route order: {route.map((id) => pins.find((p) => p.id === id)?.label ?? '?').join(' → ')}
@@ -1455,7 +1459,10 @@
       </div>
 
       <div>
-        <div class="label">No-go areas</div>
+        <div class="label">{street ? 'Areas to avoid' : 'No-go areas'}</div>
+        {#if street}
+          <p class="muted small">Outline a flooded, blocked or unsafe area with Avoid on the toolbar over the map. Directions keep out of these.</p>
+        {:else}
         <p class="muted small">Corners of a flooded, blocked or unsafe area, in order around its edge.</p>
         <div class="row">
           <input class="input" placeholder="Area label" bind:value={draftLabel} aria-label="No-go area label" />
@@ -1470,6 +1477,7 @@
           <button class="btn" onclick={finishArea} disabled={draft.length < 3}>Finish area</button>
           {#if draft.length > 0}<button class="link" onclick={() => (draft = [])}>start over</button>{/if}
         </div>
+        {/if}
         <ul class="plain">
           {#each nogo as a, i}
             <li>{a.label} <span class="muted">{a.points.length} corners</span>
