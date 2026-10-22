@@ -368,6 +368,24 @@ export async function mapPacks(): Promise<Pack[]> {
   return []; // browser preview: no packs, so the screen shows the plan view
 }
 
+// ---------- directions between two places (along the roads in the street map) ----------
+export type DirStep = { name: string; km: number; minutes: number };
+export type DirRoute = { points: LatLon[]; km: number; minutes: number; steps: DirStep[]; note: string };
+export type DirWay = { route: DirRoute | null; problem: string };
+export type Directions = { car: DirWay; foot: DirWay; zoom: number };
+
+/** The way between two places by car and on foot. `avoid` is a list of areas (each a list of corners) to stay out of. */
+export async function directions(from: LatLon, to: LatLon, avoid: LatLon[][]): Promise<Directions> {
+  if (inTauri) return call<Directions>('directions', { from, to, avoid });
+  // Browser preview: a straight line, only so the screen can be looked at.
+  const km = haversineKm(from, to);
+  const way = (kmh: number): DirWay => ({
+    route: { points: [from, to], km, minutes: (km / kmh) * 60, steps: [{ name: 'a straight line (preview only)', km, minutes: (km / kmh) * 60 }], note: 'This is only a preview: no roads are read in a browser.' },
+    problem: '',
+  });
+  return { car: way(50), foot: way(5), zoom: 14 };
+}
+
 // ---------- finding a place (a town, a ZIP code, a park, a latitude and longitude) ----------
 export type PlaceHit = { name: string; state: string; kind: string; lat: number; lon: number };
 export type PlaceResults = { places: PlaceHit[]; has_list: boolean; has_addresses: boolean };

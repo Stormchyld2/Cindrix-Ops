@@ -170,7 +170,7 @@ foreach ($z in $MinZoom..$MaxZoom) {
       } catch { $item.fail = $true }
       if ($item.fail -and $item.tries -lt 4) {
         $item.tries++
-        Start-Sleep -Milliseconds (500 * $item.tries)
+        Start-Sleep -Milliseconds (1500 * $item.tries)
         $item.fail = $false
         $item.task = $client.GetAsync($item.url)
         $running.Add($item)

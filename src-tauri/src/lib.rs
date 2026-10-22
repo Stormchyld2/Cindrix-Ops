@@ -450,6 +450,67 @@ fn map_packs() -> Vec<PackDto> {
         .collect()
 }
 
+// ---------- directions between two places (roads read from the street map on the drive, core/src/routing.rs) ----------
+
+#[derive(Serialize)]
+struct StepDto {
+    name: String,
+    km: f64,
+    minutes: f64,
+}
+
+#[derive(Serialize)]
+struct RouteDto {
+    points: Vec<(f64, f64)>,
+    km: f64,
+    minutes: f64,
+    steps: Vec<StepDto>,
+    note: String,
+}
+
+#[derive(Serialize)]
+struct WayDto {
+    route: Option<RouteDto>,
+    /// Plain words about why there is no route for this way of travelling.
+    problem: String,
+}
+
+#[derive(Serialize)]
+struct DirectionsDto {
+    car: WayDto,
+    foot: WayDto,
+    zoom: u8,
+}
+
+fn way_dto(r: Result<cindrix_core::routing::Route, String>) -> WayDto {
+    match r {
+        Ok(r) => WayDto {
+            problem: String::new(),
+            route: Some(RouteDto {
+                points: r.points,
+                km: r.km,
+                minutes: r.minutes,
+                steps: r.steps.into_iter().map(|s| StepDto { name: s.name, km: s.km, minutes: s.minutes }).collect(),
+                note: r.note,
+            }),
+        },
+        Err(e) => WayDto { route: None, problem: e },
+    }
+}
+
+/// The way from one place to another by car and on foot, along the roads in the street map.
+/// `avoid` is a list of areas (each a list of corners) to keep out of.
+#[tauri::command]
+async fn directions(from: (f64, f64), to: (f64, f64), avoid: Vec<Vec<(f64, f64)>>) -> Result<DirectionsDto, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let maps_dir = drive_or_program("maps");
+        let packs: Vec<std::path::PathBuf> = maps::packs(&maps_dir).into_iter().filter(|p| p.kind == "street").map(|p| maps_dir.join(&p.rel)).collect();
+        cindrix_core::routing::directions(&packs, from, to, &avoid).map(|d| DirectionsDto { car: way_dto(d.car), foot: way_dto(d.foot), zoom: d.zoom })
+    })
+    .await
+    .map_err(|_| "The directions could not be worked out. Please try again.".to_string())?
+}
+
 // ---------- finding a place on the map (offline list on the drive, core/src/places.rs) ----------
 
 #[derive(Serialize)]
@@ -2128,6 +2189,7 @@ pub fn run() {
             map_packs,
             dashboard_suggestions,
             place_search,
+            directions,
             zimview::zim_books,
             zimview::zim_bookmarks_load,
             zimview::zim_bookmarks_save,

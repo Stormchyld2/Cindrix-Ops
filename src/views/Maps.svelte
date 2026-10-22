@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy, untrack } from 'svelte';
-  import { mapsList, mapLoad, mapSave, mapDelete, mapExportGpx, routeStats, mapPacks, tileUrl, placeSearch, type PlaceHit, type MapMeta, type LatLon, type RouteStats, type Pack } from '../lib/api';
+  import { mapsList, mapLoad, mapSave, mapDelete, mapExportGpx, routeStats, mapPacks, tileUrl, placeSearch, directions as askDirections, type Directions, type DirRoute, type PlaceHit, type MapMeta, type LatLon, type RouteStats, type Pack } from '../lib/api';
   import type { Map as MLMap, Marker, StyleSpecification, GeoJSONSource } from 'maplibre-gl';
   import { settings } from '../lib/settings.svelte';
   import { POI_GROUPS, kindName, groupOf, distanceKm, compass } from '../lib/mapkinds';
@@ -409,7 +409,7 @@
         tileError = 'The map could not read its tiles: ' + String((e as { error?: Error }).error?.message ?? e);
       });
       m.on('load', () => {
-        for (const id of ['route', 'nogo', 'draft']) m.addSource(id, { type: 'geojson', data: empty() });
+        for (const id of ['route', 'nogo', 'draft', 'dir']) m.addSource(id, { type: 'geojson', data: empty() });
         m.addLayer({ id: 'nogo-fill', type: 'fill', source: 'nogo', paint: { 'fill-color': '#e5533d', 'fill-opacity': 0.25 } });
         m.addLayer({ id: 'nogo-line', type: 'line', source: 'nogo', paint: { 'line-color': '#e5533d', 'line-width': 2, 'line-dasharray': [2, 2] } });
         m.addLayer({ id: 'draft-line', type: 'line', source: 'draft', paint: { 'line-color': '#e5533d', 'line-width': 2, 'line-dasharray': [1, 2] } });
@@ -422,6 +422,8 @@
         m.addLayer({ id: 'drawtmp-pts', type: 'circle', source: 'drawtmp', filter: ['has', 'pt'], paint: { 'circle-radius': 5, 'circle-color': '#ffffff', 'circle-stroke-color': '#1a73e8', 'circle-stroke-width': 2 } });
         addPoiLayers(m, labelsOn);
         m.addLayer({ id: 'route-line', type: 'line', source: 'route', paint: { 'line-color': '#ff9a1f', 'line-width': 4 } });
+        m.addLayer({ id: 'dir-casing', type: 'line', source: 'dir', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 9 } });
+        m.addLayer({ id: 'dir-line', type: 'line', source: 'dir', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#1a73e8', 'line-width': 5.5 } });
         mapReady = true;
         // The box may have settled to its real size after the map was made: measure again, then frame the start view.
         syncSize(m);
@@ -734,6 +736,111 @@
     else map.doubleClickZoom.disable();
   });
 
+  // ---------- directions: from one place to another ----------
+  let dirOpen = $state(false);
+  let dirFrom = $state('');
+  let dirTo = $state('');
+  let dirA: PlaceHit | null = $state(null);
+  let dirB: PlaceHit | null = $state(null);
+  let dirAlt: { from: PlaceHit[]; to: PlaceHit[] } = $state({ from: [], to: [] });
+  let dirBusy = $state(false);
+  let dirErr = $state('');
+  let dirResult: Directions | null = $state(null);
+  let dirWay: 'car' | 'foot' = $state('car');
+  let dirMarkers: Marker[] = [];
+  const dirRoute: DirRoute | null = $derived(dirResult ? dirResult[dirWay].route : null);
+  const hitName = (h: PlaceHit) => h.name + (h.state ? ', ' + h.state : '');
+  const fmtMin = (m: number) => {
+    const t = Math.max(1, Math.round(m));
+    return t < 60 ? `${t} min` : `${Math.floor(t / 60)} h ${t % 60} min`;
+  };
+
+  async function lookUp(text: string): Promise<PlaceHit[]> {
+    const c = map?.getCenter();
+    return (await placeSearch(text, c ? [c.lat, c.lng] : undefined)).places;
+  }
+  async function runDirections(keepPlaces = false) {
+    dirErr = '';
+    if (!dirFrom.trim() || !dirTo.trim()) {
+      dirErr = 'Type where to start and where to go.';
+      return;
+    }
+    dirBusy = true;
+    dirResult = null;
+    try {
+      if (!keepPlaces || !dirA || !dirB) {
+        const [fa, ta] = await Promise.all([lookUp(dirFrom.trim()), lookUp(dirTo.trim())]);
+        if (!fa.length || !ta.length) {
+          dirErr = `Could not find ${!fa.length ? 'the start "' + dirFrom.trim() + '"' : 'the end "' + dirTo.trim() + '"'}. Try a street address with the house number first, a town and state, a ZIP code, or a latitude and longitude.`;
+          return;
+        }
+        dirA = fa[0];
+        dirB = ta[0];
+        dirAlt = { from: fa.slice(1, 5), to: ta.slice(1, 5) };
+      }
+      const a = dirA as PlaceHit | null;
+      const b = dirB as PlaceHit | null;
+      if (!a || !b) return;
+      const r = await askDirections([a.lat, a.lon], [b.lat, b.lon], nogo.map((x) => x.points));
+      dirResult = r;
+      dirWay = r.car.route || !r.foot.route ? 'car' : 'foot';
+      queueMicrotask(fitDirections);
+    } catch (e) {
+      dirErr = String(e);
+    } finally {
+      dirBusy = false;
+    }
+  }
+  function pickAlt(side: 'from' | 'to', h: PlaceHit) {
+    if (side === 'from' && dirA) {
+      dirAlt = { ...dirAlt, from: [dirA, ...dirAlt.from.filter((x) => x !== h)].slice(0, 4) };
+      dirA = h;
+      dirFrom = hitName(h);
+    } else if (side === 'to' && dirB) {
+      dirAlt = { ...dirAlt, to: [dirB, ...dirAlt.to.filter((x) => x !== h)].slice(0, 4) };
+      dirB = h;
+      dirTo = hitName(h);
+    }
+    void runDirections(true);
+  }
+  function swapDirections() {
+    [dirFrom, dirTo] = [dirTo, dirFrom];
+    [dirA, dirB] = [dirB, dirA];
+    dirAlt = { from: dirAlt.to, to: dirAlt.from };
+    if (dirA && dirB) void runDirections(true);
+  }
+  function closeDirections() {
+    dirOpen = false;
+    dirResult = null;
+    dirErr = '';
+  }
+  function fitDirections() {
+    const r = dirRoute;
+    if (!map || !ml || !r || r.points.length < 2) return;
+    const b = new ml.LngLatBounds([r.points[0][1], r.points[0][0]], [r.points[0][1], r.points[0][0]]);
+    for (const [la, lo] of r.points) b.extend([lo, la]);
+    map.fitBounds(b, { padding: { top: 90, bottom: 90, left: 480, right: 90 }, maxZoom: 16, duration: 0 });
+  }
+  // draw the way on the map, with an A and a B at the ends
+  $effect(() => {
+    if (!map || !ml || !mapReady) return;
+    const m = map;
+    const r = dirRoute;
+    (m.getSource('dir') as GeoJSONSource | undefined)?.setData(
+      r ? { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: r.points.map(([la, lo]) => [lo, la]) } } : empty(),
+    );
+    for (const k of dirMarkers) k.remove();
+    dirMarkers = [];
+    if (r && dirA && dirB) {
+      for (const [h, letter, color] of [[dirA, 'A', '#188038'], [dirB, 'B', '#d93025']] as const) {
+        const el = document.createElement('div');
+        el.textContent = letter;
+        el.style.cssText = `width:26px;height:26px;border-radius:50%;background:${color};color:#fff;font:700 14px sans-serif;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 4px #0007`;
+        dirMarkers.push(new ml.Marker({ element: el }).setLngLat([h.lon, h.lat]).addTo(m));
+      }
+    }
+  });
+
   // ---------- find a place ----------
   let findTerm = $state('');
   let finds: PlaceHit[] = $state([]);
@@ -993,11 +1100,11 @@
 
 {#if street}
   <div class="warn">
-    <strong>Map: {streetPacks.map((p) => p.name).join(', ')}</strong> ({streetPacks.reduce((a, p) => a + p.mb, 0)} MB, from this drive).{#if packInfo} This covers {packInfo.replace(/^.*?: covers /, '')}{/if}{#if partial} It covers only part of the country, so the map stops at its edge. This build comes with only a small sample area. To get the whole United States, double-click scripts\Get-Maps.bat (it needs internet and tens of gigabytes of space, and takes hours).{/if} Roads, water, land and buildings are drawn{#if labelsOn}, with names{:else}; place names need the map fonts (run scripts\get-maps.ps1 -FontsOnly){/if}. Use Places on the map to mark hospitals, water, fuel and more. Positions you place are approximate, and routes are straight lines between your points: this app does not plan roads and does not yet steer routes around no-go areas.
+    <strong>Map: {streetPacks.map((p) => p.name).join(', ')}</strong> ({streetPacks.reduce((a, p) => a + p.mb, 0)} MB, from this drive).{#if packInfo} This covers {packInfo.replace(/^.*?: covers /, '')}{/if}{#if partial} It covers only part of the country, so the map stops at its edge. This build comes with only a small sample area. To get the whole United States, double-click scripts\Get-Maps.bat (it needs internet and tens of gigabytes of space, and takes hours).{/if} Roads, water, land and buildings are drawn{#if labelsOn}, with names{:else}; place names need the map fonts (run scripts\get-maps.ps1 -FontsOnly){/if}. Use Places on the map to mark hospitals, water, fuel and more. Positions you place are approximate. The route you build from your own pins is straight lines between them; for the way by road, car or on foot, use Directions on the map, which keeps out of the areas you mark to avoid.
   </div>
 {:else}
   <div class="warn">
-    <strong>No map tiles on this drive yet.</strong> Street and topo maps come from map packs (see doc 7), so for now this is a plan view of the points you enter, drawn to scale with nothing underneath. Positions are typed in by hand and are approximate. Routes are straight lines between your points; this app does not plan roads and does not yet steer routes around no-go areas.
+    <strong>No map tiles on this drive yet.</strong> Street and topo maps come from map packs (see doc 7), so for now this is a plan view of the points you enter, drawn to scale with nothing underneath. Positions are typed in by hand and are approximate. The route you build from your own pins is straight lines between them. Directions along roads need a street map on the drive.
   </div>
 {/if}
 {#if tileError}<div class="warn err" role="alert">{tileError}</div>{/if}
@@ -1052,7 +1159,50 @@
                 onkeydown={(e) => { if (e.key === 'Enter') void findPlace(); }} />
               <button class="gbtn" title="Look this place up and move the map to it" onclick={findPlace} disabled={!findTerm.trim() || findBusy}>Find</button>
               <button class="gbtn" title="Keep the place you just found as a pin on your map" onclick={pinFound} disabled={!foundMarker}>Pin it</button>
+              <button class="gbtn" title="Work out the way between two places, by car and on foot" onclick={() => (dirOpen = !dirOpen)}>Directions</button>
             </div>
+            {#if dirOpen}
+              <div class="gdir" role="region" aria-label="Directions">
+                <div class="gdir-head"><strong>Directions</strong>
+                  <button class="gbtn" title="Close the directions and take the line off the map" onclick={closeDirections}>Close</button></div>
+                <div class="gdir-row"><span class="gdot a">A</span>
+                  <input class="gin box" placeholder="Start: an address, town, ZIP code or latitude, longitude" aria-label="Start" bind:value={dirFrom}
+                    onkeydown={(e) => { if (e.key === 'Enter') void runDirections(); }} oninput={() => (dirA = null)} /></div>
+                <div class="gdir-row"><span class="gdot b">B</span>
+                  <input class="gin box" placeholder="End: an address, town, ZIP code or latitude, longitude" aria-label="End" bind:value={dirTo}
+                    onkeydown={(e) => { if (e.key === 'Enter') void runDirections(); }} oninput={() => (dirB = null)} /></div>
+                <div class="gdir-row">
+                  <button class="gbtn" title="Swap the start and the end" onclick={swapDirections}>Swap</button>
+                  <button class="gbtn on" title="Work out the way between the two places" onclick={() => runDirections()} disabled={dirBusy || !dirFrom.trim() || !dirTo.trim()}>{dirBusy ? 'Working it out…' : 'Get directions'}</button>
+                </div>
+                {#if nogo.length}<p class="gnote2">The areas you marked to avoid are kept out of the way.</p>{/if}
+                {#if dirErr}<p class="gerr">{dirErr}</p>{/if}
+                {#if dirAlt.from.length && dirResult}<p class="gnote2">Start not the right place? {#each dirAlt.from as h}<button class="glink" onclick={() => pickAlt('from', h)}>{hitName(h)}</button>{/each}</p>{/if}
+                {#if dirAlt.to.length && dirResult}<p class="gnote2">End not the right place? {#each dirAlt.to as h}<button class="glink" onclick={() => pickAlt('to', h)}>{hitName(h)}</button>{/each}</p>{/if}
+                {#if dirResult}
+                  <div class="gtabs" role="tablist" aria-label="How you travel">
+                    {#each [['car', 'By car'], ['foot', 'On foot']] as [k, label]}
+                      {@const w = dirResult[k as 'car' | 'foot']}
+                      <button role="tab" aria-selected={dirWay === k} class:on={dirWay === k} onclick={() => { dirWay = k as 'car' | 'foot'; queueMicrotask(fitDirections); }}
+                        title={w.route ? `${label}: about ${fmtMin(w.route.minutes)}` : w.problem}>
+                        <span class="gt-l">{label}</span><span class="gt-t">{w.route ? fmtMin(w.route.minutes) : 'no way'}</span>
+                        <span class="gt-d">{w.route ? dist(w.route.km) : ''}</span></button>
+                    {/each}
+                  </div>
+                  {#if dirRoute}
+                    {#if dirRoute.note}<p class="gnote2">{dirRoute.note}</p>{/if}
+                    <ol class="dsteps" aria-label="The way">
+                      {#each dirRoute.steps as st}
+                        <li>{st.name} <span class="gmuted">· {dist(st.km)} · {fmtMin(st.minutes)}</span></li>
+                      {/each}
+                    </ol>
+                    <p class="gnote2">Times are estimates from the kind of road. The map does not know about one-way streets, traffic, closures or stairs.</p>
+                  {:else}
+                    <p class="gerr">{dirResult[dirWay].problem}</p>
+                  {/if}
+                {/if}
+              </div>
+            {/if}
             {#if finds.length > 1}
               <ul class="gfinds" aria-label="Places found">
                 {#each finds as h}
@@ -1361,6 +1511,22 @@
   .gt.on { background: #e8f0fe; color: #1a73e8; }
   .gt:disabled { color: #bdc1c6; cursor: default; }
   .gsep { width: 1px; align-self: stretch; background: #dadce0; margin: 2px 4px; }
+  .gdir { background: #fff; color: #202124; border-radius: 12px; box-shadow: 0 2px 8px #0005; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; max-height: calc(100vh - 220px); overflow: auto; }
+  .gdir-head { display: flex; justify-content: space-between; align-items: center; }
+  .gdir-row { display: flex; align-items: center; gap: 8px; }
+  .gin.box { border: 1px solid #dadce0; border-radius: 6px; padding: 7px 9px; flex: 1 1 auto; }
+  .gdot { width: 22px; height: 22px; border-radius: 50%; color: #fff; font: 700 12px sans-serif; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+  .gdot.a { background: #188038; } .gdot.b { background: #d93025; }
+  .gnote2 { margin: 0; color: #5f6368; font-size: 12px; }
+  .gerr { margin: 0; color: #b3261e; font-size: 13px; }
+  .glink { background: none; border: 0; color: #1a73e8; cursor: pointer; font-size: 12px; padding: 0 6px 0 0; text-decoration: underline; }
+  .gtabs { display: flex; gap: 6px; }
+  .gtabs button { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 6px; background: #fff; border: 1px solid #dadce0; border-radius: 8px; cursor: pointer; color: #202124; }
+  .gtabs button.on { border-color: #1a73e8; background: #e8f0fe; }
+  .gt-l { font-size: 12px; color: #5f6368; } .gt-t { font-size: 16px; font-weight: 700; } .gt-d { font-size: 12px; color: #5f6368; }
+  .dsteps { margin: 0; padding-left: 20px; font-size: 13px; }
+  .dsteps li { padding: 2px 0; }
+  .dsteps li::first-letter { text-transform: uppercase; }
   .gl { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 62px; padding: 4px; background: #fff; border: 2px solid #fff; border-radius: 8px; box-shadow: 0 2px 6px #0005; color: #202124; font-size: 11px; cursor: pointer; }
   .gl.on { border-color: #1a73e8; }
   .gl:disabled { opacity: .55; cursor: not-allowed; }

@@ -32,5 +32,6 @@ Mockups of every screen are in [`../mockups`](../mockups).
 - [28. Street address search](28-street-addresses.md)
 - [29. Topo and aerial maps](29-topo-and-aerial.md)
 - [30. Drawing on the map](30-map-drawing.md)
+- [31. Directions by car and on foot](31-directions.md)
 - [25. Testing Ask](25-ask-test.md): a 30-question check of the small models
 - [24. Hosts, libraries and browser clients](24-hosts-libraries-browser-clients.md): Vault and Hub as hosts for one drive, asking before reading a drive, browser tabs as clients
