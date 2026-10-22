@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { whatFailsNext, inventoryList, drillsList, mapPacks, modelStatus, listModels, libraryStatus, dashboardSuggestions, type Cascade, type Suggestion } from '../lib/api';
+  import { whatFailsNext, inventoryList, drillsList, mapPacks, modelStatus, listModels, libraryStatus, dashboardSuggestions, plansList, academyList, familyStatus, type Cascade, type Suggestion, type PlanInfo, type AcademyModule } from '../lib/api';
+  import { gatherFacts, planCounts, nextStep, stepStatus, KIND_NAME, type PlanFacts } from '../lib/planfacts';
+  import { categories } from '../lib/categories';
   import { settings } from '../lib/settings.svelte';
 
   let { go }: { go: (tab: string) => void } = $props();
@@ -12,6 +14,12 @@
   let drillsTotal = $state(0);
   let error = $state('');
   let loaded = $state(false);
+  // more of the picture: plans being followed, learning, supplies by kind, and whether the drive is ready
+  let plans: PlanInfo[] = $state([]);
+  let facts: PlanFacts = $state({ checks: {}, lessons: new Set<string>() });
+  let academy: AcademyModule[] = $state([]);
+  let cats: Record<string, number> = $state({});
+  let ready: { label: string; ok: boolean; tab: string; text: string }[] = $state([]);
 
   onMount(async () => {
     try {
@@ -28,8 +36,31 @@
     } catch (e) {
       error = String(e);
     }
+    // These never block the rest of the page: a failure just leaves that panel empty.
+    try { plans = await plansList(); facts = await gatherFacts(); } catch { /* no plans panel content */ }
+    try { academy = await academyList(); } catch { /* none */ }
+    try {
+      const c: Record<string, number> = {};
+      for (const i of await inventoryList()) c[i.category] = (c[i.category] ?? 0) + 1;
+      cats = c;
+    } catch { /* none */ }
+    try {
+      const f = (await familyStatus()).exists;
+      ready = [
+        { label: 'Family page', ok: f, tab: 'Family', text: f ? 'Filled in' : 'Not filled in yet' },
+        { label: 'Assistant', ok: facts.checks.model, tab: 'Settings', text: facts.checks.model ? 'A model file is ready' : 'No model file yet' },
+        { label: 'Library', ok: facts.checks.library, tab: 'Library', text: facts.checks.library ? 'Archives found' : 'No archives found yet' },
+        { label: 'Maps', ok: facts.checks.maps, tab: 'Maps', text: facts.checks.maps ? 'A map file is on the drive' : 'No map file yet' },
+      ];
+    } catch { /* none */ }
     loaded = true;
   });
+  const followed = $derived(plans.filter((p) => p.followed));
+  const checksDue = $derived(followed.reduce((n, p) => n + p.steps.filter((s) => stepStatus(s, facts) === 'due').length, 0));
+  const lessons = $derived(academy.flatMap((m) => m.lessons));
+  const lessonsDone = $derived(lessons.filter((l) => l.tries > 0).length);
+  const nextLesson = $derived(lessons.find((l) => l.tries === 0));
+  const emptyCats = $derived(categories.filter((c) => !cats[c]));
 
   function fmt(d: number | null | undefined): string {
     return d == null ? 'Not set' : d < 10 ? d.toFixed(1) + ' days' : Math.round(d) + ' days';
@@ -56,6 +87,7 @@
     <button class="tile" onclick={() => go('Inventory')}><div class="label">FOOD</div><div class="big {data.food_days == null ? '' : tone(data.food_days)}">{fmt(data.food_days)}</div></button>
     <button class="tile" onclick={() => go('Inventory')}><div class="label">RUNNING LOW</div><div class="big {low.length ? 'check' : 'ok'}">{low.length} item{low.length === 1 ? '' : 's'}</div></button>
     <button class="tile" onclick={() => go('Inventory')}><div class="label">PAST OR NEAR THEIR DATE</div><div class="big {past ? 'act' : data.expiring.length ? 'check' : 'ok'}">{data.expiring.length} item{data.expiring.length === 1 ? '' : 's'}</div></button>
+    <button class="tile" onclick={() => go('What next')}><div class="label">PLAN CHECKS DUE</div><div class="big {checksDue ? 'check' : followed.length ? 'ok' : ''}">{followed.length ? checksDue : 'None followed'}</div></button>
     <button class="tile" onclick={() => go('Drills')}><div class="label">DRILLS DONE</div><div class="big {drillsDone ? 'ok' : 'check'}">{drillsDone} of {drillsTotal}</div></button>
   </div>
 {/if}
@@ -101,7 +133,75 @@
   </section>
 </div>
 
+<div class="cols more">
+  <section class="panel">
+    <div class="label">YOUR PLANS</div>
+    {#if followed.length === 0}
+      <p class="muted">You are not following any plan yet. Plans keep going after the first walkthrough: repeating checks, learning and emergency plans.</p>
+    {/if}
+    {#each followed as p (p.id)}
+      {@const c = planCounts(p, facts)}
+      {@const n = nextStep(p, facts)}
+      <div class="line">
+        <div class="grow">
+          <strong>{p.title}</strong> <span class="muted small">{KIND_NAME[p.kind] ?? p.kind}</span>
+          <div class="muted small">{c.done} of {c.total} done{c.due ? ` · ${c.due} due again` : ''}{n ? ` · next: ${n.title}` : ' · all done for now'}</div>
+        </div>
+        <button class="btn" onclick={() => go('What next')}>Open</button>
+      </div>
+    {/each}
+    <div class="row gap"><button class="btn" onclick={() => go('What next')}>{followed.length ? 'All plans' : 'Choose plans to follow'}</button><button class="btn" onclick={() => go('Start')}>The first walkthrough</button></div>
+  </section>
+
+  <section class="panel">
+    <div class="label">LEARNING</div>
+    {#if lessons.length === 0}<p class="muted">No lessons found.</p>
+    {:else}
+      <p>{lessonsDone} of {lessons.length} lessons done.</p>
+      <div class="meter"><span style="width:{(lessonsDone / lessons.length) * 100}%"></span></div>
+      {#if nextLesson}<p class="muted small">Next lesson: <strong>{nextLesson.title}</strong> ({nextLesson.minutes} min)</p>{/if}
+    {/if}
+    <div class="row gap"><button class="btn" onclick={() => go('Academy')}>Open the Academy</button></div>
+  </section>
+
+  <section class="panel">
+    <div class="label">SUPPLIES BY KIND</div>
+    {#if items === 0}<p class="muted">Nothing counted yet.</p>{/if}
+    <div class="catgrid">
+      {#each categories as c}
+        <div class="catcell" class:none={!cats[c]}><span>{c}</span><span class="muted">{cats[c] ?? 0}</span></div>
+      {/each}
+    </div>
+    {#if items > 0 && emptyCats.length}<p class="muted small">Nothing yet in: {emptyCats.slice(0, 5).join(', ')}{emptyCats.length > 5 ? ' and more' : ''}.</p>{/if}
+    <div class="row gap"><button class="btn" onclick={() => go('Inventory')}>Open Inventory</button></div>
+  </section>
+
+  <section class="panel">
+    <div class="label">IS THE DRIVE READY?</div>
+    {#each ready as r}
+      <div class="line">
+        <span class="dotmark" class:ok={r.ok}>{r.ok ? '✓' : '!'}</span>
+        <div class="grow"><strong>{r.label}</strong><div class="muted small">{r.text}</div></div>
+        {#if !r.ok}<button class="btn" onclick={() => go(r.tab)}>Fix</button>{/if}
+      </div>
+    {/each}
+    <div class="label gap">GO TO</div>
+    <div class="row quick">
+      {#each ['Ask', 'Library', 'Intel', 'Maps', 'Music', 'Binder'] as t}<button class="btn" aria-label={'Go to ' + t} onclick={() => go(t)}>{t}</button>{/each}
+    </div>
+  </section>
+</div>
+
 <style>
+  .more { margin-top: 12px; }
+  .meter { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+  .meter span { display: block; height: 100%; background: var(--blue); }
+  .catgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 6px 14px; }
+  .catcell { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+  .catcell.none span:first-child { color: var(--muted); }
+  .dotmark { flex: 0 0 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line2); color: var(--accent); font-size: 12px; }
+  .dotmark.ok { background: #1f2a1d; border-color: #34502f; color: var(--ok); }
+  .quick { flex-wrap: wrap; gap: 8px; }
   .tiles { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
   .tile { flex: 1 1 170px; padding: 14px; text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
   .tile:hover { border-color: var(--blue-line); }

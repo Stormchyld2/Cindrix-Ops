@@ -1,8 +1,7 @@
 <script lang="ts">
   import { inventoryList, inventorySave, inventoryDelete, type Item } from '../lib/api';
   import { onMount } from 'svelte';
-
-  const categories = ['Water', 'Food', 'Medical and diabetes', 'Power and light', 'Tools and repair', 'Shelter and clothing', 'Hygiene and sanitation', 'Documents and cash'];
+  import { categories, categoryHint } from '../lib/categories';
 
   let items: Item[] = $state([]);
   let error = $state('');
@@ -173,6 +172,7 @@
     <label>Item<input class="input" bind:value={form.name} required /></label>
     <label>Category
       <select class="input" bind:value={form.category}>{#each categories as c}<option>{c}</option>{/each}</select>
+      {#if categoryHint[form.category]}<span class="muted hint">For example: {categoryHint[form.category]}</span>{/if}
     </label>
     <label>Where it is<input class="input" bind:value={form.location} placeholder="Pantry, Garage, Go-bag..." /></label>
     <div class="row">
@@ -227,4 +227,5 @@
   .dform { display: flex; flex-direction: column; gap: 10px; padding: 18px; }
   .dform label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
   .half { flex: 1 1 140px; }
+  .hint { font-size: 12px; display: block; margin-top: 2px; }
 </style>

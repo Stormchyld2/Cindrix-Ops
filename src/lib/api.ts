@@ -493,6 +493,38 @@ export async function academyLesson(id: string): Promise<AcademyLesson> {
   if (inTauri) return call<AcademyLesson>('academy_lesson', { id });
   return previewLesson;
 }
+// ---------- plans (what comes after the first walkthrough) ----------
+export type PlanStep = { id: string; title: string; every_days: number | null; check: string; go: string; button: string; body: string[]; state: 'todo' | 'done' | 'due'; last_done: string; due_in: number | null };
+export type PlanInfo = { id: string; title: string; summary: string; kind: 'checks' | 'learning' | 'scenario'; author: string; status: string; followed: boolean; steps: PlanStep[] };
+const memPlans: PlanInfo[] = [
+  { id: 'keep-it-fresh', title: 'Keep it fresh', summary: 'Short checks to repeat on a schedule, so your supplies and your plan stay true.', kind: 'checks', author: 'Cindrix', status: 'draft', followed: false, steps: [
+    { id: 'turn-over-your-stored-water', title: 'Turn over your stored water', every_days: 180, check: '', go: 'Inventory', button: 'Open Inventory', body: ['Water you filled yourself should be replaced about every six months.'], state: 'todo', last_done: '', due_in: null },
+    { id: 'test-the-smoke-alarms', title: 'Test the smoke and carbon monoxide alarms', every_days: 30, check: '', go: '', button: '', body: ['Press the test button on every alarm.'], state: 'todo', last_done: '', due_in: null },
+  ] },
+  { id: 'power-outage', title: 'Power outage plan', summary: 'What to have ready and what to do when the power is out for a day or a week.', kind: 'scenario', author: 'Cindrix', status: 'draft', followed: false, steps: [
+    { id: 'decide-how-you-will-get-light', title: 'Decide how you will get light', every_days: null, check: '', go: 'Inventory', button: 'Add these to Inventory', body: ['Flashlights or headlamps are safer than candles.'], state: 'todo', last_done: '', due_in: null },
+    { id: 'keep-a-radio', title: 'Keep a radio that does not need the wall', every_days: null, check: '', go: '', button: '', body: ['Battery or hand-crank.'], state: 'todo', last_done: '', due_in: null },
+  ] },
+];
+export async function plansList(): Promise<PlanInfo[]> {
+  if (inTauri) return call<PlanInfo[]>('plans_list');
+  return JSON.parse(JSON.stringify(memPlans));
+}
+export async function plansProblems(): Promise<CourseProblem[]> {
+  if (inTauri) return call<CourseProblem[]>('plans_problems');
+  return [];
+}
+export async function planFollow(id: string, on: boolean): Promise<void> {
+  if (inTauri) return call<void>('plan_follow', { id, on });
+  const p = memPlans.find((x) => x.id === id);
+  if (p) p.followed = on;
+}
+export async function planTick(plan: string, step: string, done: boolean): Promise<void> {
+  if (inTauri) return call<void>('plan_tick', { plan, step, done });
+  const s = memPlans.find((x) => x.id === plan)?.steps.find((x) => x.id === step);
+  if (s) { s.state = done ? 'done' : 'todo'; s.last_done = done ? 'today' : ''; s.due_in = done && s.every_days ? s.every_days : null; }
+}
+
 export async function academySave(lesson: string, score: number, total: number): Promise<void> {
   if (inTauri) return call<void>('academy_save', { lesson, score, total });
   const r = memAcademy[lesson] ?? { tries: 0, best: 0, total };

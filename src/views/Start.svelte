@@ -136,6 +136,11 @@
   <div class="track"><span style="width:{tickable.length ? (doneCount / tickable.length) * 100 : 0}%"></span></div>
 </section>
 
+<section class="panel next">
+  <div class="row between"><span class="label">WHEN THIS LIST IS DONE</span><button class="btn" onclick={() => go('What next')}>What next →</button></div>
+  <p class="muted small">This list gets you ready. It does not end there: repeating checks, learning plans and a plan for each kind of emergency pick up where it stops, and you can follow several at once.</p>
+</section>
+
 {#each steps as s, n}
   <section class="panel stepcard">
     <div class="steptop">
@@ -182,6 +187,7 @@
   .todo { margin: 6px 0; padding-left: 22px; }
   .todo li { margin: 4px 0; }
   .goal { margin: 8px 0 0; font-family: var(--mono); font-size: 12px; letter-spacing: .06em; color: var(--blue); }
+  .next { margin-top: 12px; }
   .title { font-weight: 600; }
   .small { font-size: 13px; }
 </style>

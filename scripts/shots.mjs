@@ -180,6 +180,18 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   await page.getByRole('button', { name: 'Plan', exact: true }).click();
   await shoot(page, `${label}-3-start`);
 
+  // What next: plans that carry on after the walkthrough. Open one, follow it, tick a step.
+  await page.getByRole('button', { name: 'What next', exact: true }).click();
+  await page.getByRole('heading', { name: 'Plans' }).waitFor();
+  await shoot(page, `${label}-3b-plans`);
+  await page.getByRole('button', { name: /Open the plan Keep it fresh/ }).click();
+  await page.getByRole('button', { name: 'Follow this plan' }).click();
+  await page.getByRole('button', { name: /Following/ }).waitFor();
+  await page.getByRole('button', { name: /Mark done: Turn over your stored water/ }).click();
+  await page.getByText(/Due again in 180 days/).waitFor();
+  await shoot(page, `${label}-3c-plan-followed`);
+  await page.getByRole('button', { name: '← All plans' }).click();
+
   await page.getByRole('button', { name: 'Inventory', exact: true }).click();
   await page.getByLabel(/Select Test strips \(Person 2\)/).check();
   await page.getByLabel(/Select Drinking water, 1 gal jugs/).first().check();

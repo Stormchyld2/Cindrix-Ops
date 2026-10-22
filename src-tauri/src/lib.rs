@@ -4,6 +4,7 @@ use cindrix_core::hardware::{self, Size};
 use cindrix_core::llama::LlamaModel;
 use cindrix_core::crawl;
 use cindrix_core::academy;
+use cindrix_core::plans;
 use cindrix_core::drills;
 use cindrix_core::drive::{self, DriveInfo};
 use cindrix_core::filesearch;
@@ -1493,6 +1494,118 @@ fn academy_save(lesson: String, score: u32, total: u32) -> Result<(), String> {
     academy::Log::new(&root().join("user")).add(academy::Result_ { date: calendar::today_string(), lesson, score, total })
 }
 
+// ---------- plans (what comes after the first walkthrough) ----------
+
+/// Every `plans` folder to read: the program's own, the main drive's, each other library's, and the user's.
+fn plan_dirs() -> Vec<PathBuf> {
+    let r = root();
+    let mut v = vec![content_sub("plans"), r.join("plans")];
+    for o in libs::other_roots(&r) {
+        v.push(o.join("plans"));
+        v.push(o.join("content").join("plans"));
+    }
+    v.push(r.join("user").join("plans"));
+    let mut seen: Vec<PathBuf> = Vec::new();
+    v.retain(|d| {
+        let key = d.canonicalize().unwrap_or_else(|_| d.clone());
+        d.is_dir() && !seen.contains(&key) && {
+            seen.push(key);
+            true
+        }
+    });
+    v
+}
+
+#[derive(Serialize)]
+struct PlanStepDto {
+    id: String,
+    title: String,
+    every_days: Option<u32>,
+    check: String,
+    go: String,
+    button: String,
+    body: Vec<String>,
+    /// "todo", "done" or "due" (done before, but its repeat time has passed)
+    state: String,
+    last_done: String,
+    /// days until it is due again (negative when overdue); only for repeating steps
+    due_in: Option<i64>,
+}
+
+#[derive(Serialize)]
+struct PlanDto {
+    id: String,
+    title: String,
+    summary: String,
+    kind: String,
+    author: String,
+    status: String,
+    followed: bool,
+    steps: Vec<PlanStepDto>,
+}
+
+#[tauri::command]
+fn plans_list() -> Result<Vec<PlanDto>, String> {
+    let loaded = plans::load_all(&plan_dirs());
+    let st = plans::Store::new(&root().join("user")).load()?;
+    let today = calendar::today_days();
+    Ok(loaded
+        .plans
+        .into_iter()
+        .map(|p| {
+            let followed = st.followed.contains(&p.id);
+            let steps = p
+                .steps
+                .iter()
+                .map(|s| {
+                    let last = st.done.iter().find(|(pl, sid, _)| *pl == p.id && *sid == s.id).map(|(_, _, d)| d.clone());
+                    let (state, due_in) = plans::step_state(s, last.as_deref(), today);
+                    PlanStepDto {
+                        id: s.id.clone(),
+                        title: s.title.clone(),
+                        every_days: s.every_days,
+                        check: s.check.clone(),
+                        go: s.go.clone(),
+                        button: s.button.clone(),
+                        body: s.body.clone(),
+                        state: match state {
+                            plans::StepState::Todo => "todo",
+                            plans::StepState::Done => "done",
+                            plans::StepState::Due => "due",
+                        }
+                        .into(),
+                        last_done: last.unwrap_or_default(),
+                        due_in,
+                    }
+                })
+                .collect();
+            PlanDto { id: p.id, title: p.title, summary: p.summary, kind: p.kind, author: p.author, status: p.status, followed, steps }
+        })
+        .collect())
+}
+
+#[tauri::command]
+fn plans_problems() -> Vec<CourseProblemDto> {
+    plans::load_all(&plan_dirs()).problems.into_iter().map(|p| CourseProblemDto { place: p.place, message: p.message }).collect()
+}
+
+#[tauri::command]
+fn plan_follow(id: String, on: bool) -> Result<(), String> {
+    if on && !plans::load_all(&plan_dirs()).plans.iter().any(|p| p.id == id) {
+        return Err("There is no such plan.".into());
+    }
+    plans::Store::new(&root().join("user")).follow(&id, on)
+}
+
+#[tauri::command]
+fn plan_tick(plan: String, step: String, done: bool) -> Result<(), String> {
+    let known = plans::load_all(&plan_dirs()).plans.iter().any(|p| p.id == plan && p.steps.iter().any(|s| s.id == step));
+    if !known {
+        return Err("There is no such step.".into());
+    }
+    plans::Store::new(&root().join("user")).tick(&plan, &step, done, &calendar::today_string())
+}
+
 // ---------- drills ----------
 
 #[derive(Serialize)]
@@ -1657,6 +1770,10 @@ pub fn run() {
             academy_problems,
             academy_lesson,
             academy_save,
+            plans_list,
+            plans_problems,
+            plan_follow,
+            plan_tick,
             drills_list,
             drill_save,
             sources_list,

@@ -15,6 +15,7 @@
   import Binder from './views/Binder.svelte';
   import Settings from './views/Settings.svelte';
   import Dashboard from './views/Dashboard.svelte';
+  import Plans from './views/Plans.svelte';
   import Music from './views/Music.svelte';
   import MiniPlayer from './lib/MiniPlayer.svelte';
   import Splash from './lib/Splash.svelte';
@@ -82,7 +83,7 @@
       return true;
     })
   );
-  const planTabs = ['Start', 'Drills', 'Family', 'Binder', 'What fails'] as const;
+  const planTabs = ['Start', 'What next', 'Drills', 'Family', 'Binder', 'What fails'] as const;
 
   let group: Group = $state('Dashboard');
   // If the current screen is switched off for this product, move to the first one that is on.
@@ -181,6 +182,8 @@
     {:else if group === 'Plan'}
       {#if plan === 'Start'}
         <Start go={goTo} />
+      {:else if plan === 'What next'}
+        <Plans go={goTo} />
       {:else if plan === 'Drills'}
         <Drills />
       {:else if plan === 'Binder'}
