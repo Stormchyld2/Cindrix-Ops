@@ -68,6 +68,18 @@ impl Index {
         self.keys.push(p.name.to_lowercase());
         self.places.push(p);
     }
+    /// The closest town to a point, within `max_km`, in `state` when one is given (a state code such as "WV").
+    pub fn nearest_city(&self, lat: f64, lon: f64, state: &str, max_km: f64) -> Option<&Place> {
+        let kx = lat.to_radians().cos() * 111.32;
+        self.places
+            .iter()
+            .filter(|p| p.kind == "city" && (state.is_empty() || p.state == state))
+            .map(|p| (((p.lat - lat) * 110.57).powi(2) + ((p.lon - lon) * kx).powi(2), p))
+            .filter(|(d2, _)| *d2 <= max_km * max_km)
+            .min_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal))
+            .map(|(_, p)| p)
+    }
+
     pub fn len(&self) -> usize {
         self.places.len()
     }
@@ -196,6 +208,15 @@ mod tests {
         )
         .unwrap();
         Index::load(&f)
+    }
+
+    #[test]
+    fn the_nearest_town_is_found_in_the_right_state_and_not_when_too_far() {
+        let ix = sample();
+        assert_eq!(ix.nearest_city(39.75, -104.99, "CO", 15.0).unwrap().name, "Denver");
+        assert!(ix.nearest_city(39.75, -104.99, "NC", 15.0).is_none());
+        assert!(ix.nearest_city(40.9, -104.99, "CO", 15.0).is_none());
+        assert_eq!(ix.nearest_city(35.5, -81.0, "", 15.0).unwrap().state, "NC");
     }
 
     #[test]

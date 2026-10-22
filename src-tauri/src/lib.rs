@@ -499,12 +499,20 @@ async fn place_search(query: String, near_lat: Option<f64>, near_lon: Option<f64
             let near = near_lat.zip(near_lon);
             places = cindrix_core::addresses::search(&dir, &query, near, 8)
                 .into_iter()
-                .map(|h| PlaceDto {
-                    name: if h.near { format!("{} (nearby)", h.label()) } else { h.label() },
-                    state: String::new(),
-                    kind: "address".into(),
-                    lat: h.lat,
-                    lon: h.lon,
+                .map(|mut h| {
+                    // the data has no town names: use the one typed, else the nearest town on the places list
+                    if h.town.is_empty() {
+                        if let Some(c) = ix.nearest_city(h.lat, h.lon, &h.state, 15.0) {
+                            h.town = c.name.clone();
+                        }
+                    }
+                    PlaceDto {
+                        name: if h.near { format!("{} (nearby)", h.label()) } else { h.label() },
+                        state: String::new(),
+                        kind: "address".into(),
+                        lat: h.lat,
+                        lon: h.lon,
+                    }
                 })
                 .collect();
         }

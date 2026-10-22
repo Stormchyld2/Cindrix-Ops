@@ -148,6 +148,8 @@ pub struct Hit {
     pub state: String,
     pub lat: f64,
     pub lon: f64,
+    /// The town, as typed (empty when none was typed).
+    pub town: String,
     /// True when this house number was not in the data and a neighbouring one on the same street is shown instead.
     pub near: bool,
 }
@@ -169,6 +171,10 @@ impl Hit {
             })
             .collect();
         let mut s = format!("{} {}", self.number, street.join(" "));
+        if !self.town.is_empty() {
+            s.push_str(", ");
+            s.push_str(&self.town);
+        }
         let place = [self.state.as_str(), self.zip.as_str()].iter().filter(|x| !x.is_empty()).cloned().collect::<Vec<_>>().join(" ");
         if !place.is_empty() {
             s.push_str(", ");
@@ -333,7 +339,7 @@ fn search_file(path: &Path, q: &Query, max_streets: usize, per_street: usize, ou
         let shown: Vec<&Row> = if exact.is_empty() { around.iter().collect() } else { exact.iter().collect() };
         for r in shown {
             let near = r.number != q.number;
-            out.push(Hit { number: r.number.clone(), street: r.street.clone(), zip: r.zip.clone(), state: r.state.clone(), lat: r.lat, lon: r.lon, near });
+            out.push(Hit { number: r.number.clone(), street: r.street.clone(), zip: r.zip.clone(), state: r.state.clone(), lat: r.lat, lon: r.lon, town: String::new(), near });
         }
         // the number just before, for a neighbour on the other side, when nothing was exact
         if exact.is_empty() {
@@ -345,7 +351,7 @@ fn search_file(path: &Path, q: &Query, max_streets: usize, per_street: usize, ou
                 let Some((r, from)) = row_before(&mut f, back, start)? else { break };
                 back = from;
                 if r.street == street_key {
-                    out.push(Hit { number: r.number, street: r.street, zip: r.zip, state: r.state, lat: r.lat, lon: r.lon, near: true });
+                    out.push(Hit { number: r.number, street: r.street, zip: r.zip, state: r.state, lat: r.lat, lon: r.lon, town: String::new(), near: true });
                 }
             }
         }
@@ -411,6 +417,12 @@ pub fn search(addresses_dir: &Path, typed: &str, near: Option<(f64, f64)>, limit
                 .then_with(|| a.street.cmp(&b.street))
                 .then_with(|| a.number.cmp(&b.number))
         });
+        if !q.town.is_empty() {
+            let town: Vec<String> = q.town.split(' ').map(|w| { let mut c = w.chars(); c.next().map(|f| f.to_string() + &c.as_str().to_lowercase()).unwrap_or_default() }).collect();
+            for h in hits.iter_mut() {
+                h.town = town.join(" ");
+            }
+        }
         hits.truncate(limit);
         return hits;
     }
@@ -569,6 +581,7 @@ mod tests {
         let h = search(&root, "529 Ogden Ave Fairmont, WV 26554", None, 8);
         assert_eq!(h.len(), 1, "{:?}", h);
         assert!(!h[0].near);
+        assert_eq!(h[0].label(), "529 Ogden Ave, Fairmont, WV 26554");
         let _ = fs::remove_dir_all(&d);
     }
 
