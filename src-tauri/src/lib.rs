@@ -609,7 +609,7 @@ async fn phone_send(file: String, dest: String) -> Result<String, String> {
 // ---------- "My details": home, bug-out places, household, contacts (core/src/profile.rs) ----------
 
 #[derive(Serialize, Deserialize, Clone, Default)]
-struct PlaceDto {
+struct MyPlaceDto {
     name: String,
     address: String,
     lat: Option<f64>,
@@ -617,38 +617,38 @@ struct PlaceDto {
 }
 
 #[derive(Serialize, Deserialize, Clone, Default)]
-struct ContactDto {
+struct MyContactDto {
     name: String,
     how: String,
     notes: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Default)]
-struct ProfileDto {
-    home: PlaceDto,
-    bugout: Vec<PlaceDto>,
+struct MyDetailsDto {
+    home: MyPlaceDto,
+    bugout: Vec<MyPlaceDto>,
     adults: u32,
     children: u32,
     babies: u32,
     small_pets: u32,
     large_pets: u32,
-    contacts: Vec<ContactDto>,
+    contacts: Vec<MyContactDto>,
     needs: String,
     skills: String,
     notes: String,
 }
 
-fn place_in(p: PlaceDto) -> cindrix_core::profile::Place {
+fn place_in(p: MyPlaceDto) -> cindrix_core::profile::Place {
     cindrix_core::profile::Place { name: p.name, address: p.address, lat: p.lat, lon: p.lon }
 }
-fn place_out(p: &cindrix_core::profile::Place) -> PlaceDto {
-    PlaceDto { name: p.name.clone(), address: p.address.clone(), lat: p.lat, lon: p.lon }
+fn place_out(p: &cindrix_core::profile::Place) -> MyPlaceDto {
+    MyPlaceDto { name: p.name.clone(), address: p.address.clone(), lat: p.lat, lon: p.lon }
 }
 
 #[tauri::command]
-fn profile_load() -> Result<ProfileDto, String> {
+fn profile_load() -> Result<MyDetailsDto, String> {
     let p = cindrix_core::profile::load(&root().join("user"))?;
-    Ok(ProfileDto {
+    Ok(MyDetailsDto {
         home: place_out(&p.home),
         bugout: p.bugout.iter().map(place_out).collect(),
         adults: p.adults,
@@ -656,7 +656,7 @@ fn profile_load() -> Result<ProfileDto, String> {
         babies: p.babies,
         small_pets: p.small_pets,
         large_pets: p.large_pets,
-        contacts: p.contacts.iter().map(|c| ContactDto { name: c.name.clone(), how: c.how.clone(), notes: c.notes.clone() }).collect(),
+        contacts: p.contacts.iter().map(|c| MyContactDto { name: c.name.clone(), how: c.how.clone(), notes: c.notes.clone() }).collect(),
         needs: p.needs,
         skills: p.skills,
         notes: p.notes,
@@ -664,7 +664,7 @@ fn profile_load() -> Result<ProfileDto, String> {
 }
 
 #[tauri::command]
-fn profile_save(p: ProfileDto) -> Result<(), String> {
+fn profile_save(p: MyDetailsDto) -> Result<(), String> {
     let prof = cindrix_core::profile::Profile {
         home: place_in(p.home),
         bugout: p.bugout.into_iter().map(place_in).collect(),
