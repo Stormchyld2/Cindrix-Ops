@@ -5,6 +5,7 @@ pub mod addresses;
 pub mod calendar;
 pub mod cards;
 pub mod cascade;
+pub mod coords;
 pub mod crawl;
 pub mod drills;
 pub mod drive;

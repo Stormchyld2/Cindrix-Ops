@@ -1,8 +1,9 @@
 # 31. Directions (by car and on foot)
 
-The Maps screen has a **Directions** button next to Find. Type a start and an end (a street address, a
-town and state, a ZIP code, or "latitude, longitude"), press Get directions, and the way is drawn
-on the map with the time and distance by car and on foot, and the roads to follow.
+The Maps screen has Directions boxes at the top of the left column, above My saved maps. Type a start
+and an end (a street address, a town and state, a ZIP code, or a position in any form, see
+`core/src/coords.rs`), press Get directions, and the way is drawn on the map with the time and
+distance by car and on foot, and the roads to follow.
 
 ## Where the roads come from
 

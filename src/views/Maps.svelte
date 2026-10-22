@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy, untrack } from 'svelte';
+  import { toDms, toMgrs } from '../lib/coords';
   import { mapsList, mapLoad, mapSave, mapDelete, mapExportGpx, routeStats, mapPacks, tileUrl, placeSearch, directions as askDirections, type Directions, type DirRoute, type PlaceHit, type MapMeta, type LatLon, type RouteStats, type Pack } from '../lib/api';
   import type { Map as MLMap, Marker, StyleSpecification, GeoJSONSource } from 'maplibre-gl';
   import { settings } from '../lib/settings.svelte';
@@ -789,7 +790,6 @@
   });
 
   // ---------- directions: from one place to another ----------
-  let dirOpen = $state(false);
   let dirFrom = $state('');
   let dirTo = $state('');
   let dirA: PlaceHit | null = $state(null);
@@ -861,17 +861,12 @@
     dirAlt = { from: dirAlt.to, to: dirAlt.from };
     if (dirA && dirB) void runDirections(true);
   }
-  function closeDirections() {
-    dirOpen = false;
-    dirResult = null;
-    dirErr = '';
-  }
   function fitDirections() {
     const r = dirRoute;
     if (!map || !ml || !r || r.points.length < 2) return;
     const b = new ml.LngLatBounds([r.points[0][1], r.points[0][0]], [r.points[0][1], r.points[0][0]]);
     for (const [la, lo] of r.points) b.extend([lo, la]);
-    map.fitBounds(b, { padding: { top: 90, bottom: 90, left: 480, right: 90 }, maxZoom: 16, duration: 0 });
+    map.fitBounds(b, { padding: 80, maxZoom: 16, duration: 0 });
   }
   // draw the way on the map, with an A and a B at the ends
   $effect(() => {
@@ -892,6 +887,32 @@
       }
     }
   });
+
+  // ---------- go to a position typed in any form ----------
+  let coordText = $state('');
+  let coordNote = $state('');
+  let coordBad = $state(false);
+  let coordHit: { dec: string; dms: string; mgrs: string } | null = $state(null);
+  async function goToCoordinates() {
+    const q = coordText.trim();
+    if (!q) return;
+    coordNote = '';
+    coordBad = false;
+    coordHit = null;
+    try {
+      const r = (await placeSearch(q)).places.find((h) => h.kind === 'point');
+      if (!r) {
+        coordBad = true;
+        coordNote = 'That is not a position I can read. Try 39.48513, -80.13929, or 39°29\'06.5"N 80°08\'21.4"W, or a grid reference such as 17S LD 1234 5678.';
+        return;
+      }
+      goToPlace(r);
+      coordHit = { dec: `${r.lat.toFixed(5)}, ${r.lon.toFixed(5)}`, dms: toDms(r.lat, r.lon), mgrs: toMgrs(r.lat, r.lon) ?? 'outside the grid (beyond 84° N or 80° S)' };
+    } catch (e) {
+      coordBad = true;
+      coordNote = 'The position could not be looked up: ' + String(e);
+    }
+  }
 
   // ---------- find a place ----------
   let findTerm = $state('');
@@ -1165,6 +1186,64 @@
 {#if message}<div class="ok-note" role="status">{message}</div>{/if}
 
 <div class="cols">
+<div class="sidecol">
+  <div class="panel sidebox">
+    <div class="label">Directions</div>
+    <p class="muted small">Start and end can be an address, a town, a ZIP code, or a position in any form.</p>
+    <div class="drow"><span class="gdot a">A</span>
+      <input class="input grow" placeholder="Start" aria-label="Start" title="Where you start: an address, town, ZIP code, or a position such as 39.48, -80.14 or 17S LD 1234 5678" bind:value={dirFrom}
+        onkeydown={(e) => { if (e.key === 'Enter') void runDirections(); }} oninput={() => (dirA = null)} /></div>
+    <div class="drow"><span class="gdot b">B</span>
+      <input class="input grow" placeholder="End" aria-label="End" title="Where you are going: an address, town, ZIP code, or a position" bind:value={dirTo}
+        onkeydown={(e) => { if (e.key === 'Enter') void runDirections(); }} oninput={() => (dirB = null)} /></div>
+    <div class="drow">
+      <button class="btn" title="Swap the start and the end" onclick={swapDirections}>Swap</button>
+      <button class="btn primary" title="Work out the way between the two places, by car and on foot" onclick={() => runDirections()} disabled={dirBusy || !dirFrom.trim() || !dirTo.trim()}>{dirBusy ? 'Working it out…' : 'Get directions'}</button>
+      {#if dirResult}<button class="btn" title="Take the line off the map" onclick={() => { dirResult = null; dirErr = ''; }}>Clear</button>{/if}
+    </div>
+    {#if nogo.length}<p class="muted small">The areas you marked to avoid are kept out of the way.</p>{/if}
+    {#if dirErr}<p class="small errtxt">{dirErr}</p>{/if}
+    {#if dirAlt.from.length && dirResult}<p class="muted small">Start not the right place? {#each dirAlt.from as h}<button class="link" onclick={() => pickAlt('from', h)}>{hitName(h)}</button>{' '}{/each}</p>{/if}
+    {#if dirAlt.to.length && dirResult}<p class="muted small">End not the right place? {#each dirAlt.to as h}<button class="link" onclick={() => pickAlt('to', h)}>{hitName(h)}</button>{' '}{/each}</p>{/if}
+    {#if dirResult}
+      <div class="dtabs" role="tablist" aria-label="How you travel">
+        {#each [['car', 'By car'], ['foot', 'On foot']] as [k, label]}
+          {@const w = dirResult[k as 'car' | 'foot']}
+          <button role="tab" aria-selected={dirWay === k} class="dtab" class:on={dirWay === k} onclick={() => { dirWay = k as 'car' | 'foot'; queueMicrotask(fitDirections); }}
+            title={w.route ? `${label}: about ${fmtMin(w.route.minutes)}` : w.problem}>
+            <span class="muted small">{label}</span><strong>{w.route ? fmtMin(w.route.minutes) : 'no way'}</strong>
+            <span class="muted small">{w.route ? dist(w.route.km) : ''}</span></button>
+        {/each}
+      </div>
+      {#if dirRoute}
+        {#if dirRoute.note}<p class="muted small">{dirRoute.note}</p>{/if}
+        <ol class="dsteps" aria-label="The way">
+          {#each dirRoute.steps as st}
+            <li>{st.name} <span class="muted">· {dist(st.km)} · {fmtMin(st.minutes)}</span></li>
+          {/each}
+        </ol>
+        <p class="muted small">Times are estimates from the kind of road. The map does not know about one-way streets, traffic, closures or stairs.</p>
+      {:else}
+        <p class="small errtxt">{dirResult[dirWay].problem}</p>
+      {/if}
+    {/if}
+
+    <div class="label coordlabel">Go to a position</div>
+    <div class="drow">
+      <input class="input grow" placeholder="39.48513, -80.13929 or 39°29'06.5&quot;N 80°08'21.4&quot;W or 17S LD 1234 5678" aria-label="Position" title="Type a position in decimal degrees, degrees-minutes-seconds, military grid (MGRS) or UTM" bind:value={coordText}
+        onkeydown={(e) => { if (e.key === 'Enter') void goToCoordinates(); }} />
+      <button class="btn" title="Move the map to this position and mark it" onclick={goToCoordinates} disabled={!coordText.trim()}>Go</button>
+    </div>
+    {#if coordNote}<p class="small" class:errtxt={coordBad}>{coordNote}</p>{/if}
+    {#if coordHit}
+      <ul class="plain coordlist">
+        <li><span class="muted">Decimal</span> {coordHit.dec}</li>
+        <li><span class="muted">Degrees</span> {coordHit.dms}</li>
+        <li><span class="muted">Grid</span> {coordHit.mgrs}</li>
+      </ul>
+    {/if}
+  </div>
+
   <div class="panel side">
     <div class="label">My saved maps</div>
     <div class="list">
@@ -1177,6 +1256,7 @@
       {/each}
     </div>
     <button class="btn" onclick={newMap}>New map</button>
+  </div>
   </div>
 
   <div class="panel main">
@@ -1211,50 +1291,7 @@
                 onkeydown={(e) => { if (e.key === 'Enter') void findPlace(); }} />
               <button class="gbtn" title="Look this place up and move the map to it" onclick={findPlace} disabled={!findTerm.trim() || findBusy}>Find</button>
               <button class="gbtn" title="Keep the place you just found as a pin on your map" onclick={pinFound} disabled={!foundMarker}>Pin it</button>
-              <button class="gbtn" title="Work out the way between two places, by car and on foot" onclick={() => (dirOpen = !dirOpen)}>Directions</button>
             </div>
-            {#if dirOpen}
-              <div class="gdir" role="region" aria-label="Directions">
-                <div class="gdir-head"><strong>Directions</strong>
-                  <button class="gbtn" title="Close the directions and take the line off the map" onclick={closeDirections}>Close</button></div>
-                <div class="gdir-row"><span class="gdot a">A</span>
-                  <input class="gin box" placeholder="Start: an address, town, ZIP code or latitude, longitude" aria-label="Start" bind:value={dirFrom}
-                    onkeydown={(e) => { if (e.key === 'Enter') void runDirections(); }} oninput={() => (dirA = null)} /></div>
-                <div class="gdir-row"><span class="gdot b">B</span>
-                  <input class="gin box" placeholder="End: an address, town, ZIP code or latitude, longitude" aria-label="End" bind:value={dirTo}
-                    onkeydown={(e) => { if (e.key === 'Enter') void runDirections(); }} oninput={() => (dirB = null)} /></div>
-                <div class="gdir-row">
-                  <button class="gbtn" title="Swap the start and the end" onclick={swapDirections}>Swap</button>
-                  <button class="gbtn on" title="Work out the way between the two places" onclick={() => runDirections()} disabled={dirBusy || !dirFrom.trim() || !dirTo.trim()}>{dirBusy ? 'Working it out…' : 'Get directions'}</button>
-                </div>
-                {#if nogo.length}<p class="gnote2">The areas you marked to avoid are kept out of the way.</p>{/if}
-                {#if dirErr}<p class="gerr">{dirErr}</p>{/if}
-                {#if dirAlt.from.length && dirResult}<p class="gnote2">Start not the right place? {#each dirAlt.from as h}<button class="glink" onclick={() => pickAlt('from', h)}>{hitName(h)}</button>{/each}</p>{/if}
-                {#if dirAlt.to.length && dirResult}<p class="gnote2">End not the right place? {#each dirAlt.to as h}<button class="glink" onclick={() => pickAlt('to', h)}>{hitName(h)}</button>{/each}</p>{/if}
-                {#if dirResult}
-                  <div class="gtabs" role="tablist" aria-label="How you travel">
-                    {#each [['car', 'By car'], ['foot', 'On foot']] as [k, label]}
-                      {@const w = dirResult[k as 'car' | 'foot']}
-                      <button role="tab" aria-selected={dirWay === k} class:on={dirWay === k} onclick={() => { dirWay = k as 'car' | 'foot'; queueMicrotask(fitDirections); }}
-                        title={w.route ? `${label}: about ${fmtMin(w.route.minutes)}` : w.problem}>
-                        <span class="gt-l">{label}</span><span class="gt-t">{w.route ? fmtMin(w.route.minutes) : 'no way'}</span>
-                        <span class="gt-d">{w.route ? dist(w.route.km) : ''}</span></button>
-                    {/each}
-                  </div>
-                  {#if dirRoute}
-                    {#if dirRoute.note}<p class="gnote2">{dirRoute.note}</p>{/if}
-                    <ol class="dsteps" aria-label="The way">
-                      {#each dirRoute.steps as st}
-                        <li>{st.name} <span class="gmuted">· {dist(st.km)} · {fmtMin(st.minutes)}</span></li>
-                      {/each}
-                    </ol>
-                    <p class="gnote2">Times are estimates from the kind of road. The map does not know about one-way streets, traffic, closures or stairs.</p>
-                  {:else}
-                    <p class="gerr">{dirResult[dirWay].problem}</p>
-                  {/if}
-                {/if}
-              </div>
-            {/if}
             {#if finds.length > 1}
               <ul class="gfinds" aria-label="Places found">
                 {#each finds as h}
@@ -1371,8 +1408,8 @@
             </div>
           {/if}
           <div class="hud" aria-live="off">
-            {#if cursor}<div>CURSOR {cursor[0].toFixed(5)}, {cursor[1].toFixed(5)}</div>{/if}
-            {#if cross && centre}<div>CENTRE {centre[0].toFixed(5)}, {centre[1].toFixed(5)}</div>{/if}
+            {#if cursor}<div>CURSOR {cursor[0].toFixed(5)}, {cursor[1].toFixed(5)}</div><div>{toDms(cursor[0], cursor[1])}</div><div>{toMgrs(cursor[0], cursor[1]) ?? ''}</div>{/if}
+            {#if cross && centre}<div>CENTRE {centre[0].toFixed(5)}, {centre[1].toFixed(5)}</div><div>{toDms(centre[0], centre[1])}</div><div>{toMgrs(centre[0], centre[1]) ?? ''}</div>{/if}
           </div>
           {#if full}
             <aside class="drawer" class:closed={!drawer}>
@@ -1571,19 +1608,18 @@
   .gt.on { background: #e8f0fe; color: #1a73e8; }
   .gt:disabled { color: #bdc1c6; cursor: default; }
   .gsep { width: 1px; align-self: stretch; background: #dadce0; margin: 2px 4px; }
-  .gdir { background: #fff; color: #202124; border-radius: 12px; box-shadow: 0 2px 8px #0005; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; max-height: calc(100vh - 220px); overflow: auto; }
-  .gdir-head { display: flex; justify-content: space-between; align-items: center; }
-  .gdir-row { display: flex; align-items: center; gap: 8px; }
-  .gin.box { border: 1px solid #dadce0; border-radius: 6px; padding: 7px 9px; flex: 1 1 auto; }
+  .sidecol { flex: 1 1 220px; max-width: 300px; display: flex; flex-direction: column; gap: 14px; }
+  .sidecol .side { flex: none; max-width: none; }
+  .sidebox { display: flex; flex-direction: column; gap: 8px; }
+  .drow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .drow .grow { flex: 1 1 120px; }
+  .coordlabel { margin-top: 10px; }
+  .coordlist { margin-top: 0; }
   .gdot { width: 22px; height: 22px; border-radius: 50%; color: #fff; font: 700 12px sans-serif; display: inline-flex; align-items: center; justify-content: center; flex: none; }
   .gdot.a { background: #188038; } .gdot.b { background: #d93025; }
-  .gnote2 { margin: 0; color: #5f6368; font-size: 12px; }
-  .gerr { margin: 0; color: #b3261e; font-size: 13px; }
-  .glink { background: none; border: 0; color: #1a73e8; cursor: pointer; font-size: 12px; padding: 0 6px 0 0; text-decoration: underline; }
-  .gtabs { display: flex; gap: 6px; }
-  .gtabs button { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 6px; background: #fff; border: 1px solid #dadce0; border-radius: 8px; cursor: pointer; color: #202124; }
-  .gtabs button.on { border-color: #1a73e8; background: #e8f0fe; }
-  .gt-l { font-size: 12px; color: #5f6368; } .gt-t { font-size: 16px; font-weight: 700; } .gt-d { font-size: 12px; color: #5f6368; }
+  .dtabs { display: flex; gap: 6px; }
+  .dtab { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 6px; background: transparent; border: 1px solid var(--line2); border-radius: 8px; cursor: pointer; color: var(--text); }
+  .dtab.on { border-color: var(--blue-line); color: var(--blue); }
   .dsteps { margin: 0; padding-left: 20px; font-size: 13px; }
   .dsteps li { padding: 2px 0; }
   .dsteps li::first-letter { text-transform: uppercase; }

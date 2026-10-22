@@ -551,6 +551,10 @@ fn place_index() -> std::sync::Arc<cindrix_core::places::Index> {
 async fn place_search(query: String, near_lat: Option<f64>, near_lon: Option<f64>) -> PlaceResults {
     // Reading the list can take a moment the first time, so it is not done on the window's thread.
     tauri::async_runtime::spawn_blocking(move || {
+        // A position typed in any form (decimal, degrees-minutes-seconds, military grid, UTM) needs no list
+        if let Some((lat, lon)) = cindrix_core::coords::parse_any(&query) {
+            return PlaceResults { places: vec![PlaceDto { name: format!("{:.5}, {:.5}", lat, lon), state: String::new(), kind: "point".into(), lat, lon }], has_list: true, has_addresses: false };
+        }
         let ix = place_index();
         let dir = drive_or_program("maps").join("addresses");
         let has_addresses = cindrix_core::addresses::has_addresses(&dir);

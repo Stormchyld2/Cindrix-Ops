@@ -98,7 +98,7 @@ impl Index {
         if q.is_empty() || limit == 0 {
             return vec![];
         }
-        if let Some((lat, lon)) = parse_coordinates(q) {
+        if let Some((lat, lon)) = crate::coords::parse_any(q) {
             return vec![Place { name: format!("{:.5}, {:.5}", lat, lon), state: String::new(), kind: "point".into(), lat, lon, pop: 0 }];
         }
         if q.len() == 5 && q.bytes().all(|b| b.is_ascii_digit()) {

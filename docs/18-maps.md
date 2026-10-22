@@ -99,3 +99,13 @@ by the program when the map opens (no picture files on the drive); the number an
 (`shield_text` or `ref`, and `network` such as `US:I`) come from the map file's `roads` layer. They
 need the map fonts (`maps/fonts`); without them the map is drawn without shields. If a map file
 does not carry these properties, no shield appears.
+
+## Positions in any form (`core/src/coords.rs`)
+
+The "Go to a position" box and the Find and Directions boxes accept a position written as decimal
+degrees (`39.48513, -80.13929`), degrees-minutes-seconds (`39°29'06.5"N 80°08'21.4"W`, also with
+spaces, `N`/`S`/`E`/`W` before or after, or decimal minutes), a military grid reference (MGRS,
+`17S ND 7401 7096`: grid zone and band, 100 km square, easting and northing; 2 to 10 digits) or UTM
+(`17S 580000 4370000`). The cursor and centre readout on the map shows all three forms; the screen's
+copy of the arithmetic is `src/lib/coords.ts` and a test in `core/` checks that both give the same
+text. MGRS and UTM use WGS84 and work from 80°S to 84°N.
