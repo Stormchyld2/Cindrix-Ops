@@ -292,7 +292,7 @@ mod tests {
     fn a_new_drive_is_asked_about_and_nothing_is_read_until_answered() {
         let (_d, vault) = drive_with("new-vault", "vault", "vault");
         let prog = tmp("prog-a"); // not a drive
-        let libs = classify(&[vault.clone()], &prog, &Registry::default(), &HashSet::new());
+        let libs = classify(std::slice::from_ref(&vault), &prog, &Registry::default(), &HashSet::new());
         assert_eq!(libs.len(), 1);
         assert_eq!(libs[0].state, State::Ask);
         assert!(libs[0].suggest_always);
@@ -327,7 +327,7 @@ mod tests {
         let prog = tmp("prog-c");
         let mut once = HashSet::new();
         once.insert(other.root.clone());
-        let libs = classify(&[other.clone()], &prog, &Registry::default(), &once);
+        let libs = classify(std::slice::from_ref(&other), &prog, &Registry::default(), &once);
         assert_eq!(libs[0].state, State::Once);
         assert!(libs[0].state.enabled());
         // a fresh run has an empty set again: asked once more
@@ -374,7 +374,7 @@ mod tests {
         // the downloadable build is a folder with a Go marker; the 4 TB drive is Vault
         let (prog, own) = drive_with("portable", "go", "go");
         let (_v, vault) = drive_with("main-vault", "vault", "vault");
-        let libs = classify(&[vault.clone()], &prog, &Registry::default(), &HashSet::new());
+        let libs = classify(std::slice::from_ref(&vault), &prog, &Registry::default(), &HashSet::new());
         // not yet answered: nothing is read from the Vault, so the program's own folder is used
         let (root, info) = primary(&prog, &enabled(&libs));
         assert_eq!(root, own.root);
@@ -382,7 +382,7 @@ mod tests {
         // answered "always": the Vault drive becomes the one that holds your files
         let mut reg = Registry::load(&tmp("main-reg").join("libraries.txt"));
         reg.set("vault", "Vault", Answer::Always).unwrap();
-        let libs = classify(&[vault.clone()], &prog, &reg, &HashSet::new());
+        let libs = classify(std::slice::from_ref(&vault), &prog, &reg, &HashSet::new());
         let (root, info) = primary(&prog, &enabled(&libs));
         assert_eq!(root, vault.root);
         assert_eq!(info.unwrap().edition, "vault");

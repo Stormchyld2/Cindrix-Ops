@@ -352,7 +352,7 @@ impl Ctx<'_> {
             let u = lower[i..].find("url(").map(|x| x + i);
             let imp = lower[i..].find("@import").map(|x| x + i);
             match (u, imp) {
-                (Some(a), b) if b.map_or(true, |b| a < b) => {
+                (Some(a), b) if b.is_none_or(|b| a < b) => {
                     out.push_str(&css[i..a]);
                     let Some(close) = css[a..].find(')').map(|x| x + a) else {
                         out.push_str(&css[a..]);
@@ -715,7 +715,7 @@ impl Robots {
                 };
             }
         }
-        best.map_or(true, |(_, a)| a)
+        best.is_none_or(|(_, a)| a)
     }
 }
 
@@ -948,7 +948,7 @@ fn run_inner(
     let site = start.host.trim_start_matches("www.").to_string();
     let prefix = if o.section_only { Some(start_dir(&start.path)) } else { None };
     let in_scope = |u: &Url| {
-        u.host.trim_start_matches("www.") == site && prefix.as_ref().map_or(true, |p| u.path.starts_with(p.as_str()))
+        u.host.trim_start_matches("www.") == site && prefix.as_ref().is_none_or(|p| u.path.starts_with(p.as_str()))
     };
 
     let robots = if o.respect_robots {
@@ -1412,7 +1412,7 @@ mod tests {
         assert_eq!(r.get(b'C', "cdn.test/p.png").unwrap().unwrap().data, b"PNG2");
         assert_eq!(r.get(b'C', "example.com/bg.png").unwrap().unwrap().mime, "image/png");
         // the redirected link works from the old address too
-        assert_eq!(String::from_utf8(r.get(b'C', "example.com/old").unwrap().unwrap().data).unwrap().contains("moved page"), true);
+        assert!(String::from_utf8(r.get(b'C', "example.com/old").unwrap().unwrap().data).unwrap().contains("moved page"));
         assert!(home.contains("href=\"new\""), "{}", home);
         // front page and information
         let front = String::from_utf8(r.get(b'W', "mainPage").unwrap().unwrap().data).unwrap();

@@ -230,7 +230,7 @@ mod tests {
         let (root, d) = choose(&elsewhere, &find_in(&[tmp("none"), one.clone()]));
         assert_eq!(root, one);
         assert!(d.is_some());
-        let (root, _) = choose(&elsewhere, &find_in(&[two.clone()]));
+        let (root, _) = choose(&elsewhere, &find_in(std::slice::from_ref(&two)));
         assert_eq!(root, two);
     }
 

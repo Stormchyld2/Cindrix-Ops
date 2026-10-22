@@ -542,7 +542,7 @@ mod tests {
     fn csv_round_trip_with_commas_and_quotes() {
         let b = Book { id: "u1".into(), title: "Water, \"clean\"".into(), author: "A".into(), category: "Mine".into(), file: "u1.pdf".into(),
                        kind: "pdf".into(), added: "2026-10-18".into(), license: "Added by you".into(), fingerprint: "x".into() };
-        let back = parse(&serialize(&[b.clone()])).unwrap();
+        let back = parse(&serialize(std::slice::from_ref(&b))).unwrap();
         assert_eq!(back, vec![b]);
     }
 

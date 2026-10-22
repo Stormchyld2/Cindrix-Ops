@@ -105,7 +105,7 @@ fn the_library_server_restarts_only_once_new_archives_have_settled() {
     // once the server runs with both, no more restarts
     assert!(!w.should_restart(&[a.clone(), b.clone()], &[a.clone(), b.clone()]));
     // a removed archive counts as a change too, after it settles
-    let _ = w.should_restart(&[a.clone()], &[a.clone(), b.clone()]);
-    assert!(w.should_restart(&[a.clone()], &[a.clone(), b.clone()]));
+    let _ = w.should_restart(std::slice::from_ref(&a), &[a.clone(), b.clone()]);
+    assert!(w.should_restart(std::slice::from_ref(&a), &[a.clone(), b.clone()]));
     let _ = std::fs::remove_dir_all(&dir);
 }

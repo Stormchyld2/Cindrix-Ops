@@ -263,7 +263,7 @@ pub fn scan(root: &Path, opts: &ScanOptions, progress: &mut dyn FnMut(usize)) ->
             let ext = ext_of(&path);
             let Some(class) = class_of_ext(&ext) else { continue };
             seen += 1;
-            if seen % 32 == 0 {
+            if seen.is_multiple_of(32) {
                 progress(seen);
             }
             let Ok(meta) = e.metadata() else { continue };

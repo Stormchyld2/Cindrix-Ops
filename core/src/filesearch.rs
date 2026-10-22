@@ -186,7 +186,7 @@ mod tests {
         put(&d, "notes/water.md", "# Boiling water\nBoil water for one minute at a rolling boil to make it safe to drink.\n");
         put(&d, "deep/er/still/plan.txt", "Family plan\n\nBoil water first. Boil water again if the power is out. Boil water for one minute.\n");
         put(&d, "saved/page.html", "<html><head><title>Water safety</title></head><body><p>Boil water for one minute before drinking.</p><script>boil water</script></body></html>");
-        let (p, scan) = search(&d, &[d.clone()], "how long should I boil water", 5, &Limits::default());
+        let (p, scan) = search(&d, std::slice::from_ref(&d), "how long should I boil water", 5, &Limits::default());
         assert!(!scan.stopped_early);
         assert_eq!(scan.files_read, 3);
         let heads: Vec<&str> = p.iter().map(|x| x.heading.as_str()).collect();
@@ -203,8 +203,8 @@ mod tests {
     fn nothing_relevant_gives_nothing() {
         let d = tmp("b");
         put(&d, "a.txt", "A recipe for bread with flour and yeast and salt and warm water.");
-        assert!(search(&d, &[d.clone()], "quantum chromodynamics lattice", 3, &Limits::default()).0.is_empty());
-        assert!(search(&d, &[d.clone()], "the and of", 3, &Limits::default()).0.is_empty());
+        assert!(search(&d, std::slice::from_ref(&d), "quantum chromodynamics lattice", 3, &Limits::default()).0.is_empty());
+        assert!(search(&d, std::slice::from_ref(&d), "the and of", 3, &Limits::default()).0.is_empty());
     }
 
     #[test]
@@ -220,7 +220,7 @@ mod tests {
         put(&d, "big.txt", &format!("{}{}", words, "x".repeat(200)));
         put(&d, "ok/readme.txt", words);
         let lim = Limits { max_file_bytes: 150, ..Limits::default() };
-        let (files, _) = files_under(&[d.clone()], &lim, Instant::now());
+        let (files, _) = files_under(std::slice::from_ref(&d), &lim, Instant::now());
         let rel: Vec<String> = files.iter().map(|f| shown(&d, f)).collect();
         assert_eq!(rel, vec!["ok/readme.txt".to_string()]);
     }
@@ -232,12 +232,12 @@ mod tests {
             put(&d, &format!("f{:02}.txt", i), "Boil water. Boil water. Boil water for one minute.");
         }
         let lim = Limits { max_entries: 5, ..Limits::default() };
-        let (_, scan) = search(&d, &[d.clone()], "boil water", 3, &lim);
+        let (_, scan) = search(&d, std::slice::from_ref(&d), "boil water", 3, &lim);
         assert!(scan.stopped_early);
         // depth limit: a file too deep down is not seen
         put(&d, "a/b/c/deep.txt", "Boil water. Boil water. Boil water.");
         let lim = Limits { max_depth: 1, ..Limits::default() };
-        let (files, _) = files_under(&[d.clone()], &lim, Instant::now());
+        let (files, _) = files_under(std::slice::from_ref(&d), &lim, Instant::now());
         assert!(!files.iter().any(|f| f.ends_with("deep.txt")));
     }
 

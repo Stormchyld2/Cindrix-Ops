@@ -121,11 +121,10 @@ pub fn check_message(message: &str) -> Verdict {
     if unit_amount(&norm, &ws) {
         return Verdict::Refuse("unit amount");
     }
-    if mentions_medicine(&norm, &ws) {
-        if has_word(&ws, DOSING) || has_phrase(&norm, DOSING_PHRASES) {
+    if mentions_medicine(&norm, &ws)
+        && (has_word(&ws, DOSING) || has_phrase(&norm, DOSING_PHRASES)) {
             return Verdict::Refuse("medicine with dosing words");
         }
-    }
     Verdict::Allow
 }
 

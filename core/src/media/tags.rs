@@ -255,11 +255,10 @@ fn id3v2<R: Read + Seek>(r: &mut R, want_art: bool) -> Option<(Tags, Option<Art>
                         "TALB" | "TAL" => tags.album = t,
                         "TPE2" | "TP2" => album_artist = t,
                         "TRCK" | "TRK" => tags.track = leading_number(&t),
-                        "TDRC" | "TYER" | "TYE" => {
-                            if tags.year == 0 {
+                        "TDRC" | "TYER" | "TYE"
+                            if tags.year == 0 => {
                                 tags.year = year_of(&t)
                             }
-                        }
                         _ => {}
                     }
                 }
@@ -331,11 +330,10 @@ fn vorbis_comments(b: &[u8]) -> Tags {
             "ALBUMARTIST" => album_artist = v,
             "ALBUM" => t.album = v,
             "TRACKNUMBER" => t.track = leading_number(&v),
-            "DATE" | "YEAR" => {
-                if t.year == 0 {
+            "DATE" | "YEAR"
+                if t.year == 0 => {
                     t.year = year_of(&v)
                 }
-            }
             _ => {}
         }
     }
@@ -404,10 +402,9 @@ fn ogg<R: Read + Seek>(r: &mut R) -> Option<Tags> {
     let b = read_at(r, 0, len)?;
     let start = if let Some(p) = find(&b, b"\x03vorbis") {
         p + 7
-    } else if let Some(p) = find(&b, b"OpusTags") {
-        p + 8
     } else {
-        return None;
+        let p = find(&b, b"OpusTags")?;
+        p + 8
     };
     Some(vorbis_comments(&b[start..]))
 }
@@ -564,7 +561,7 @@ fn asf<R: Read + Seek>(r: &mut R) -> Option<Tags> {
     for _ in 0..count {
         let oh = read_at(r, pos, 24)?;
         let size = u64::from_le_bytes(oh[16..24].try_into().ok()?);
-        if size < 24 || size > 4 << 20 {
+        if !(24..=4 << 20).contains(&size) {
             break;
         }
         let body = pos + 24;
