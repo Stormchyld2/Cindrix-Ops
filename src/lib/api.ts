@@ -416,6 +416,25 @@ export async function phoneSend(file: string, dest: string): Promise<string> {
   return dest + ' (preview only)';
 }
 
+// ---------- "My details" (home, bug-out places, household, contacts; kept on the drive, host only) ----------
+export type MyPlace = { name: string; address: string; lat: number | null; lon: number | null };
+export type MyContact = { name: string; how: string; notes: string };
+export type MyDetails = {
+  home: MyPlace; bugout: MyPlace[]; adults: number; children: number; babies: number; small_pets: number; large_pets: number;
+  contacts: MyContact[]; needs: string; skills: string; notes: string;
+};
+export const emptyDetails = (): MyDetails => ({ home: { name: '', address: '', lat: null, lon: null }, bugout: [], adults: 0, children: 0, babies: 0, small_pets: 0, large_pets: 0, contacts: [], needs: '', skills: '', notes: '' });
+
+let previewDetails: MyDetails = emptyDetails();
+export async function profileLoad(): Promise<MyDetails> {
+  if (inTauri) return call<MyDetails>('profile_load');
+  return previewDetails;
+}
+export async function profileSave(p: MyDetails): Promise<void> {
+  if (inTauri) return call<void>('profile_save', { p });
+  previewDetails = p;
+}
+
 // ---------- finding a place (a town, a ZIP code, a park, a latitude and longitude) ----------
 export type PlaceHit = { name: string; state: string; kind: string; lat: number; lon: number };
 export type PlaceResults = { places: PlaceHit[]; has_list: boolean; has_addresses: boolean };

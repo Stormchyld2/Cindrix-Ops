@@ -29,6 +29,7 @@ pub mod phonepack;
 pub mod pipeline;
 pub mod png;
 pub mod product;
+pub mod profile;
 pub mod prompt;
 pub mod retrieval;
 pub mod roadtiles;

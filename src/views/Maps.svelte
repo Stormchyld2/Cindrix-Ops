@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy, untrack } from 'svelte';
   import { toDms, toMgrs } from '../lib/coords';
-  import { mapsList, mapLoad, mapSave, mapDelete, mapExportGpx, routeStats, mapPacks, tileUrl, placeSearch, phoneEstimate, phoneExport, phoneDevices, phoneSend, pickFolder, type Device, directions as askDirections, type PhoneKind, type Directions, type DirRoute, type PlaceHit, type MapMeta, type LatLon, type RouteStats, type Pack } from '../lib/api';
+  import { mapsList, mapLoad, mapSave, mapDelete, mapExportGpx, routeStats, mapPacks, tileUrl, placeSearch, profileLoad, type MyPlace, phoneEstimate, phoneExport, phoneDevices, phoneSend, pickFolder, type Device, directions as askDirections, type PhoneKind, type Directions, type DirRoute, type PlaceHit, type MapMeta, type LatLon, type RouteStats, type Pack } from '../lib/api';
   import type { Map as MLMap, Marker, StyleSpecification, GeoJSONSource } from 'maplibre-gl';
   import { settings } from '../lib/settings.svelte';
   import { POI_GROUPS, kindName, groupOf, distanceKm, compass } from '../lib/mapkinds';
@@ -634,6 +634,42 @@
   let redoStack: string[] = [];
   let canUndo = $state(false);
   let canRedo = $state(false);
+
+
+  // ---------- my places (Home and the bug-out places from Settings > My details), shown only when asked for ----------
+  type MyShown = { key: string; label: string; lat: number; lon: number };
+  let myPlaces: MyShown[] = $state([]);
+  let myOn: Record<string, boolean> = $state({});
+  let myMarkers: Record<string, Marker> = {};
+  onMount(async () => {
+    try {
+      const p = await profileLoad();
+      const ok = (x: MyPlace) => x.lat !== null && x.lon !== null;
+      const list: MyShown[] = [];
+      if (ok(p.home)) list.push({ key: 'home', label: p.home.name.trim() || 'Home', lat: p.home.lat as number, lon: p.home.lon as number });
+      p.bugout.forEach((b, i) => { if (ok(b)) list.push({ key: 'b' + i, label: b.name.trim() || 'Bug-out ' + (i + 1), lat: b.lat as number, lon: b.lon as number }); });
+      myPlaces = list;
+    } catch { /* no details saved: the box stays hidden */ }
+  });
+  function toggleMyPlace(pl: MyShown) {
+    if (!map || !ml) return;
+    if (myOn[pl.key]) {
+      myMarkers[pl.key]?.remove();
+      delete myMarkers[pl.key];
+      myOn[pl.key] = false;
+      return;
+    }
+    const el = document.createElement('div');
+    el.className = 'pinmark';
+    el.innerHTML = '<span class="pdot"></span><span class="plab"></span>';
+    const dot = el.querySelector('.pdot') as HTMLElement;
+    dot.style.background = pl.key === 'home' ? '#2fb344' : '#f08c00';
+    (el.querySelector('.plab') as HTMLElement).textContent = pl.label; // text, never markup
+    myMarkers[pl.key] = new ml.Marker({ element: el, anchor: 'left' }).setLngLat([pl.lon, pl.lat]).addTo(map);
+    myOn[pl.key] = true;
+    map.flyTo({ center: [pl.lon, pl.lat], zoom: Math.max(map.getZoom(), 12), duration: 600 });
+  }
+  const posText = (pl: MyShown) => pl.lat.toFixed(5) + ', ' + pl.lon.toFixed(5);
 
   // ---------- a copy of the map for the phone (one file) ----------
   let phoneOpen = $state(false);
@@ -1356,6 +1392,20 @@
       </ul>
     {/if}
   </div>
+
+  {#if myPlaces.length}
+  <div class="panel sidebox">
+    <div class="label">My places</div>
+    {#each myPlaces as pl}
+      <div class="drow">
+        <button class="btn grow" class:on={myOn[pl.key]} title={myOn[pl.key] ? 'Take this place off the map' : 'Show this place on the map'} onclick={() => toggleMyPlace(pl)}>{myOn[pl.key] ? 'Hide' : 'Show'} {pl.label}</button>
+        <button class="btn" title="Use this place as the start of the directions" onclick={() => (dirFrom = posText(pl), dirA = null)}>Start</button>
+        <button class="btn" title="Use this place as the end of the directions" onclick={() => (dirTo = posText(pl), dirB = null)}>End</button>
+      </div>
+    {/each}
+    <p class="muted small">Set these in Settings, My details. They are only on the map while shown.</p>
+  </div>
+  {/if}
 
   <div class="panel sidebox">
     <div class="label">Send to phone</div>

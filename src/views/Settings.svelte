@@ -5,6 +5,7 @@
     librariesList, libraryAnswer, libraryForget, ownContent, openOwnFolder, type OwnFolder,
     type ModelStatus, type ModelChoice, type LibraryStatus, type Sources, type LibraryEntry,
   } from '../lib/api';
+  import MyDetails from './MyDetails.svelte';
   import { settings, RANGES, SCREENS, type Settings } from '../lib/settings.svelte';
 
   let { openArchives }: { openArchives: () => void } = $props();
@@ -24,7 +25,7 @@
     }
   }
 
-  const tabs = ['General', 'Assistant', 'Library', 'Intel', 'Music', 'Maps', 'Plan', 'Your own cards and plans', 'Drive', 'Sources and licenses', 'About'] as const;
+  const tabs = ['General', 'Assistant', 'My details', 'Library', 'Intel', 'Music', 'Maps', 'Plan', 'Your own cards and plans', 'Drive', 'Sources and licenses', 'About'] as const;
   let tab: (typeof tabs)[number] = $state('General');
 
   type BoolKey = { [K in keyof Settings]: Settings[K] extends boolean ? K : never }[keyof Settings];
@@ -222,6 +223,8 @@
       <div class="row"><button class="btn" onclick={addFolder}>Add a folder…</button></div>
     </div>
     {@render reset(['searchBooks', 'searchArchives', 'searchFiles', 'searchSavedSites', 'answerSources', 'answerLength', 'searchSpeed', 'showSourceChips', 'extraFolders'])}
+  {:else if tab === 'My details'}
+    <MyDetails />
   {:else if tab === 'Library'}
     <div class="panel">
       <div class="label">BOOKS AND ARCHIVES</div>

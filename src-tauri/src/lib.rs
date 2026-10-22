@@ -606,6 +606,81 @@ async fn phone_send(file: String, dest: String) -> Result<String, String> {
         .map_err(|_| "The copy could not be made. Please try again.".to_string())?
 }
 
+// ---------- "My details": home, bug-out places, household, contacts (core/src/profile.rs) ----------
+
+#[derive(Serialize, Deserialize, Clone, Default)]
+struct PlaceDto {
+    name: String,
+    address: String,
+    lat: Option<f64>,
+    lon: Option<f64>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Default)]
+struct ContactDto {
+    name: String,
+    how: String,
+    notes: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Default)]
+struct ProfileDto {
+    home: PlaceDto,
+    bugout: Vec<PlaceDto>,
+    adults: u32,
+    children: u32,
+    babies: u32,
+    small_pets: u32,
+    large_pets: u32,
+    contacts: Vec<ContactDto>,
+    needs: String,
+    skills: String,
+    notes: String,
+}
+
+fn place_in(p: PlaceDto) -> cindrix_core::profile::Place {
+    cindrix_core::profile::Place { name: p.name, address: p.address, lat: p.lat, lon: p.lon }
+}
+fn place_out(p: &cindrix_core::profile::Place) -> PlaceDto {
+    PlaceDto { name: p.name.clone(), address: p.address.clone(), lat: p.lat, lon: p.lon }
+}
+
+#[tauri::command]
+fn profile_load() -> Result<ProfileDto, String> {
+    let p = cindrix_core::profile::load(&root().join("user"))?;
+    Ok(ProfileDto {
+        home: place_out(&p.home),
+        bugout: p.bugout.iter().map(place_out).collect(),
+        adults: p.adults,
+        children: p.children,
+        babies: p.babies,
+        small_pets: p.small_pets,
+        large_pets: p.large_pets,
+        contacts: p.contacts.iter().map(|c| ContactDto { name: c.name.clone(), how: c.how.clone(), notes: c.notes.clone() }).collect(),
+        needs: p.needs,
+        skills: p.skills,
+        notes: p.notes,
+    })
+}
+
+#[tauri::command]
+fn profile_save(p: ProfileDto) -> Result<(), String> {
+    let prof = cindrix_core::profile::Profile {
+        home: place_in(p.home),
+        bugout: p.bugout.into_iter().map(place_in).collect(),
+        adults: p.adults.min(99),
+        children: p.children.min(99),
+        babies: p.babies.min(99),
+        small_pets: p.small_pets.min(99),
+        large_pets: p.large_pets.min(99),
+        contacts: p.contacts.into_iter().map(|c| cindrix_core::profile::Contact { name: c.name, how: c.how, notes: c.notes }).collect(),
+        needs: p.needs,
+        skills: p.skills,
+        notes: p.notes,
+    };
+    cindrix_core::profile::save(&root().join("user"), &prof)
+}
+
 // ---------- finding a place on the map (offline list on the drive, core/src/places.rs) ----------
 
 #[derive(Serialize)]
@@ -2269,6 +2344,8 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            profile_load,
+            profile_save,
             phone_estimate,
             phone_devices,
             phone_send,
