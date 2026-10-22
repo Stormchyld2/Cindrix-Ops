@@ -787,9 +787,11 @@
           </div>
           <div class="row" role="group" aria-label="Map colours">
             <span class="muted">COLOURS:</span>
-            {#each [['light', 'Light', 'Paper-map colours: blue water, green parks'], ['dark', 'Dark', 'A dark map with some colour'], ['black', 'Black', 'The darkest, greys only']] as [k, t, tip]}
-              <button class="btn" class:primary={look === k} title={tip} onclick={() => chooseLook(k as Look)}>{t}</button>
-            {/each}
+            <select class="input" aria-label="Map colours" title="Choose how the street map is coloured" value={look} onchange={(e) => chooseLook((e.currentTarget as HTMLSelectElement).value as Look)}>
+              <option value="light">Light (full colour: blue water, green parks)</option>
+              <option value="dark">Dark (dark with some colour)</option>
+              <option value="black">Black (darkest, greys only)</option>
+            </select>
           </div>
           <div class="row find">
             <input class="input grow" type="search" placeholder="Find a place: ZIP code, town and state, park, lake, or latitude and longitude" aria-label="Find a place" bind:value={findTerm}
