@@ -28,6 +28,8 @@ pub struct Step {
     pub name: String,
     pub km: f64,
     pub minutes: f64,
+    /// Index in the route's points where this stretch begins.
+    pub at: usize,
 }
 
 #[derive(Clone, Debug)]
@@ -130,6 +132,77 @@ fn tidy_steps(steps: Vec<Step>) -> Vec<Step> {
         }
     }
     out
+}
+
+/// The name (and number) of the named road nearest a point, read from the map at zoom `z`.
+fn name_near(src: &mut Source, lat: f64, lon: f64, z: u8) -> Option<String> {
+    let (tx, ty) = tile_of(lat, lon, z);
+    let t = src.tile(z, tx, ty).ok()??;
+    let n = (1u64 << z) as f64;
+    let extent = t.extent as f64;
+    let px = ((lon + 180.0) / 360.0 * n - tx as f64) * extent;
+    let lr = lat.to_radians();
+    let py = ((1.0 - (lr.tan() + 1.0 / lr.cos()).ln() / std::f64::consts::PI) / 2.0 * n - ty as f64) * extent;
+    let mpu = 40_075_016.686 * lr.cos() / (n * extent);
+    let mut best: Option<(f64, &crate::roadtiles::RoadLine)> = None;
+    for l in &t.lines {
+        if (l.name.is_empty() && l.refname.is_empty()) || classify(&l.kind, &l.detail).is_none() {
+            continue;
+        }
+        for w in l.pts.windows(2) {
+            let (ax, ay, bx, by) = (w[0].0 as f64, w[0].1 as f64, w[1].0 as f64, w[1].1 as f64);
+            let (dx, dy) = (bx - ax, by - ay);
+            let len2 = dx * dx + dy * dy;
+            let f = if len2 > 0.0 { (((px - ax) * dx + (py - ay) * dy) / len2).clamp(0.0, 1.0) } else { 0.0 };
+            let d = ((ax + f * dx - px).powi(2) + (ay + f * dy - py).powi(2)).sqrt() * mpu;
+            if d < 100.0 && best.map(|b| d < b.0).unwrap_or(true) {
+                best = Some((d, l));
+            }
+        }
+    }
+    best.map(|(_, l)| match (l.name.is_empty(), l.refname.is_empty()) {
+        (false, false) if l.name != l.refname => format!("{} ({})", l.name, l.refname),
+        (false, _) => l.name.clone(),
+        _ => l.refname.clone(),
+    })
+}
+
+/// A trip read at a coarse zoom has few names. For stretches still called "the highway" or "a road",
+/// look the road up in the sharper map along the way and use what most of it is called.
+fn refine_names(src: &mut Source, d: &mut Directions, hi: u8) {
+    let zr = hi.min(12);
+    if d.zoom >= zr {
+        return;
+    }
+    for way in [&mut d.car, &mut d.foot] {
+        let Ok(r) = way else { continue };
+        let ends: Vec<usize> = r.steps.iter().skip(1).map(|s| s.at).chain(std::iter::once(r.points.len().saturating_sub(1))).collect();
+        for (i, end) in ends.into_iter().enumerate() {
+            let generic = matches!(r.steps[i].name.as_str(), "the highway" | "a road");
+            if !generic {
+                continue;
+            }
+            let start = r.steps[i].at.min(r.points.len().saturating_sub(1));
+            let end = end.max(start).min(r.points.len().saturating_sub(1));
+            let mut tally: HashMap<String, usize> = HashMap::new();
+            let mut since = f64::MAX;
+            for k in start..=end {
+                if k > start {
+                    since += crate::maps::haversine_km(r.points[k - 1], r.points[k]);
+                }
+                if since >= 1.5 {
+                    since = 0.0;
+                    if let Some(nm) = name_near(src, r.points[k].0, r.points[k].1, zr) {
+                        *tally.entry(nm).or_insert(0) += 1;
+                    }
+                }
+            }
+            if let Some((nm, _)) = tally.into_iter().max_by_key(|(n, c)| (*c, n.len())) {
+                r.steps[i].name = nm;
+            }
+        }
+        r.steps = tidy_steps(std::mem::take(&mut r.steps));
+    }
 }
 
 fn plain_name(kind: &str, detail: &str) -> &'static str {
@@ -736,7 +809,10 @@ pub fn directions(packs: &[PathBuf], from: (f64, f64), to: (f64, f64), avoid: &[
                 return Err("The street map on this drive does not cover these places.".into());
             }
             match solve(&mut b, from, to, &avoid_xy, zz) {
-                Ok(d) => return Ok(d),
+                Ok(mut d) => {
+                    refine_names(&mut src, &mut d, hi);
+                    return Ok(d);
+                }
                 Err(e) => {
                     last_err = e;
                     if si == widths.len() - 1 {
@@ -826,7 +902,7 @@ fn solve(b: &mut Builder, from: (f64, f64), to: (f64, f64), avoid: &[Vec<(f64, f
         let minutes = (secs + (sd + ed) / side_speed) / 60.0;
         let mut steps: Vec<Step> = Vec::new();
         if sd > 30.0 {
-            steps.push(Step { name: "straight across to the nearest road".to_string(), km: sd / 1000.0, minutes: sd / side_speed / 60.0 });
+            steps.push(Step { name: "straight across to the nearest road".to_string(), km: sd / 1000.0, minutes: sd / side_speed / 60.0, at: 0 });
         }
         let mut last_name = u32::MAX;
         for (n, e) in &path {
@@ -840,14 +916,14 @@ fn solve(b: &mut Builder, from: (f64, f64), to: (f64, f64), avoid: &[Vec<(f64, f
                     s.minutes += m;
                 }
             } else {
-                steps.push(Step { name: b.names[e.name as usize].clone(), km: k, minutes: m });
+                steps.push(Step { name: b.names[e.name as usize].clone(), km: k, minutes: m, at: points.len().saturating_sub(2) });
                 last_name = e.name;
             }
         }
         steps = tidy_steps(steps);
         points.push(to);
         if ed > 30.0 {
-            steps.push(Step { name: "straight across to the end".to_string(), km: ed / 1000.0, minutes: ed / side_speed / 60.0 });
+            steps.push(Step { name: "straight across to the end".to_string(), km: ed / 1000.0, minutes: ed / side_speed / 60.0, at: points.len().saturating_sub(1) });
         }
         let mut note = String::new();
         if sd > 200.0 || ed > 200.0 {
@@ -947,11 +1023,29 @@ mod tests {
 
     #[test]
     fn short_joins_do_not_clutter_the_list() {
-        let st = |n: &str, km: f64| Step { name: n.to_string(), km, minutes: km };
+        let st = |n: &str, km: f64| Step { name: n.to_string(), km, minutes: km, at: 0 };
         let out = tidy_steps(vec![st("the highway", 9.0), st("a road", 0.0), st("the highway", 13.0), st("a road", 0.1), st("Main St", 2.0)]);
         let names: Vec<&str> = out.iter().map(|s| s.name.as_str()).collect();
         assert_eq!(names, vec!["the highway", "Main St"]);
         assert!((out[0].km - 22.1).abs() < 1e-9);
+    }
+
+    #[test]
+    fn a_long_trips_unnamed_highway_gets_its_name_from_the_sharper_map() {
+        let named = tile(&[l("highway", "motorway", "Western Kentucky Parkway", vec![(0, 2048), (4096, 2048)])]);
+        let p = write("refine", vec![(12, X / 4, Y / 4, named)]);
+        let pts: Vec<(f64, f64)> = (1..=7).map(|i| tile_point(12, X / 4, Y / 4, i as f64 * 500.0, 2048.0, 4096.0)).collect();
+        let route = Route {
+            points: pts,
+            km: 60.0,
+            minutes: 40.0,
+            steps: vec![Step { name: "the highway".into(), km: 60.0, minutes: 40.0, at: 0 }],
+            note: String::new(),
+        };
+        let mut d = Directions { car: Ok(route.clone()), foot: Ok(route), zoom: 10 };
+        let mut src = Source { files: vec![PmFile::open(&p).unwrap()], cache: HashMap::new() };
+        refine_names(&mut src, &mut d, 14);
+        assert_eq!(d.car.unwrap().steps[0].name, "Western Kentucky Parkway");
     }
 
     #[test]

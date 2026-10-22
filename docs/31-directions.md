@@ -44,3 +44,11 @@ the road kind. Times are estimates. The answer says so on the panel.
 `core/` tests build tiny map files (`roadtiles::testkit`) and check crossings, side streets, a road
 continuing into the next tile, foot paths, motorways, avoid areas, a far-away place, and a
 144-tile town grid.
+
+## Road names on long trips
+
+A long trip is read at a coarse zoom, where the map has few names. After the way is found, stretches still
+called "the highway" or "a road" are looked up in the sharper map (zoom 12) every 1.5 km along the way, and
+the name most of the stretch has is used, with the road number in brackets (for example "Western Kentucky
+Parkway (I-69)"). Where the map has only a number, the number is used. Short joins under 0.4 km are folded
+into the stretch before them.
