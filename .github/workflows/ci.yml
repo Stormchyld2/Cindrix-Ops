@@ -286,7 +286,9 @@ jobs:
           trap 'echo "::error::failed at step line $LINENO"' ERR
           mkdir -p out/Cindrix
           cp src-tauri/target/release/cindrix-ops.exe out/Cindrix/
-          cp -r content out/Cindrix/content
+          # The program is only the program. Cards, plans, drills, courses and guides live on the drive (see the content pack);
+          # only the credits list and the tiny sample library stay beside the program.
+          mkdir -p out/Cindrix/content && cp content/sources.json out/Cindrix/content/ && cp -r content/library-sample out/Cindrix/content/
           mkdir -p out/Cindrix/models out/Cindrix/engines
           url=$(gh api "repos/ggml-org/llama.cpp/releases?per_page=15" --jq '[.[].assets[] | select(.name | test("bin-win-cpu-x64\\.zip$"))][0].browser_download_url')
           if [ -z "$url" ] || [ "$url" = "null" ]; then echo "::error::no llama.cpp windows cpu asset found"; exit 1; fi
@@ -364,13 +366,12 @@ jobs:
         with:
           name: Cindrix-windows-portable
           path: out/Cindrix
-      - name: Make the content pack (cards and plans to copy into a drive that already exists)
+      - name: Make the content pack (the folders that go at the top of the drive)
         shell: bash
         run: |
-          mkdir -p pack/content
-          cp -r content/cards content/plans content/seed-guides pack/content/
-          mkdir -p pack/content/academy && cp -r content/academy/seed-vault pack/content/academy/
-          printf 'Copy the "content" folder in here onto the top of your Cindrix drive and choose to merge or replace when asked.\r\nNo new folders are needed. Your own cards go in user\\cards, your own plans in user\\plans and your own seed guides in user\\seed-guides (Settings, Your own cards and plans, opens them).\r\n' > pack/README.txt
+          mkdir -p pack
+          cp -r content/cards content/plans content/seed-guides content/drills content/academy pack/
+          printf 'Copy these folders (cards, plans, seed-guides, drills, academy) onto the top of your Cindrix drive and choose Merge.\r\nThe program reads them from the drive. Your own additions go in user\\cards, user\\plans, user\\seed-guides, user\\drills and user\\academy (Settings, Your own cards and plans, opens each one).\r\n' > pack/README.txt
       - uses: actions/upload-artifact@v4
         with:
           name: Cindrix-content-pack

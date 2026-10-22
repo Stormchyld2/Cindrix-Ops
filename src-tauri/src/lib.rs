@@ -214,7 +214,9 @@ fn open_own_folder(key: String) -> Result<String, String> {
     for f in files {
         let to = dir.join(f);
         if !to.exists() {
-            if let Ok(bytes) = std::fs::read(from.join(f)) {
+            // the templates come from the shipped content, or from the drive's own folder of the same name
+            let bytes = std::fs::read(from.join(f)).or_else(|_| std::fs::read(root().join(sub).join(f)));
+            if let Ok(bytes) = bytes {
                 let _ = std::fs::write(&to, bytes);
             }
         }

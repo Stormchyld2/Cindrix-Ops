@@ -70,3 +70,10 @@ crossing, weather signs, toilet and hygiene, wild food, wound care, moving as a 
 They come from general field guidance (US Army field survival manuals and the Ranger Handbook, CDC, NWS, National Park Service, Leave
 No Trace) and were **not checked line by line against those sources** in this session. Each says so in its banner. They do not need
 a 911 line (the test checks that only for medical, disaster and home cards).
+
+## The program stays small (2026-10-22)
+The Windows build no longer carries cards, plans, drills, courses or seed guides. They live on the drive, in top-level folders
+`cards`, `plans`, `seed-guides`, `drills` and `academy` (the `Cindrix-content-pack` artifact is exactly those folders plus a
+README). Only the credits list (`content/sources.json`) and the tiny sample library stay beside the program. The program reads
+these folders from the drive root (and `user\...` for the person's own additions). The "Open the folder" button copies templates
+from the drive's own folder when the shipped content is not there.
