@@ -1381,7 +1381,43 @@ struct ModuleDto {
     id: String,
     title: String,
     summary: String,
+    /// The course this module belongs to (a folder with a course.md, or "survival-basics").
+    course: String,
+    course_title: String,
+    course_summary: String,
+    course_author: String,
     lessons: Vec<LessonDto>,
+}
+
+#[derive(Serialize)]
+struct CourseProblemDto {
+    place: String,
+    message: String,
+}
+
+/// Every Academy folder to read: the one that ships with the program, then the `academy` folder of the main
+/// drive and of each other library that may be read. A course on any of them just appears.
+fn academy_dirs() -> Vec<PathBuf> {
+    let r = root();
+    let mut v = vec![content_sub("academy"), r.join("academy")];
+    for o in libs::other_roots(&r) {
+        v.push(o.join("academy"));
+        v.push(o.join("content").join("academy"));
+    }
+    let mut seen: Vec<PathBuf> = Vec::new();
+    v.retain(|d| {
+        let key = d.canonicalize().unwrap_or_else(|_| d.clone());
+        d.is_dir() && !seen.contains(&key) && {
+            seen.push(key);
+            true
+        }
+    });
+    v
+}
+
+#[tauri::command]
+fn academy_problems() -> Vec<CourseProblemDto> {
+    academy::load_all(&academy_dirs()).problems.into_iter().map(|p| CourseProblemDto { place: p.place, message: p.message }).collect()
 }
 
 #[derive(Serialize)]
@@ -1398,29 +1434,38 @@ struct LessonBodyDto {
 #[tauri::command]
 fn academy_list() -> Result<Vec<ModuleDto>, String> {
     let results = academy::Log::new(&root().join("user")).list()?;
-    Ok(academy::load(&content_sub("academy"))
-        .into_iter()
-        .map(|m| ModuleDto {
-            id: m.id,
-            title: m.title,
-            summary: m.summary,
-            lessons: m
-                .lessons
-                .into_iter()
-                .map(|l| {
-                    let p = academy::progress_for(&results, &l.id);
-                    LessonDto { questions: l.quiz.len(), tries: p.tries, best_score: p.best_score, total: p.total, last_date: p.last_date, id: l.id, title: l.title, minutes: l.minutes, status: l.status, source: l.source }
-                })
-                .collect(),
-        })
-        .collect())
+    let mut out = Vec::new();
+    for c in academy::load_all(&academy_dirs()).courses {
+        for m in c.modules {
+            out.push(ModuleDto {
+                id: format!("{}:{}", c.id, m.id),
+                title: m.title,
+                summary: m.summary,
+                course: c.id.clone(),
+                course_title: c.title.clone(),
+                course_summary: c.summary.clone(),
+                course_author: c.author.clone(),
+                lessons: m
+                    .lessons
+                    .into_iter()
+                    .map(|l| {
+                        let p = academy::progress_for(&results, &l.id);
+                        LessonDto { questions: l.quiz.len(), tries: p.tries, best_score: p.best_score, total: p.total, last_date: p.last_date, id: l.id, title: l.title, minutes: l.minutes, status: l.status, source: l.source }
+                    })
+                    .collect(),
+            });
+        }
+    }
+    Ok(out)
 }
 
 /// One lesson, found by id in the loaded course (the id is never turned into a file path).
 #[tauri::command]
 fn academy_lesson(id: String) -> Result<LessonBodyDto, String> {
-    let l = academy::load(&content_sub("academy"))
+    let l = academy::load_all(&academy_dirs())
+        .courses
         .into_iter()
+        .flat_map(|c| c.modules)
         .flat_map(|m| m.lessons)
         .find(|l| l.id == id)
         .ok_or("There is no such lesson.")?;
@@ -1441,7 +1486,7 @@ fn academy_lesson(id: String) -> Result<LessonBodyDto, String> {
 
 #[tauri::command]
 fn academy_save(lesson: String, score: u32, total: u32) -> Result<(), String> {
-    let known = academy::load(&content_sub("academy")).iter().any(|m| m.lessons.iter().any(|l| l.id == lesson));
+    let known = academy::load_all(&academy_dirs()).courses.iter().any(|c| c.modules.iter().any(|m| m.lessons.iter().any(|l| l.id == lesson)));
     if !known {
         return Err("There is no such lesson.".into());
     }
@@ -1609,6 +1654,7 @@ pub fn run() {
             library_share,
             drive_rescan,
             academy_list,
+            academy_problems,
             academy_lesson,
             academy_save,
             drills_list,

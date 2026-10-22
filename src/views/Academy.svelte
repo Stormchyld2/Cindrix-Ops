@@ -1,8 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { academyList, academyLesson, academySave, type AcademyModule, type AcademyLesson } from '../lib/api';
+  import { academyList, academyLesson, academySave, academyProblems, type AcademyModule, type AcademyLesson, type CourseProblem } from '../lib/api';
 
   let modules: AcademyModule[] = $state([]);
+  let problems: CourseProblem[] = $state([]);
   let error = $state('');
   let loaded = $state(false);
 
@@ -17,6 +18,7 @@
   async function load() {
     try {
       modules = await academyList();
+      problems = await academyProblems();
     } catch (e) {
       error = String(e);
     }
@@ -24,6 +26,22 @@
   }
   onMount(load);
 
+  // the modules, grouped under their course
+  const courses = $derived.by(() => {
+    const out: { id: string; title: string; summary: string; author: string; modules: AcademyModule[] }[] = [];
+    for (const m of modules) {
+      let c = out.find((x) => x.id === m.course);
+      if (!c) { c = { id: m.course, title: m.course_title, summary: m.course_summary, author: m.course_author, modules: [] }; out.push(c); }
+      c.modules.push(m);
+    }
+    return out;
+  });
+  let courseId: string | null = $state(null);
+  const openCourse = $derived(courseId ? courses.find((c) => c.id === courseId) : undefined);
+  function stats(c: { modules: AcademyModule[] }) {
+    const ls = c.modules.flatMap((m) => m.lessons);
+    return { lessons: ls.length, done: ls.filter((l) => l.tries > 0).length, hours: Math.round((ls.reduce((a, l) => a + l.minutes, 0) / 60) * 10) / 10, draft: ls.some((l) => l.status !== 'reviewed') };
+  }
   const allLessons = $derived(modules.flatMap((m) => m.lessons));
   const finished = $derived(allLessons.filter((l) => l.tries > 0).length);
   const minutes = $derived(allLessons.reduce((a, l) => a + l.minutes, 0));
@@ -76,42 +94,73 @@
 
 <section class="wrap">
   {#if !lesson}
-    <div>
-      <h1>Academy</h1>
-      <p class="sub">A text course you can work through at your own pace, with a short quiz after each lesson. Lessons are plain files on this drive, so nothing needs the internet. Your progress stays on this drive.</p>
-    </div>
-    {#if error}<div class="warn">{error}</div>{/if}
-    {#if allLessons.length}
-      <div class="panel prog">
-        <span class="label">YOUR PROGRESS</span>
-        <span>{finished} of {allLessons.length} lessons done · about {Math.round(minutes / 60 * 10) / 10} hours in all</span>
-        <div class="track"><span style="width:{(finished / allLessons.length) * 100}%"></span></div>
+    {#if !openCourse}
+      <div>
+        <h1>Academy</h1>
+        <p class="sub">Courses you can work through at your own pace, with a short quiz after each lesson. Choose a course to go inside it. Courses are plain folders on this drive, so nothing needs the internet. Your progress stays on this drive.</p>
       </div>
+      {#if error}<div class="warn">{error}</div>{/if}
+      {#if allLessons.length}
+        <div class="panel prog">
+          <span class="label">YOUR PROGRESS</span>
+          <span>{finished} of {allLessons.length} lessons done · about {Math.round(minutes / 60 * 10) / 10} hours in all</span>
+          <div class="track"><span style="width:{(finished / allLessons.length) * 100}%"></span></div>
+        </div>
+      {/if}
+      <div class="cards">
+        {#each courses as c (c.id)}
+          {@const st = stats(c)}
+          <button class="card" onclick={() => (courseId = c.id)} aria-label={`Open the course ${c.title}`}>
+            <span class="ctitle">{c.title}</span>
+            {#if c.summary}<span class="csum">{c.summary}</span>{/if}
+            {#if c.author}<span class="muted small">By {c.author}</span>{/if}
+            <span class="meta">{c.modules.length} module{c.modules.length === 1 ? '' : 's'} · {st.lessons} lesson{st.lessons === 1 ? '' : 's'} · about {st.hours} hour{st.hours === 1 ? '' : 's'}</span>
+            <span class="track"><span style="width:{st.lessons ? (st.done / st.lessons) * 100 : 0}%"></span></span>
+            <span class="meta">{st.done} of {st.lessons} done{st.draft ? ' · not yet reviewed' : ''}</span>
+          </button>
+        {/each}
+      </div>
+      {#if problems.length}
+        <details class="panel probs">
+          <summary>{problems.length} course file{problems.length === 1 ? ' was' : 's were'} left out</summary>
+          <p class="muted small">The rest of each course still works. Fix the file and it appears here by itself next time.</p>
+          <ul>{#each problems as p}<li><code>{p.place}</code>: {p.message}</li>{/each}</ul>
+        </details>
+      {/if}
+      {#if loaded && courses.length === 0 && !error}<p class="muted">No courses found. A course is a folder in the <code>academy</code> folder on the drive.</p>{/if}
+    {:else}
+      <div class="row between">
+        <button class="btn" onclick={() => (courseId = null)}>← All courses</button>
+        {#if openCourse.author}<span class="muted small">By {openCourse.author}</span>{/if}
+      </div>
+      <header class="course">
+        <h1 class="ctitle">{openCourse.title}</h1>
+        {#if openCourse.summary}<p class="muted">{openCourse.summary}</p>{/if}
+      </header>
+      {#each openCourse.modules as m (m.id)}
+        <article class="panel">
+          <h2>{m.title}</h2>
+          {#if m.summary}<p class="muted">{m.summary}</p>{/if}
+          <ul class="lessons">
+            {#each m.lessons as l (l.id)}
+              <li>
+                <button class="row" onclick={() => open(l.id)} aria-label={l.title}>
+                  <span class="mark" class:done={l.tries > 0}>{l.tries > 0 ? '✓' : '○'}</span>
+                  <span class="grow">
+                    <span class="title">{l.title}</span>
+                    <span class="muted small">{l.minutes} min{l.questions ? ` · ${l.questions} question${l.questions === 1 ? '' : 's'}` : ''}{l.status !== 'reviewed' ? ' · draft' : ''}</span>
+                  </span>
+                  {#if l.tries > 0}<span class="best">Best {l.best_score}/{l.total}</span>{/if}
+                </button>
+              </li>
+            {/each}
+          </ul>
+        </article>
+      {/each}
     {/if}
-    {#each modules as m (m.id)}
-      <article class="panel">
-        <h2>{m.title}</h2>
-        {#if m.summary}<p class="muted">{m.summary}</p>{/if}
-        <ul class="lessons">
-          {#each m.lessons as l (l.id)}
-            <li>
-              <button class="row" onclick={() => open(l.id)} aria-label={l.title}>
-                <span class="mark" class:done={l.tries > 0}>{l.tries > 0 ? '✓' : '○'}</span>
-                <span class="grow">
-                  <span class="title">{l.title}</span>
-                  <span class="muted small">{l.minutes} min{l.questions ? ` · ${l.questions} question${l.questions === 1 ? '' : 's'}` : ''}{l.status !== 'reviewed' ? ' · draft' : ''}</span>
-                </span>
-                {#if l.tries > 0}<span class="best">Best {l.best_score}/{l.total}</span>{/if}
-              </button>
-            </li>
-          {/each}
-        </ul>
-      </article>
-    {/each}
-    {#if loaded && modules.length === 0 && !error}<p class="muted">No lessons found in the content folder (<code>content/academy</code>).</p>{/if}
   {:else}
     <div class="row between">
-      <button class="btn" onclick={close}>← All lessons</button>
+      <button class="btn" onclick={close}>← Back to the course</button>
       <span class="muted small">{lesson.minutes} min</span>
     </div>
     <article class="panel lesson">
@@ -171,7 +220,16 @@
 </section>
 
 <style>
-  .wrap { display: flex; flex-direction: column; gap: 14px; max-width: 820px; }
+  .course { margin-top: 8px; }
+  .ctitle { font-size: 20px; letter-spacing: .1em; font-family: var(--display); text-transform: uppercase; margin: 0; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+  .card { display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 16px; background: var(--panel); border: 1px solid var(--line); border-top: 2px solid var(--line2); border-radius: 12px; }
+  .card:hover { border-color: var(--blue-line); }
+  .csum { color: var(--muted); }
+  .meta { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; color: var(--muted); }
+  .probs summary { cursor: pointer; }
+  .probs ul { margin: 8px 0 0; padding-left: 20px; }
+  .wrap { display: flex; flex-direction: column; gap: 14px; max-width: 900px; }
   .prog { display: flex; flex-direction: column; gap: 6px; }
   .track { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
   .track span { display: block; height: 100%; background: var(--blue); }

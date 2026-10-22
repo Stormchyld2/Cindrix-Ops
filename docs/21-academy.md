@@ -23,6 +23,21 @@ Paragraphs. "## " headings, "- " bullets, "1. " steps, "> " note boxes, **bold**
 
 Anyone can add or fix a lesson with a text editor. A lesson that does not parse is left out; it never breaks the course.
 
+## Courses
+The Academy is a small program that reads course folders. A course is one folder inside an `academy` folder:
+
+```
+academy/<course>/course.md         title, summary, author, version, license
+academy/<course>/<NN-module>/_module.md
+academy/<course>/<NN-module>/<NN-lesson>.md
+```
+
+- The first screen is a grid of **course cards** (title, summary, author, modules, lessons, hours, progress, and "not yet reviewed" for drafts). Choose a card to go inside the course; "All courses" goes back, and a lesson's back button returns to its course.
+- Courses can sit in more than one Academy folder (the program's own, each library drive). If the same course id is in two places, the higher `version` wins.
+- The older layout (modules straight under `academy`) is one course, "survival-basics", with the same lesson ids, so saved scores still match.
+- Folders starting with `_` or `.` are skipped. `content/academy/_template-course/` is a copy-and-edit starting point.
+- **No medicine doses.** A lesson that contains a dose is left out and listed under "course files left out" (the same check the assistant uses, `safety::output_contains_dose`). A file that does not parse is left out the same way; the rest of the course still works.
+
 ## What the program does
 - Shows modules and lessons, with a progress bar.
 - Reads a lesson and offers a short quiz (answers are shown in a random order). The score is saved on request in `user/academy.csv` (date, lesson, score, total); the best score is shown.
@@ -32,7 +47,7 @@ Anyone can add or fix a lesson with a text editor. A lesson that does not parse 
 Core tests check the parser, bad quizzes (no right answer, two right answers), loading order, the results file (a damaged file is reported and never overwritten), and that every shipped lesson has minutes, a named source, at least 3 questions and no dosing text. The screenshot run opens a lesson, takes the quiz and saves the score.
 
 ## Content today
-Seven modules, 21 lessons: the first 72 hours, survival mindset, shelter/fire/water, navigation and signaling, field first aid, evade/resist/escape for civilians, and weeks to months. **All are drafts**, written from public-domain US government manuals and public guidance, and need review by a qualified person (especially first aid) before the `status` is changed to `reviewed`. They are a start, not a finished SERE school: more modules can be added by adding folders.
+One course (Survival basics), seven modules, 21 lessons: the first 72 hours, survival mindset, shelter/fire/water, navigation and signaling, field first aid, evade/resist/escape for civilians, and weeks to months. **All are drafts**, written from public-domain US government manuals and public guidance, and need review by a qualified person (especially first aid) before the `status` is changed to `reviewed`. They are a start, not a finished SERE school: more modules can be added by adding folders.
 
 ## Not built yet
-Linking the assistant's answers to lessons, pictures and diagrams, printing a lesson, and a certificate or checklist view.
+Pictures inside lessons, a single-file course pack to drop in, Linking the assistant's answers to lessons, pictures and diagrams, printing a lesson, and a certificate or checklist view.

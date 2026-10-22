@@ -229,35 +229,182 @@ fn md_files(dir: &Path) -> Vec<(String, PathBuf)> {
     v
 }
 
-/// Load the whole course from `content/academy`. Modules and lessons come in file-name order.
-/// A file that cannot be read or parsed is left out rather than breaking the course.
-pub fn load(dir: &Path) -> Vec<Module> {
-    let mut mods: Vec<Module> = Vec::new();
-    let Ok(rd) = fs::read_dir(dir) else { return mods };
-    let mut folders: Vec<(String, PathBuf)> = rd.flatten().filter(|e| e.path().is_dir()).map(|e| (e.file_name().to_string_lossy().to_string(), e.path())).collect();
-    folders.sort();
-    for (mid, mpath) in folders {
-        let (title, summary) = fs::read_to_string(mpath.join("_module.md"))
-            .ok()
-            .and_then(|t| header(&t).ok())
-            .map(|(p, _)| (get(&p, "title"), get(&p, "summary")))
-            .unwrap_or_default();
-        let mut lessons = Vec::new();
-        for (stem, path) in md_files(&mpath) {
-            if stem.starts_with('_') {
+/// All the words of a lesson (text and quiz), for the dosing check.
+fn lesson_text(l: &Lesson) -> String {
+    let mut t = String::new();
+    for b in &l.body {
+        match b {
+            Block::Heading(x) | Block::Para(x) | Block::Note(x) => t.push_str(x),
+            Block::Bullets(v) | Block::Steps(v) => t.push_str(&v.join(". ")),
+        }
+        t.push_str(". ");
+    }
+    for q in &l.quiz {
+        t.push_str(&q.text);
+        t.push_str(". ");
+        t.push_str(&q.options.join(". "));
+        t.push_str(". ");
+        t.push_str(&q.explain);
+        t.push_str(". ");
+    }
+    t
+}
+
+/// A thing wrong with a course file, in plain words. The file is left out; the rest of the course loads.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Problem {
+    /// Where, as "course/module/file.md" (relative to the Academy folder).
+    pub place: String,
+    pub message: String,
+}
+
+fn skipped(name: &str) -> bool {
+    name.starts_with('_') || name.starts_with('.')
+}
+
+fn load_module(mpath: &Path, mid: &str, prefix: &str, problems: &mut Vec<Problem>) -> Option<Module> {
+    let (title, summary) = fs::read_to_string(mpath.join("_module.md"))
+        .ok()
+        .and_then(|t| header(&t).ok())
+        .map(|(p, _)| (get(&p, "title"), get(&p, "summary")))
+        .unwrap_or_default();
+    let mut lessons = Vec::new();
+    for (stem, path) in md_files(mpath) {
+        if stem.starts_with('_') || stem.eq_ignore_ascii_case("readme") {
+            continue;
+        }
+        let place = format!("{}{}/{}.md", prefix, mid, stem);
+        let text = match fs::read_to_string(&path) {
+            Ok(t) => t,
+            Err(_) => {
+                problems.push(Problem { place, message: "This file could not be read, so it was left out.".into() });
                 continue;
             }
-            if let Ok(t) = fs::read_to_string(&path) {
-                if let Ok(l) = parse_lesson(&format!("{}/{}", mid, stem), &t) {
+        };
+        match parse_lesson(&format!("{}{}/{}", prefix, mid, stem), &text) {
+            Ok(l) => {
+                if crate::safety::output_contains_dose(&lesson_text(&l)) {
+                    problems.push(Problem { place, message: "This lesson gives a medicine amount (a dose). Courses here never do that, so it was left out. Take the amount out and say to follow the label or ask a doctor or pharmacist.".into() });
+                } else {
                     lessons.push(l);
                 }
             }
-        }
-        if !lessons.is_empty() {
-            mods.push(Module { id: mid.clone(), title: if title.is_empty() { mid } else { title }, summary, lessons });
+            Err(e) => problems.push(Problem { place, message: format!("This lesson was left out: {}.", e) }),
         }
     }
-    mods
+    if lessons.is_empty() {
+        return None;
+    }
+    Some(Module { id: mid.to_string(), title: if title.is_empty() { mid.to_string() } else { title }, summary, lessons })
+}
+
+fn subfolders(dir: &Path) -> Vec<(String, PathBuf)> {
+    let Ok(rd) = fs::read_dir(dir) else { return vec![] };
+    let mut v: Vec<(String, PathBuf)> = rd.flatten().filter(|e| e.path().is_dir()).map(|e| (e.file_name().to_string_lossy().to_string(), e.path())).filter(|(n, _)| !skipped(n)).collect();
+    v.sort();
+    v
+}
+
+/// Load the modules in `dir`, in folder-name order. Lesson ids are `prefix` + "module/lesson".
+/// A file that cannot be read or parsed is left out rather than breaking the course.
+pub fn load(dir: &Path) -> Vec<Module> {
+    let mut ignored = Vec::new();
+    subfolders(dir).into_iter().filter_map(|(mid, mpath)| load_module(&mpath, &mid, "", &mut ignored)).collect()
+}
+
+/// One course: a folder holding `course.md`, then modules, then lessons.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Course {
+    /// The folder name.
+    pub id: String,
+    pub title: String,
+    pub summary: String,
+    pub author: String,
+    /// A whole number; when two copies of a course are found, the higher one is used.
+    pub version: u32,
+    pub license: String,
+    pub modules: Vec<Module>,
+}
+
+/// The course made of modules placed straight in the Academy folder (how the first course was laid out).
+pub const BASICS_ID: &str = "survival-basics";
+
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct Loaded {
+    pub courses: Vec<Course>,
+    pub problems: Vec<Problem>,
+}
+
+/// Everything in one Academy folder: each folder with a `course.md` is a course; any other folder
+/// holding lessons is a module of the "Survival basics" course. Folders starting with `_` or `.`
+/// (the template, for one) are skipped.
+pub fn load_dir(dir: &Path) -> Loaded {
+    let mut out = Loaded::default();
+    let mut basics: Vec<Module> = Vec::new();
+    for (name, path) in subfolders(dir) {
+        let cfile = path.join("course.md");
+        if !cfile.is_file() {
+            if let Some(m) = load_module(&path, &name, "", &mut out.problems) {
+                basics.push(m);
+            }
+            continue;
+        }
+        let place = format!("{}/course.md", name);
+        let meta = match fs::read_to_string(&cfile).map_err(|e| e.to_string()).and_then(|t| header(&t)) {
+            Ok((p, _)) => p,
+            Err(e) => {
+                out.problems.push(Problem { place: place.clone(), message: format!("The course description could not be read ({}). The folder name is used instead.", e) });
+                vec![]
+            }
+        };
+        let mut title = get(&meta, "title");
+        if title.is_empty() {
+            if !meta.is_empty() {
+                out.problems.push(Problem { place: place.clone(), message: "The course has no title: line. The folder name is used instead.".into() });
+            }
+            title = name.clone();
+        }
+        if get(&meta, "author").is_empty() && !meta.is_empty() {
+            out.problems.push(Problem { place: place.clone(), message: "The course has no author: line. Add one so readers know who wrote it.".into() });
+        }
+        let prefix = format!("{}/", name);
+        let modules: Vec<Module> = subfolders(&path).into_iter().filter_map(|(mid, mpath)| load_module(&mpath, &mid, &prefix, &mut out.problems)).collect();
+        if modules.is_empty() {
+            out.problems.push(Problem { place: format!("{}/", name), message: "This course has no lessons that could be read, so it is not shown.".into() });
+            continue;
+        }
+        out.courses.push(Course {
+            id: name.clone(),
+            title,
+            summary: get(&meta, "summary"),
+            author: get(&meta, "author"),
+            version: get(&meta, "version").parse().unwrap_or(0),
+            license: get(&meta, "license"),
+            modules,
+        });
+    }
+    if !basics.is_empty() {
+        out.courses.insert(0, Course { id: BASICS_ID.into(), title: "Survival basics".into(), summary: "The core course: the first days of an emergency, mindset, shelter, water, first aid and longer-term planning.".into(), author: String::new(), version: 0, license: String::new(), modules: basics });
+    }
+    out
+}
+
+/// Several Academy folders at once (the program's own, and one on each library drive). A course found
+/// twice is shown once: the higher `version` wins, and on a tie the one listed first.
+pub fn load_all(dirs: &[PathBuf]) -> Loaded {
+    let mut all = Loaded::default();
+    for d in dirs {
+        let l = load_dir(d);
+        all.problems.extend(l.problems);
+        for c in l.courses {
+            match all.courses.iter().position(|x| x.id == c.id) {
+                Some(i) if c.version > all.courses[i].version => all.courses[i] = c,
+                Some(_) => {}
+                None => all.courses.push(c),
+            }
+        }
+    }
+    all
 }
 
 // ---------- results ----------
@@ -462,5 +609,108 @@ mod tests {
                 assert!(!crate::safety::output_contains_dose(&all), "{} looks like it gives a dose", l.id);
             }
         }
+    }
+
+    fn lesson_with(title: &str, extra: &str) -> String {
+        format!("---\ntitle: {}\nminutes: 3\nstatus: draft\n---\nPeople last about three days without water. {}\n\n## Check yourself\n? How long?\n+ About three days\n- Three weeks\n", title, extra)
+    }
+
+    #[test]
+    fn courses_modules_and_the_old_layout_load_together() {
+        let d = tmp("courses");
+        // the old layout: a module straight in the Academy folder
+        fs::create_dir_all(d.join("01-first")).unwrap();
+        fs::write(d.join("01-first/01-a.md"), lesson_with("Old A", "")).unwrap();
+        // a course
+        fs::create_dir_all(d.join("gardening/01-soil")).unwrap();
+        fs::write(d.join("gardening/course.md"), "---\ntitle: Gardening\nsummary: Grow food.\nauthor: Someone\nversion: 2\n---\n").unwrap();
+        fs::write(d.join("gardening/01-soil/_module.md"), "---\ntitle: Soil\n---\n").unwrap();
+        fs::write(d.join("gardening/01-soil/01-start.md"), lesson_with("Start", "")).unwrap();
+        // the template and hidden folders are skipped
+        fs::create_dir_all(d.join("_template-course/01-m")).unwrap();
+        fs::write(d.join("_template-course/01-m/01-x.md"), lesson_with("Template", "")).unwrap();
+        let l = load_dir(&d);
+        assert!(l.problems.is_empty(), "{:?}", l.problems);
+        assert_eq!(l.courses.iter().map(|c| c.id.as_str()).collect::<Vec<_>>(), vec![BASICS_ID, "gardening"]);
+        // the old layout keeps its old lesson ids, so saved results still match
+        assert_eq!(l.courses[0].modules[0].lessons[0].id, "01-first/01-a");
+        let g = &l.courses[1];
+        assert_eq!((g.title.as_str(), g.author.as_str(), g.version), ("Gardening", "Someone", 2));
+        assert_eq!(g.modules[0].title, "Soil");
+        assert_eq!(g.modules[0].lessons[0].id, "gardening/01-soil/01-start");
+    }
+
+    #[test]
+    fn a_lesson_that_gives_a_dose_is_left_out_and_reported() {
+        let d = tmp("dose");
+        fs::create_dir_all(d.join("c/01-m")).unwrap();
+        fs::write(d.join("c/course.md"), "---\ntitle: C\nauthor: A\n---\n").unwrap();
+        fs::write(d.join("c/01-m/01-ok.md"), lesson_with("Fine", "Blood sugar of 70 mg/dL is low.")).unwrap();
+        fs::write(d.join("c/01-m/02-dose.md"), lesson_with("Dose", "Give the child 500 mg of ibuprofen every six hours.")).unwrap();
+        fs::write(d.join("c/01-m/03-bad.md"), "garbage").unwrap();
+        let l = load_dir(&d);
+        let lessons: Vec<&str> = l.courses[0].modules[0].lessons.iter().map(|x| x.id.as_str()).collect();
+        assert_eq!(lessons, vec!["c/01-m/01-ok"]);
+        let dose = l.problems.iter().find(|p| p.place == "c/01-m/02-dose.md").expect("dose reported");
+        assert!(dose.message.contains("dose"), "{}", dose.message);
+        assert!(l.problems.iter().any(|p| p.place == "c/01-m/03-bad.md"));
+    }
+
+    #[test]
+    fn a_course_with_nothing_readable_is_not_shown_and_missing_details_are_reported() {
+        let d = tmp("empty");
+        fs::create_dir_all(d.join("c/01-m")).unwrap();
+        fs::write(d.join("c/course.md"), "---\ntitle: C\n---\n").unwrap();
+        fs::write(d.join("c/01-m/01-bad.md"), "garbage").unwrap();
+        let l = load_dir(&d);
+        assert!(l.courses.is_empty());
+        assert!(l.problems.iter().any(|p| p.message.contains("no author")));
+        assert!(l.problems.iter().any(|p| p.message.contains("no lessons")));
+    }
+
+    #[test]
+    fn the_newer_copy_of_a_course_wins_across_folders() {
+        let a = tmp("verA");
+        let b = tmp("verB");
+        for (d, ver, title) in [(&a, 1, "Old title"), (&b, 3, "New title")] {
+            fs::create_dir_all(d.join("c/01-m")).unwrap();
+            fs::write(d.join("c/course.md"), format!("---\ntitle: {}\nauthor: A\nversion: {}\n---\n", title, ver)).unwrap();
+            fs::write(d.join("c/01-m/01-x.md"), lesson_with("X", "")).unwrap();
+        }
+        let l = load_all(&[a.clone(), b.clone()]);
+        assert_eq!(l.courses.len(), 1);
+        assert_eq!(l.courses[0].title, "New title");
+        // on a tie the first folder keeps it
+        fs::write(b.join("c/course.md"), "---\ntitle: Tie\nauthor: A\nversion: 1\n---\n").unwrap();
+        assert_eq!(load_all(&[a, b]).courses[0].title, "Old title");
+    }
+
+    #[test]
+    fn everything_that_ships_loads_cleanly() {
+        let shipped = Path::new(env!("CARGO_MANIFEST_DIR")).join("../content/academy");
+        let l = load_dir(&shipped);
+        assert!(l.problems.is_empty(), "{:?}", l.problems);
+        assert!(!l.courses.is_empty());
+        assert!(l.courses.iter().map(|c| c.modules.iter().map(|m| m.lessons.len()).sum::<usize>()).sum::<usize>() >= 7);
+    }
+
+    #[test]
+    fn the_template_course_is_a_valid_course_once_renamed() {
+        let tpl = Path::new(env!("CARGO_MANIFEST_DIR")).join("../content/academy/_template-course");
+        let d = tmp("tpl");
+        fn copy(from: &Path, to: &Path) {
+            fs::create_dir_all(to).unwrap();
+            for e in fs::read_dir(from).unwrap().flatten() {
+                let (f, t) = (e.path(), to.join(e.file_name()));
+                if f.is_dir() { copy(&f, &t) } else { fs::copy(&f, &t).unwrap(); }
+            }
+        }
+        copy(&tpl, &d.join("my-course"));
+        let l = load_dir(&d);
+        assert!(l.problems.is_empty(), "{:?}", l.problems);
+        assert_eq!(l.courses.len(), 1);
+        assert_eq!(l.courses[0].modules[0].lessons[0].id, "my-course/01-first-module/01-first-lesson");
+        // as shipped (with the underscore) it is ignored
+        assert!(load_dir(Path::new(env!("CARGO_MANIFEST_DIR")).join("../content/academy").as_path()).courses.iter().all(|c| c.id != "_template-course"));
     }
 }
