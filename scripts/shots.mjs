@@ -181,6 +181,8 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   await shoot(page, `${label}-6-inventory-new`);
   await page.getByRole('button', { name: 'Cancel' }).click();
 
+  // Inventory has its own link in the top bar now: go back to Plan for Family, What fails, Drills and Binder.
+  await page.getByRole('button', { name: 'Plan', exact: true }).click();
   await page.getByRole('button', { name: 'Family', exact: true }).click();
   await shoot(page, `${label}-7-family`);
 
