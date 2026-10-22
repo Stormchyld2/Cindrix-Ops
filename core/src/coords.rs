@@ -160,8 +160,9 @@ pub fn from_mgrs(text: &str) -> Option<(f64, f64)> {
     let south = band < 'N';
     let (lat, lon) = inverse(easting, northing, zone, south);
     // the answer must fall in (or beside, for a big square) the band that was named
-    let got = BANDS.find(band_of(lat)?)? as i64;
-    if (got - band_i as i64).abs() > 1 {
+    // (a grid reference that lands more than a square outside its band is a mistyped one, not a place)
+    let band_north = band_south + if band == 'X' { 12.0 } else { 8.0 };
+    if lat < band_south - 1.0 || lat > band_north + 1.0 {
         return None;
     }
     Some((lat, lon))
@@ -450,4 +451,14 @@ mod tests {
             assert_eq!(to_dms(lat, lon), dms);
         }
     }
+    #[test]
+    fn a_grid_reference_that_does_not_fit_its_band_is_refused() {
+        // band S is 32 to 40 degrees north; this one would be near 48 degrees, so it is not a real place there
+        assert!(from_mgrs("18S UU 8011 1064").is_none());
+        // the real Pentagon grid reference still works
+        let (la, lo) = from_mgrs("18S UJ 2350 0680").unwrap();
+        assert!((la - 38.8924).abs() < 0.001 && (lo + 77.035).abs() < 0.001, "{} {}", la, lo);
+    }
+
 }
+
