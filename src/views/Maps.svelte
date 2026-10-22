@@ -1247,9 +1247,13 @@
 </section>
 
 {#if street}
-  <div class="warn">
-    <strong>Map: {streetPacks.map((p) => p.name).join(', ')}</strong> ({streetPacks.reduce((a, p) => a + p.mb, 0)} MB, from this drive).{#if packInfo} This covers {packInfo.replace(/^.*?: covers /, '')}{/if}{#if partial} It covers only part of the country, so the map stops at its edge. This build comes with only a small sample area. To get the whole United States, double-click scripts\Get-Maps.bat (it needs internet and tens of gigabytes of space, and takes hours).{/if} Roads, water, land and buildings are drawn{#if labelsOn}, with names{:else}; place names need the map fonts (run scripts\get-maps.ps1 -FontsOnly){/if}. Use Places on the map to mark hospitals, water, fuel and more. Positions you place are approximate. The route you build from your own pins is straight lines between them; for the way by road, car or on foot, use Directions on the map, which keeps out of the areas you mark to avoid.
-  </div>
+  {#if partial || !labelsOn}
+    <div class="warn">
+      {#if partial}This map covers only part of the country, so it stops at its edge. This build comes with only a small sample area. To get the whole United States, double-click scripts\Get-Maps.bat (it needs internet and tens of gigabytes of space, and takes hours).{/if}
+      {#if !labelsOn} Place names need the map fonts (run scripts\get-maps.ps1 -FontsOnly).{/if}
+    </div>
+  {/if}
+  <p class="muted small mapinfo" title="Which map files are being used">Street map: {streetPacks.map((p) => p.name).join(', ')} ({streetPacks.reduce((a, p) => a + p.mb, 0)} MB){#if packInfo} &middot; {packInfo.replace(/^.*?: covers /, 'covers ')}{/if}</p>
 {:else}
   <div class="warn">
     <strong>No map tiles on this drive yet.</strong> Street and topo maps come from map packs (see doc 7), so for now this is a plan view of the points you enter, drawn to scale with nothing underneath. Positions are typed in by hand and are approximate. The route you build from your own pins is straight lines between them. Directions along roads need a street map on the drive.
