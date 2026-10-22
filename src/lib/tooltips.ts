@@ -97,6 +97,18 @@ const KNOWN: Record<string, string> = {
   '‹ prev': 'Previous page',
   'next ›': 'Next page',
   '‹ shelf': 'Back to the shelf',
+  'not now': 'Hide this for now',
+  'close': 'Close this',
+  'clear': 'Empty the list',
+  'take the sign-off back': 'Mark this as not signed off',
+  'open the family page': 'Go to the Family page to add people',
+  'open the academy': 'Go to the Academy courses',
+  'add your supplies': 'Go to your supplies list and add what you have',
+  'show what to have': 'Show how much of each thing a household needs',
+  'put these back to the usual': 'Put these settings back to how they came',
+  'notes': 'Show or hide your notes',
+  'what next →': 'See what to do next',
+  'save seeds': 'Save your seed list',
 };
 
 /** Words for a button, from what it says. */

@@ -230,7 +230,7 @@
       <section class="panel small muted">
         {#if status.needs_converter}
           {#if status.converter === 'none'}
-            <div class="warn">A few of your songs (WMA, AIFF or similar) cannot play yet. They need a small helper program called ffmpeg. The downloadable program normally comes with it; if it is missing, copy <code>ffmpeg.exe</code> into the <code>engines</code> folder next to the program. MP3, WAV, FLAC, M4A and OGG songs play without it.</div>
+            <div class="warn">A few of your songs (WMA, AIFF and similar) cannot be played yet because a small helper is missing. The helper is a file called <code>ffmpeg.exe</code>. Put it in the <code>engines</code> folder next to the program and look again. Songs in MP3, WAV, FLAC, M4A and OGG play without it.</div>
           {:else if status.converter === 'unknown'}Some files need converting; that is checked the first time one is played.
           {:else}Converter ready: other formats are converted to {status.converter === 'opus' ? 'Opus (small)' : 'FLAC (large)'} the first time they play.{/if}
         {/if}

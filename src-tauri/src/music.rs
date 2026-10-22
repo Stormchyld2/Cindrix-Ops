@@ -343,7 +343,7 @@ pub async fn music_prepare(state: tauri::State<'_, AppState>, rel: String) -> Re
         };
         let Some(tg) = tg else {
             return Err::<(String, Option<convert::Target>), String>(
-                "This kind of file (such as WMA) has to be changed into one the player can read while it plays, and the tool that does that (ffmpeg) is not on this drive. Copy ffmpeg into the engines folder, or save the song as an MP3.".to_string(),
+                "This song is in a format the player cannot play by itself, and the small helper that fixes that (ffmpeg.exe) is not in the engines folder yet. Put it there and try again, or save the song as an MP3.".to_string(),
             );
         };
         let _g = CONVERT_LOCK.lock().unwrap_or_else(|e| e.into_inner());
