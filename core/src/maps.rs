@@ -356,6 +356,39 @@ pub fn resolve_tile_path(maps_root: &Path, requested: &str) -> Option<PathBuf> {
     if real.starts_with(&root) && real.is_file() { Some(real) } else { None }
 }
 
+/// The map's lettering comes as small glyph files: `fonts/<font name>/<first>-<last>.pbf` under the
+/// maps folder. Only exactly that shape is handed out, and only from inside `maps_root/fonts`.
+/// The web view encodes the font name once more than the file name needs, so the path is decoded
+/// up to twice.
+pub fn resolve_font_path(maps_root: &Path, requested: &str) -> Option<PathBuf> {
+    let path = requested.split(['?', '#']).next().unwrap_or("");
+    let mut decoded = percent_decode(path)?;
+    if decoded.contains('%') {
+        decoded = percent_decode(&decoded)?;
+    }
+    let parts: Vec<&str> = decoded.trim_start_matches('/').split('/').collect();
+    if parts.len() != 3 || parts[0] != "fonts" {
+        return None;
+    }
+    let (stack, file) = (parts[1], parts[2]);
+    if stack.is_empty() || stack.len() > 60 || !stack.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, ' ' | '-' | '_')) {
+        return None;
+    }
+    let range = file.strip_suffix(".pbf")?;
+    let (a, b) = range.split_once('-')?;
+    if a.is_empty() || b.is_empty() || a.len() > 7 || b.len() > 7 || !a.chars().all(|c| c.is_ascii_digit()) || !b.chars().all(|c| c.is_ascii_digit()) {
+        return None;
+    }
+    let full = maps_root.join("fonts").join(stack).join(file);
+    let real = full.canonicalize().ok()?;
+    let root = maps_root.join("fonts").canonicalize().ok()?;
+    if real.starts_with(&root) && real.is_file() && fs::metadata(&real).map(|m| m.len() <= 2 * 1024 * 1024).unwrap_or(false) {
+        Some(real)
+    } else {
+        None
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RangeError {
     /// The header is not a single `bytes=` range we understand.
@@ -667,5 +700,22 @@ mod tests {
         assert_eq!(read_range(&p, s, e).unwrap(), b"0123456789");
         assert!(!is_pmtiles_v3(b"PMTiles\x02"));
         assert!(!is_pmtiles_v3(b"short"));
+    }
+    #[test]
+    fn font_files_are_handed_out_only_in_their_exact_shape() {
+        let root = tmp("fonts");
+        let d = root.join("fonts").join("Noto Sans Regular");
+        fs::create_dir_all(&d).unwrap();
+        fs::write(d.join("0-255.pbf"), b"glyphs").unwrap();
+        fs::write(root.join("secret.pbf"), b"x").unwrap();
+        fs::write(root.join("fonts").join("notes.txt"), b"x").unwrap();
+        let want = d.join("0-255.pbf").canonicalize().unwrap();
+        assert_eq!(resolve_font_path(&root, "/fonts/Noto%20Sans%20Regular/0-255.pbf"), Some(want.clone()));
+        // encoded once more, the way the web view sends it
+        assert_eq!(resolve_font_path(&root, "/fonts%2FNoto%2520Sans%2520Regular%2F0-255.pbf"), Some(want));
+        for bad in ["", "/", "/fonts/Noto Sans Regular/0-255.txt", "/fonts/../secret.pbf", "/fonts/Noto Sans Regular/../../secret.pbf", "/fonts/Missing/0-255.pbf",
+                    "/fonts/Noto Sans Regular/a-b.pbf", "/other/Noto Sans Regular/0-255.pbf", "/fonts/Noto Sans Regular/0-255.pbf/x", "/fonts/Noto%5CSans/0-255.pbf", "/fonts/notes.txt"] {
+            assert_eq!(resolve_font_path(&root, bad), None, "{}", bad);
+        }
     }
 }

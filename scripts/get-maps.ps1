@@ -24,6 +24,10 @@
 #   powershell -File scripts\get-maps.ps1 -Target D:\Cindrix -Places         (the map and the list)
 # It is written to <Target>\maps\places\places.tsv. Street addresses are not in it.
 #
+# PLACE NAMES ON THE MAP: the lettering needs small font files (Protomaps' free basemaps-assets, SIL Open Font
+# License), written to <Target>\maps\fonts. They are fetched with every map download; use -FontsOnly to fetch
+# just them, or -NoFonts to skip them.
+#
 # License: OpenStreetMap data, ODbL. "© OpenStreetMap contributors" must stay visible on the map.
 param(
   [Parameter(Mandatory=$true)][string]$Target,
@@ -40,7 +44,10 @@ param(
   # Also make the list of places the Maps screen searches (needs internet once).
   [switch]$Places,
   # Only the list of places, not the map.
-  [switch]$PlacesOnly
+  [switch]$PlacesOnly,
+  # Only the map lettering (fonts), not the map. Or leave them out of a map download.
+  [switch]$FontsOnly,
+  [switch]$NoFonts
 )
 $ErrorActionPreference = 'Stop'
 
@@ -94,6 +101,30 @@ function Build-Places([string]$root) {
     Add-Content -Path (Join-Path $dir 'SOURCE.txt') -Value $note -Encoding UTF8
   } finally { Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue }
 }
+function Get-Fonts([string]$root) {
+  $dest = Join-Path $root 'maps\fonts'
+  if ((Test-Path (Join-Path $dest 'Noto Sans Regular\0-255.pbf')) -and -not $Force) { Write-Host 'Map fonts are already there.'; return }
+  $tmp = Join-Path $env:TEMP ('cindrix-fonts-' + [Guid]::NewGuid().ToString('N'))
+  New-Item -ItemType Directory -Force -Path $tmp | Out-Null
+  try {
+    Write-Host 'Fetching the map fonts from github.com/protomaps/basemaps-assets ...'
+    $zip = Join-Path $tmp 'assets.zip'
+    Invoke-WebRequest -UseBasicParsing 'https://github.com/protomaps/basemaps-assets/archive/refs/heads/main.zip' -OutFile $zip
+    Expand-Archive -Path $zip -DestinationPath $tmp -Force
+    $src = Get-ChildItem -Path $tmp -Directory | Where-Object { Test-Path (Join-Path $_.FullName 'fonts') } | Select-Object -First 1
+    if (-not $src) { throw 'The download had no fonts folder.' }
+    New-Item -ItemType Directory -Force -Path $dest | Out-Null
+    foreach ($stack in 'Noto Sans Regular','Noto Sans Medium','Noto Sans Italic') {
+      $from = Join-Path $src.FullName ('fonts\' + $stack)
+      if (-not (Test-Path $from)) { throw "Font $stack was not in the download." }
+      Copy-Item -Recurse -Force $from (Join-Path $dest $stack)
+    }
+    $ofl = Join-Path $src.FullName 'fonts\OFL.txt'
+    if (Test-Path $ofl) { Copy-Item -Force $ofl (Join-Path $dest 'OFL.txt') }
+    Write-Host "Fonts written to $dest"
+  } finally { Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue }
+}
+if ($FontsOnly) { Get-Fonts $Target; return }
 if ($PlacesOnly) { Build-Places $Target; return }
 
 # min lon, min lat, max lon, max lat
@@ -197,5 +228,6 @@ $note = @(
 Add-Content -Path (Join-Path $street 'SOURCE.txt') -Value $note -Encoding UTF8
 
 if ($Places) { Build-Places $Target }
+if (-not $NoFonts) { Get-Fonts $Target }
 
 Write-Host 'Done. Check the drive with: cd core; cargo run --release --example check_drive -- <drive folder>'

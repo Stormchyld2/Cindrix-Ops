@@ -77,3 +77,12 @@ larger address file (for example OpenAddresses), which is not included yet. The 
 - The map is taller (it uses most of the window height). **Full screen** makes the map fill the whole screen and keeps everything: the pin, rendezvous and no-go tools, the Find box, "Zoom to my points", and a side list of your points, route and areas with Save. Esc or "Exit full screen" goes back.
 - A tactical readout sits on the map: the coordinates under the pointer and of the map's centre (latitude and longitude, five decimals), and a centre cross-hair that can be switched off.
 - Hover text explains each tool.
+
+
+## Places on the map, names and ZIP search (2026-10-22)
+
+- **Places on the map:** nine groups (emergency and health, drinking water, fuel and charging, food and supplies, shelter and lodging, camping and outdoors, transport, services and civic, military and border), each its own colour, switched on and off from "Places on the map" (also in full screen). They come from the `pois` layer of the street map file, so they need no extra download, and appear as you zoom in. Click a marked place for a card (name, kind, coordinates, "Pin it"). "Find the nearest" lists the closest places of one kind to the middle of the map; it only looks at the part of the map that is on screen. The groups are in `src/lib/mapkinds.ts`.
+- **Names:** street, town and water names and the names of marked places are drawn when the font files are in `maps\fonts` (Protomaps basemaps-assets, SIL Open Font License; `get-maps.ps1` fetches them, `-FontsOnly` fetches just them). The program serves them only from that folder and only as `fonts/<name>/<range>.pbf` (`maps::resolve_font_path`, tested). Without them only shapes are drawn.
+- **ZIP search:** needs the places list (`maps\places\places.tsv`, GeoNames, CC BY 4.0). The Windows build made by CI now includes the list and the fonts, so ZIP codes, towns, parks and lakes are found with no setup. If a build has no list, the Find box says how to make it.
+- **Not built:** street-address search, terrain shading and contours (they need elevation data), live position, and turn-by-turn roads.
+- Ideas for this screen came from looking at other offline map programs; the look is our own (dark, amber and blue).

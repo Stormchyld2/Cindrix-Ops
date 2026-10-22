@@ -45,6 +45,12 @@
           "license": "MIT / Apache-2.0",
           "status": "in this build",
           "note": "The program itself is GPL-3.0-or-later."
+        },
+        {
+          "name": "Map fonts (Noto Sans glyph files, Protomaps basemaps-assets)",
+          "license": "SIL Open Font License 1.1",
+          "status": "in this build",
+          "note": "Lettering for the map. Fetched by scripts\\get-maps.ps1; the license text comes with them (maps\\fonts\\OFL.txt)."
         }
       ]
     },

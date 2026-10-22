@@ -432,6 +432,18 @@ fn serve_tile(req: &tauri::http::Request<Vec<u8>>) -> tauri::http::Response<Vec<
     if *req.method() != tauri::http::Method::GET {
         return tile_reply(405, None, Vec::new());
     }
+    // Lettering for the map: a small glyph file, sent whole.
+    if let Some(font) = maps::resolve_font_path(&drive_or_program("maps"), req.uri().path()) {
+        return match std::fs::read(&font) {
+            Ok(bytes) => tauri::http::Response::builder()
+                .status(200)
+                .header("Access-Control-Allow-Origin", "*")
+                .header("Content-Type", "application/x-protobuf")
+                .body(bytes)
+                .unwrap_or_else(|_| tauri::http::Response::new(Vec::new())),
+            Err(_) => tile_reply(404, None, Vec::new()),
+        };
+    }
     let Some(path) = maps::resolve_tile_path(&drive_or_program("maps"), req.uri().path()) else {
         return tile_reply(404, None, Vec::new());
     };

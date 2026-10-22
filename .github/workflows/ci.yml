@@ -346,6 +346,20 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "get-maps.ps1 failed (exit $LASTEXITCODE)" }
           Copy-Item -Recurse -Force (Join-Path $work 'maps') 'out\Cindrix\maps'
           Get-ChildItem -Recurse 'out\Cindrix\maps' -File | ForEach-Object { Write-Host ("map file: {0} ({1:N1} MB)" -f $_.FullName, ($_.Length / 1MB)) }
+      - name: Add the offline places list (ZIP codes, towns, parks) and the map fonts
+        continue-on-error: true
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Continue'
+          $work = Join-Path $env:RUNNER_TEMP 'mapextras'
+          powershell -NoProfile -File scripts\get-maps.ps1 -Target $work -PlacesOnly
+          if ($LASTEXITCODE -ne 0) { Write-Host "::warning::the places list could not be made (exit $LASTEXITCODE)" }
+          powershell -NoProfile -File scripts\get-maps.ps1 -Target $work -FontsOnly
+          if ($LASTEXITCODE -ne 0) { Write-Host "::warning::the map fonts could not be fetched (exit $LASTEXITCODE)" }
+          foreach ($d in 'places','fonts') {
+            $from = Join-Path $work "maps\$d"
+            if (Test-Path $from) { New-Item -ItemType Directory -Force -Path 'out\Cindrix\maps' | Out-Null; Copy-Item -Recurse -Force $from "out\Cindrix\maps\$d"; Write-Host "added maps\$d" }
+          }
       - uses: actions/upload-artifact@v4
         with:
           name: Cindrix-windows-portable

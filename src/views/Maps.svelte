@@ -3,6 +3,7 @@
   import { mapsList, mapLoad, mapSave, mapDelete, mapExportGpx, routeStats, mapPacks, tileUrl, placeSearch, type PlaceHit, type MapMeta, type LatLon, type RouteStats, type Pack } from '../lib/api';
   import type { Map as MLMap, Marker, StyleSpecification, GeoJSONSource } from 'maplibre-gl';
   import { settings } from '../lib/settings.svelte';
+  import { POI_GROUPS, kindName, groupOf, distanceKm, compass } from '../lib/mapkinds';
 
   type Pin = { id: number; label: string; kind: 'pin' | 'rendezvous'; lat: number; lon: number };
   type Area = { label: string; points: LatLon[] };
@@ -53,6 +54,113 @@
   let centre: LatLon | null = $state(null);
   let cross = $state(true);
   let drawer = $state(true);
+  // places marked on the map (hospitals, water, fuel ...), switched on and off by group
+  let layersOpen = $state(false);
+  let labelsOn = $state(false); // place names are drawn only when the font files are on the drive
+  let poiOn: Record<string, boolean> = $state(loadPoiChoice());
+  type PoiPick = { name: string; kind: string; lat: number; lon: number };
+  let picked: PoiPick | null = $state(null);
+  let nearGroup = $state('emergency');
+  let nearList: (PoiPick & { km: number; dir: string })[] = $state([]);
+  let nearNote = $state('');
+
+  function loadPoiChoice(): Record<string, boolean> {
+    const base: Record<string, boolean> = Object.fromEntries(POI_GROUPS.map((g) => [g.id, g.on]));
+    try {
+      const raw = localStorage.getItem('cindrix-map-layers');
+      if (raw) {
+        const v = JSON.parse(raw) as Record<string, unknown>;
+        for (const g of POI_GROUPS) if (typeof v[g.id] === 'boolean') base[g.id] = v[g.id] as boolean;
+      }
+    } catch { /* the choice is just not remembered */ }
+    return base;
+  }
+  function savePoiChoice() {
+    try { localStorage.setItem('cindrix-map-layers', JSON.stringify(poiOn)); } catch { /* not remembered */ }
+  }
+  function setGroup(id: string, on: boolean) {
+    poiOn[id] = on;
+    savePoiChoice();
+    applyPoiVisibility();
+  }
+  function setAllGroups(on: boolean) {
+    for (const g of POI_GROUPS) poiOn[g.id] = on;
+    savePoiChoice();
+    applyPoiVisibility();
+  }
+  function applyPoiVisibility() {
+    if (!map || !mapReady) return;
+    for (const g of POI_GROUPS) {
+      const v = poiOn[g.id] ? 'visible' : 'none';
+      for (const id of [`poi-${g.id}`, `poi-${g.id}-label`]) if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', v);
+    }
+  }
+  function addPoiLayers(m: MLMap, withNames: boolean) {
+    for (const g of POI_GROUPS) {
+      const filter = ['match', ['get', 'kind'], g.kinds, true, false];
+      const vis = poiOn[g.id] ? 'visible' : 'none';
+      m.addLayer({
+        id: `poi-${g.id}`, type: 'circle', source: 'protomaps', 'source-layer': 'pois', minzoom: 7, filter,
+        layout: { visibility: vis },
+        paint: { 'circle-color': g.color, 'circle-radius': ['interpolate', ['linear'], ['zoom'], 7, 2.5, 12, 5, 16, 8], 'circle-stroke-color': '#0b0d0c', 'circle-stroke-width': 1.5 },
+      } as never);
+      if (withNames) {
+        m.addLayer({
+          id: `poi-${g.id}-label`, type: 'symbol', source: 'protomaps', 'source-layer': 'pois', minzoom: 12.5, filter,
+          layout: { visibility: vis, 'text-field': ['coalesce', ['get', 'name'], ''], 'text-font': ['Noto Sans Regular'], 'text-size': 11, 'text-anchor': 'top', 'text-offset': [0, 0.8], 'text-optional': true, 'text-max-width': 8 },
+          paint: { 'text-color': '#ece7de', 'text-halo-color': '#0b0d0c', 'text-halo-width': 1.4 },
+        } as never);
+      }
+    }
+  }
+  /** Is there a marked place under this point of the screen? */
+  function poiAt(m: MLMap, point: { x: number; y: number }): PoiPick | null {
+    const layers = POI_GROUPS.filter((g) => poiOn[g.id] && m.getLayer(`poi-${g.id}`)).map((g) => `poi-${g.id}`);
+    if (!layers.length) return null;
+    const r = 8;
+    const f = m.queryRenderedFeatures([[point.x - r, point.y - r], [point.x + r, point.y + r]], { layers })[0];
+    if (!f || f.geometry.type !== 'Point') return null;
+    const [lon, lat] = f.geometry.coordinates as [number, number];
+    const kind = String(f.properties?.kind ?? '');
+    return { name: String(f.properties?.name ?? '') || kindName(kind), kind, lat, lon };
+  }
+  function findNearest() {
+    nearNote = '';
+    nearList = [];
+    if (!map || !mapReady) return;
+    const g = POI_GROUPS.find((x) => x.id === nearGroup);
+    if (!g) return;
+    const c = map.getCenter();
+    const from: [number, number] = [c.lat, c.lng];
+    const feats = map.querySourceFeatures('protomaps', { sourceLayer: 'pois', filter: ['match', ['get', 'kind'], g.kinds, true, false] as never });
+    const seen = new Set<string>();
+    const out: (PoiPick & { km: number; dir: string })[] = [];
+    for (const f of feats) {
+      if (f.geometry.type !== 'Point') continue;
+      const [lon, lat] = f.geometry.coordinates as [number, number];
+      const kind = String(f.properties?.kind ?? '');
+      const name = String(f.properties?.name ?? '') || kindName(kind);
+      const key = `${name}|${lat.toFixed(4)}|${lon.toFixed(4)}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({ name, kind, lat, lon, km: distanceKm(from, [lat, lon]), dir: compass(from, [lat, lon]) });
+    }
+    out.sort((a, b) => a.km - b.km);
+    nearList = out.slice(0, 8);
+    nearNote = out.length
+      ? 'Nearest to the middle of the map. This looks only at the part of the map on screen, so zoom out to look further.'
+      : 'None found on the part of the map on screen. Zoom out or move the map and try again.';
+  }
+  function showPick(h: PoiPick) {
+    if (!map) return;
+    map.jumpTo({ center: [h.lon, h.lat], zoom: Math.max(map.getZoom(), 14) });
+    picked = h;
+  }
+  function pinPick(h: PoiPick) {
+    const id = pins.reduce((a, x) => Math.max(a, x.id), 0) + 1;
+    pins = [...pins, { id, label: h.name, kind: 'pin', lat: Math.round(h.lat * 1e5) / 1e5, lon: Math.round(h.lon * 1e5) / 1e5 }];
+  }
+  const dist = (km: number) => (settings.values.mapUnits === 'metric' ? `${km.toFixed(km < 10 ? 1 : 0)} km` : `${(km * 0.621371).toFixed(km * 0.621371 < 10 ? 1 : 0)} mi`);
 
   function toggleFull() {
     full = !full;
@@ -128,10 +236,24 @@
       }
       // No glyph (font) files ship yet, so the text layers are left out: roads, water, land and
       // buildings are drawn, place names are not. Pin labels are drawn by this screen instead.
+      // Place names need the font files in maps/fonts. When they are there the lettering is drawn (street, town and
+      // water names, and the names of marked places); when not, only shapes are drawn and the map says how to add them.
+      let glyphs: string | undefined;
+      try {
+        const tpl = (await tileUrl('fonts/FONTSTACKX/FONTRANGEX.pbf')).replace('FONTSTACKX', '{fontstack}').replace('FONTRANGEX', '{range}');
+        const probe = tpl.replace('{fontstack}', encodeURIComponent('Noto Sans Regular')).replace('{range}', '0-255');
+        const r = await fetch(probe);
+        if (r.ok && (await r.arrayBuffer()).byteLength > 0) glyphs = tpl;
+      } catch { /* no fonts: shapes only */ }
+      labelsOn = !!glyphs;
+      // symbol layers that use picture icons are left out (no icon sheet ships); text-only ones are kept when the fonts are there
+      const keep = (l: { type: string; layout?: Record<string, unknown>; 'source-layer'?: string }) =>
+        l.type !== 'symbol' || (labelsOn && l['source-layer'] !== 'pois' && !(l.layout && 'icon-image' in l.layout));
       const style = {
         version: 8,
+        ...(glyphs ? { glyphs } : {}),
         sources: { protomaps: { type: 'vector', url: 'pmtiles://' + url, attribution: '© OpenStreetMap contributors' } },
-        layers: layers('protomaps', namedFlavor('dark'), { lang: 'en' }).filter((l) => l.type !== 'symbol'),
+        layers: layers('protomaps', namedFlavor('dark'), { lang: 'en' }).filter((l) => keep(l as never)),
       } as unknown as StyleSpecification;
       const m = new maplibregl.Map({
         container: el,
@@ -164,6 +286,8 @@
       m.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'top-right');
       m.addControl(new maplibregl.ScaleControl({ unit: settings.values.mapUnits === 'metric' ? 'metric' : 'imperial' }), 'bottom-left');
       m.on('error', (e) => {
+        const msg = String((e as { error?: Error }).error?.message ?? e);
+        if (/image|sprite|glyph|font/i.test(msg) && !/tile/i.test(msg)) return; // a missing picture or letter is not a broken map
         tileError = 'The map could not read its tiles: ' + String((e as { error?: Error }).error?.message ?? e);
       });
       m.on('load', () => {
@@ -171,6 +295,7 @@
         m.addLayer({ id: 'nogo-fill', type: 'fill', source: 'nogo', paint: { 'fill-color': '#e5533d', 'fill-opacity': 0.25 } });
         m.addLayer({ id: 'nogo-line', type: 'line', source: 'nogo', paint: { 'line-color': '#e5533d', 'line-width': 2, 'line-dasharray': [2, 2] } });
         m.addLayer({ id: 'draft-line', type: 'line', source: 'draft', paint: { 'line-color': '#e5533d', 'line-width': 2, 'line-dasharray': [1, 2] } });
+        addPoiLayers(m, labelsOn);
         m.addLayer({ id: 'route-line', type: 'line', source: 'route', paint: { 'line-color': '#ff9a1f', 'line-width': 4 } });
         mapReady = true;
         // The box may have settled to its real size after the map was made: measure again, then frame the start view.
@@ -178,7 +303,15 @@
         if (startBox && pins.length === 0 && nogo.length === 0) m.fitBounds(startBox.box, { padding: 20, duration: 0, maxZoom: startBox.maxZoom });
         zoomToPoints();
       });
-      m.on('click', (e) => onMapClick(e.lngLat.lat, e.lngLat.lng));
+      m.on('click', (e) => {
+        // with nothing to add, a click on a marked place opens its card
+        if (addMode === 'off') {
+          const hit = poiAt(m, e.point);
+          if (hit) { picked = hit; return; }
+          picked = null;
+        }
+        onMapClick(e.lngLat.lat, e.lngLat.lng);
+      });
       m.on('mousemove', (e) => { cursor = [Math.round(e.lngLat.lat * 1e5) / 1e5, Math.round(e.lngLat.lng * 1e5) / 1e5]; });
       m.on('mouseout', () => { cursor = null; });
       const setCentre = () => { const c = m.getCenter(); centre = [Math.round(c.lat * 1e5) / 1e5, Math.round(c.lng * 1e5) / 1e5]; };
@@ -491,7 +624,7 @@
 
 {#if street}
   <div class="warn">
-    <strong>Map: {street.name}</strong> ({street.mb} MB, from this drive).{#if packInfo} This pack covers {packInfo.replace(street.name + ': covers ', '')}{/if}{#if partial} It covers only part of the country, so the map stops at its edge. To cover more, run scripts\get-maps.ps1 again with a bigger area (or without -Bbox for the whole lower 48).{/if} Roads, water, land and buildings are drawn; place names are not yet. Positions you place are approximate, and routes are straight lines between your points: this app does not plan roads and does not yet steer routes around no-go areas.
+    <strong>Map: {street.name}</strong> ({street.mb} MB, from this drive).{#if packInfo} This pack covers {packInfo.replace(street.name + ': covers ', '')}{/if}{#if partial} It covers only part of the country, so the map stops at its edge. To cover more, run scripts\get-maps.ps1 again with a bigger area (or without -Bbox for the whole lower 48).{/if} Roads, water, land and buildings are drawn{#if labelsOn}, with names{:else}; place names need the map fonts (run scripts\get-maps.ps1 -FontsOnly){/if}. Use Places on the map to mark hospitals, water, fuel and more. Positions you place are approximate, and routes are straight lines between your points: this app does not plan roads and does not yet steer routes around no-go areas.
   </div>
 {:else}
   <div class="warn">
@@ -535,11 +668,12 @@
               <button class="btn" class:primary={addMode === k} title={tip} onclick={() => (addMode = k as typeof addMode)}>{t}</button>
             {/each}
             <button class="btn" title="Zoom so all your pins and areas fit on screen" onclick={zoomToPoints} disabled={pins.length === 0 && nogo.length === 0}>Zoom to my points</button>
+            <button class="btn" class:primary={layersOpen} title="Choose which kinds of places are marked on the map: hospitals, water, fuel, shelter and more" onclick={() => (layersOpen = !layersOpen)}>Places on the map</button>
             <button class="btn" class:primary={cross} title="Show or hide the cross-hair and the coordinates of the middle of the map" onclick={() => (cross = !cross)}>Cross-hair</button>
             <button class="btn" title={full ? 'Go back to the normal page (or press Esc)' : 'Make the map fill the whole screen. Your pins and tools stay.'} onclick={toggleFull}>{full ? 'Exit full screen' : 'Full screen'}</button>
           </div>
           <div class="row find">
-            <input class="input grow" type="search" placeholder="Find a place: town and state, ZIP code, park, lake, or latitude and longitude" aria-label="Find a place" bind:value={findTerm}
+            <input class="input grow" type="search" placeholder="Find a place: ZIP code, town and state, park, lake, or latitude and longitude" aria-label="Find a place" bind:value={findTerm}
               onkeydown={(e) => { if (e.key === 'Enter') void findPlace(); }} />
             <button class="btn" title="Look this place up and move the map to it" onclick={findPlace} disabled={!findTerm.trim() || findBusy}>Find</button>
             <button class="btn" title="Keep the place you just found as a pin on your map" onclick={pinFound} disabled={!foundMarker}>Pin it</button>
@@ -563,6 +697,35 @@
         <div class="mapbox">
           <div class="tilemap" bind:this={mapEl} role="application" aria-label="Map"></div>
           {#if cross}<div class="cross" aria-hidden="true"><span></span></div>{/if}
+          {#if layersOpen}
+            <aside class="layers" aria-label="Places on the map">
+              <div class="row between"><span class="label">PLACES ON THE MAP</span><button class="link" title="Close this list" onclick={() => (layersOpen = false)}>close</button></div>
+              <div class="row"><button class="link" title="Mark every kind of place" onclick={() => setAllGroups(true)}>all</button><button class="link" title="Mark none" onclick={() => setAllGroups(false)}>none</button></div>
+              {#each POI_GROUPS as g}
+                <label class="grp"><input type="checkbox" checked={poiOn[g.id]} onchange={(e) => setGroup(g.id, (e.currentTarget as HTMLInputElement).checked)} /><span class="swatch" style="background:{g.color}"></span>{g.label}</label>
+              {/each}
+              <p class="muted small">Places appear when you zoom in. {labelsOn ? 'Names show up close in.' : 'Names need the map fonts: run scripts\\get-maps.ps1 -FontsOnly.'} Click a marked place for its card.</p>
+              <div class="label gap">FIND THE NEAREST</div>
+              <div class="row">
+                <select class="input grow" bind:value={nearGroup} aria-label="Kind of place to find">{#each POI_GROUPS as g}<option value={g.id}>{g.label}</option>{/each}</select>
+                <button class="btn" title="List the closest places of this kind to the middle of the map" onclick={findNearest}>Find</button>
+              </div>
+              {#if nearNote}<p class="muted small">{nearNote}</p>{/if}
+              {#each nearList as h}
+                <button class="near" title="Move the map to this place" onclick={() => showPick(h)}><span>{h.name}</span><span class="muted">{kindName(h.kind)} · {dist(h.km)} {h.dir}</span></button>
+              {/each}
+            </aside>
+          {/if}
+          {#if picked}
+            <div class="pick" role="dialog" aria-label="Marked place">
+              <div><strong>{picked.name}</strong> <span class="muted small">{kindName(picked.kind)}{groupOf(picked.kind) ? ' · ' + groupOf(picked.kind)?.label : ''}</span></div>
+              <div class="muted small">{picked.lat.toFixed(5)}, {picked.lon.toFixed(5)}</div>
+              <div class="row">
+                <button class="btn" title="Keep this place as a pin on your map" onclick={() => { if (picked) pinPick(picked); }}>Pin it</button>
+                <button class="btn" title="Close this card" onclick={() => (picked = null)}>Close</button>
+              </div>
+            </div>
+          {/if}
           <div class="hud" aria-live="off">
             {#if cursor}<div>CURSOR {cursor[0].toFixed(5)}, {cursor[1].toFixed(5)}</div>{/if}
             {#if cross && centre}<div>CENTRE {centre[0].toFixed(5)}, {centre[1].toFixed(5)}</div>{/if}
@@ -716,6 +879,13 @@
   .hud { position: absolute; left: 10px; bottom: 28px; padding: 6px 9px; background: #0b0d0ccc; border: 1px solid #3a3f3a; border-left: 3px solid #ff9a1f; border-radius: 4px; font-family: var(--mono, monospace); font-size: 11px; letter-spacing: .06em; color: #cfd6cc; pointer-events: none; }
   .hud:empty { display: none; }
   .drawer { position: absolute; top: 10px; right: 10px; bottom: 28px; width: 290px; overflow: auto; padding: 10px; background: #0b0d0cee; border: 1px solid #3a3f3a; border-radius: 8px; display: flex; flex-direction: column; gap: 8px; z-index: 5; }
+  .layers { position: absolute; top: 10px; left: 10px; bottom: 28px; width: 270px; overflow: auto; padding: 10px; background: #0b0d0cee; border: 1px solid #3a3f3a; border-radius: 8px; display: flex; flex-direction: column; gap: 6px; z-index: 5; }
+  .grp { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 2px 0; }
+  .swatch { width: 10px; height: 10px; border-radius: 50%; border: 1px solid #0b0d0c; flex: 0 0 auto; }
+  .near { display: flex; flex-direction: column; text-align: left; gap: 1px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: transparent; font-size: 13px; }
+  .near:hover { border-color: var(--blue-line); }
+  .pick { position: absolute; left: 50%; transform: translateX(-50%); bottom: 34px; min-width: 240px; max-width: 360px; padding: 10px 12px; background: #0b0d0cf2; border: 1px solid #3a3f3a; border-left: 3px solid #ff9a1f; border-radius: 6px; display: flex; flex-direction: column; gap: 6px; z-index: 6; }
+  .gap { margin-top: 8px; }
   .drawer.closed { width: auto; bottom: auto; }
   .errtxt { color: #ffb4a6; }
   .tilemap { width: 100%; height: clamp(520px, calc(100vh - 260px), 1200px); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #0f1110; }

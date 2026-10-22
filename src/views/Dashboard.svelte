@@ -192,7 +192,35 @@
   </section>
 </div>
 
+<section class="feature" aria-label="What is in the program">
+  <div class="label">WHAT YOU CAN DO HERE</div>
+  <div class="fgrid">
+    {#each [
+      ['Maps', 'MAPS AND PLACES', 'Street map of the whole US, offline. Find a ZIP code or town, mark hospitals, water and fuel, plan routes.'],
+      ['Ask', 'ASK', 'Ask a question in plain words. Answers come from your library, with the source shown.'],
+      ['Library', 'LIBRARY', 'Your books, emergency cards and saved archives, to read with no internet.'],
+      ['Intel', 'INTEL', 'Browse the offline library like a small internet: encyclopedias, medical and how-to guides.'],
+      ['Academy', 'ACADEMY', 'Courses with short quizzes. Drop in more as folders.'],
+      ['What next', 'PLANS', 'Checks that come back, learning plans and emergency plans. Follow several at once.'],
+      ['Drills', 'DRILL MODE', 'Practise for an emergency with a timer and find the gaps while it is safe.'],
+      ['Binder', 'PRINT BINDER', 'A paper copy of your plan, your family page and your contacts.'],
+    ] as [tab, title, text]}
+      <button class="fcard" title={text} aria-label={'Open ' + title.toLowerCase()} onclick={() => go(tab)}>
+        <span class="ft">{title}</span>
+        <span class="fd">{text}</span>
+      </button>
+    {/each}
+  </div>
+  <p class="muted small foot">Runs with no internet. Everything stays on your device.</p>
+</section>
+
 <style>
+  .feature { margin-top: 12px; }
+  .fgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; margin-top: 8px; }
+  .fcard { display: flex; flex-direction: column; gap: 4px; text-align: left; padding: 11px 12px; background: var(--panel); border: 1px solid var(--line); border-top: 2px solid var(--line2); border-radius: 10px; }
+  .fcard:hover { border-color: var(--blue-line); }
+  .ft { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; color: var(--blue); }
+  .fd { font-size: 12.5px; color: var(--muted); line-height: 1.35; }
   .more { margin-top: 12px; }
   .meter { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
   .meter span { display: block; height: 100%; background: var(--blue); }
