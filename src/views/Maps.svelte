@@ -666,9 +666,11 @@
     return typeof ids === 'number' ? ids : null;
   }
 
-  let measureKm = $derived(pathKm(hover && addMode === 'measure' ? [...measurePts, hover] : measurePts));
+  // (read through a function so the checker does not assume the tool is still 'off' as when it was declared)
+  const toolNow = (): Tool => addMode;
+  let measureKm = $derived.by(() => pathKm(hover && toolNow() === 'measure' ? [...measurePts, hover] : measurePts));
   let measureArea = $derived(measurePts.length >= 3 ? areaKm2(measurePts) : 0);
-  let buildKm = $derived(pathKm(hover && (addMode === 'line' || addMode === 'shape') ? [...building, hover] : building));
+  let buildKm = $derived.by(() => pathKm(hover && (toolNow() === 'line' || toolNow() === 'shape') ? [...building, hover] : building));
   let selMeasure = $derived(sel ? measureOf(sel) : { km: 0, km2: 0 });
 
   // what is drawn, and the names on it
