@@ -19,6 +19,7 @@ param(
   [string]$Release = '',
   # Use this duckdb program instead of fetching one.
   [string]$Duckdb = '',
+  [string]$DuckdbVersion = '1.5.6',
   # Start again even if a stage or letters are already there.
   [switch]$Force,
   # Only check that the street-name rules give the answers in this file (tests\address_keys.tsv), then stop.
@@ -54,15 +55,10 @@ if (-not $Duckdb) {
     New-Item -ItemType Directory -Force -Path $dir | Out-Null
     $os = if ($onWindows) { 'windows' } else { 'linux' }
     $ProgressPreference = 'SilentlyContinue'
-    $url = $null
-    try {
-      $rel = Invoke-RestMethod -UseBasicParsing -Uri 'https://api.github.com/repos/duckdb/duckdb/releases/latest'
-      $hit = $rel.assets | Where-Object { $_.name -match '^duckdb_cli' -and $_.name -match $os -and $_.name -match '(amd64|x86_64|x64)' -and $_.name -notmatch 'arm|aarch|musl|gcc' -and $_.name -match '\.zip$' } | Select-Object -First 1
-      if ($hit) { $url = $hit.browser_download_url }
-    } catch { }
-    if (-not $url) { $url = "https://github.com/duckdb/duckdb/releases/latest/download/duckdb_cli-$os-amd64.zip" }
+    # A fixed, tested version (the newest is not always the one this script was checked with).
+    $url = "https://install.duckdb.org/v$DuckdbVersion/duckdb_cli-$os-amd64.zip"
     $zip = Join-Path $dir 'duckdb.zip'
-    Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $zip
+    try { Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $zip } catch { throw "Could not fetch DuckDB from $url : $_" }
     Expand-Archive -Force -Path $zip -DestinationPath $dir
     Remove-Item $zip -Force
     if (-not $onWindows) { & chmod +x $exe }
