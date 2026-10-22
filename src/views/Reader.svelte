@@ -20,8 +20,14 @@
   let loading = $state(true);
   let wrap: HTMLDivElement | undefined = $state();
   let canvas: HTMLCanvasElement | undefined = $state();
-  let task: RenderTask | null = null;
+  let canvas2: HTMLCanvasElement | undefined = $state();
+  let tasks: (RenderTask | null)[] = [null, null];
   let renderId = 0;
+  // Two pages side by side, like an open book (turn it off for one page at a time).
+  let spread = $state(readPref('spread') !== '0');
+  let box = $state({ w: 0, h: 0 });
+  let flip: '' | 'next' | 'prev' = $state('');
+  let flipTimer: ReturnType<typeof setTimeout> | undefined;
 
   let text = $state(''); // for md/txt books
   let pageText: string[] = $state.raw([]);
@@ -63,8 +69,9 @@
   });
 
   onDestroy(() => {
-    task?.cancel();
+    tasks.forEach((t) => t?.cancel());
     clearTimeout(saveTimer);
+    clearTimeout(flipTimer);
     if (isPdf) marksSetLast(book.id, page).catch(() => {});
     doc?.destroy();
   });
@@ -88,34 +95,59 @@
     }
   }
 
+  /** The page on the right of the open book, or 0 when there is none (one page at a time, or the last page). */
+  // On a narrow window (a phone) one page at a time is easier to read, whatever the button says.
+  const twoUp = $derived(spread && box.w >= 700);
+  let rightPage = $derived(twoUp && page + 1 <= pages ? page + 1 : 0);
+
+  async function drawOne(n: number, cv: HTMLCanvasElement, w: number, h: number, slot: number, mine: number) {
+    if (!doc) return;
+    tasks[slot]?.cancel();
+    const pg = await doc.getPage(n);
+    if (mine !== renderId) return;
+    const base = pg.getViewport({ scale: 1 });
+    // fit the page to the box both ways, so a whole page is always in view; the zoom buttons then enlarge it
+    const scale = Math.min(w / base.width, h / base.height) * zoom;
+    const dpr = window.devicePixelRatio || 1;
+    const vp = pg.getViewport({ scale: scale * dpr });
+    cv.width = Math.floor(vp.width);
+    cv.height = Math.floor(vp.height);
+    cv.style.width = `${Math.floor(vp.width / dpr)}px`;
+    cv.style.height = `${Math.floor(vp.height / dpr)}px`;
+    const ctx = cv.getContext('2d');
+    if (!ctx) return;
+    tasks[slot] = pg.render({ canvasContext: ctx, viewport: vp });
+    await tasks[slot]!.promise;
+  }
+
   async function render() {
-    if (!doc || !canvas || !wrap) return;
+    if (!doc || !canvas || !wrap || box.w < 50 || box.h < 50) return;
     const mine = ++renderId;
-    task?.cancel();
+    const cols = rightPage ? 2 : 1;
+    const w = Math.max(160, (box.w - 28 - (cols - 1) * 6) / cols);
+    const h = Math.max(200, box.h - 28);
     try {
-      const pg = await doc.getPage(page);
-      if (mine !== renderId) return;
-      const base = pg.getViewport({ scale: 1 });
-      const avail = Math.max(240, wrap.clientWidth - 28);
-      const scale = (avail / base.width) * zoom;
-      const dpr = window.devicePixelRatio || 1;
-      const vp = pg.getViewport({ scale: scale * dpr });
-      canvas.width = Math.floor(vp.width);
-      canvas.height = Math.floor(vp.height);
-      canvas.style.width = `${Math.floor(vp.width / dpr)}px`;
-      canvas.style.height = `${Math.floor(vp.height / dpr)}px`;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-      task = pg.render({ canvasContext: ctx, viewport: vp });
-      await task.promise;
+      const jobs = [drawOne(page, canvas, w, h, 0, mine)];
+      if (rightPage && canvas2) jobs.push(drawOne(rightPage, canvas2, w, h, 1, mine));
+      await Promise.all(jobs);
     } catch (e) {
       if (String((e as { name?: string })?.name) !== 'RenderingCancelledException') error = 'Could not draw this page: ' + String(e);
     }
   }
 
+  // follow the size of the reading pane, so the pages always fill it
+  $effect(() => {
+    const el = wrap;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => { box = { w: el.clientWidth, h: el.clientHeight }; });
+    ro.observe(el);
+    box = { w: el.clientWidth, h: el.clientHeight };
+    return () => ro.disconnect();
+  });
+
   $effect(() => {
     // re-draw when the page, zoom or the loaded document changes
-    void page; void zoom; void doc; void canvas;
+    void page; void zoom; void doc; void canvas; void canvas2; void rightPage; void box;
     render();
   });
 
@@ -126,15 +158,27 @@
   });
 
   $effect(() => { writePref('night', night ? '1' : '0'); });
+  $effect(() => { writePref('spread', spread ? '1' : '0'); });
+  // switching to two pages: move to the page that opens the spread
+  $effect(() => { if (twoUp && page % 2 === 0) page = page - 1; });
   $effect(() => { writePref('textsize', String(textSize)); });
 
-  function go(n: number) { page = Math.min(Math.max(1, Math.round(n) || 1), pages); }
+  function go(n: number) {
+    let t = Math.min(Math.max(1, Math.round(n) || 1), pages);
+    if (twoUp && t % 2 === 0) t -= 1; // a spread opens on an odd page: 1-2, 3-4, 5-6 ...
+    if (t === page) return;
+    flip = t > page ? 'next' : 'prev';
+    clearTimeout(flipTimer);
+    flipTimer = setTimeout(() => (flip = ''), 450);
+    page = t;
+  }
+  const step = $derived(twoUp ? 2 : 1);
   function onKey(e: KeyboardEvent) {
     const t = e.target as HTMLElement | null;
     if (t && ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName)) return;
     if (!isPdf) return;
-    if (e.key === 'ArrowRight' || e.key === 'PageDown') go(page + 1);
-    if (e.key === 'ArrowLeft' || e.key === 'PageUp') go(page - 1);
+    if (e.key === 'ArrowRight' || e.key === 'PageDown') go(page + step);
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') go(page - step);
   }
 
   let bookmarked = $derived(marks.some((m) => m.kind === 'bookmark' && m.page === page));
@@ -191,6 +235,7 @@
       <button class="btn" class:on={panel === 'notes'} onclick={() => (panel = panel === 'notes' ? '' : 'notes')}>Notes ({marks.length})</button>
       <button class="btn" onclick={() => (zoom = Math.max(0.5, +(zoom - 0.25).toFixed(2)))} aria-label="Zoom out">−</button>
       <button class="btn" onclick={() => (zoom = Math.min(4, +(zoom + 0.25).toFixed(2)))} aria-label="Zoom in">+</button>
+      <button class="btn" class:on={spread} onclick={() => (spread = !spread)} aria-pressed={spread}>{spread ? 'Two pages' : 'One page'}</button>
       <button class="btn" class:on={night} onclick={() => (night = !night)} aria-pressed={night}>Night</button>
     {:else}
       <button class="btn" onclick={() => (textSize = Math.max(12, textSize - 2))} aria-label="Smaller text">A−</button>
@@ -204,7 +249,10 @@
   <div class="body">
     <div class="page" bind:this={wrap}>
       {#if isPdf}
-        <canvas bind:this={canvas} class:night aria-label="Page {page} of {book.title}"></canvas>
+        <div class="spread" class:flipnext={flip === 'next'} class:flipprev={flip === 'prev'}>
+          <canvas bind:this={canvas} class:night class:left={!!rightPage} aria-label="Page {page} of {book.title}"></canvas>
+          {#if rightPage}<canvas bind:this={canvas2} class:night class:right={true} aria-label="Page {rightPage} of {book.title}"></canvas>{/if}
+        </div>
       {:else}
         <article class="doc" style="font-size: {textSize}px">
           {#each blocks(text) as b}
@@ -248,31 +296,37 @@
 
   {#if isPdf}
     <div class="nav">
-      <button class="btn" onclick={() => go(page - 1)} disabled={page <= 1}>‹ Prev</button>
+      <button class="btn" onclick={() => go(page - step)} disabled={page <= 1}>‹ Prev</button>
       <input class="range" type="range" min="1" max={pages} value={page} oninput={(e) => go(Number(e.currentTarget.value))} aria-label="Page slider" />
-      <label class="pg">Page <input class="input num" type="number" min="1" max={pages} value={page} onchange={(e) => go(Number(e.currentTarget.value))} aria-label="Go to page" /> of {pages}</label>
-      <button class="btn" onclick={() => go(page + 1)} disabled={page >= pages}>Next ›</button>
+      <label class="pg">Page <input class="input num" type="number" min="1" max={pages} value={page} onchange={(e) => go(Number(e.currentTarget.value))} aria-label="Go to page" />{rightPage ? '–' + rightPage : ''} of {pages}</label>
+      <button class="btn" onclick={() => go(page + step)} disabled={page + step > pages}>Next ›</button>
     </div>
     {#if pageMarks.length}<p class="muted fine">Your note on this page: {pageMarks.map((m) => m.text).join(' · ')}</p>{/if}
   {/if}
 </section>
 
 <style>
-  .reader { display: flex; flex-direction: column; gap: 12px; flex: 1; }
+  .reader { display: flex; flex-direction: column; gap: 10px; flex: 1; height: calc(100vh - 175px); min-height: 460px; }
   .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   .title { display: flex; flex-direction: column; min-width: 0; }
   .title span { font-size: 12px; }
   .spacer { flex: 1; }
   .btn.on { border-color: var(--blue); background: var(--blue-soft); color: var(--blue); }
   .notice { margin: 0; padding: 10px 12px; border-radius: 8px; background: #241512; border: 1px solid #6b2a20; }
-  .body { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; flex: 1; }
-  .page { flex: 999 1 420px; min-width: 0; background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 10px; overflow: auto; text-align: center; }
+  .body { display: flex; gap: 14px; align-items: stretch; flex: 1; min-height: 0; }
+  .page { flex: 999 1 420px; min-width: 0; min-height: 0; background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 10px; overflow: auto; text-align: center; }
+  .spread { display: inline-flex; gap: 6px; align-items: flex-start; justify-content: center; min-width: 100%; perspective: 1400px; }
+  .spread.flipnext canvas.right, .spread.flipnext canvas:only-child { transform-origin: left center; animation: turnin .42s ease-out; }
+  .spread.flipprev canvas.left { transform-origin: right center; animation: turnback .42s ease-out; }
+  @keyframes turnin { from { transform: rotateY(-75deg); opacity: .25; } to { transform: rotateY(0); opacity: 1; } }
+  @keyframes turnback { from { transform: rotateY(75deg); opacity: .25; } to { transform: rotateY(0); opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .spread canvas { animation: none !important; } }
   canvas { max-width: none; background: #fff; border-radius: 4px; box-shadow: 0 2px 12px #0008; }
   canvas.night { filter: invert(1) hue-rotate(180deg); }
   .doc { text-align: left; max-width: 680px; margin: 0 auto; padding: 16px 12px; line-height: 1.7; }
   .doc h2 { margin: 18px 0 8px; }
   .doc p { margin: 0 0 12px; }
-  .side { flex: 1 1 260px; max-width: 360px; display: flex; flex-direction: column; gap: 8px; }
+  .side { flex: 1 1 260px; max-width: 360px; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 8px; }
   .hit { text-align: left; display: flex; flex-direction: column; gap: 2px; padding: 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel2); font-size: 13px; }
   .hit:hover { border-color: var(--blue-line); }
   .mark, .note { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; font-size: 13px; }
