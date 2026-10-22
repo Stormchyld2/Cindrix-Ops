@@ -1,7 +1,7 @@
 # CindrixOps — Architecture Evolution & Proposed Features
 
 **Document status:** PROPOSAL / DISCUSSION ONLY — NOT AUTHORIZATION TO IMPLEMENT  
-**Version:** 0.2  
+**Version:** 0.3  
 **Prepared:** 2026-10-22  
 **Audience:** Project owner, Claude, ChatGPT, future maintainers  
 **Repository location:** `docs/CINDRIXOPS_ARCHITECTURE_EVOLUTION_PROPOSED_FEATURES.md`
@@ -342,7 +342,67 @@ Next safe action:
 
 **Handoff rule:** Claude, ChatGPT, and human maintainers should resume from the last *verified* commit, not merely the latest pushed commit. If the current HEAD is newer, inspect and reconcile its changes before proceeding.
 
-## 15. Proposal status register
+## 15. Health, Holistic Medicine & Illustrated Materia Medica — owner-approved concept
+
+**Approval scope (2026-10-22):** The owner approved recording the following product direction for future development. This is **concept approval and documentation only**; implementation, new dependencies, resource downloads, data migrations, and UI changes still require a separately approved milestone and repository review.
+
+### 15.1 Product organization
+
+Propose a Health & Medicine area containing Emergency Medicine & First Aid, Holistic & Traditional Medicine, Illustrated Materia Medica, Wilderness & Field Medicine, Home Health & Sanitation, and Medical Reference Library. Confirm the best navigation placement against the existing UI before implementation. Traditional practices and conventional emergency medicine must be clearly distinguished, with source provenance and evidence limitations.
+
+### 15.2 Shared illustrated botanical knowledge resource
+
+Build a **single authoritative botanical corpus** reused by Health, Library, Academy, ASK, Maps, Seed Vault, Inventory, Plan, and the proposed CNAR. Do not duplicate species data across modules. Use stable taxonomic identifiers and record synonyms, common names, taxonomy authority/version, native/introduced status where supported, region and habitat, identifying features, seasonality, cultivation, harvesting, traditional uses, clinical evidence, toxicity, contraindications, medication interactions, and citations.
+
+Every species profile should support **locally stored, verified, zoomable photographs** of whole plant, leaves/stems, flowers, fruit/seeds, roots where appropriate, seasonal appearance, and harvested material. Provide side-by-side toxic-lookalike comparisons, diagnostic traits, and uncertainty notices. Never infer edibility or safe medicinal use from an image or AI identification alone. Store attribution, license, creator, source URL, retrieval date, verified taxon, and review status **per image**. Review redistribution rights before bundling. Botanical illustrations and geographic distribution maps may supplement photographs.
+
+### 15.3 Traditional medicine and evidence
+
+Reference categories: herbalism, ethnobotany, historical medical systems (including Ayurveda and Traditional Chinese Medicine), natural preparations, nutrition, hygiene, and toxicology. Label claims as supported, limited/preliminary, traditional use without adequate clinical evidence, unsupported, or known harmful, with source and review date. Do not present traditional use as proof of efficacy or suggest replacing essential medical treatment. Include red flags, interactions, pregnancy/child considerations where supported, and escalation to professional or emergency care.
+
+### 15.4 Retrieval and cross-module integration
+
+- **ASK:** Permission-aware retrieval of plant profiles, image galleries, lookalikes, citations, and evidence; show uncertainty and avoid definitive identification or prescribing.
+- **Library:** Full source books, manuals, and articles linked to structured species profiles.
+- **Academy:** Identification lessons, quizzes, safety and field-skills education.
+- **Maps:** Offline range/habitat layers with data age; never imply an individual plant is currently present.
+- **Seed Vault / CNAR:** Shared species IDs for propagation, planting windows, seed lots, and cultivation; region selection prioritizes but does not remove other US content.
+- **Inventory / Plan:** Track user-owned herbs, seeds, preparations, storage lots, and relevant tasks without treating inventory as medical approval.
+
+### 15.5 File-first resource packaging
+
+Proposed versioned, offline botanical packs contain structured species profiles, verified media, source/citation manifests, taxonomy references, and integrity hashes. Search indexes and relationships should be rebuildable. Vault can install the complete corpus; Hub should support selective regional/subject packs. Do not mandate a new database or pack format before auditing existing CindrixOps conventions.
+
+Illustrative organization only:
+
+```text
+botanical/
+  taxonomy/
+  species/<stable-id>/profile.json
+  species/<stable-id>/identification.json
+  species/<stable-id>/safety.json
+  species/<stable-id>/media-manifest.json
+  media/
+  sources/
+  indexes/                 # disposable/rebuildable
+```
+
+### 15.6 Staged plan and acceptance evidence
+
+1. **Discovery and contracts:** inspect current architecture and source pack formats; define IDs, schemas, licensing, provenance, evidence levels, and security boundaries.
+2. **Pilot corpus:** curate a small set of botanically verified species, including dangerous lookalikes, with multiple correctly attributed offline images per entry; test accuracy and usability before scaling.
+3. **Illustrated encyclopedia:** expand the reviewed corpus and implement filtering, zoom, comparison, and accessible nonvisual descriptions.
+4. **Medical reference content:** curate licensed/public-domain sources, evidence and toxicity profiles, and educational workflows.
+5. **Shared retrieval and integration:** link ASK, Library, Academy, Maps, Seed Vault, CNAR, Inventory, and Plan using existing approved interfaces.
+6. **Verification:** offline/no-AI search; source attribution; image/species matching; license audits; pack corruption and missing-media handling; dangerous-lookalike warnings; automated GitHub Actions tests/builds plus actual device validation.
+
+**Planning targets, not commitments:** begin with approximately 500 thoroughly reviewed species, potentially expand to 2,000–3,000+. Preliminary complete-library storage estimate is roughly 4–18 GB, highly dependent on images, maps, and books; measure actual pilot packs before setting capacity requirements.
+
+### 15.7 Open implementation decisions
+
+Confirm final UI placement, source licensing strategy, editorial/medical review standards, taxonomic authority, pack distribution/update mechanism, Hub storage budget, safety-language policy, and the first approved implementation milestone.
+
+## 16. Proposal status register
 
 | Proposal | Status | Notes |
 |---|---|---|
@@ -357,6 +417,7 @@ Next safe action:
 | Vault–Hub selective sync | Proposed | Requires contract and conflict design |
 | Security, backups, resilience hardening | Proposed for audit | Existing implementations must be inspected |
 | UI refinements | Proposed | Preserve current brand and navigation unless approved |
+| Health & Holistic Medicine / Illustrated Materia Medica | Concept approved; implementation not authorized | Offline verified botanical photographs, safety/evidence profiles, shared knowledge corpus |
 
 ---
 
