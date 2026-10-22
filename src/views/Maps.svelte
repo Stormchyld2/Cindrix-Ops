@@ -457,6 +457,7 @@
       m.addControl(new maplibregl.ScaleControl({ unit: settings.values.mapUnits === 'metric' ? 'metric' : 'imperial' }), 'bottom-left');
       m.on('error', (e) => {
         const msg = String((e as { error?: Error }).error?.message ?? e);
+        noteProblem('map: ' + msg);
         if (/image|sprite|glyph|font/i.test(msg) && !/tile/i.test(msg)) return; // a missing picture or letter is not a broken map
         tileError = 'The map could not read its tiles: ' + String((e as { error?: Error }).error?.message ?? e);
       });
@@ -635,6 +636,35 @@
   let canUndo = $state(false);
   let canRedo = $state(false);
 
+
+
+  // ---------- a map check, so a failure can be read off the screen ----------
+  let problems: string[] = $state([]);
+  let checkText = $state('');
+  function noteProblem(t: string) { problems = [...problems.slice(-11), t.slice(0, 300)]; }
+  const onWinError = (e: ErrorEvent) => noteProblem('error: ' + (e.message || String(e.error)));
+  const onWinReject = (e: PromiseRejectionEvent) => noteProblem('rejected: ' + String(e.reason));
+  onMount(() => {
+    window.addEventListener('error', onWinError);
+    window.addEventListener('unhandledrejection', onWinReject);
+    return () => { window.removeEventListener('error', onWinError); window.removeEventListener('unhandledrejection', onWinReject); };
+  });
+  function runCheck() {
+    const m = map;
+    const has = (id: string) => (m && m.getLayer(id) ? 'yes' : 'NO');
+    const count = (src: string) => { try { return String(m?.querySourceFeatures(src).length ?? '?'); } catch (e) { return 'error ' + String(e); } };
+    const lines = [
+      'map library: ' + (ml ? ((ml as unknown as { version?: string }).version ?? 'loaded') : 'NOT LOADED'),
+      'map ready: ' + mapReady + ', map made: ' + !!m + ', tool: ' + addMode,
+      'pins: ' + pins.length + ', drawings: ' + drawings.length + ', areas to avoid: ' + nogo.length + ', measuring points: ' + measurePts.length + ', building points: ' + building.length,
+      'pin marks on the page: ' + document.querySelectorAll('.pinmark').length + ', handles: ' + document.querySelectorAll('.dhandle').length,
+      'layers: draw-line ' + has('draw-line') + ', draw-fill ' + has('draw-fill') + ', drawtmp-pts ' + has('drawtmp-pts') + ', nogo-fill ' + has('nogo-fill') + ', dir-line ' + has('dir-line'),
+      'drawn shapes the map holds: ' + count('draw') + ', unfinished: ' + count('drawtmp') + ', directions line: ' + count('dir'),
+      'zoom: ' + (m ? m.getZoom().toFixed(1) : '?') + ', screen size ' + window.innerWidth + 'x' + window.innerHeight,
+      'problems: ' + (problems.length ? '\n  ' + problems.join('\n  ') : 'none seen'),
+    ];
+    checkText = lines.join('\n');
+  }
 
   // ---------- my places (Home and the bug-out places from Settings > My details), shown only when asked for ----------
   type MyShown = { key: string; label: string; lat: number; lon: number };
@@ -1317,7 +1347,7 @@
       <p class="muted small">Pick where to copy the phone map. A phone shows here when it is plugged in and set to transfer files as a drive or card.</p>
       <div class="list">
         {#each sendDevices as d}
-          <button class="item" disabled={sendBusy} title="Copy the phone map to this device" onclick={() => void sendTo(d.path)}>{d.label}</button>
+          {#if d.here}<p class="muted small">{d.label}</p>{:else}<button class="item" disabled={sendBusy} title="Copy the phone map to this device" onclick={() => void sendTo(d.path)}>{d.label}</button>{/if}
         {:else}
           <p class="muted small">{sendBusy ? 'Looking for devices...' : 'No device found. Plug the phone or card in, then press Look again.'}</p>
         {/each}
@@ -1722,6 +1752,12 @@
       </div>
     </div>
 
+    <details class="check" ontoggle={(e) => { if ((e.currentTarget as HTMLDetailsElement).open) runCheck(); }}>
+      <summary title="Shows what the map is doing, to send to me if something does not work">Map check</summary>
+      <button class="btn" title="Read the map again" onclick={runCheck}>Check again</button>
+      <pre class="small">{checkText}</pre>
+    </details>
+
     <div class="label notes-label">Notes</div>
     <textarea class="input" bind:value={notes} placeholder="Written notes for this map: gates, water on the way, who meets where." aria-label="Notes"></textarea>
     <p class="muted small">Map data comes from © OpenStreetMap contributors. Place names: GeoNames (CC BY 4.0). Saved maps are plain files in the user/saved-maps folder.</p>
@@ -1729,6 +1765,8 @@
 </div>
 
 <style>
+  .check { margin: 10px 0; }
+  .check pre { white-space: pre-wrap; user-select: text; }
   .cols { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }
   .side { flex: 1 1 220px; max-width: 280px; display: flex; flex-direction: column; gap: 10px; }
   .main { flex: 4 1 480px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }

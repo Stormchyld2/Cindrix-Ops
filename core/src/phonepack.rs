@@ -360,23 +360,24 @@ pub struct Device {
     /// A short name for the list ("Drive E:", "Looks like a phone").
     pub label: String,
     pub looks_like_phone: bool,
+    /// The drive the phone map is already on.
+    pub here: bool,
 }
 
 /// The plugged-in drives and cards among `roots`, leaving out the one holding `file` (the drive it came from).
 pub fn devices_in(roots: &[PathBuf], file: &Path) -> Vec<Device> {
     let mut out = Vec::new();
     for r in roots {
-        if file.starts_with(r) {
-            continue;
-        }
         if fs::read_dir(r).is_err() {
             continue;
         }
         let phone = r.join("Android").is_dir() || r.join("DCIM").is_dir();
         let name = r.to_string_lossy().trim_end_matches(['\\', '/']).to_string();
-        out.push(Device { path: r.clone(), label: if phone { format!("{} (looks like a phone)", name) } else { name }, looks_like_phone: phone });
+        let here = file.starts_with(r);
+        let label = if here { format!("{} (the file is already on this drive)", name) } else if phone { format!("{} (looks like a phone)", name) } else { name };
+        out.push(Device { path: r.clone(), label, looks_like_phone: phone && !here, here });
     }
-    out.sort_by_key(|d| !d.looks_like_phone);
+    out.sort_by_key(|d| (d.here, !d.looks_like_phone));
     out
 }
 
@@ -544,8 +545,9 @@ mod tests {
         let f = home.join("trail.cmap");
         fs::write(&f, b"0123456789").unwrap();
         let list = devices_in(&[home.clone(), card.clone(), phone.clone(), d.join("gone")], &f);
-        assert_eq!(list.len(), 2, "the source drive and missing places are left out");
+        assert_eq!(list.len(), 3, "missing places are left out");
         assert!(list[0].looks_like_phone && list[0].path == phone, "phones come first");
+        assert!(list[2].here && list[2].path == home, "the drive the file is on comes last and is marked");
         let got = send(&f, &phone).unwrap();
         assert_eq!(got, phone.join("Download").join("trail.cmap"));
         assert_eq!(fs::read(&got).unwrap(), b"0123456789");

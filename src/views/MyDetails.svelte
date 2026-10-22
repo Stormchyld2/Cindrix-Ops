@@ -7,15 +7,27 @@
   let note = $state('');
   let err = $state('');
   let busy = $state('');
+  let lastSaved = '';
+
+  // Everything is kept as soon as it is typed (a moment after the last change), so nothing is lost by forgetting to press Save.
+  $effect(() => {
+    if (!loaded) return;
+    const snap = JSON.stringify($state.snapshot(d));
+    if (snap === lastSaved) return;
+    const t = setTimeout(async () => {
+      try { await profileSave(JSON.parse(snap) as MyDetails); lastSaved = snap; note = 'Saved on the drive.'; err = ''; } catch (e) { err = String(e); }
+    }, 700);
+    return () => clearTimeout(t);
+  });
 
   onMount(async () => {
-    try { d = await profileLoad(); } catch (e) { err = String(e); }
+    try { d = await profileLoad(); lastSaved = JSON.stringify($state.snapshot(d)); } catch (e) { err = String(e); }
     loaded = true;
   });
 
   async function save() {
     err = ''; note = '';
-    try { await profileSave($state.snapshot(d) as MyDetails); note = 'Saved on the drive.'; } catch (e) { err = String(e); }
+    try { const snap = JSON.stringify($state.snapshot(d)); await profileSave(JSON.parse(snap) as MyDetails); lastSaved = snap; note = 'Saved on the drive.'; } catch (e) { err = String(e); }
   }
 
   // Find the position of an address (or a position typed in any form) with the same finder the map uses.
@@ -53,7 +65,7 @@
 {:else}
   <div class="panel">
     <div class="label">ABOUT THIS PAGE</div>
-    <p class="muted small">Everything here is optional. It is kept in one plain file on the drive (user/profile.txt), is never sent anywhere, and is not shown to guests on the sharing server. The map's Home and Bug-out buttons, the stock plan and the assistant can use it. Leave anything blank that you would rather not say.</p>
+    <p class="muted small">Everything here is optional and is saved as you type. It is kept in one plain file on the drive (user/profile.txt), is never sent anywhere, and is not shown to guests on the sharing server. The map's Home and Bug-out buttons, the stock plan and the assistant can use it. Leave anything blank that you would rather not say.</p>
   </div>
 
   <div class="panel">

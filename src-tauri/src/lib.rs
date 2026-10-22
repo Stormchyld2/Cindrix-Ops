@@ -587,14 +587,21 @@ struct DeviceDto {
     path: String,
     label: String,
     phone: bool,
+    here: bool,
 }
 
 /// The plugged-in drives and cards a phone map can be copied to.
 #[tauri::command]
 fn phone_devices(file: String) -> Vec<DeviceDto> {
-    cindrix_core::phonepack::devices_in(&cindrix_core::drive::candidate_roots(), std::path::Path::new(&file))
+    // the drive Windows itself is on is not a place to carry a map to
+    let system = std::env::var("SystemDrive").unwrap_or_default().to_uppercase();
+    let roots: Vec<std::path::PathBuf> = cindrix_core::drive::candidate_roots()
         .into_iter()
-        .map(|d| DeviceDto { path: d.path.to_string_lossy().to_string(), label: d.label, phone: d.looks_like_phone })
+        .filter(|r| system.is_empty() || !r.to_string_lossy().to_uppercase().starts_with(&system))
+        .collect();
+    cindrix_core::phonepack::devices_in(&roots, std::path::Path::new(&file))
+        .into_iter()
+        .map(|d| DeviceDto { path: d.path.to_string_lossy().to_string(), label: d.label, phone: d.looks_like_phone, here: d.here })
         .collect()
 }
 

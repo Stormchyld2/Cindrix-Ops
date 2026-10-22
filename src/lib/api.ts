@@ -402,12 +402,12 @@ export async function phoneExport(name: string, box: [number, number, number, nu
   return 'user/exports/' + name + '.cmap (preview only)';
 }
 
-export type Device = { path: string; label: string; phone: boolean };
+export type Device = { path: string; label: string; phone: boolean; here: boolean };
 
 /** Drives and cards that are plugged in, other than the one the file is on. */
 export async function phoneDevices(file: string): Promise<Device[]> {
   if (inTauri) return call<Device[]>('phone_devices', { file });
-  return [{ path: 'E:\\', label: 'E: (looks like a phone)', phone: true }];
+  return [{ path: 'E:\\', label: 'E: (looks like a phone)', phone: true, here: false }];
 }
 
 /** Copy the phone map to a device or folder; returns where it went. */
