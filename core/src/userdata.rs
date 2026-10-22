@@ -20,6 +20,16 @@ impl UserDir {
     pub fn family_path(&self) -> PathBuf {
         self.root.join("family.json")
     }
+    /// Save a readable plain-text copy in `exports/` (never locked). The name must be a plain file name ending in .txt.
+    pub fn write_export(&self, name: &str, text: &str) -> Result<PathBuf, String> {
+        let ok = name.ends_with(".txt") && name.len() > 4 && !name.contains(['/', '\\', ':']) && !name.starts_with('.');
+        if !ok {
+            return Err("That file name cannot be used.".into());
+        }
+        let path = self.root.join("exports").join(name);
+        fsio::write_atomic(&path, text.as_bytes()).map_err(|e| format!("The copy could not be saved: {}", e))?;
+        Ok(path)
+    }
     pub fn backups(&self) -> PathBuf {
         self.root.join("backups")
     }
@@ -112,5 +122,18 @@ mod tests {
     fn ids_increase() {
         assert_eq!(next_id(&[]), "1");
         assert_eq!(next_id(&[item("4"), item("9")]), "10");
+    }
+
+    #[test]
+    fn a_readable_copy_is_saved_in_exports_and_odd_names_are_refused() {
+        let dir = std::env::temp_dir().join(format!("cx-export-{}", std::process::id()));
+        let u = UserDir::new(&dir);
+        let p = u.write_export("family-readable.txt", "Name: A\n").unwrap();
+        assert_eq!(std::fs::read_to_string(&p).unwrap(), "Name: A\n");
+        assert!(p.starts_with(dir.join("exports")));
+        for bad in ["../x.txt", "a/b.txt", "a\\b.txt", "x.json", ".txt", ".hidden.txt", "c:x.txt"] {
+            assert!(u.write_export(bad, "x").is_err(), "{}", bad);
+        }
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { familyStatus, familyLoad, familySave, type Family, type Person } from '../lib/api';
+  import { familyStatus, familyLoad, familySave, exportText, type Family, type Person } from '../lib/api';
   import { onMount } from 'svelte';
 
   let family: Family = $state({ people: [], contacts: '', plan: '' });
@@ -53,6 +53,23 @@
     } catch (e) {
       error = String(e);
     }
+  }
+
+  function readable(): string {
+    const out = ['FAMILY PAGE (readable copy, not locked)', 'Saved ' + new Date().toLocaleDateString(), ''];
+    family.people.forEach((p, n) => {
+      out.push('PERSON ' + (n + 1) + ': ' + (p.name || '(no name)'), 'Doctor and phone: ' + p.doctor, 'Conditions: ' + p.conditions, 'Allergies: ' + p.allergies, 'Medicines, as the doctor\'s plan says:', p.medicines || '', '');
+    });
+    out.push('EMERGENCY CONTACTS', family.contacts || '', '', 'OUR PLAN (where we meet, who calls whom)', family.plan || '');
+    return out.join('\r\n');
+  }
+  async function exportReadable() {
+    error = '';
+    try {
+      const where = await exportText('family-readable.txt', readable());
+      saved = 'A readable copy was saved to ' + where + '. It is not locked, so keep it safe.';
+      setTimeout(() => (saved = ''), 8000);
+    } catch (e) { error = String(e); }
   }
 
   async function turnOnLock() {
@@ -142,6 +159,7 @@
   </section>
 
   <div class="row">
+    <button class="btn" title="Save a plain text copy anyone can read, even without this program" onclick={exportReadable}>Save a readable copy</button>
     <button class="btn primary" onclick={save}>Save to this drive</button>
     {#if saved}<span class="ok">{saved}</span>{/if}
   </div>

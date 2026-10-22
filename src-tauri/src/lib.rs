@@ -1232,6 +1232,12 @@ fn family_save(json: String, passphrase: Option<String>) -> Result<(), String> {
 }
 
 
+/// Save a readable plain-text copy under `user/exports` and say where it went.
+#[tauri::command]
+fn export_text(name: String, text: String) -> Result<String, String> {
+    user().write_export(&name, &text).map(|p| p.display().to_string())
+}
+
 // ---------- saving websites ----------
 
 #[derive(Serialize, Clone, Default)]
@@ -2127,6 +2133,7 @@ pub fn run() {
             inventory_delete,
             what_fails_next,
             family_status,
+            export_text,
             family_load,
             family_save
         ])

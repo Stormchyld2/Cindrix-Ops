@@ -174,6 +174,12 @@ export async function familySave(family: Family, passphrase?: string): Promise<v
   memFamily = family;
 }
 
+/** Save a readable copy as a plain text file in user/exports. Returns where it was saved. */
+export async function exportText(name: string, text: string): Promise<string> {
+  if (inTauri) return call<string>('export_text', { name, text });
+  return 'user\\exports\\' + name;
+}
+
 // ---------- bookshelf ----------
 export type Book = {
   id: string; title: string; author: string; category: string; kind: 'pdf' | 'md' | 'txt'; added: string; license: string;
