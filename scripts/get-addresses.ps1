@@ -158,7 +158,8 @@ COPY (
 
 # ---- step 2: one file per first letter, sorted so the program can jump straight to a street ----
 Write-Host 'Step 2 of 2: sorting into files.'
-$letters = @('A'..'Z') + @('0'..'9') + @('_')
+# (not 'A'..'Z': Windows PowerShell cannot make a range of letters)
+$letters = @([char[]](65..90) + [char[]](48..57) | ForEach-Object { [string]$_ }) + @('_')
 foreach ($l in $letters) {
   $dest = Join-Path $out "$l.tsv"
   if ((Test-Path $dest) -and -not $Force) { Write-Host "  $l already done"; continue }
