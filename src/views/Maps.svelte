@@ -569,20 +569,16 @@
     if (!map || !ml || !mapReady) return;
     const m = map;
     const rp = routePoints;
-    (m.getSource('route') as GeoJSONSource).setData(
-      rp.length > 1
-        ? { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: rp.map(([la, lo]) => [lo, la]) } }
-        : empty(),
-    );
-    (m.getSource('nogo') as GeoJSONSource).setData({
+    setSrc(m, 'route', rp.length > 1
+      ? { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: rp.map(([la, lo]) => [lo, la]) } }
+      : empty());
+    setSrc(m, 'nogo', {
       type: 'FeatureCollection',
       features: nogo.flatMap((a, i) => (a.points.length >= 3 ? [{ type: 'Feature' as const, properties: { i }, geometry: { type: 'Polygon' as const, coordinates: [ring(a.points)] } }] : [])),
     });
-    (m.getSource('draft') as GeoJSONSource).setData(
-      draft.length > 1
-        ? { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: draft.map(([la, lo]) => [lo, la]) } }
-        : empty(),
-    );
+    setSrc(m, 'draft', draft.length > 1
+      ? { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: draft.map(([la, lo]) => [lo, la]) } }
+      : empty());
     for (const k of markers) k.remove();
     markers = pins.map((p) => {
       const el = document.createElement('div');
@@ -637,6 +633,14 @@
   let canRedo = $state(false);
 
 
+
+
+  /** Hand new shapes to one of the map's drawing layers. A missing layer is noted for the Map check instead of stopping the rest. */
+  function setSrc(m: MLMap, id: string, data: unknown) {
+    const src = m.getSource(id) as GeoJSONSource | undefined;
+    if (!src) { noteProblem('layer source missing: ' + id); return; }
+    try { src.setData(data as never); } catch (e) { noteProblem('could not update ' + id + ': ' + String(e)); }
+  }
 
   // ---------- a map check, so a failure can be read off the screen ----------
   let problems: string[] = $state([]);
@@ -883,7 +887,7 @@
     const m = map;
     const list = drawings;
     const sid = selectedId;
-    (m.getSource('draw') as GeoJSONSource).setData(drawingFeatures(list, sid) as never);
+    setSrc(m, 'draw', drawingFeatures(list, sid));
     for (const k of labelMarkers) k.remove();
     labelMarkers = list.flatMap((d) => {
       const at = labelPoint(d);
@@ -906,7 +910,7 @@
     if (!map || !mapReady) return;
     const kind: DrawKind | 'measure' | null = addMode === 'measure' ? 'measure' : addMode === 'line' || addMode === 'shape' || addMode === 'rect' || addMode === 'circle' ? addMode : null;
     const pts = addMode === 'measure' ? measurePts : building;
-    (map.getSource('drawtmp') as GeoJSONSource).setData((kind ? previewFeatures(pts, kind, hover, null) : empty()) as never);
+    setSrc(map, 'drawtmp', kind ? previewFeatures(pts, kind, hover, null) : empty());
   });
   // the handles a selected drawing can be reshaped by
   $effect(() => {
@@ -1024,9 +1028,7 @@
     if (!map || !ml || !mapReady) return;
     const m = map;
     const r = dirRoute;
-    (m.getSource('dir') as GeoJSONSource | undefined)?.setData(
-      r ? { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: r.points.map(([la, lo]) => [lo, la]) } } : empty(),
-    );
+    setSrc(m, 'dir', r ? { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: r.points.map(([la, lo]) => [lo, la]) } } : empty());
     for (const k of dirMarkers) k.remove();
     dirMarkers = [];
     if (r && dirA && dirB) {
