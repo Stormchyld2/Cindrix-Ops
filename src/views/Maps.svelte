@@ -800,7 +800,9 @@
   let dirResult: Directions | null = $state(null);
   let dirWay: 'car' | 'foot' = $state('car');
   let dirMarkers: Marker[] = [];
-  const dirRoute: DirRoute | null = $derived(dirResult ? dirResult[dirWay].route : null);
+  // (read through a function so the checker does not assume the result is still null as when it was declared)
+  const dirNow = (): Directions | null => dirResult;
+  const dirRoute: DirRoute | null = $derived.by(() => dirNow()?.[dirWay].route ?? null);
   const hitName = (h: PlaceHit) => h.name + (h.state ? ', ' + h.state : '');
   const fmtMin = (m: number) => {
     const t = Math.max(1, Math.round(m));
