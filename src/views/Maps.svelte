@@ -460,29 +460,39 @@
         if (/image|sprite|glyph|font/i.test(msg) && !/tile/i.test(msg)) return; // a missing picture or letter is not a broken map
         tileError = 'The map could not read its tiles: ' + String((e as { error?: Error }).error?.message ?? e);
       });
-      m.on('load', () => {
-        for (const id of ['route', 'nogo', 'draft', 'dir']) m.addSource(id, { type: 'geojson', data: empty() });
-        m.addLayer({ id: 'nogo-fill', type: 'fill', source: 'nogo', paint: { 'fill-color': '#e5533d', 'fill-opacity': 0.25 } });
-        m.addLayer({ id: 'nogo-line', type: 'line', source: 'nogo', paint: { 'line-color': '#e5533d', 'line-width': 2, 'line-dasharray': [2, 2] } });
-        m.addLayer({ id: 'draft-line', type: 'line', source: 'draft', paint: { 'line-color': '#e5533d', 'line-width': 2, 'line-dasharray': [1, 2] } });
-        // what the person drew: shapes (with a light fill), lines, a halo round the picked one, and the unfinished shape
-        for (const id of ['draw', 'drawtmp']) m.addSource(id, { type: 'geojson', data: empty() });
-        m.addLayer({ id: 'draw-fill', type: 'fill', source: 'draw', filter: ['==', ['geometry-type'], 'Polygon'], paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.22 } });
-        m.addLayer({ id: 'draw-sel', type: 'line', source: 'draw', filter: ['==', ['get', 'sel'], 1], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#1a73e8', 'line-opacity': 0.35, 'line-width': ['+', ['get', 'width'], 8] } });
-        m.addLayer({ id: 'draw-line', type: 'line', source: 'draw', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'width'] } });
-        m.addLayer({ id: 'drawtmp-line', type: 'line', source: 'drawtmp', filter: ['!', ['has', 'pt']], paint: { 'line-color': '#1a73e8', 'line-width': 3, 'line-dasharray': [2, 2] } });
-        m.addLayer({ id: 'drawtmp-pts', type: 'circle', source: 'drawtmp', filter: ['has', 'pt'], paint: { 'circle-radius': 5, 'circle-color': '#ffffff', 'circle-stroke-color': '#1a73e8', 'circle-stroke-width': 2 } });
-        try { addPoiLayers(m, labelsOn); } catch (e) { tileError = 'Some map marks could not be drawn: ' + String(e); }
-        if (labelsOn) { try { addShieldLayers(m); } catch { /* the shields are a nicety: the map works without them */ } }
-        m.addLayer({ id: 'route-line', type: 'line', source: 'route', paint: { 'line-color': '#ff9a1f', 'line-width': 4 } });
-        m.addLayer({ id: 'dir-casing', type: 'line', source: 'dir', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 9 } });
-        m.addLayer({ id: 'dir-line', type: 'line', source: 'dir', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#1a73e8', 'line-width': 5.5 } });
+      let wired = false;
+      const wire = () => {
+        if (wired) return;
+        wired = true;
+        try {
+          for (const id of ['route', 'nogo', 'draft', 'dir']) m.addSource(id, { type: 'geojson', data: empty() });
+          m.addLayer({ id: 'nogo-fill', type: 'fill', source: 'nogo', paint: { 'fill-color': '#e5533d', 'fill-opacity': 0.25 } });
+          m.addLayer({ id: 'nogo-line', type: 'line', source: 'nogo', paint: { 'line-color': '#e5533d', 'line-width': 2, 'line-dasharray': [2, 2] } });
+          m.addLayer({ id: 'draft-line', type: 'line', source: 'draft', paint: { 'line-color': '#e5533d', 'line-width': 2, 'line-dasharray': [1, 2] } });
+          // what the person drew: shapes (with a light fill), lines, a halo round the picked one, and the unfinished shape
+          for (const id of ['draw', 'drawtmp']) m.addSource(id, { type: 'geojson', data: empty() });
+          m.addLayer({ id: 'draw-fill', type: 'fill', source: 'draw', filter: ['==', ['geometry-type'], 'Polygon'], paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.22 } });
+          m.addLayer({ id: 'draw-sel', type: 'line', source: 'draw', filter: ['==', ['get', 'sel'], 1], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#1a73e8', 'line-opacity': 0.35, 'line-width': ['+', ['get', 'width'], 8] } });
+          m.addLayer({ id: 'draw-line', type: 'line', source: 'draw', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'width'] } });
+          m.addLayer({ id: 'drawtmp-line', type: 'line', source: 'drawtmp', filter: ['!', ['has', 'pt']], paint: { 'line-color': '#1a73e8', 'line-width': 3, 'line-dasharray': [2, 2] } });
+          m.addLayer({ id: 'drawtmp-pts', type: 'circle', source: 'drawtmp', filter: ['has', 'pt'], paint: { 'circle-radius': 5, 'circle-color': '#ffffff', 'circle-stroke-color': '#1a73e8', 'circle-stroke-width': 2 } });
+          try { addPoiLayers(m, labelsOn); } catch (e) { tileError = 'Some map marks could not be drawn: ' + String(e); }
+          if (labelsOn) { try { addShieldLayers(m); } catch { /* the shields are a nicety: the map works without them */ } }
+          m.addLayer({ id: 'route-line', type: 'line', source: 'route', paint: { 'line-color': '#ff9a1f', 'line-width': 4 } });
+          m.addLayer({ id: 'dir-casing', type: 'line', source: 'dir', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 9 } });
+          m.addLayer({ id: 'dir-line', type: 'line', source: 'dir', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#1a73e8', 'line-width': 5.5 } });
+        } catch (e) {
+          tileError = 'Part of the map could not be set up: ' + String(e);
+        }
+        map = m;
         mapReady = true; // reached even when a nicety above failed, so the drawing tools are always wired in
         // The box may have settled to its real size after the map was made: measure again, then frame the start view.
         syncSize(m);
         if (startBox && pins.length === 0 && nogo.length === 0 && drawings.length === 0) m.fitBounds(startBox.box, { padding: 20, duration: 0, maxZoom: startBox.maxZoom });
         zoomToPoints();
-      });
+      };
+      m.on('style.load', wire); // as soon as the style is ready, without waiting for every picture to arrive
+      m.on('load', wire);
       m.on('click', (e) => {
         // with the plain hand, a click on a marked place opens its card, and a click on something drawn picks it
         if (addMode === 'off') {

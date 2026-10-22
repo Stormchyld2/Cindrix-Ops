@@ -226,6 +226,8 @@ pub struct RoadLine {
     pub kind: String,
     pub detail: String,
     pub name: String,
+    /// the road's number, such as "I-79" or "US 19", when the map has one
+    pub refname: String,
     /// 0 on the ground, 1 on a bridge, -1 in a tunnel
     pub layer: i8,
     pub pts: Vec<(i32, i32)>,
@@ -340,6 +342,7 @@ fn parse_feature(d: &[u8], keys: &[String], vals: &[Val]) -> R<Vec<RoadLine>> {
             ("kind", Val::S(s)) => line.kind = s.clone(),
             ("kind_detail", Val::S(s)) => line.detail = s.clone(),
             ("name", Val::S(s)) => line.name = s.clone(),
+            ("ref", Val::S(s)) => line.refname = s.clone(),
             ("is_bridge", Val::B(true)) => line.layer = 1,
             ("is_tunnel", Val::B(true)) => line.layer = -1,
             ("level", Val::I(n)) if *n != 0 && line.layer == 0 => line.layer = if *n > 0 { 1 } else { -1 },

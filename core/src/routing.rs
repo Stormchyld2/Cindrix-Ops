@@ -101,6 +101,37 @@ fn classify(kind: &str, detail: &str) -> Option<Cls> {
     Some(Cls { car, foot })
 }
 
+/// Short stretches (a link or a join between two roads) are folded into the stretch before them, and
+/// neighbours with the same name are joined, so the list reads as a handful of real turns.
+fn tidy_steps(steps: Vec<Step>) -> Vec<Step> {
+    let mut out: Vec<Step> = Vec::new();
+    for s in steps {
+        match out.last_mut() {
+            Some(prev) if prev.name == s.name || (s.km < 0.4 && !s.name.starts_with("straight")) => {
+                prev.km += s.km;
+                prev.minutes += s.minutes;
+            }
+            _ => out.push(s),
+        }
+    }
+    // a short stretch left at the very start is folded forward too
+    let mut j = 0;
+    while j + 1 < out.len() {
+        if out[j].km < 0.4 && !out[j].name.starts_with("straight") && out[j + 1].name == out[j].name {
+            j += 1;
+            continue;
+        }
+        if out[j + 1].name == out[j].name {
+            let n = out.remove(j + 1);
+            out[j].km += n.km;
+            out[j].minutes += n.minutes;
+        } else {
+            j += 1;
+        }
+    }
+    out
+}
+
 fn plain_name(kind: &str, detail: &str) -> &'static str {
     let d = detail.to_lowercase();
     match d.as_str() {
@@ -282,7 +313,13 @@ impl Builder {
         let e = t.extent as f64;
         for l in &t.lines {
             let Some(cls) = classify(&l.kind, &l.detail) else { continue };
-            let nm = if l.name.is_empty() { plain_name(&l.kind, &l.detail).to_string() } else { l.name.clone() };
+            let nm = if !l.name.is_empty() {
+                l.name.clone()
+            } else if !l.refname.is_empty() {
+                l.refname.clone()
+            } else {
+                plain_name(&l.kind, &l.detail).to_string()
+            };
             let name = self.name(&nm);
             for w in l.pts.windows(2) {
                 let Some((x0, y0, x1, y1)) = clip(w[0].0 as f64, w[0].1 as f64, w[1].0 as f64, w[1].1 as f64, e) else { continue };
@@ -807,6 +844,7 @@ fn solve(b: &mut Builder, from: (f64, f64), to: (f64, f64), avoid: &[Vec<(f64, f
                 last_name = e.name;
             }
         }
+        steps = tidy_steps(steps);
         points.push(to);
         if ed > 30.0 {
             steps.push(Step { name: "straight across to the end".to_string(), km: ed / 1000.0, minutes: ed / side_speed / 60.0 });
@@ -905,6 +943,15 @@ mod tests {
         assert_eq!(foot.steps[0].name, "a path");
         // 5 km/h on foot
         assert!((foot.minutes - foot.km / 5.0 * 60.0).abs() < 1.0);
+    }
+
+    #[test]
+    fn short_joins_do_not_clutter_the_list() {
+        let st = |n: &str, km: f64| Step { name: n.to_string(), km, minutes: km };
+        let out = tidy_steps(vec![st("the highway", 9.0), st("a road", 0.0), st("the highway", 13.0), st("a road", 0.1), st("Main St", 2.0)]);
+        let names: Vec<&str> = out.iter().map(|s| s.name.as_str()).collect();
+        assert_eq!(names, vec!["the highway", "Main St"]);
+        assert!((out[0].km - 22.1).abs() < 1e-9);
     }
 
     #[test]
