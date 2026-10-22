@@ -350,6 +350,52 @@ fn map_packs() -> Vec<PackDto> {
         .collect()
 }
 
+// ---------- finding a place on the map (offline list on the drive, core/src/places.rs) ----------
+
+#[derive(Serialize)]
+struct PlaceDto {
+    name: String,
+    state: String,
+    kind: String,
+    lat: f64,
+    lon: f64,
+}
+
+#[derive(Serialize)]
+struct PlaceResults {
+    places: Vec<PlaceDto>,
+    /// Is the big list of places on the drive? Without it only states and coordinates are found.
+    has_list: bool,
+}
+
+static PLACES: Mutex<Option<(std::path::PathBuf, Option<std::time::SystemTime>, std::sync::Arc<cindrix_core::places::Index>)>> = Mutex::new(None);
+
+fn place_index() -> std::sync::Arc<cindrix_core::places::Index> {
+    let file = drive_or_program("maps").join("places").join("places.tsv");
+    let stamp = std::fs::metadata(&file).and_then(|m| m.modified()).ok();
+    let mut g = PLACES.lock().unwrap_or_else(|e| e.into_inner());
+    if let Some((f, t, ix)) = g.as_ref() {
+        if *f == file && *t == stamp {
+            return ix.clone();
+        }
+    }
+    let ix = std::sync::Arc::new(cindrix_core::places::Index::load(&file));
+    *g = Some((file, stamp, ix.clone()));
+    ix
+}
+
+#[tauri::command]
+async fn place_search(query: String) -> PlaceResults {
+    // Reading the list can take a moment the first time, so it is not done on the window's thread.
+    tauri::async_runtime::spawn_blocking(move || {
+        let ix = place_index();
+        let places = ix.search(&query, 8).into_iter().map(|p| PlaceDto { name: p.name, state: p.state, kind: p.kind, lat: p.lat, lon: p.lon }).collect();
+        PlaceResults { places, has_list: ix.has_list() }
+    })
+    .await
+    .unwrap_or(PlaceResults { places: vec![], has_list: false })
+}
+
 fn tile_reply(status: u16, content_range: Option<String>, body: Vec<u8>) -> tauri::http::Response<Vec<u8>> {
     let mut b = tauri::http::Response::builder()
         .status(status)
@@ -1416,8 +1462,14 @@ fn sources_list() -> String {
 pub fn run() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        .register_uri_scheme_protocol("cindrix-tiles", |_ctx, request| serve_tile(&request))
-        .register_uri_scheme_protocol("cindrix-music", |_ctx, request| music::serve_music(&request))
+        // Tiles and music are read from the drive on their own threads, so a slow disk never freezes the window
+        // and a map that asks for dozens of pieces at once gets them all.
+        .register_asynchronous_uri_scheme_protocol("cindrix-tiles", |_ctx, request, responder| {
+            std::thread::spawn(move || responder.respond(serve_tile(&request)));
+        })
+        .register_asynchronous_uri_scheme_protocol("cindrix-music", |_ctx, request, responder| {
+            std::thread::spawn(move || responder.respond(music::serve_music(&request)));
+        })
         .register_asynchronous_uri_scheme_protocol("cindrix-zim", |ctx, request, responder| {
             let app = ctx.app_handle().clone();
             std::thread::spawn(move || responder.respond(zimview::serve(&app, &request)));
@@ -1483,6 +1535,7 @@ pub fn run() {
             map_export_gpx,
             route_stats,
             map_packs,
+            place_search,
             zimview::zim_books,
             zimview::zim_bookmarks_load,
             zimview::zim_bookmarks_save,

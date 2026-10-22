@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { mapsList, mapLoad, mapSave, mapDelete, mapExportGpx, routeStats, mapPacks, tileUrl, type MapMeta, type LatLon, type RouteStats, type Pack } from '../lib/api';
+  import { mapsList, mapLoad, mapSave, mapDelete, mapExportGpx, routeStats, mapPacks, tileUrl, placeSearch, type PlaceHit, type MapMeta, type LatLon, type RouteStats, type Pack } from '../lib/api';
   import type { Map as MLMap, Marker, StyleSpecification, GeoJSONSource } from 'maplibre-gl';
   import { settings } from '../lib/settings.svelte';
 
@@ -40,6 +40,8 @@
   let tileError = $state('');
   let addMode: 'off' | 'pin' | 'rendezvous' | 'corner' = $state('off');
   let map: MLMap | null = null;
+  let resizer: ResizeObserver | null = null;
+  let startBox: { box: [[number, number], [number, number]]; maxZoom: number } | null = null;
   let markers: Marker[] = [];
   let ml: typeof import('maplibre-gl') | null = null;
   let protocol: import('pmtiles').Protocol | null = null;
@@ -53,6 +55,7 @@
     }
   });
   onDestroy(() => {
+    resizer?.disconnect();
     map?.remove();
     map = null;
   });
@@ -104,9 +107,23 @@
         center: area ? [(area.w + area.e) / 2, (area.s + area.n) / 2] : [-98.5, 39.8],
         zoom: area ? Math.max(area.minZoom, 3) : 3.5,
         attributionControl: { compact: true },
+        fadeDuration: 0,
+        maxTileCacheSize: 200,
       });
-      // Open on the area the pack covers (the whole US for a US pack, one town for a small test pack).
-      if (area) m.fitBounds([[area.w, area.s], [area.e, area.n]], { padding: 20, duration: 0, maxZoom: Math.min(area.maxZoom, 15) });
+      // Open on the United States when the pack covers any of it (a world pack would otherwise open on the whole
+      // globe); a pack cut for one town or one country elsewhere opens on what it covers.
+      if (area) {
+        const us = { w: -125, s: 24, e: -66.5, n: 49.5 };
+        const w = Math.max(area.w, us.w), s = Math.max(area.s, us.s), e = Math.min(area.e, us.e), n = Math.min(area.n, us.n);
+        const [bw, bs, be, bn] = e > w && n > s ? [w, s, e, n] : [area.w, area.s, area.e, area.n];
+        startBox = { box: [[bw, bs], [be, bn]], maxZoom: Math.min(area.maxZoom, 15) };
+        m.fitBounds(startBox.box, { padding: 20, duration: 0, maxZoom: startBox.maxZoom });
+      }
+      // The map must follow its box when the window or the interface size changes, or part of it stays grey.
+      if (typeof ResizeObserver !== 'undefined') {
+        resizer = new ResizeObserver(() => m.resize());
+        resizer.observe(el);
+      }
       m.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'top-right');
       m.addControl(new maplibregl.ScaleControl({ unit: settings.values.mapUnits === 'metric' ? 'metric' : 'imperial' }), 'bottom-left');
       m.on('error', (e) => {
@@ -119,6 +136,9 @@
         m.addLayer({ id: 'draft-line', type: 'line', source: 'draft', paint: { 'line-color': '#e5533d', 'line-width': 2, 'line-dasharray': [1, 2] } });
         m.addLayer({ id: 'route-line', type: 'line', source: 'route', paint: { 'line-color': '#ff9a1f', 'line-width': 4 } });
         mapReady = true;
+        // The box may have settled to its real size after the map was made: measure again, then frame the start view.
+        m.resize();
+        if (startBox && pins.length === 0 && nogo.length === 0) m.fitBounds(startBox.box, { padding: 20, duration: 0, maxZoom: startBox.maxZoom });
         zoomToPoints();
       });
       m.on('click', (e) => onMapClick(e.lngLat.lat, e.lngLat.lng));
@@ -179,6 +199,54 @@
       return new ml!.Marker({ element: el, anchor: 'left' }).setLngLat([p.lon, p.lat]).addTo(m);
     });
   });
+
+  // ---------- find a place ----------
+  let findTerm = $state('');
+  let finds: PlaceHit[] = $state([]);
+  let findNote = $state('');
+  let findBusy = $state(false);
+  let foundMarker: Marker | null = null;
+  const ZOOM_FOR: Record<string, number> = { state: 6, county: 9, city: 11, zip: 13, point: 15 };
+
+  async function findPlace() {
+    const q = findTerm.trim();
+    if (!q) return;
+    findBusy = true;
+    findNote = '';
+    try {
+      const r = await placeSearch(q);
+      finds = r.places;
+      if (!finds.length) {
+        findNote = r.has_list
+          ? 'Nothing matches. Try the town and state ("Denver, CO"), a ZIP code, or a latitude and longitude.'
+          : 'Nothing matches. Without the places list on the drive only states and a latitude and longitude are found (see Settings, Maps, or run scripts\\get-maps.ps1 with -Places).';
+      } else if (finds.length === 1) {
+        goToPlace(finds[0]);
+      }
+    } catch (e) {
+      findNote = 'The search could not run: ' + String(e);
+    }
+    findBusy = false;
+  }
+  function goToPlace(h: PlaceHit) {
+    if (!map || !ml) return;
+    finds = [];
+    findTerm = h.name + (h.state ? ', ' + h.state : '');
+    map.jumpTo({ center: [h.lon, h.lat], zoom: ZOOM_FOR[h.kind] ?? 12 });
+    foundMarker?.remove();
+    const el = document.createElement('div');
+    el.className = 'pinmark';
+    el.innerHTML = '<span class="pdot"></span><span class="plab"></span>';
+    (el.querySelector('.pdot') as HTMLElement).style.background = '#5aa9e6';
+    (el.querySelector('.plab') as HTMLElement).textContent = h.name;
+    foundMarker = new ml.Marker({ element: el, anchor: 'left' }).setLngLat([h.lon, h.lat]).addTo(map);
+  }
+  function pinFound() {
+    const m = foundMarker?.getLngLat();
+    if (!m) return;
+    const id = pins.reduce((a, x) => Math.max(a, x.id), 0) + 1;
+    pins = [...pins, { id, label: findTerm || 'Pin ' + id, kind: 'pin', lat: Math.round(m.lat * 1e5) / 1e5, lon: Math.round(m.lng * 1e5) / 1e5 }];
+  }
 
   async function refresh() {
     try {
@@ -406,6 +474,20 @@
         {/each}
         <button class="btn" onclick={zoomToPoints} disabled={pins.length === 0 && nogo.length === 0}>Zoom to my points</button>
       </div>
+      <div class="row find">
+        <input class="input grow" type="search" placeholder="Find a place: town and state, ZIP code, park, lake, or latitude and longitude" aria-label="Find a place" bind:value={findTerm}
+          onkeydown={(e) => { if (e.key === 'Enter') void findPlace(); }} />
+        <button class="btn" onclick={findPlace} disabled={!findTerm.trim() || findBusy}>Find</button>
+        <button class="btn" onclick={pinFound} disabled={!foundMarker}>Pin it</button>
+      </div>
+      {#if finds.length > 1}
+        <ul class="finds" aria-label="Places found">
+          {#each finds as h}
+            <li><button onclick={() => goToPlace(h)}>{h.name}{h.state ? ', ' + h.state : ''} <span class="muted">{h.kind}</span></button></li>
+          {/each}
+        </ul>
+      {/if}
+      {#if findNote}<p class="muted fine">{findNote}</p>{/if}
       <div class="tilemap" bind:this={mapEl} role="application" aria-label="Map"></div>
     {:else}
       <svg viewBox="0 0 {W} {H}" role="img" aria-label="Plan view of your points" class="plan">
@@ -519,7 +601,11 @@
   .ok-note { padding: 10px 12px; border-radius: 8px; background: #122117; border: 1px solid #2c5a3a; font-size: 13px; color: #b8e3c0; }
   .notes-label { margin-top: 4px; }
   input.input { min-width: 0; }
-  .tilemap { width: 100%; height: 460px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #0f1110; }
+  .find { margin-top: 2px; }
+  .finds { list-style: none; margin: 0; padding: 4px; border: 1px solid var(--line2); border-radius: 8px; background: var(--panel2); }
+  .finds button { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 6px 8px; border-radius: 6px; }
+  .finds button:hover { background: var(--blue-soft); }
+  .tilemap { width: 100%; height: clamp(380px, calc(100vh - 340px), 900px); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #0f1110; }
   :global(.pinmark) { display: flex; align-items: center; gap: 6px; pointer-events: none; }
   :global(.pinmark .pdot) { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #0f1110; display: inline-block; }
   :global(.pinmark .plab) { color: #ece7de; font-size: 12px; text-shadow: 0 0 3px #000, 0 0 3px #000; white-space: nowrap; }

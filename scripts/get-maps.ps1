@@ -18,6 +18,12 @@
 # gigabytes. Each extra zoom level roughly doubles the size, so -MaxZoom 14 or 13 makes a
 # much smaller map.
 #
+# FINDING PLACES: the Maps screen can look up a town, ZIP code, county, park, lake, mountain, airport or
+# hospital by name with no internet. That needs a places list, made from the free GeoNames data:
+#   powershell -File scripts\get-maps.ps1 -Target D:\Cindrix -PlacesOnly     (just the list, about 100 MB download)
+#   powershell -File scripts\get-maps.ps1 -Target D:\Cindrix -Places         (the map and the list)
+# It is written to <Target>\maps\places\places.tsv. Street addresses are not in it.
+#
 # License: OpenStreetMap data, ODbL. "© OpenStreetMap contributors" must stay visible on the map.
 param(
   [Parameter(Mandatory=$true)][string]$Target,
@@ -30,9 +36,65 @@ param(
   # The file name (without .pmtiles) used for -Bbox.
   [ValidatePattern('^[A-Za-z0-9_-]{1,40}$')][string]$Name = 'my-area',
   [ValidateRange(0,15)][int]$MaxZoom = 15,
-  [switch]$Force
+  [switch]$Force,
+  # Also make the list of places the Maps screen searches (needs internet once).
+  [switch]$Places,
+  # Only the list of places, not the map.
+  [switch]$PlacesOnly
 )
 $ErrorActionPreference = 'Stop'
+
+function Build-Places([string]$root) {
+  $dir = Join-Path $root 'maps\places'
+  New-Item -ItemType Directory -Force -Path $dir | Out-Null
+  $out = Join-Path $dir 'places.tsv'
+  $tmp = Join-Path $env:TEMP ('cindrix-places-' + [Guid]::NewGuid().ToString('N'))
+  New-Item -ItemType Directory -Force -Path $tmp | Out-Null
+  try {
+    $rows = New-Object System.Collections.Generic.List[string]
+    $inv = [Globalization.CultureInfo]::InvariantCulture
+    # Towns, counties, parks, lakes, peaks, airports and hospitals (GeoNames, United States).
+    Write-Host 'Fetching the US places from download.geonames.org (about 100 MB) ...'
+    $zip = Join-Path $tmp 'dump.zip'
+    Invoke-WebRequest -UseBasicParsing 'https://download.geonames.org/export/dump/US.zip' -OutFile $zip
+    Expand-Archive -Path $zip -DestinationPath $tmp -Force
+    $reader = New-Object System.IO.StreamReader((Join-Path $tmp 'US.txt'), [System.Text.Encoding]::UTF8)
+    try {
+      while ($null -ne ($line = $reader.ReadLine())) {
+        $f = $line.Split("`t")
+        if ($f.Count -lt 15) { continue }
+        $class = $f[6]; $code = $f[7]; $kind = $null
+        if ($class -eq 'P') { $kind = 'city' }
+        elseif ($code -eq 'ADM2') { $kind = 'county' }
+        elseif ($code -eq 'PRK' -or $code -eq 'PRKN') { $kind = 'park' }
+        elseif ($code -eq 'LK' -or $code -eq 'RSV') { $kind = 'lake' }
+        elseif ($code -eq 'MT' -or $code -eq 'PK') { $kind = 'peak' }
+        elseif ($code -eq 'AIRP') { $kind = 'airport' }
+        elseif ($code -eq 'HSP') { $kind = 'hospital' }
+        if (-not $kind) { continue }
+        $rows.Add(($f[1], $f[10], $kind, $f[4], $f[5], $f[14] -join "`t"))
+      }
+    } finally { $reader.Dispose() }
+    # ZIP codes.
+    Write-Host 'Fetching the ZIP codes ...'
+    $zz = Join-Path $tmp 'zip.zip'
+    $zd = Join-Path $tmp 'zipdir'
+    Invoke-WebRequest -UseBasicParsing 'https://download.geonames.org/export/zip/US.zip' -OutFile $zz
+    Expand-Archive -Path $zz -DestinationPath $zd -Force
+    foreach ($line in [System.IO.File]::ReadLines((Join-Path $zd 'US.txt'))) {
+      $f = $line.Split("`t")
+      if ($f.Count -lt 11) { continue }
+      $rows.Add(($f[1], $f[4], 'zip', $f[9], $f[10], '0' -join "`t"))
+    }
+    $part = "$out.part"
+    [System.IO.File]::WriteAllLines($part, $rows, (New-Object System.Text.UTF8Encoding($false)))
+    Move-Item -Force $part $out
+    Write-Host ("Wrote {0:N0} places to {1}" -f $rows.Count, $out)
+    $note = @('', 'Places: GeoNames (geonames.org), license Creative Commons Attribution 4.0.', "Fetched: $((Get-Date).ToString('yyyy-MM-dd'))")
+    Add-Content -Path (Join-Path $dir 'SOURCE.txt') -Value $note -Encoding UTF8
+  } finally { Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue }
+}
+if ($PlacesOnly) { Build-Places $Target; return }
 
 # min lon, min lat, max lon, max lat
 $boxes = @{
@@ -133,5 +195,7 @@ $note = @(
   'License:  Open Database License (ODbL). Show: (c) OpenStreetMap contributors.'
 )
 Add-Content -Path (Join-Path $street 'SOURCE.txt') -Value $note -Encoding UTF8
+
+if ($Places) { Build-Places $Target }
 
 Write-Host 'Done. Check the drive with: cd core; cargo run --release --example check_drive -- <drive folder>'

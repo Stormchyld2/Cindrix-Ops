@@ -14,6 +14,7 @@ pub mod hardware;
 pub mod inventory;
 pub mod kiwix;
 pub mod libraries;
+pub mod places;
 pub mod library;
 pub mod llama;
 pub mod maps;

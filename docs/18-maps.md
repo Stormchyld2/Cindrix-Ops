@@ -58,3 +58,14 @@ The map "did not load correctly" with the small test pack. Likely cause: the vie
 
 ## Still to do
 Topo layer (contours and shading from elevation data), satellite packs per county, fonts for place names, layer toggles, a warning when a route crosses a no-go area, picture export, GPS where hardware has it.
+
+
+## Finding a place (2026-10-21)
+
+The Maps screen has a "Find a place" box above the map. It works with no internet, from a list on the
+drive (`maps/places/places.tsv`, made by `scripts\get-maps.ps1 -Places` or `-PlacesOnly` from the free
+GeoNames data, CC BY 4.0). It finds towns, counties, ZIP codes, parks, lakes, peaks, airports and
+hospitals by name ("Denver, CO", "80202", "Pikes Peak"), the 50 states and DC (built in, so they work even
+without the list), and a latitude and longitude. **Street addresses are not found**: that needs a far
+larger address file (for example OpenAddresses), which is not included yet. The rules and tests are in
+`core/src/places.rs`. The map opens on the United States when the street map covers any of it.
