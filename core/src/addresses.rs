@@ -98,7 +98,7 @@ pub fn parse_query(q: &str) -> Vec<Query> {
     let mut zip = String::new();
     let mut state = String::new();
     // a ZIP and a state code can be at the end of either part
-    for part in [&mut tail_toks, &mut toks] {
+    for (is_street_part, part) in [(false, &mut tail_toks), (true, &mut toks)] {
         if let Some(z) = part.last() {
             let z5: String = z.chars().take(5).collect();
             if z5.len() == 5 && z5.chars().all(|c| c.is_ascii_digit()) && (z.len() == 5 || z.chars().nth(5) == Some('-')) {
@@ -108,7 +108,8 @@ pub fn parse_query(q: &str) -> Vec<Query> {
         }
         if let Some(s) = part.last() {
             let up = s.to_uppercase();
-            if STATE_CODES.contains(&up.as_str()) && (part.len() > 1) {
+            // a state code alone after the comma is a state; at the end of the street part it needs a street word before it
+            if STATE_CODES.contains(&up.as_str()) && (!is_street_part || part.len() > 1) {
                 state = up;
                 part.pop();
             }
@@ -473,6 +474,10 @@ mod tests {
         assert!(parse_query("denver").is_empty());
         assert!(parse_query("123").is_empty());
         assert_eq!(parse_query("12B Pine Rd")[0].number, "12B");
+        // the town in front of the comma with only a state and ZIP after it
+        let q = parse_query("529 Ogden Ave Fairmont, WV 26554");
+        assert_eq!((q[0].street.as_str(), q[0].state.as_str(), q[0].zip.as_str()), ("OGDEN AVE FAIRMONT", "WV", "26554"));
+        assert!(q.iter().any(|x| x.street == "OGDEN AVE" && x.town == "FAIRMONT" && x.state == "WV"));
     }
 
     #[test]
@@ -553,6 +558,17 @@ mod tests {
         let h = search(&root, "12 elm street springfield", None, 8);
         assert_eq!(h.len(), 1);
         assert_eq!(h[0].zip, "62701");
+        let _ = fs::remove_dir_all(&d);
+    }
+
+    #[test]
+    fn a_full_address_with_the_town_before_the_comma_is_found() {
+        let d = tmp("full");
+        let root = d.join("addresses");
+        write_sorted(&root.join("us/O.tsv"), &[("OGDEN AVE", "529", "26554", "WV", 39.48, -80.14), ("OGDEN AVE", "531", "26554", "WV", 39.481, -80.14)]);
+        let h = search(&root, "529 Ogden Ave Fairmont, WV 26554", None, 8);
+        assert_eq!(h.len(), 1, "{:?}", h);
+        assert!(!h[0].near);
         let _ = fs::remove_dir_all(&d);
     }
 
