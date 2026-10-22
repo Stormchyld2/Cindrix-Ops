@@ -56,12 +56,14 @@ function decorate(i: Item): Item {
 }
 
 // ---------- your own cards and plans ----------
-export type OwnFolder = { key: 'cards' | 'plans'; title: string; help: string; path: string; files: number; problems: { place: string; message: string }[] };
+export type OwnFolder = { key: 'cards' | 'plans' | 'seed-guides' | 'drills' | 'academy'; title: string; help: string; path: string; files: number; problems: { place: string; message: string }[] };
 export async function ownContent(): Promise<OwnFolder[]> {
   if (inTauri) return call<OwnFolder[]>('own_content');
   return [
     { key: 'cards', title: 'Emergency cards', help: 'One text file per card.', path: 'user\\cards', files: 0, problems: [] },
     { key: 'plans', title: 'Plans and walkthroughs (including “keep it from failing”)', help: 'One text file per plan.', path: 'user\\plans', files: 0, problems: [] },
+  { key: 'drills', title: 'Drills', help: 'One text file per drill.', path: 'user\\drills', files: 0, problems: [] },
+  { key: 'academy', title: 'Academy courses (and a course made from a book)', help: 'A course is a folder.', path: 'user\\academy', files: 0, problems: [] },
   { key: 'seed-guides', title: 'Seed vault guides', help: 'One text file per guide.', path: 'user\\seed-guides', files: 0, problems: [] },
   ];
 }

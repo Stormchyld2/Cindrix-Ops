@@ -66,3 +66,10 @@ Rules the Academy checks:
 
 If a file is left out, the Academy tells you which one and why (at the bottom of its screen). The
 rest of the course still works.
+
+## Making a course from a book in your library
+Open the book in the Library (Shelf) and read it a chapter at a time. For each chapter make a module folder, and for each
+part of the chapter a lesson file: write the main points **in your own words** (do not copy pages), add the book's name and
+chapter to `source:` and finish with three questions under `## Check yourself`. The `_template-course` folder shows the shape.
+You can also ask the assistant to summarise a chapter, then edit the result before saving it.
+Put the course folder in `user/academy` (Settings, Your own cards and plans, opens it). Only copy what you have the right to use.

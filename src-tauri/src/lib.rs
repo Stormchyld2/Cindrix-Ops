@@ -191,6 +191,8 @@ fn own_content() -> Vec<OwnFolderDto> {
     vec![
         OwnFolderDto { key: "cards", title: "Emergency cards".into(), help: "One text file per card. Copy the template in the folder, change the words and save it with a new name.".into(), path: r.join("cards").display().to_string(), files: count_md(&r.join("cards")), problems: card_problems },
         OwnFolderDto { key: "plans", title: "Plans and walkthroughs (including “keep it from failing”)".into(), help: "One text file per plan. Copy a template in the folder, change the words and save it with a new name.".into(), path: r.join("plans").display().to_string(), files: count_md(&r.join("plans")), problems: plan_problems },
+        OwnFolderDto { key: "drills", title: "Drills".into(), help: "One text file per drill. Copy the template in the folder, change the words and save it with a new name.".into(), path: r.join("drills").display().to_string(), files: count_md(&r.join("drills")), problems: Vec::new() },
+        OwnFolderDto { key: "academy", title: "Academy courses (and a course made from a book)".into(), help: "A course is a folder. The how-to in this folder explains it, including how to make a course from a book in your library.".into(), path: r.join("academy").display().to_string(), files: 0, problems: Vec::new() },
         OwnFolderDto { key: "seed-guides", title: "Seed vault guides".into(), help: "One text file per guide. Copy the template in the folder, change the words and save it with a new name. The kind (buy, store, grow or save) decides where it shows.".into(), path: r.join("seed-guides").display().to_string(), files: count_md(&r.join("seed-guides")), problems: seed_problems },
     ]
 }
@@ -201,6 +203,8 @@ fn open_own_folder(key: String) -> Result<String, String> {
     let (sub, files): (&str, &[&str]) = match key.as_str() {
         "cards" => ("cards", &["_template-card.md", "_how-to-add-a-card.md"]),
         "plans" => ("plans", &["_template-plan.md", "_template-keep-it-from-failing.md", "_how-to-add-a-plan.md"]),
+        "drills" => ("drills", &["_template-drill.md", "_how-to-add-a-drill.md"]),
+        "academy" => ("academy", &["HOW-TO-ADD-A-COURSE.md"]),
         "seed-guides" => ("seed-guides", &["_template-seed-guide.md", "_how-to-add-a-seed-guide.md"]),
         _ => return Err("There is no such folder.".into()),
     };
@@ -1524,6 +1528,7 @@ fn academy_dirs() -> Vec<PathBuf> {
         v.push(o.join("academy"));
         v.push(o.join("content").join("academy"));
     }
+    v.push(r.join("user").join("academy"));
     let mut seen: Vec<PathBuf> = Vec::new();
     v.retain(|d| {
         let key = d.canonicalize().unwrap_or_else(|_| d.clone());
@@ -1944,7 +1949,7 @@ struct DrillDto {
 #[tauri::command]
 fn drills_list() -> Result<Vec<DrillDto>, String> {
     let results = drills::Log::new(&root().join("user")).list()?;
-    Ok(drills::load_dir(&content_sub("drills"))
+    Ok(drills::load_dirs(&[content_sub("drills"), root().join("drills"), root().join("user").join("drills")])
         .into_iter()
         .map(|d| {
             let mine: Vec<&drills::Result_> = results.iter().filter(|r| r.drill == d.id).collect();

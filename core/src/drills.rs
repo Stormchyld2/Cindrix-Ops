@@ -77,13 +77,29 @@ pub fn load_dir(dir: &Path) -> Vec<Drill> {
     if let Ok(rd) = fs::read_dir(dir) {
         for e in rd.flatten() {
             let p = e.path();
-            if p.extension().and_then(|x| x.to_str()) == Some("md") {
+            let hidden = p.file_name().map(|n| n.to_string_lossy().starts_with('_')).unwrap_or(false);
+            if !hidden && p.extension().and_then(|x| x.to_str()) == Some("md") {
                 let id = p.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
                 if let Ok(t) = fs::read_to_string(&p) {
                     if let Ok(d) = parse(&id, &t) {
                         out.push(d);
                     }
                 }
+            }
+        }
+    }
+    out.sort_by(|a, b| a.id.cmp(&b.id));
+    out
+}
+
+/// Drills from several folders (shipped, the drive, the person's own). A later folder replaces an earlier drill of the same id.
+pub fn load_dirs(dirs: &[std::path::PathBuf]) -> Vec<Drill> {
+    let mut out: Vec<Drill> = Vec::new();
+    for d in dirs {
+        for x in load_dir(d) {
+            match out.iter().position(|o| o.id == x.id) {
+                Some(i) => out[i] = x,
+                None => out.push(x),
             }
         }
     }
@@ -217,5 +233,21 @@ mod tests {
         assert!(log.list().is_err());
         assert!(log.add(Result_ { date: "d".into(), drill: "x".into(), seconds: 1, done: 1, total: 1, notes: String::new() }).is_err());
         assert!(fs::read_to_string(d.join("drills.csv")).unwrap().contains("wrong,header"));
+    }
+
+    #[test]
+    fn templates_are_skipped_and_a_later_folder_wins() {
+        let base = std::env::temp_dir().join(format!("cx-drills-{}", std::process::id()));
+        let (a, b) = (base.join("a"), base.join("b"));
+        std::fs::create_dir_all(&a).unwrap();
+        std::fs::create_dir_all(&b).unwrap();
+        let d = |t: &str| format!("---\ntitle: {}\nminutes: 5\nwhere: at home\nstatus: draft\n---\n- one thing\n", t);
+        std::fs::write(a.join("x.md"), d("Old")).unwrap();
+        std::fs::write(a.join("_template-drill.md"), d("Template")).unwrap();
+        std::fs::write(b.join("x.md"), d("New")).unwrap();
+        let l = load_dirs(&[a, b]);
+        assert_eq!(l.len(), 1);
+        assert_eq!(l[0].title, "New");
+        let _ = std::fs::remove_dir_all(&base);
     }
 }
