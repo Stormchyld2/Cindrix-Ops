@@ -22,7 +22,7 @@
   import { onMount } from 'svelte';
   import { modelStatus, libraryStatus, productInfo, librariesList, libraryAnswer, type ModelStatus, type ProductInfo, type LibraryEntry } from './lib/api';
   import { settings, applyUiScale } from './lib/settings.svelte';
-  import { installTooltips } from './lib/tooltips';
+  import { installTooltips, removeTooltips } from './lib/tooltips';
   let ms: ModelStatus | null = $state(null);
   let sharing = $state(false);
   let online = $state(false);
@@ -62,8 +62,13 @@
       const want = settings.values.startScreen;
       if (group === 'Dashboard' && want !== 'Dashboard') group = want;
     });
-    const stopTips = installTooltips();
-    return () => { clearInterval(t); stopTips(); };
+    return () => clearInterval(t);
+  });
+  // hover text on every button (Settings, General, can be switched off)
+  $effect(() => {
+    if (!settings.loaded || !settings.values.showHints) return;
+    const stop = installTooltips();
+    return () => { stop(); removeTooltips(); };
   });
   // interface size (Settings, General)
   $effect(() => { if (settings.loaded) void applyUiScale(settings.values.uiScale); });

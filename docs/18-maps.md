@@ -69,3 +69,11 @@ hospitals by name ("Denver, CO", "80202", "Pikes Peak"), the 50 states and DC (b
 without the list), and a latitude and longitude. **Street addresses are not found**: that needs a far
 larger address file (for example OpenAddresses), which is not included yet. The rules and tests are in
 `core/src/places.rs`. The map opens on the United States when the street map covers any of it.
+
+
+## Whole US, bigger map, full screen (2026-10-22)
+
+- `scripts\get-maps.ps1` now cuts the lower 48, Alaska and Hawaii by default (three files in `maps\us\street`). That is tens of gigabytes at zoom 15; use `-MaxZoom 13` or `-Regions conus` for something smaller, and `-Bbox` for one area. Sizes depend on the day's build, so the script prints each file's real size. Run it with `-Places` once to make the offline places list.
+- The map is taller (it uses most of the window height). **Full screen** makes the map fill the whole screen and keeps everything: the pin, rendezvous and no-go tools, the Find box, "Zoom to my points", and a side list of your points, route and areas with Save. Esc or "Exit full screen" goes back.
+- A tactical readout sits on the map: the coordinates under the pointer and of the map's centre (latitude and longitude, five decimals), and a centre cross-hair that can be switched off.
+- Hover text explains each tool.

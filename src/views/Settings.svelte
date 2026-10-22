@@ -137,13 +137,14 @@
       <div class="label">LOOK AND FEEL</div>
       {@render slider('uiScale', 'Interface size', '%', 'Makes everything bigger or smaller. 100 is the usual size. Go higher if the text is hard to read.')}
       {@render toggle('showStatusBar', 'Show the status bar at the bottom', 'The strip that says which model is loaded and whether the app is using the network.')}
+      {@render toggle('showHints', 'Show a hint when the pointer rests on a button', 'A short sentence that says what the button does. Turn it off if the hints get in the way.')}
     </div>
     <div class="panel">
       <div class="label">STARTING UP</div>
       {@render choose('startScreen', 'Open on this screen', 'The screen you see when the program starts. If your edition does not have it, the first one it does have opens.',
         SCREENS.map((s) => [s, screenName(s)] as [string, string]))}
     </div>
-    {@render reset(['uiScale', 'showStatusBar', 'startScreen'])}
+    {@render reset(['uiScale', 'showStatusBar', 'showHints', 'startScreen'])}
   {:else if tab === 'Assistant'}
     <div class="panel">
       <div class="label">THE ASSISTANT</div>

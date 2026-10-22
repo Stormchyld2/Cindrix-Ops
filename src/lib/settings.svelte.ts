@@ -15,6 +15,8 @@ export type Settings = {
   /** The Dashboard became the opening screen; this remembers that the switch was done once. */
   dashboardDefaultDone: boolean;
   showStatusBar: boolean;
+  /** Hover text on buttons. */
+  showHints: boolean;
   // Assistant
   searchBooks: boolean;
   searchArchives: boolean;
@@ -48,6 +50,7 @@ export const DEFAULTS: Settings = {
   startScreen: 'Dashboard',
   dashboardDefaultDone: false,
   showStatusBar: true,
+  showHints: true,
   searchBooks: true,
   searchArchives: true,
   searchFiles: true,

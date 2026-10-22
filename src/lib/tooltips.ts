@@ -129,6 +129,15 @@ function sweep(root: ParentNode): void {
   root.querySelectorAll?.(SELECTOR).forEach(apply);
 }
 
+/** Remove the hints this file added (the ones an author wrote stay). */
+export function removeTooltips(): void {
+  if (typeof document === 'undefined') return;
+  document.querySelectorAll('[data-autotip]').forEach((el) => {
+    el.removeAttribute('title');
+    el.removeAttribute('data-autotip');
+  });
+}
+
 /** Give every button hover text now and whenever the page changes. Returns a function that stops it. */
 export function installTooltips(): () => void {
   if (typeof document === 'undefined' || typeof MutationObserver === 'undefined') return () => {};
