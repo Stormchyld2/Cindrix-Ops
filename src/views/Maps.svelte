@@ -1,13 +1,14 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount, onDestroy, untrack } from 'svelte';
   import { mapsList, mapLoad, mapSave, mapDelete, mapExportGpx, routeStats, mapPacks, tileUrl, placeSearch, type PlaceHit, type MapMeta, type LatLon, type RouteStats, type Pack } from '../lib/api';
   import type { Map as MLMap, Marker, StyleSpecification, GeoJSONSource } from 'maplibre-gl';
   import { settings } from '../lib/settings.svelte';
   import { POI_GROUPS, kindName, groupOf, distanceKm, compass } from '../lib/mapkinds';
+  import { DRAW_COLORS, DRAW_WIDTHS, DEFAULT_COLOR, drawingFeatures, previewFeatures, handlesOf, labelPoint, measureOf, pathKm, areaKm2, fmtLength, fmtArea, type Drawing, type DrawKind } from '../lib/mapdraw';
 
   type Pin = { id: number; label: string; kind: 'pin' | 'rendezvous'; lat: number; lon: number };
   type Area = { label: string; points: LatLon[] };
-  type MapFile = { version: 1; name: string; pins: Pin[]; route: number[]; nogo: Area[] };
+  type MapFile = { version: 1; name: string; pins: Pin[]; route: number[]; nogo: Area[]; drawings?: Drawing[] };
 
   let saved: MapMeta[] = $state([]);
   let current: string | null = $state(null); // id of the saved map being edited, null for a new one
@@ -16,6 +17,7 @@
   let pins: Pin[] = $state([]);
   let route: number[] = $state([]); // pin ids in order
   let nogo: Area[] = $state([]);
+  let drawings: Drawing[] = $state([]);
   let draft: LatLon[] = $state([]); // no-go area being drawn
   let draftLabel = $state('');
   let message = $state('');
@@ -78,7 +80,9 @@
   let mapEl: HTMLDivElement | undefined = $state();
   let mapReady = $state(false);
   let tileError = $state('');
-  let addMode: 'off' | 'pin' | 'rendezvous' | 'corner' = $state('off');
+  // The tool that decides what a click on the map does. 'off' is the plain hand: move the map, pick things.
+  type Tool = 'off' | 'pin' | 'rendezvous' | 'corner' | 'line' | 'shape' | 'rect' | 'circle' | 'text' | 'measure' | 'erase';
+  let addMode: Tool = $state('off');
   let map: MLMap | null = null;
   let resizer: ResizeObserver | null = null;
   let onScale: (() => void) | null = null;
@@ -224,7 +228,19 @@
     if (apiFull && !document.fullscreenElement) { full = false; apiFull = false; setTimeout(() => map?.resize(), 100); }
   }
   function onKey(e: KeyboardEvent) {
-    if (e.key === 'Escape' && full) { e.preventDefault(); toggleFull(); }
+    const typing = e.target instanceof HTMLElement && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT');
+    if (e.key === 'Escape') {
+      if (building.length || measurePts.length || draft.length) { e.preventDefault(); cancelDrawing(); return; }
+      if (addMode !== 'off') { e.preventDefault(); addMode = 'off'; return; }
+      if (selectedId !== null) { selectedId = null; return; }
+      if (full) { e.preventDefault(); toggleFull(); }
+      return;
+    }
+    if (typing || !map) return;
+    if (e.key === 'Enter' && (addMode === 'line' || addMode === 'shape')) { e.preventDefault(); finishBuilding(); }
+    else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); if (e.shiftKey) redo(); else undo(); }
+    else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); }
+    else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId !== null && addMode === 'off') { e.preventDefault(); deleteDrawing(selectedId); }
   }
   let ml: typeof import('maplibre-gl') | null = null;
   let protocol: import('pmtiles').Protocol | null = null;
@@ -385,7 +401,7 @@
         dprQuery.addEventListener('change', onScale);
       } catch { /* an old web view: the resize listener above still covers most cases */ }
       for (const t of [200, 800, 2500]) setTimeout(() => syncSize(m), t);
-      m.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'top-right');
+      m.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'bottom-right');
       m.addControl(new maplibregl.ScaleControl({ unit: settings.values.mapUnits === 'metric' ? 'metric' : 'imperial' }), 'bottom-left');
       m.on('error', (e) => {
         const msg = String((e as { error?: Error }).error?.message ?? e);
@@ -397,25 +413,38 @@
         m.addLayer({ id: 'nogo-fill', type: 'fill', source: 'nogo', paint: { 'fill-color': '#e5533d', 'fill-opacity': 0.25 } });
         m.addLayer({ id: 'nogo-line', type: 'line', source: 'nogo', paint: { 'line-color': '#e5533d', 'line-width': 2, 'line-dasharray': [2, 2] } });
         m.addLayer({ id: 'draft-line', type: 'line', source: 'draft', paint: { 'line-color': '#e5533d', 'line-width': 2, 'line-dasharray': [1, 2] } });
+        // what the person drew: shapes (with a light fill), lines, a halo round the picked one, and the unfinished shape
+        for (const id of ['draw', 'drawtmp']) m.addSource(id, { type: 'geojson', data: empty() });
+        m.addLayer({ id: 'draw-fill', type: 'fill', source: 'draw', filter: ['==', ['geometry-type'], 'Polygon'], paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.22 } });
+        m.addLayer({ id: 'draw-sel', type: 'line', source: 'draw', filter: ['==', ['get', 'sel'], 1], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#1a73e8', 'line-opacity': 0.35, 'line-width': ['+', ['get', 'width'], 8] } });
+        m.addLayer({ id: 'draw-line', type: 'line', source: 'draw', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'width'] } });
+        m.addLayer({ id: 'drawtmp-line', type: 'line', source: 'drawtmp', filter: ['!', ['has', 'pt']], paint: { 'line-color': '#1a73e8', 'line-width': 3, 'line-dasharray': [2, 2] } });
+        m.addLayer({ id: 'drawtmp-pts', type: 'circle', source: 'drawtmp', filter: ['has', 'pt'], paint: { 'circle-radius': 5, 'circle-color': '#ffffff', 'circle-stroke-color': '#1a73e8', 'circle-stroke-width': 2 } });
         addPoiLayers(m, labelsOn);
         m.addLayer({ id: 'route-line', type: 'line', source: 'route', paint: { 'line-color': '#ff9a1f', 'line-width': 4 } });
         mapReady = true;
         // The box may have settled to its real size after the map was made: measure again, then frame the start view.
         syncSize(m);
-        if (startBox && pins.length === 0 && nogo.length === 0) m.fitBounds(startBox.box, { padding: 20, duration: 0, maxZoom: startBox.maxZoom });
+        if (startBox && pins.length === 0 && nogo.length === 0 && drawings.length === 0) m.fitBounds(startBox.box, { padding: 20, duration: 0, maxZoom: startBox.maxZoom });
         zoomToPoints();
       });
       m.on('click', (e) => {
-        // with nothing to add, a click on a marked place opens its card
+        // with the plain hand, a click on a marked place opens its card, and a click on something drawn picks it
         if (addMode === 'off') {
           const hit = poiAt(m, e.point);
-          if (hit) { picked = hit; return; }
+          if (hit) { picked = hit; selectedId = null; return; }
           picked = null;
+          const did = drawingAt(m, e.point);
+          selectedId = did;
+          return;
         }
-        onMapClick(e.lngLat.lat, e.lngLat.lng);
+        onMapClick(e.lngLat.lat, e.lngLat.lng, e.point);
       });
-      m.on('mousemove', (e) => { cursor = [Math.round(e.lngLat.lat * 1e5) / 1e5, Math.round(e.lngLat.lng * 1e5) / 1e5]; });
-      m.on('mouseout', () => { cursor = null; });
+      m.on('mousemove', (e) => {
+        cursor = [Math.round(e.lngLat.lat * 1e5) / 1e5, Math.round(e.lngLat.lng * 1e5) / 1e5];
+        if (addMode === 'line' || addMode === 'shape' || addMode === 'rect' || addMode === 'circle' || addMode === 'measure') hover = [e.lngLat.lat, e.lngLat.lng];
+      });
+      m.on('mouseout', () => { cursor = null; hover = null; });
       const setCentre = () => { const c = m.getCenter(); centre = [Math.round(c.lat * 1e5) / 1e5, Math.round(c.lng * 1e5) / 1e5]; };
       m.on('move', setCentre);
       setCentre();
@@ -428,19 +457,41 @@
   const empty = () => ({ type: 'FeatureCollection' as const, features: [] });
   const ring = (pts: LatLon[]) => [...pts, pts[0]].map(([la, lo]) => [lo, la]);
 
-  function onMapClick(lat: number, lon: number) {
-    const p: LatLon = [Math.round(lat * 1e5) / 1e5, Math.round(lon * 1e5) / 1e5];
+  function onMapClick(lat: number, lon: number, point?: { x: number; y: number }) {
+    const p: LatLon = [Math.round(lat * 1e6) / 1e6, Math.round(lon * 1e6) / 1e6];
+    const p5: LatLon = [Math.round(lat * 1e5) / 1e5, Math.round(lon * 1e5) / 1e5];
     if (addMode === 'pin' || addMode === 'rendezvous') {
+      pushUndo();
       const id = pins.reduce((m, x) => Math.max(m, x.id), 0) + 1;
-      pins = [...pins, { id, label: (addMode === 'rendezvous' ? 'Rendezvous ' : 'Pin ') + id, kind: addMode, lat: p[0], lon: p[1] }];
+      pins = [...pins, { id, label: (addMode === 'rendezvous' ? 'Rendezvous ' : 'Pin ') + id, kind: addMode, lat: p5[0], lon: p5[1] }];
     } else if (addMode === 'corner') {
-      draft = [...draft, p];
+      draft = [...draft, p5];
+    } else if (addMode === 'line' || addMode === 'shape') {
+      building = [...building, p];
+    } else if (addMode === 'rect') {
+      if (building.length === 0) building = [p];
+      else addDrawing('rect', [building[0], p]);
+    } else if (addMode === 'circle') {
+      if (building.length === 0) building = [p];
+      else {
+        const r = distanceKm(building[0], p) * 1000;
+        if (r >= 1) addDrawing('circle', [building[0]], r);
+      }
+    } else if (addMode === 'text') {
+      addDrawing('text', [p], undefined, textDraft.trim() || 'Note');
+    } else if (addMode === 'measure') {
+      measurePts = [...measurePts, p];
+    } else if (addMode === 'erase' && map && point) {
+      const did = drawingAt(map, point);
+      if (did !== null) { deleteDrawing(did); return; }
+      const ng = nogoAt(map, point);
+      if (ng !== null) { pushUndo(); nogo = nogo.filter((_, i) => i !== ng); }
     }
   }
 
   function zoomToPoints() {
     if (!map || !ml) return;
-    const all: LatLon[] = [...pins.map((p) => [p.lat, p.lon] as LatLon), ...nogo.flatMap((a) => a.points)];
+    const all: LatLon[] = [...pins.map((p) => [p.lat, p.lon] as LatLon), ...nogo.flatMap((a) => a.points), ...drawings.flatMap((d) => (d.kind === 'circle' ? handlesOf(d) : d.points))];
     if (all.length === 0) return;
     const b = new ml.LngLatBounds([all[0][1], all[0][0]], [all[0][1], all[0][0]]);
     for (const [la, lo] of all) b.extend([lo, la]);
@@ -459,7 +510,7 @@
     );
     (m.getSource('nogo') as GeoJSONSource).setData({
       type: 'FeatureCollection',
-      features: nogo.filter((a) => a.points.length >= 3).map((a) => ({ type: 'Feature' as const, properties: {}, geometry: { type: 'Polygon' as const, coordinates: [ring(a.points)] } })),
+      features: nogo.flatMap((a, i) => (a.points.length >= 3 ? [{ type: 'Feature' as const, properties: { i }, geometry: { type: 'Polygon' as const, coordinates: [ring(a.points)] } }] : [])),
     });
     (m.getSource('draft') as GeoJSONSource).setData(
       draft.length > 1
@@ -473,8 +524,212 @@
       el.innerHTML = '<span class="pdot"></span><span class="plab"></span>';
       (el.querySelector('.pdot') as HTMLElement).style.background = pinColor(p.kind);
       (el.querySelector('.plab') as HTMLElement).textContent = p.label; // text, never markup
-      return new ml!.Marker({ element: el, anchor: 'left' }).setLngLat([p.lon, p.lat]).addTo(m);
+      el.addEventListener('click', (ev) => {
+        if (addMode === 'erase') { ev.stopPropagation(); pushUndo(); removePin(p.id); }
+      });
+      const mk = new ml!.Marker({ element: el, anchor: 'left', draggable: addMode === 'off' }).setLngLat([p.lon, p.lat]).addTo(m);
+      mk.on('dragstart', () => pushUndo());
+      mk.on('dragend', () => {
+        const ll = mk.getLngLat();
+        pins = pins.map((q) => (q.id === p.id ? { ...q, lat: Math.round(ll.lat * 1e5) / 1e5, lon: Math.round(ll.lng * 1e5) / 1e5 } : q));
+      });
+      return mk;
     });
+  });
+
+  // ---------- drawing: lines, areas, boxes, circles, text, measuring, erasing, undo ----------
+  const TOOLS: { k: Tool; label: string; tip: string; d: string }[] = [
+    { k: 'off', label: 'Move', tip: 'Move the map and pick things you drew. Drag a pin or a corner to move it.', d: 'M5 3l14 8-6 2-2 6z' },
+    { k: 'pin', label: 'Pin', tip: 'Click the map to drop a pin', d: 'M12 21s-6-6.2-6-11a6 6 0 1112 0c0 4.8-6 11-6 11z M12 7.5a2.5 2.5 0 100 5 2.5 2.5 0 000-5z' },
+    { k: 'rendezvous', label: 'Meet', tip: 'Click the map to mark a place to meet', d: 'M6 21V4 M6 5h11l-2 4 2 4H6' },
+    { k: 'corner', label: 'Avoid', tip: 'Click corners to outline an area to avoid (flooded, blocked or unsafe)', d: 'M12 3a9 9 0 100 18 9 9 0 000-18z M6 6l12 12' },
+    { k: 'line', label: 'Line', tip: 'Draw a line: click each point, then Finish (or press Enter)', d: 'M4 19l6-8 4 4 6-9' },
+    { k: 'shape', label: 'Shape', tip: 'Draw an area: click each corner, then Finish (or press Enter)', d: 'M5 8l7-4 7 5-2 9H7z' },
+    { k: 'rect', label: 'Box', tip: 'Draw a box: click two opposite corners', d: 'M4 6h16v12H4z' },
+    { k: 'circle', label: 'Circle', tip: 'Draw a circle: click the middle, then click the edge', d: 'M12 4a8 8 0 100 16 8 8 0 000-16z' },
+    { k: 'text', label: 'Text', tip: 'Put a written note on the map: type it, then click where it goes', d: 'M5 6h14 M12 6v13 M9 19h6' },
+    { k: 'measure', label: 'Measure', tip: 'Measure distance and area: click points along the way', d: 'M3 16l13-13 5 5-13 13z M8 8l2 2 M11 5l2 2 M5 11l2 2' },
+    { k: 'erase', label: 'Erase', tip: 'Click anything you drew, a pin or a no-go area to remove it', d: 'M7 21h10 M5 14l7-9 7 7-5 6H9z' },
+  ];
+  let selectedId: number | null = $state(null);
+  let building: LatLon[] = $state([]); // corners clicked so far for the line, shape, box or circle being drawn
+  let hover: LatLon | null = $state(null); // where the pointer is, for the rubber band
+  let measurePts: LatLon[] = $state([]);
+  let drawColor = $state(DEFAULT_COLOR);
+  let drawWidth = $state(4);
+  let textDraft = $state('Note');
+  let handleTick = $state(0);
+  let labelMarkers: Marker[] = [];
+  let handleMarkers: Marker[] = [];
+  const metric = $derived(settings.values.mapUnits === 'metric');
+  let sel: Drawing | null = $derived(drawings.find((d) => d.id === selectedId) ?? null);
+
+  // undo and redo: whole-map snapshots
+  let undoStack: string[] = [];
+  let redoStack: string[] = [];
+  let canUndo = $state(false);
+  let canRedo = $state(false);
+  const snapshot = () => JSON.stringify({ pins, route, nogo, drawings });
+  function pushUndo() {
+    undoStack.push(snapshot());
+    if (undoStack.length > 100) undoStack.shift();
+    redoStack = [];
+    canUndo = true;
+    canRedo = false;
+  }
+  function restore(json: string) {
+    const f = JSON.parse(json) as { pins: Pin[]; route: number[]; nogo: Area[]; drawings: Drawing[] };
+    pins = f.pins;
+    route = f.route;
+    nogo = f.nogo;
+    drawings = f.drawings;
+    selectedId = null;
+    handleTick++;
+  }
+  function undo() {
+    const last = undoStack.pop();
+    if (!last) return;
+    redoStack.push(snapshot());
+    restore(last);
+    canUndo = undoStack.length > 0;
+    canRedo = true;
+  }
+  function redo() {
+    const next = redoStack.pop();
+    if (!next) return;
+    undoStack.push(snapshot());
+    restore(next);
+    canUndo = true;
+    canRedo = redoStack.length > 0;
+  }
+  function resetUndo() {
+    undoStack = [];
+    redoStack = [];
+    canUndo = canRedo = false;
+  }
+
+  function cancelDrawing() {
+    building = [];
+    hover = null;
+    measurePts = [];
+    draft = [];
+  }
+  function chooseTool(t: Tool) {
+    cancelDrawing();
+    selectedId = null;
+    picked = null;
+    addMode = addMode === t && t !== 'off' ? 'off' : t;
+  }
+  const nextDrawId = () => drawings.reduce((m, d) => Math.max(m, d.id), 0) + 1;
+  function addDrawing(kind: DrawKind, points: LatLon[], radiusM?: number, label = '') {
+    pushUndo();
+    const id = nextDrawId();
+    drawings = [...drawings, { id, kind, label, color: drawColor, width: drawWidth, points, ...(radiusM ? { radiusM } : {}) }];
+    building = [];
+    hover = null;
+    selectedId = id;
+    addMode = 'off';
+  }
+  function finishBuilding() {
+    if (addMode === 'line' && building.length >= 2) addDrawing('line', building);
+    else if (addMode === 'shape' && building.length >= 3) addDrawing('shape', building);
+  }
+  function setSel(key: 'label' | 'color' | 'width', value: string | number) {
+    if (selectedId === null) return;
+    drawings = drawings.map((d) => (d.id === selectedId ? { ...d, [key]: value } : d));
+  }
+  function deleteDrawing(id: number) {
+    pushUndo();
+    drawings = drawings.filter((d) => d.id !== id);
+    if (selectedId === id) selectedId = null;
+  }
+  function moveHandle(id: number, idx: number, pt: LatLon) {
+    drawings = drawings.map((d) => {
+      if (d.id !== id) return d;
+      if (d.kind === 'circle') return idx === 0 ? { ...d, points: [pt] } : { ...d, radiusM: Math.max(1, distanceKm(d.points[0], pt) * 1000) };
+      return { ...d, points: d.points.map((q, i) => (i === idx ? pt : q)) };
+    });
+  }
+  /** The id of the drawing under a point of the screen, if any. */
+  function drawingAt(m: MLMap, point: { x: number; y: number }): number | null {
+    const r = 7;
+    const f = m.queryRenderedFeatures([[point.x - r, point.y - r], [point.x + r, point.y + r]], { layers: ['draw-fill', 'draw-line'].filter((l) => m.getLayer(l)) })[0];
+    const id = Number(f?.properties?.id);
+    return f && Number.isFinite(id) ? id : null;
+  }
+  /** The no-go area under a point of the screen, if any (for erasing). */
+  function nogoAt(m: MLMap, point: { x: number; y: number }): number | null {
+    const r = 7;
+    const f = m.queryRenderedFeatures([[point.x - r, point.y - r], [point.x + r, point.y + r]], { layers: ['nogo-fill'].filter((l) => m.getLayer(l)) })[0];
+    if (!f) return null;
+    const ids = (f.properties?.i as number | undefined);
+    return typeof ids === 'number' ? ids : null;
+  }
+
+  let measureKm = $derived(pathKm(hover && addMode === 'measure' ? [...measurePts, hover] : measurePts));
+  let measureArea = $derived(measurePts.length >= 3 ? areaKm2(measurePts) : 0);
+  let buildKm = $derived(pathKm(hover && (addMode === 'line' || addMode === 'shape') ? [...building, hover] : building));
+  let selMeasure = $derived(sel ? measureOf(sel) : { km: 0, km2: 0 });
+
+  // what is drawn, and the names on it
+  $effect(() => {
+    if (!map || !ml || !mapReady) return;
+    const m = map;
+    const list = drawings;
+    const sid = selectedId;
+    (m.getSource('draw') as GeoJSONSource).setData(drawingFeatures(list, sid) as never);
+    for (const k of labelMarkers) k.remove();
+    labelMarkers = list.flatMap((d) => {
+      const at = labelPoint(d);
+      if (!at || (!d.label.trim() && d.kind !== 'text')) return [];
+      const el = document.createElement('div');
+      el.className = d.kind === 'text' ? 'dtext' : 'dname';
+      el.textContent = d.label || '(text)'; // text, never markup
+      if (d.kind === 'text') el.style.color = d.color === '#ffffff' ? '#ffffff' : d.color;
+      el.style.cursor = 'pointer';
+      el.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        if (addMode === 'erase') deleteDrawing(d.id);
+        else if (addMode === 'off') selectedId = d.id;
+      });
+      return [new ml!.Marker({ element: el, anchor: 'center' }).setLngLat([at[1], at[0]]).addTo(m)];
+    });
+  });
+  // the unfinished shape and the measuring path
+  $effect(() => {
+    if (!map || !mapReady) return;
+    const kind: DrawKind | 'measure' | null = addMode === 'measure' ? 'measure' : addMode === 'line' || addMode === 'shape' || addMode === 'rect' || addMode === 'circle' ? addMode : null;
+    const pts = addMode === 'measure' ? measurePts : building;
+    (map.getSource('drawtmp') as GeoJSONSource).setData((kind ? previewFeatures(pts, kind, hover, null) : empty()) as never);
+  });
+  // the handles a selected drawing can be reshaped by
+  $effect(() => {
+    handleTick;
+    const id = selectedId;
+    const tool = addMode;
+    for (const h of handleMarkers) h.remove();
+    handleMarkers = [];
+    if (!map || !ml || !mapReady || id === null || tool !== 'off') return;
+    untrack(() => {
+      const d = drawings.find((x) => x.id === id);
+      if (!d) return;
+      handlesOf(d).forEach((pt, idx) => {
+        const el = document.createElement('div');
+        el.className = 'dhandle';
+        const mk = new ml!.Marker({ element: el, draggable: true }).setLngLat([pt[1], pt[0]]).addTo(map!);
+        mk.on('dragstart', () => pushUndo());
+        mk.on('drag', () => { const ll = mk.getLngLat(); moveHandle(id, idx, [Math.round(ll.lat * 1e6) / 1e6, Math.round(ll.lng * 1e6) / 1e6]); });
+        mk.on('dragend', () => { handleTick++; });
+        handleMarkers.push(mk);
+      });
+    });
+  });
+  // the pointer shows what a click will do
+  $effect(() => {
+    if (!map) return;
+    map.getCanvas().style.cursor = addMode === 'off' ? '' : addMode === 'erase' ? 'not-allowed' : 'crosshair';
+    if (addMode === 'off') map.doubleClickZoom.enable();
+    else map.doubleClickZoom.disable();
   });
 
   // ---------- find a place ----------
@@ -549,6 +804,7 @@
       error = 'Enter a latitude between -90 and 90 and a longitude between -180 and 180, as numbers (for example 39.4 and -80.1).';
       return;
     }
+    pushUndo();
     const id = pins.reduce((m, x) => Math.max(m, x.id), 0) + 1;
     pins = [...pins, { id, label: pLabel.trim() || (pKind === 'rendezvous' ? 'Rendezvous ' + id : 'Pin ' + id), kind: pKind, lat: p[0], lon: p[1] }];
     pLabel = pLat = pLon = '';
@@ -575,6 +831,7 @@
       error = 'An area needs at least three corners.';
       return;
     }
+    pushUndo();
     nogo = [...nogo, { label: draftLabel.trim() || 'No-go area ' + (nogo.length + 1), points: draft }];
     draft = [];
     draftLabel = '';
@@ -599,7 +856,11 @@
     pins = [];
     route = [];
     nogo = [];
+    drawings = [];
     draft = [];
+    cancelDrawing();
+    selectedId = null;
+    resetUndo();
     message = error = '';
     confirmDelete = false;
   }
@@ -613,6 +874,9 @@
       pins = f.pins ?? [];
       route = f.route ?? [];
       nogo = f.nogo ?? [];
+      drawings = f.drawings ?? [];
+      selectedId = null;
+      resetUndo();
       notes = m.notes;
       draft = [];
       message = error = '';
@@ -629,7 +893,7 @@
       error = 'Give the map a name first.';
       return;
     }
-    const file: MapFile = { version: 1, name: name.trim(), pins, route, nogo };
+    const file: MapFile = { version: 1, name: name.trim(), pins, route, nogo, drawings };
     try {
       current = await mapSave(current, name.trim(), JSON.stringify(file, null, 2), notes);
       message = 'Saved.';
@@ -710,7 +974,7 @@
         {p.label} <span class="muted">{p.lat.toFixed(4)}, {p.lon.toFixed(4)}</span>
         <button class="link" title="Go to this pin on the map" onclick={() => map?.jumpTo({ center: [p.lon, p.lat], zoom: Math.max(map.getZoom(), 12) })}>go to</button>
         <button class="link" title="Add this pin to the end of your route" onclick={() => toRoute(p.id)}>add to route</button>
-        <button class="link" title="Delete this pin" onclick={() => removePin(p.id)}>remove</button>
+        <button class="link" title="Delete this pin" onclick={() => { pushUndo(); removePin(p.id); }}>remove</button>
       </li>
     {:else}
       <li class="muted">No pins yet. Choose Pins above, then click the map.</li>
@@ -766,26 +1030,10 @@
       <div class="stage" class:full bind:this={stageEl}>
         <div class="tools">
           <div class="row">
-            <span class="label">Click the map to add:</span>
-            {#each [['off', 'Nothing', 'Clicking the map does nothing, so you can move it safely'], ['pin', 'Pins', 'Each click drops a pin'], ['rendezvous', 'Rendezvous points', 'Each click marks a place to meet'], ['corner', 'No-go corners', 'Each click adds a corner of an area to avoid']] as [k, t, tip]}
-              <button class="btn" class:primary={addMode === k} title={tip} onclick={() => (addMode = k as typeof addMode)}>{t}</button>
-            {/each}
-            <button class="btn" title="Zoom so all your pins and areas fit on screen" onclick={zoomToPoints} disabled={pins.length === 0 && nogo.length === 0}>Zoom to my points</button>
+            <button class="btn" title="Zoom so everything you placed or drew fits on screen" onclick={zoomToPoints} disabled={pins.length === 0 && nogo.length === 0 && drawings.length === 0}>Zoom to my points</button>
             <button class="btn" class:primary={layersOpen} title="Choose which kinds of places are marked on the map: hospitals, water, fuel, shelter and more" onclick={() => (layersOpen = !layersOpen)}>Places on the map</button>
             <button class="btn" class:primary={cross} title="Show or hide the cross-hair and the coordinates of the middle of the map" onclick={() => (cross = !cross)}>Cross-hair</button>
             <button class="btn" title={full ? 'Go back to the normal page (or press Esc)' : 'Make the map fill the whole screen. Your pins and tools stay.'} onclick={toggleFull}>{full ? 'Exit full screen' : 'Full screen'}</button>
-          </div>
-          <div class="row" role="group" aria-label="Kind of map">
-            <span class="muted">MAP:</span>
-            <button class="btn" class:primary={mapKind === 'street'} title="The street map: roads, towns, water, buildings" onclick={() => (mapKind = 'street')}>Street</button>
-            <button class="btn" class:primary={mapKind === 'topo'} disabled={!topoPacks.length}
-              title={topoPacks.length ? 'USGS topographic map: contour lines, hills, trails' : 'No topo map on this drive yet. Double-click scripts\\Get-Imagery.bat to put one on it.'}
-              onclick={() => (mapKind = 'topo')}>Topo</button>
-            <button class="btn" class:primary={mapKind === 'aerial'} disabled={!aerialPacks.length}
-              title={aerialPacks.length ? 'Aerial photos from above, with roads and names drawn on top' : 'No aerial photos on this drive yet. Double-click scripts\\Get-Imagery.bat to put them on it.'}
-              onclick={() => (mapKind = 'aerial')}>Aerial</button>
-          </div>
-          <div class="row" role="group" aria-label="Map colours">
             <span class="muted">COLOURS:</span>
             <select class="input" aria-label="Map colours" title="Choose how the street map is coloured" value={look} onchange={(e) => chooseLook((e.currentTarget as HTMLSelectElement).value as Look)}>
               <option value="light">Light (full colour: blue water, green parks)</option>
@@ -793,30 +1041,101 @@
               <option value="black">Black (darkest, greys only)</option>
             </select>
           </div>
-          <div class="row find">
-            <input class="input grow" type="search" placeholder="Find a place: ZIP code, town and state, park, lake, or latitude and longitude" aria-label="Find a place" bind:value={findTerm}
-              onkeydown={(e) => { if (e.key === 'Enter') void findPlace(); }} />
-            <button class="btn" title="Look this place up and move the map to it" onclick={findPlace} disabled={!findTerm.trim() || findBusy}>Find</button>
-            <button class="btn" title="Keep the place you just found as a pin on your map" onclick={pinFound} disabled={!foundMarker}>Pin it</button>
-          </div>
-          {#if finds.length > 1}
-            <ul class="finds" aria-label="Places found">
-              {#each finds as h}
-                <li><button onclick={() => goToPlace(h)}>{h.name}{h.state ? ', ' + h.state : ''} <span class="muted">{h.kind === 'address' ? '' : h.kind}</span></button></li>
-              {/each}
-            </ul>
-          {/if}
-          {#if findNote}<p class="muted fine">{findNote}</p>{/if}
-          {#if addMode === 'corner'}
-            <div class="row">
-              <span class="muted">{draft.length} corner{draft.length === 1 ? '' : 's'} so far</span>
-              <button class="btn" title="Close the area from the corners clicked so far" onclick={finishArea} disabled={draft.length < 3}>Finish area</button>
-              {#if draft.length > 0}<button class="link" title="Throw away these corners and begin again" onclick={() => (draft = [])}>start over</button>{/if}
-            </div>
-          {/if}
         </div>
         <div class="mapbox">
           <div class="tilemap" bind:this={mapEl} role="application" aria-label="Map"></div>
+          <div class="ov ov-tl">
+            <div class="gsearch">
+              <input class="gin" type="search" placeholder="Search for a place or address" aria-label="Find a place" bind:value={findTerm}
+                onkeydown={(e) => { if (e.key === 'Enter') void findPlace(); }} />
+              <button class="gbtn" title="Look this place up and move the map to it" onclick={findPlace} disabled={!findTerm.trim() || findBusy}>Find</button>
+              <button class="gbtn" title="Keep the place you just found as a pin on your map" onclick={pinFound} disabled={!foundMarker}>Pin it</button>
+            </div>
+            {#if finds.length > 1}
+              <ul class="gfinds" aria-label="Places found">
+                {#each finds as h}
+                  <li><button onclick={() => goToPlace(h)}>{h.name}{h.state ? ', ' + h.state : ''} <span class="gmuted">{h.kind === 'address' ? '' : h.kind}</span></button></li>
+                {/each}
+              </ul>
+            {/if}
+            {#if findNote}<p class="gnote">{findNote}</p>{/if}
+            <div class="gtools" role="toolbar" aria-label="Drawing tools">
+              {#each TOOLS as t}
+                <button class="gt" class:on={addMode === t.k} title={t.tip} onclick={() => chooseTool(t.k)}>
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={t.d} /></svg>
+                  <span>{t.label}</span>
+                </button>
+              {/each}
+              <span class="gsep"></span>
+              <button class="gt" title="Undo the last change (Ctrl+Z)" disabled={!canUndo} onclick={undo}>
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 7L4 12l5 5 M4 12h10a6 6 0 010 8" /></svg><span>Undo</span>
+              </button>
+              <button class="gt" title="Put back what you undid (Ctrl+Y)" disabled={!canRedo} onclick={redo}>
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 7l5 5-5 5 M20 12H10a6 6 0 000 8" /></svg><span>Redo</span>
+              </button>
+            </div>
+          </div>
+          <div class="ov ov-bl" role="group" aria-label="Kind of map">
+            <button class="gl" class:on={mapKind === 'street'} title="The street map: roads, towns, water, buildings" onclick={() => (mapKind = 'street')}>
+              <span class="gsw sw-map"></span><span>Map</span></button>
+            <button class="gl" class:on={mapKind === 'topo'} disabled={!topoPacks.length}
+              title={topoPacks.length ? 'USGS topographic map: contour lines, hills, trails' : 'No topo map on this drive yet. Double-click scripts\\Get-Imagery.bat to put one on it.'}
+              onclick={() => (mapKind = 'topo')}><span class="gsw sw-topo"></span><span>Topo</span></button>
+            <button class="gl" class:on={mapKind === 'aerial'} disabled={!aerialPacks.length}
+              title={aerialPacks.length ? 'Aerial photos from above, with roads and names drawn on top' : 'No aerial photos on this drive yet. Double-click scripts\\Get-Imagery.bat to put them on it.'}
+              onclick={() => (mapKind = 'aerial')}><span class="gsw sw-air"></span><span>Satellite</span></button>
+          </div>
+          {#if addMode !== 'off'}
+            <div class="ov ov-hint" role="status">
+              {#if addMode === 'pin'}<span>Click the map to drop a pin.</span>
+              {:else if addMode === 'rendezvous'}<span>Click the map to mark a place to meet.</span>
+              {:else if addMode === 'corner'}
+                <span>{draft.length} corner{draft.length === 1 ? '' : 's'} so far. Click the next corner.</span>
+                <button class="gbtn" title="Close the area from the corners clicked so far" onclick={finishArea} disabled={draft.length < 3}>Finish area</button>
+                {#if draft.length > 0}<button class="gbtn" title="Throw away these corners and begin again" onclick={() => (draft = [])}>Start over</button>{/if}
+              {:else if addMode === 'line' || addMode === 'shape'}
+                <span>{building.length} point{building.length === 1 ? '' : 's'}{building.length > 1 ? ' · ' + fmtLength(buildKm, metric) : ''}. Click each {addMode === 'line' ? 'point' : 'corner'}.</span>
+                <button class="gbtn" title="Finish the drawing (or press Enter)" onclick={finishBuilding} disabled={building.length < (addMode === 'line' ? 2 : 3)}>Finish</button>
+                <button class="gbtn" title="Throw this drawing away (or press Esc)" onclick={cancelDrawing}>Cancel</button>
+              {:else if addMode === 'rect'}<span>{building.length === 0 ? 'Click one corner of the box.' : 'Click the opposite corner.'}</span>
+              {:else if addMode === 'circle'}<span>{building.length === 0 ? 'Click the middle of the circle.' : 'Click the edge of the circle.'}</span>
+              {:else if addMode === 'text'}
+                <label class="gtext">Text <input class="gin small" bind:value={textDraft} aria-label="Text to place" maxlength="80" /></label>
+                <span>then click where it goes.</span>
+              {:else if addMode === 'measure'}
+                <span>{measurePts.length === 0 ? 'Click points to measure.' : 'Distance ' + fmtLength(measureKm, metric)}{measureArea > 0 ? ' · Area if closed ' + fmtArea(measureArea, metric) : ''}</span>
+                {#if measurePts.length > 0}<button class="gbtn" title="Start a new measurement" onclick={() => (measurePts = [])}>Clear</button>{/if}
+              {:else if addMode === 'erase'}<span>Click anything you drew, a pin or a no-go area to erase it. Undo brings it back.</span>
+              {/if}
+            </div>
+          {/if}
+          {#if sel}
+            <aside class="ov ov-sel" aria-label="Drawing details">
+              <div class="gtitle">{sel.kind === 'line' ? 'Line' : sel.kind === 'shape' ? 'Shape' : sel.kind === 'rect' ? 'Box' : sel.kind === 'circle' ? 'Circle' : 'Text'}</div>
+              <input class="gin" value={sel.label} placeholder={sel.kind === 'text' ? 'Text' : 'Name (shown on the map)'} aria-label="Name"
+                onfocus={() => pushUndo()} oninput={(e) => setSel('label', (e.currentTarget as HTMLInputElement).value)} maxlength="80" />
+              <div class="gswatches" role="group" aria-label="Colour">
+                {#each DRAW_COLORS as c}
+                  <button class="gcol" class:on={sel.color === c.hex} style="background:{c.hex}" title={c.name} aria-label={c.name} onclick={() => { pushUndo(); setSel('color', c.hex); drawColor = c.hex; }}></button>
+                {/each}
+              </div>
+              {#if sel.kind !== 'text'}
+                <div class="gwidths" role="group" aria-label="Thickness">
+                  {#each DRAW_WIDTHS as w}
+                    <button class="gbtn" class:on={sel.width === w.px} title={w.name + ' line'} onclick={() => { pushUndo(); setSel('width', w.px); drawWidth = w.px; }}>{w.name}</button>
+                  {/each}
+                </div>
+                <div class="gmeasure">
+                  {#if sel.kind === 'circle'}Radius {fmtLength((sel.radiusM ?? 0) / 1000, metric)} · {/if}{#if sel.kind === 'line'}Length {fmtLength(selMeasure.km, metric)}{:else}Edge {fmtLength(selMeasure.km, metric)}{/if}{#if selMeasure.km2 > 0} · Area {fmtArea(selMeasure.km2, metric)}{/if}
+                </div>
+              {/if}
+              <div class="gwidths">
+                <button class="gbtn" title="Remove this drawing (Delete key)" onclick={() => { if (sel) deleteDrawing(sel.id); }}>Delete</button>
+                <button class="gbtn" title="Done with this drawing" onclick={() => (selectedId = null)}>Done</button>
+              </div>
+              <div class="gmuted">Drag the round handles on the map to reshape it.</div>
+            </aside>
+          {/if}
           {#if cross}<div class="cross" aria-hidden="true"><span></span></div>{/if}
           {#if layersOpen}
             <aside class="layers" aria-label="Places on the map">
@@ -997,10 +1316,10 @@
   .cross span::before, .cross span::after { content: ''; position: absolute; background: #ff9a1f; }
   .cross span::before { left: 50%; top: 0; bottom: 0; width: 1px; }
   .cross span::after { top: 50%; left: 0; right: 0; height: 1px; }
-  .hud { position: absolute; left: 10px; bottom: 28px; padding: 6px 9px; background: #0b0d0ccc; border: 1px solid #3a3f3a; border-left: 3px solid #ff9a1f; border-radius: 4px; font-family: var(--mono, monospace); font-size: 11px; letter-spacing: .06em; color: #cfd6cc; pointer-events: none; }
+  .hud { position: absolute; left: 50%; transform: translateX(-50%); bottom: 8px; padding: 6px 9px; background: #0b0d0ccc; border: 1px solid #3a3f3a; border-left: 3px solid #ff9a1f; border-radius: 4px; font-family: var(--mono, monospace); font-size: 11px; letter-spacing: .06em; color: #cfd6cc; pointer-events: none; }
   .hud:empty { display: none; }
   .drawer { position: absolute; top: 10px; right: 10px; bottom: 28px; width: 290px; overflow: auto; padding: 10px; background: #0b0d0cee; border: 1px solid #3a3f3a; border-radius: 8px; display: flex; flex-direction: column; gap: 8px; z-index: 5; }
-  .layers { position: absolute; top: 10px; left: 10px; bottom: 28px; width: 270px; overflow: auto; padding: 10px; background: #0b0d0cee; border: 1px solid #3a3f3a; border-radius: 8px; display: flex; flex-direction: column; gap: 6px; z-index: 5; }
+  .layers { position: absolute; top: 190px; left: 10px; bottom: 120px; width: 270px; z-index: 6; overflow: auto; padding: 10px; background: #0b0d0cee; border: 1px solid #3a3f3a; border-radius: 8px; display: flex; flex-direction: column; gap: 6px; z-index: 5; }
   .grp { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 2px 0; }
   .swatch { width: 10px; height: 10px; border-radius: 50%; border: 1px solid #0b0d0c; flex: 0 0 auto; }
   .near { display: flex; flex-direction: column; text-align: left; gap: 1px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: transparent; font-size: 13px; }
@@ -1013,4 +1332,49 @@
   :global(.pinmark) { display: flex; align-items: center; gap: 6px; pointer-events: none; }
   :global(.pinmark .pdot) { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #0f1110; display: inline-block; }
   :global(.pinmark .plab) { color: #ece7de; font-size: 12px; text-shadow: 0 0 3px #000, 0 0 3px #000; white-space: nowrap; }
+
+  /* Google-Maps-like controls floating over the map */
+  .ov { position: absolute; z-index: 5; pointer-events: none; }
+  .ov > * { pointer-events: auto; }
+  .ov-tl { top: 10px; left: 10px; width: min(460px, calc(100% - 70px)); display: flex; flex-direction: column; gap: 8px; }
+  .ov-bl { left: 10px; bottom: 40px; display: flex; gap: 6px; }
+  .ov-hint { left: 50%; transform: translateX(-50%); bottom: 36px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: center; max-width: calc(100% - 200px); padding: 8px 12px; background: #fff; color: #202124; border-radius: 10px; box-shadow: 0 2px 8px #0005; font-size: 13px; }
+  .ov-sel { right: 10px; top: 10px; width: 230px; display: flex; flex-direction: column; gap: 8px; padding: 12px; background: #fff; color: #202124; border-radius: 10px; box-shadow: 0 2px 8px #0005; }
+  .gsearch { display: flex; align-items: center; gap: 4px; background: #fff; border-radius: 24px; box-shadow: 0 2px 6px #0005; padding: 4px 6px 4px 14px; }
+  .gin { flex: 1 1 auto; min-width: 0; border: 0; outline: 0; background: transparent; color: #202124; font-size: 14px; padding: 6px 0; }
+  .ov-sel .gin { border: 1px solid #dadce0; border-radius: 6px; padding: 6px 8px; }
+  .gin.small { width: 150px; border: 1px solid #dadce0; border-radius: 6px; padding: 4px 6px; flex: none; }
+  .gbtn { background: #fff; border: 1px solid #dadce0; color: #1a73e8; border-radius: 16px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .gbtn:hover:not(:disabled) { background: #e8f0fe; }
+  .gbtn:disabled { color: #9aa0a6; cursor: default; }
+  .gbtn.on { background: #e8f0fe; border-color: #1a73e8; }
+  .gfinds { list-style: none; margin: 0; padding: 4px; background: #fff; border-radius: 10px; box-shadow: 0 2px 6px #0005; max-height: 260px; overflow: auto; }
+  .gfinds button { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 8px 10px; border-radius: 6px; color: #202124; font-size: 13px; cursor: pointer; }
+  .gfinds button:hover { background: #f1f3f4; }
+  .gmuted { color: #5f6368; font-size: 12px; }
+  .gnote { margin: 0; padding: 8px 12px; background: #fff; color: #5f6368; border-radius: 10px; box-shadow: 0 2px 6px #0005; font-size: 12px; }
+  .gtools { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; background: #fff; border-radius: 10px; box-shadow: 0 2px 6px #0005; padding: 4px; }
+  .gt { display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 46px; padding: 5px 4px; background: transparent; border: 0; border-radius: 8px; color: #3c4043; font-size: 10px; cursor: pointer; }
+  .gt:hover:not(:disabled) { background: #f1f3f4; }
+  .gt.on { background: #e8f0fe; color: #1a73e8; }
+  .gt:disabled { color: #bdc1c6; cursor: default; }
+  .gsep { width: 1px; align-self: stretch; background: #dadce0; margin: 2px 4px; }
+  .gl { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 62px; padding: 4px; background: #fff; border: 2px solid #fff; border-radius: 8px; box-shadow: 0 2px 6px #0005; color: #202124; font-size: 11px; cursor: pointer; }
+  .gl.on { border-color: #1a73e8; }
+  .gl:disabled { opacity: .55; cursor: not-allowed; }
+  .gsw { width: 100%; height: 34px; border-radius: 5px; display: block; }
+  .sw-map { background: linear-gradient(135deg, #e8eaed 0 45%, #aadaff 45% 62%, #c8e6c9 62%); }
+  .sw-topo { background: repeating-linear-gradient(160deg, #d9c9a3 0 5px, #c4b184 5px 6px), #d9c9a3; }
+  .sw-air { background: linear-gradient(135deg, #3d5a3a, #6b7f4a 55%, #2f4a5a); }
+  .stage.full .ov-sel { right: 310px; }
+  .gtitle { font-weight: 700; font-size: 14px; }
+  .gswatches { display: flex; flex-wrap: wrap; gap: 6px; }
+  .gcol { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #dadce0; cursor: pointer; padding: 0; }
+  .gcol.on { border-color: #202124; box-shadow: 0 0 0 2px #fff inset; }
+  .gwidths { display: flex; gap: 6px; flex-wrap: wrap; }
+  .gmeasure { font-size: 12px; color: #3c4043; }
+  .gtext { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+  :global(.dtext) { font: 700 15px system-ui, sans-serif; text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 5px #fff; white-space: nowrap; padding: 2px 4px; }
+  :global(.dname) { font: 600 12px system-ui, sans-serif; color: #202124; text-shadow: 0 0 3px #fff, 0 0 3px #fff; white-space: nowrap; }
+  :global(.dhandle) { width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 3px solid #1a73e8; box-shadow: 0 1px 4px #0006; cursor: grab; }
 </style>
