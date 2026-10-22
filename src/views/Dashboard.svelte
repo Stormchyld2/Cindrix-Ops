@@ -37,8 +37,8 @@
   function tone(d: number): string {
     return d < settings.values.planActDays ? 'act' : d < settings.values.planCheckDays ? 'check' : 'ok';
   }
-  const low = $derived((data?.runs_out ?? []).filter((r) => r.days < settings.values.planCheckDays).slice(0, 6));
-  const past = $derived((data?.expiring ?? []).filter((e) => e.months < 0).length);
+  const low = $derived.by(() => (data?.runs_out ?? []).filter((r) => r.days < settings.values.planCheckDays).slice(0, 6));
+  const past = $derived.by(() => (data?.expiring ?? []).filter((e) => e.months < 0).length);
   const label: Record<string, string> = { urgent: 'Do now', soon: 'Soon', next: 'Next', good: 'All good' };
   const today = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
 </script>
