@@ -52,10 +52,17 @@ if (-not $Duckdb) {
   if (-not (Test-Path $exe)) {
     Write-Host 'Fetching DuckDB (the free program that reads the address data)...'
     New-Item -ItemType Directory -Force -Path $dir | Out-Null
-    $asset = if ($onWindows) { 'duckdb_cli-windows-amd64.zip' } else { 'duckdb_cli-linux-amd64.zip' }
-    $zip = Join-Path $dir $asset
+    $os = if ($onWindows) { 'windows' } else { 'linux' }
     $ProgressPreference = 'SilentlyContinue'
-    Invoke-WebRequest -UseBasicParsing -Uri "https://github.com/duckdb/duckdb/releases/latest/download/$asset" -OutFile $zip
+    $url = $null
+    try {
+      $rel = Invoke-RestMethod -UseBasicParsing -Uri 'https://api.github.com/repos/duckdb/duckdb/releases/latest'
+      $hit = $rel.assets | Where-Object { $_.name -match '^duckdb_cli' -and $_.name -match $os -and $_.name -match '(amd64|x86_64|x64)' -and $_.name -notmatch 'arm|aarch|musl|gcc' -and $_.name -match '\.zip$' } | Select-Object -First 1
+      if ($hit) { $url = $hit.browser_download_url }
+    } catch { }
+    if (-not $url) { $url = "https://github.com/duckdb/duckdb/releases/latest/download/duckdb_cli-$os-amd64.zip" }
+    $zip = Join-Path $dir 'duckdb.zip'
+    Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $zip
     Expand-Archive -Force -Path $zip -DestinationPath $dir
     Remove-Item $zip -Force
     if (-not $onWindows) { & chmod +x $exe }
