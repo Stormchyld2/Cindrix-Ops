@@ -1,7 +1,7 @@
 # CindrixOps — Architecture Evolution & Proposed Features
 
 **Document status:** PROPOSAL / DISCUSSION ONLY — NOT AUTHORIZATION TO IMPLEMENT  
-**Version:** 0.3  
+**Version:** 0.4  
 **Prepared:** 2026-10-22  
 **Audience:** Project owner, Claude, ChatGPT, future maintainers  
 **Repository location:** `docs/CINDRIXOPS_ARCHITECTURE_EVOLUTION_PROPOSED_FEATURES.md`
@@ -402,7 +402,57 @@ botanical/
 
 Confirm final UI placement, source licensing strategy, editorial/medical review standards, taxonomic authority, pack distribution/update mechanism, Hub storage budget, safety-language policy, and the first approved implementation milestone.
 
-## 16. Proposal status register
+## 16. Standalone Offline Map Viewer and `.cmap` Export Format — owner-selected format
+
+**Decision (2026-10-22):** The owner selected **`.cmap`** as the native CindrixOps portable map export extension. This records a format decision and proposed implementation contract, **not authorization to implement an APK, server, or exporter yet**.
+
+### 16.1 Goal and platform
+
+A lightweight, standalone Android map viewer should import `.cmap` packages from CindrixOps Hub (Android) and eventually Vault (Windows), render maps offline without running the Hub server, and optionally display routes, waypoints, and user location where device GNSS is available. Reuse the existing map stack where practical after auditing actual Maps source, exports, Android packaging, and network support. The repository's package manifest currently declares MapLibre GL, PMTiles, and Protomaps basemaps; this does not prove export or receiver features already exist.
+
+### 16.2 `.cmap` v1 proposed container
+
+Use a versioned ZIP-compatible archive with a required root `manifest.json`, explicit content types, relative asset paths, and integrity hashes. Do not treat an arbitrary renamed ZIP or PMTiles file as valid. A conceptual layout:
+
+```text
+region.cmap
+  manifest.json
+  map/
+    region.pmtiles
+    style.json
+    sprites/...
+    fonts/...
+  overlays/
+    routes.geojson
+    waypoints.geojson
+  metadata/
+    attribution.json
+    licenses/
+```
+
+Manifest fields should include `format: "cindrix-cmap"`, `formatVersion: 1`, package ID, title, creation timestamp, geographic bounds, coordinate reference assumptions (WGS84 for external coordinates), minimum viewer compatibility, entries with byte lengths and SHA-256 digests, offline attribution/licensing, optional overlays, and required style/font/sprite resources. Do not assume ZIP archive byte offsets can be used directly by PMTiles readers: importer may need to extract PMTiles to a local file for random-access rendering.
+
+**Validation:** reject path traversal, absolute paths, symlinks, duplicate/conflicting entries, unexpected file types, malformed GeoJSON, decompression bombs, truncated archives, and failed hashes; install atomically, preserving previously installed maps on failure. Define file size limits based on measured device constraints. Future versions must declare compatibility and migration rules.
+
+### 16.3 Transport and offline operation
+
+- **Preferred:** local HTTP transfer over Hub hotspot or a shared LAN, with discovery/pairing, explicit user approval, checksum validation, resumable downloads for large files, and no dependence on internet services.
+- **Secondary:** Bluetooth transfer for smaller packages, routes, or waypoints; validate Android Bluetooth capabilities and permissions before committing to a specific protocol.
+- **Fallback:** USB, SD card, and local file import.
+- After successful import, the viewer must work without Hub connectivity. Device GNSS location is optional and must not be confused with an online map service.
+- Test actual Android hotspot routing and client-to-host reachability on target devices before choosing implementation details. Prefer explicit pairing and authenticated transfers rather than an open unauthenticated download endpoint.
+
+### 16.4 Viewer scope and acceptance
+
+Initial viewer: import/manage/delete maps, offline pan/zoom, local GNSS location where available, view included routes/waypoints, offline attribution, storage usage, and understandable error handling. Later candidates: measure distance, user-created waypoints, route recording, multi-map switching, and selective export. Validate that all style dependencies are bundled and no external URLs are fetched during offline display.
+
+Acceptance tests: package round-trip from exporter to viewer; import without network; hotspot transfer and resume; Bluetooth feasibility on supported devices; bad hash/unsupported version/missing tiles; no network calls during rendering; large-package and low-storage behavior; transfer interruption; preservation of existing installed maps; GitHub Actions build/test results and actual Android device verification.
+
+### 16.5 Decisions still needed
+
+Inspect existing Maps code and export pipeline; confirm the canonical `.cmap` v1 manifest schema, compression/extraction strategy, file size thresholds, Bluetooth transport, Android minimum version, and whether the viewer is a separate APK or shared-code application. Maintain a single format implementation for Hub and Vault exporters.
+
+## 17. Proposal status register
 
 | Proposal | Status | Notes |
 |---|---|---|
@@ -418,6 +468,7 @@ Confirm final UI placement, source licensing strategy, editorial/medical review 
 | Security, backups, resilience hardening | Proposed for audit | Existing implementations must be inspected |
 | UI refinements | Proposed | Preserve current brand and navigation unless approved |
 | Health & Holistic Medicine / Illustrated Materia Medica | Concept approved; implementation not authorized | Offline verified botanical photographs, safety/evidence profiles, shared knowledge corpus |
+| Standalone Map Viewer / `.cmap` | Format selected; implementation not authorized | Portable versioned offline map package; hotspot/Bluetooth/local import |
 
 ---
 
