@@ -155,7 +155,7 @@ pub fn pct_decode(s: &str) -> String {
     let mut out = Vec::with_capacity(b.len());
     let mut i = 0;
     while i < b.len() {
-        if b[i] == b'%' && i + 2 < b.len() + 0 && i + 2 <= b.len() - 1 + 0 {
+        if b[i] == b'%' && i + 2 < b.len() {
             if let (Some(h), Some(l)) = ((b[i + 1] as char).to_digit(16), (b[i + 2] as char).to_digit(16)) {
                 out.push((h * 16 + l) as u8);
                 i += 3;
