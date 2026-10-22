@@ -73,6 +73,11 @@ pub fn start_scan(app: &tauri::AppHandle) {
         let st = app.state::<AppState>();
         let dir = music_dir();
         let _ = std::fs::create_dir_all(root().join("user").join("cache"));
+        // converted copies are only ever kept for the song that is playing, so none survive a restart
+        static FIRST: std::sync::Once = std::sync::Once::new();
+        FIRST.call_once(|| {
+            convert::clear_cache(&cache_dir());
+        });
         let idx = index_file();
         let opts = media::ScanOptions { cache: Some(&idx), cancel: Some(&st.music_cancel) };
         let mut n = 0usize;
@@ -310,17 +315,18 @@ pub fn music_resolve(state: tauri::State<'_, AppState>, rels: Vec<String>) -> Ve
 /// plays itself, `c/<name>` for a converted copy. Converting can take a while, so this runs
 /// off the main thread.
 #[tauri::command]
-pub async fn music_prepare(state: tauri::State<'_, AppState>, rel: String, force_convert: Option<bool>) -> Result<String, String> {
+pub async fn music_prepare(state: tauri::State<'_, AppState>, rel: String) -> Result<String, String> {
     let dir = music_dir();
     let Some(path) = serve::resolve_track(&dir, &rel) else {
         return Err("That file is no longer in the music folder.".into());
     };
     let class = media::class_of(&path).ok_or("That is not a music file.")?;
-    // `force_convert`: the web view has already refused this file (a WAV with 24-bit or floating
-    // point samples, an unusual MP4, ...), so it goes through the converter like a WMA would.
-    if class == Class::Native && force_convert != Some(true) {
-        let enc: Vec<String> = rel.split('/').map(url_part).collect();
-        return Ok(format!("t/{}", enc.join("/")));
+    // Songs the web view plays itself (MP3, WAV, FLAC, M4A, OGG...) are played as they are, from the music
+    // folder. The path is handed back as plain text; the interface encodes it once.
+    // Nothing converted is kept: the copy of an earlier song (a WMA) is deleted as soon as another song starts.
+    if class == Class::Native {
+        convert::clear_cache(&cache_dir());
+        return Ok(format!("t/{}", rel));
     }
     let tg = {
         let m = state.music.lock().unwrap();
@@ -337,14 +343,12 @@ pub async fn music_prepare(state: tauri::State<'_, AppState>, rel: String, force
         };
         let Some(tg) = tg else {
             return Err::<(String, Option<convert::Target>), String>(
-                if force_convert == Some(true) {
-                    "The built-in player could not read this file, and the converter (ffmpeg) that could fix it is not on this drive. Copy ffmpeg.exe into the engines folder, or convert the file to MP3 or FLAC (16-bit).".to_string()
-                } else {
-                    "This kind of file needs the converter (ffmpeg), which is not on this drive. Copy ffmpeg into the engines folder, or convert the file to MP3 or FLAC.".to_string()
-                },
+                "This kind of file (such as WMA) has to be changed into one the player can read while it plays, and the tool that does that (ffmpeg) is not on this drive. Copy ffmpeg into the engines folder, or save the song as an MP3.".to_string(),
             );
         };
         let _g = CONVERT_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        // keep only this song's copy: whatever was converted for an earlier song is deleted first
+        convert::clear_cache(&cache_dir());
         let name = convert::convert(&ff, &path, &rel, &cache_dir(), tg)?;
         Ok((format!("c/{}", name), Some(tg)))
     })
@@ -352,19 +356,6 @@ pub async fn music_prepare(state: tauri::State<'_, AppState>, rel: String, force
     .map_err(|e| e.to_string())??;
     state.music.lock().unwrap().target = Some(result.1);
     Ok(result.0)
-}
-
-/// Percent-encode one path segment for the address.
-fn url_part(s: &str) -> String {
-    let mut out = String::new();
-    for b in s.bytes() {
-        if b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_' | b'.' | b'~') {
-            out.push(b as char);
-        } else {
-            out.push_str(&format!("%{:02X}", b));
-        }
-    }
-    out
 }
 
 #[tauri::command]

@@ -213,8 +213,7 @@ class Player {
     this.duration = 0;
     this.art = null;
     try {
-      // A file the web view already refused is played from a converted copy instead.
-      const src = await musicSource(t.rel, this.convertedFor === t.rel);
+      const src = await musicSource(t.rel);
       if (mine !== this.token) return;
       a.src = src;
       a.playbackRate = this.rate;
@@ -246,9 +245,8 @@ class Player {
       const name = (e as DOMException)?.name;
       // Another song, or the same one from a converted copy, has been loaded since: this answer is out of date.
       if (name === 'AbortError' || mine !== this.token) return;
-      // The built-in decoder refused the file. The error event retries it from a converted copy (see failed()),
-      // so say nothing yet: a message here would stay on screen while the converted copy plays.
-      if (name === 'NotSupportedError' && this.convertedFor !== this.current?.rel) return;
+      // The built-in decoder refused the file: the error event (see failed()) says so.
+      if (name === 'NotSupportedError') return;
       // A user-gesture rule or a bad file. Leave it paused; the error shows.
       this.error = 'Could not start playing this file.';
     }
@@ -285,22 +283,11 @@ class Player {
     if (this.pos + 1 >= this.order.length && this.repeat === 'off') { this.pause(); this.seek(0); return; }
     void this.next();
   }
-  /** The track (by path) the web view could not decode, which is being tried again through the converter. */
-  private convertedFor: string | null = null;
   private failed() {
     const a = this.el;
     if (!a || !a.src) return;
-    const t = this.current;
-    // First failure of a file that was played directly: some WAV, M4A and AAC variants are refused
-    // by the built-in decoder. Try once more from a converted copy before giving up on it.
-    if (t && this.convertedFor !== t.rel) {
-      this.convertedFor = t.rel;
-      this.error = '';
-      void this.load(this.playing || this.loading);
-      return;
-    }
     this.loading = false;
-    this.error = `Could not play “${this.current?.title ?? 'this file'}”.`;
+    this.error = `Could not play “${this.current?.title ?? 'this file'}”. If it is a WAV with an unusual format, saving it as an MP3 will fix it.`;
     this.skipAfterFailure();
   }
   private skipAfterFailure() {

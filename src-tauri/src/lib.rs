@@ -105,6 +105,15 @@ fn content_dir() -> PathBuf {
     if here.exists() { here } else { r.join("../../content") }
 }
 
+/// A folder of shipped content (cards, drills, Academy, the sample library). The drive's own `content` folder
+/// is used when it holds that folder with something in it; otherwise the copy that came with the program is,
+/// so a drive with an empty or half-filled `content` folder does not make a screen come up empty.
+fn content_sub(name: &str) -> PathBuf {
+    let r = root();
+    let cands = [r.join("content").join(name), program_dir().join("content").join(name), r.join("../../content").join(name)];
+    cands.iter().find(|c| has_files(c)).cloned().unwrap_or_else(|| cands[0].clone())
+}
+
 #[derive(Serialize)]
 struct CardDto {
     id: String,
@@ -126,7 +135,7 @@ struct ReplyDto {
 
 #[tauri::command]
 fn list_cards() -> Vec<CardDto> {
-    cards::load_dir(&content_dir().join("cards"))
+    cards::load_dir(&content_sub("cards"))
         .into_iter()
         .map(|c| CardDto { id: c.id, title: c.title, kind: c.kind, status: c.status, reviewer: c.reviewer, reviewed: c.reviewed, body: c.body })
         .collect()
@@ -659,7 +668,7 @@ struct StreamEvent {
 #[tauri::command]
 async fn ask_stream(question: String, on_event: Channel<StreamEvent>, app: tauri::AppHandle) -> Result<ReplyDto, String> {
     tauri::async_runtime::spawn_blocking(move || {
-        let lib = content_dir().join("library-sample");
+        let lib = content_sub("library-sample");
         let port = *app.state::<AppState>().port.lock().unwrap();
         let kport = *app.state::<AppState>().kiwix_port.lock().unwrap();
         // What the assistant may search is the owner's choice (Settings, Assistant). All on by default.
@@ -1023,6 +1032,45 @@ fn what_fails_next() -> Result<CascadeDto, String> {
 }
 
 #[derive(Serialize)]
+struct SuggestionDto {
+    level: &'static str,
+    title: String,
+    text: String,
+    tab: Option<String>,
+}
+
+/// The Dashboard's advice. The inventory, the family page and the person's own limits are read here;
+/// what the screen already knows (maps, models, archives, drills) is passed in.
+#[tauri::command]
+fn dashboard_suggestions(maps: usize, models: usize, assistant_ready: bool, archives: usize, drills_done: usize, drills_total: usize) -> Result<Vec<SuggestionDto>, String> {
+    let items = user().load_inventory()?;
+    let t = settings::thresholds();
+    let (y, m) = calendar::today_ym();
+    let past = items.iter().filter(|i| cindrix_core::inventory::months_until(i, y, m).map(|e| e < 0).unwrap_or(false)).count();
+    let soon = items.iter().filter(|i| cindrix_core::inventory::months_until(i, y, m).map(|e| (0..=t.check_months).contains(&e)).unwrap_or(false)).count();
+    let no_use = items.iter().filter(|i| (i.category == "Water" || i.category == "Food") && i.use_per_day <= 0.0).count();
+    let family_done = user().read_family()?.is_some();
+    let snap = cindrix_core::suggest::Snapshot {
+        items: items.len(),
+        water_days: cascade::category_days(&items, "Water"),
+        food_days: cascade::category_days(&items, "Food"),
+        past_date: past,
+        expiring_soon: soon,
+        no_daily_use: no_use,
+        family_done,
+        drills_done,
+        drills_total,
+        maps,
+        models,
+        assistant_ready,
+        archives,
+        act_days: t.act_days,
+        check_days: t.check_days,
+    };
+    Ok(cindrix_core::suggest::suggest(&snap, 6).into_iter().map(|s| SuggestionDto { level: s.level.word(), title: s.title, text: s.text, tab: s.tab }).collect())
+}
+
+#[derive(Serialize)]
 struct FamilyStatus {
     exists: bool,
     locked: bool,
@@ -1350,7 +1398,7 @@ struct LessonBodyDto {
 #[tauri::command]
 fn academy_list() -> Result<Vec<ModuleDto>, String> {
     let results = academy::Log::new(&root().join("user")).list()?;
-    Ok(academy::load(&content_dir().join("academy"))
+    Ok(academy::load(&content_sub("academy"))
         .into_iter()
         .map(|m| ModuleDto {
             id: m.id,
@@ -1371,7 +1419,7 @@ fn academy_list() -> Result<Vec<ModuleDto>, String> {
 /// One lesson, found by id in the loaded course (the id is never turned into a file path).
 #[tauri::command]
 fn academy_lesson(id: String) -> Result<LessonBodyDto, String> {
-    let l = academy::load(&content_dir().join("academy"))
+    let l = academy::load(&content_sub("academy"))
         .into_iter()
         .flat_map(|m| m.lessons)
         .find(|l| l.id == id)
@@ -1393,7 +1441,7 @@ fn academy_lesson(id: String) -> Result<LessonBodyDto, String> {
 
 #[tauri::command]
 fn academy_save(lesson: String, score: u32, total: u32) -> Result<(), String> {
-    let known = academy::load(&content_dir().join("academy")).iter().any(|m| m.lessons.iter().any(|l| l.id == lesson));
+    let known = academy::load(&content_sub("academy")).iter().any(|m| m.lessons.iter().any(|l| l.id == lesson));
     if !known {
         return Err("There is no such lesson.".into());
     }
@@ -1428,7 +1476,7 @@ struct DrillDto {
 #[tauri::command]
 fn drills_list() -> Result<Vec<DrillDto>, String> {
     let results = drills::Log::new(&root().join("user")).list()?;
-    Ok(drills::load_dir(&content_dir().join("drills"))
+    Ok(drills::load_dir(&content_sub("drills"))
         .into_iter()
         .map(|d| {
             let mine: Vec<&drills::Result_> = results.iter().filter(|r| r.drill == d.id).collect();
@@ -1455,7 +1503,9 @@ fn drill_save(drill: String, seconds: u32, done: u32, total: u32, notes: String)
 /// The list of sources and licenses shown in Settings (a JSON file that ships with the content).
 #[tauri::command]
 fn sources_list() -> String {
-    std::fs::read_to_string(content_dir().join("sources.json")).unwrap_or_else(|_| "{\"groups\":[]}".to_string())
+    std::fs::read_to_string(content_sub("").join("sources.json"))
+        .or_else(|_| std::fs::read_to_string(program_dir().join("content").join("sources.json")))
+        .unwrap_or_else(|_| "{\"groups\":[]}".to_string())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -1535,6 +1585,7 @@ pub fn run() {
             map_export_gpx,
             route_stats,
             map_packs,
+            dashboard_suggestions,
             place_search,
             zimview::zim_books,
             zimview::zim_bookmarks_load,

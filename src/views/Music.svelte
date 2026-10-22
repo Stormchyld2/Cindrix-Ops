@@ -152,7 +152,7 @@
 
 <div>
   <h1>Music</h1>
-  <p class="sub">Your own music, played from this drive. MP3, WAV, FLAC, OGG, Opus, M4A and AAC play directly; WMA and a few others are converted once, then kept.</p>
+  <p class="sub">Your own music, played from this drive. MP3, WAV, FLAC, OGG, Opus, M4A and AAC play straight from the file. WMA and a few others are changed into a playable form while they play; that copy is thrown away when the next song starts, so nothing piles up on the drive.</p>
 </div>
 
 {#if error}<div class="warn" role="alert">{error}</div>{/if}
@@ -235,7 +235,7 @@
           {:else}Converter ready: other formats are converted to {status.converter === 'opus' ? 'Opus (small)' : 'FLAC (large)'} the first time they play.{/if}
         {/if}
         {#if status.cache_bytes > 0}
-          Converted copies use {mb(status.cache_bytes)} MB. When a song is one the built-in player cannot play as it is (WMA and a few others, or a file it turns down), the program makes one small copy of it (about 1.2 MB for each minute of music) and plays that. Your own file is never changed. <button class="link" onclick={clearCache}>Delete the copies</button> (they are made again when needed).
+          Converted copies use {mb(status.cache_bytes)} MB. This is the copy of a song the player cannot read as it is (such as WMA). It is thrown away when the next song starts, and when the program closes. Your own file is never changed. <button class="link" onclick={clearCache}>Delete it now</button>
         {/if}
       </section>
     {/if}

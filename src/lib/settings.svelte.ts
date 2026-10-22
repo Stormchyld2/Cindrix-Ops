@@ -5,7 +5,7 @@
 // match src-tauri/src/settings.rs and the calls in src-tauri/src/lib.rs.
 import { settingsLoad, settingsSave } from './api';
 
-export const SCREENS = ['Ask', 'Library', 'Intel', 'Academy', 'Maps', 'Music', 'Plan'] as const;
+export const SCREENS = ['Dashboard', 'Ask', 'Library', 'Intel', 'Academy', 'Maps', 'Music', 'Plan', 'Inventory'] as const;
 export type Screen = (typeof SCREENS)[number];
 
 export type Settings = {

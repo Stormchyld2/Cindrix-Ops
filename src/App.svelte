@@ -14,6 +14,7 @@
   import Drills from './views/Drills.svelte';
   import Binder from './views/Binder.svelte';
   import Settings from './views/Settings.svelte';
+  import Dashboard from './views/Dashboard.svelte';
   import Music from './views/Music.svelte';
   import MiniPlayer from './lib/MiniPlayer.svelte';
   import Splash from './lib/Splash.svelte';
@@ -60,8 +61,8 @@
   $effect(() => { if (settings.loaded) void applyUiScale(settings.values.uiScale); });
 
   // Intel is the offline internet: the archives read like web pages. It goes with the library.
-  type Group = 'Ask' | 'Library' | 'Intel' | 'Academy' | 'Maps' | 'Music' | 'Plan' | 'Inventory' | 'Settings';
-  const allGroups: Group[] = ['Ask', 'Library', 'Intel', 'Academy', 'Maps', 'Music', 'Plan', 'Inventory', 'Settings'];
+  type Group = 'Dashboard' | 'Ask' | 'Library' | 'Intel' | 'Academy' | 'Maps' | 'Music' | 'Plan' | 'Inventory' | 'Settings';
+  const allGroups: Group[] = ['Dashboard', 'Ask', 'Library', 'Intel', 'Academy', 'Maps', 'Music', 'Plan', 'Inventory', 'Settings'];
   // Each product switches parts of the program on or off (core/src/product.rs).
   const groups = $derived(
     allGroups.filter((g) => {
@@ -95,6 +96,12 @@
   }
   function openIntel() {
     group = 'Intel';
+  }
+  /** The Dashboard's links: a top-level screen, or a screen inside Plan, Library and so on. */
+  function goTo(tab: string) {
+    if ((allGroups as string[]).includes(tab)) { group = tab as Group; return; }
+    if (tab === 'Shelf' || tab === 'Archives' || tab === 'Cards') { lib = tab as (typeof libTabs)[number]; group = 'Library'; return; }
+    goPlan(tab);
   }
   function goPlan(tab: string) {
     if (tab === 'Inventory') { group = 'Inventory'; return; }
@@ -144,7 +151,9 @@
   {/if}
 
   <main class:wide={group === 'Intel'}>
-    {#if group === 'Ask'}
+    {#if group === 'Dashboard'}
+      <Dashboard go={goTo} />
+    {:else if group === 'Ask'}
       <Ask {openCard} />
     {:else if group === 'Library'}
       {#if lib === 'Shelf'}
@@ -164,7 +173,7 @@
       <Music />
     {:else if group === 'Plan'}
       {#if plan === 'Start'}
-        <Start go={goPlan} />
+        <Start go={goTo} />
       {:else if plan === 'Drills'}
         <Drills />
       {:else if plan === 'Binder'}
@@ -172,7 +181,7 @@
       {:else if plan === 'Family'}
         <Family />
       {:else}
-        <Cascade go={goPlan} />
+        <Cascade go={goTo} />
       {/if}
     {:else if group === 'Inventory'}
       <Inventory />

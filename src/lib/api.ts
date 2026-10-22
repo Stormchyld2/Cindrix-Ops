@@ -12,6 +12,15 @@ export type Cascade = {
   expiring: { name: string; months: number }[];
   water_days: number | null; food_days: number | null;
 };
+export type Suggestion = { level: 'urgent' | 'soon' | 'next' | 'good'; title: string; text: string; tab: string | null };
+export type DashboardFacts = { maps: number; models: number; assistant_ready: boolean; archives: number; drills_done: number; drills_total: number };
+export async function dashboardSuggestions(f: DashboardFacts): Promise<Suggestion[]> {
+  if (inTauri) return call<Suggestion[]>('dashboard_suggestions', { maps: f.maps, models: f.models, assistantReady: f.assistant_ready, archives: f.archives, drillsDone: f.drills_done, drillsTotal: f.drills_total });
+  return [
+    { level: 'soon', title: 'Water lasts 9.0 days', text: 'A common goal is two weeks at home (for water, about a gallon per person per day).', tab: 'Inventory' },
+    { level: 'next', title: 'Run your first drill', text: 'A drill finds the gaps while everything still works.', tab: 'Drills' },
+  ];
+}
 export type FamilyStatus = { exists: boolean; locked: boolean };
 export type Person = { name: string; conditions: string; medicines: string; allergies: string; doctor: string };
 export type Family = { people: Person[]; contacts: string; plan: string };
@@ -576,27 +585,23 @@ function wavTone(freq: number, seconds: number): string {
 }
 const toneCache = new Map<string, string>();
 
-function encodeRel(rel: string): string {
-  return rel.split('/').map(encodeURIComponent).join('/');
-}
-
 /** An address the audio element can play. Converts the file first if the web view cannot play it. */
-export async function musicSource(rel: string, forceConvert = false): Promise<string> {
+export async function musicSource(rel: string): Promise<string> {
   if (!inTauri) {
     let u = toneCache.get(rel);
     if (!u) { u = wavTone(220 + (sampleTracks.findIndex((t) => t.rel === rel) + 1) * 55, 30); toneCache.set(rel, u); }
     return u;
   }
-  const path = await call<string>('music_prepare', { rel, forceConvert });
+  const path = await call<string>('music_prepare', { rel });
   const { convertFileSrc } = await import('@tauri-apps/api/core');
-  // `t/` and `c/` paths are already encoded by the program.
+  // The program hands back `t/<path in the music folder>` or `c/<name>` as plain text; convertFileSrc encodes it once.
   return convertFileSrc(path, 'cindrix-music');
 }
 /** The cover picture for a track (embedded or in its folder), or null in the browser preview. */
 export async function musicArtUrl(rel: string): Promise<string | null> {
   if (!inTauri) return null;
   const { convertFileSrc } = await import('@tauri-apps/api/core');
-  return convertFileSrc('a/' + encodeRel(rel), 'cindrix-music');
+  return convertFileSrc('a/' + rel, 'cindrix-music');
 }
 
 export async function musicPlaylists(): Promise<PlaylistMeta[]> {

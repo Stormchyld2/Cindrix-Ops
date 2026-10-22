@@ -27,6 +27,7 @@ pub mod product;
 pub mod prompt;
 pub mod retrieval;
 pub mod shelf;
+pub mod suggest;
 pub mod safestream;
 pub mod safety;
 pub mod userdata;

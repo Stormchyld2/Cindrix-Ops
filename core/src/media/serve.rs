@@ -115,6 +115,20 @@ mod tests {
     }
 
     #[test]
+    fn a_name_with_spaces_and_an_apostrophe_is_found_when_encoded_once() {
+        // This is how the web view asks: the whole path encoded one time (convertFileSrc), slashes included.
+        let (m, c) = setup("quote");
+        fs::create_dir_all(m.join("The Man I'm Tryin To Be")).unwrap();
+        fs::write(m.join("The Man I'm Tryin To Be/i'LL BE THERE.mp3"), b"mp3").unwrap();
+        let want = m.join("The Man I'm Tryin To Be/i'LL BE THERE.mp3").canonicalize().unwrap();
+        let once = "/t%2FThe%20Man%20I'm%20Tryin%20To%20Be%2Fi'LL%20BE%20THERE.mp3";
+        assert_eq!(route(&m, &c, once), Some(Route::Track(want)));
+        // encoded twice (what the program used to send) is not a real name, so it is refused
+        let twice = "/t%2FThe%2520Man%2520I'm%2520Tryin%2520To%2520Be%2Fi'LL%2520BE%2520THERE.mp3";
+        assert_eq!(route(&m, &c, twice), None);
+    }
+
+    #[test]
     fn everything_else_is_refused() {
         let (m, c) = setup("bad");
         for bad in [

@@ -167,6 +167,10 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   await shoot(page, `${label}-2g-music-eq`);
   await page.getByRole('button', { name: 'Pause' }).click();
 
+  await page.getByRole('button', { name: 'Dashboard', exact: true }).click();
+  await page.getByText('WHAT TO DO NEXT').waitFor();
+  await shoot(page, `${label}-2d-dashboard`);
+
   await page.getByRole('button', { name: 'Plan', exact: true }).click();
   await shoot(page, `${label}-3-start`);
 
