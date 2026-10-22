@@ -219,7 +219,7 @@
       <div class="label">INTEL, THE OFFLINE INTERNET</div>
       {@render choose('intelStart', 'A new tab opens on', 'The Intel home shows every archive. Or go straight into the first archive on the drive.', [['archives', 'The Intel home'], ['first', 'The first archive']])}
       {@render choose('intelReader', 'Pages are shown by', 'The library server shows every kind of archive, including saved websites. The built-in reader keeps your tabs, page titles and text size following every link you click, but some saved websites stay blank in it. If the library server is not running, the built-in reader is used.', [['server', 'The library server'], ['builtin', 'The built-in reader']])}
-      {@render toggle('intelRestoreTabs', 'Remember my open tabs', 'Reopen the tabs, and the pages in them, the next time you open the program.')}
+      {@render toggle('intelRestoreTabs', 'Remember my open tabs', 'Keep the tabs you had open, and the pages in them, the next time you open the program. Intel itself always opens on its home page, with the cards.')}
       <p class="muted fine">Text size and bookmarks in Intel are kept automatically.</p>
     </div>
     {@render reset(['intelStart', 'intelReader', 'intelRestoreTabs'])}

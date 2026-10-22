@@ -103,10 +103,12 @@
           const idx = typeof raw.idx === 'number' ? Math.min(h.length - 1, Math.max(0, Math.round(raw.idx))) : h.length - 1;
           tabs.push({ id: nextId++, history: h, idx });
         }
+        // Your old tabs come back, but Intel always opens on its home page (the cards), in a tab of its own,
+        // so you pick the archive instead of landing in the one you used last.
         if (tabs.length) {
-          const c = typeof s.current === 'number' ? Math.min(tabs.length - 1, Math.max(0, Math.round(s.current))) : 0;
-          restored = true;
-          await activate(tabs[c].id);
+          const home: Tab = { id: nextId++, history: [{ t: 'start' }], idx: 0 };
+          tabs = [home, ...tabs].slice(0, MAX_TABS);
+          await activate(home.id);
         }
       }
     } catch { /* start with none */ }
