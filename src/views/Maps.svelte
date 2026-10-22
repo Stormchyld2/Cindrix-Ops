@@ -44,6 +44,12 @@
   let addMode: 'off' | 'pin' | 'rendezvous' | 'corner' = $state('off');
   let map: MLMap | null = null;
   let resizer: ResizeObserver | null = null;
+  let onScale: (() => void) | null = null;
+  let dprQuery: MediaQueryList | null = null;
+  function syncSize(m: MLMap) {
+    try { m.setPixelRatio(window.devicePixelRatio || 1); } catch { /* older map library */ }
+    m.resize();
+  }
   let startBox: { box: [[number, number], [number, number]]; maxZoom: number } | null = null;
   let markers: Marker[] = [];
   // full screen, cursor readout, centre cross-hair
@@ -196,6 +202,8 @@
     document.removeEventListener('fullscreenchange', onFullChange);
     if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
     resizer?.disconnect();
+    if (onScale) window.removeEventListener('resize', onScale);
+    if (onScale) dprQuery?.removeEventListener('change', onScale);
     map?.remove();
     map = null;
   });
@@ -261,6 +269,7 @@
         center: area ? [(area.w + area.e) / 2, (area.s + area.n) / 2] : [-98.5, 39.8],
         zoom: area ? Math.max(area.minZoom, 3) : 3.5,
         attributionControl: { compact: true },
+        pixelRatio: window.devicePixelRatio || 1,
         fadeDuration: 0,
         maxTileCacheSize: 200,
       });
@@ -280,9 +289,18 @@
       }
       // The map must follow its box when the window or the interface size changes, or part of it stays grey.
       if (typeof ResizeObserver !== 'undefined') {
-        resizer = new ResizeObserver(() => m.resize());
+        resizer = new ResizeObserver(() => { syncSize(m); });
         resizer.observe(el);
       }
+      // Windows screen scaling (125%, 150%, 175%) changes when the window moves or the scale is changed: the picture
+      // must be drawn at the screen's real pixel size, or it fills only a corner of the box.
+      onScale = () => syncSize(m);
+      window.addEventListener('resize', onScale);
+      try {
+        dprQuery = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+        dprQuery.addEventListener('change', onScale);
+      } catch { /* an old web view: the resize listener above still covers most cases */ }
+      for (const t of [200, 800, 2500]) setTimeout(() => syncSize(m), t);
       m.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'top-right');
       m.addControl(new maplibregl.ScaleControl({ unit: settings.values.mapUnits === 'metric' ? 'metric' : 'imperial' }), 'bottom-left');
       m.on('error', (e) => {
@@ -299,7 +317,7 @@
         m.addLayer({ id: 'route-line', type: 'line', source: 'route', paint: { 'line-color': '#ff9a1f', 'line-width': 4 } });
         mapReady = true;
         // The box may have settled to its real size after the map was made: measure again, then frame the start view.
-        m.resize();
+        syncSize(m);
         if (startBox && pins.length === 0 && nogo.length === 0) m.fitBounds(startBox.box, { padding: 20, duration: 0, maxZoom: startBox.maxZoom });
         zoomToPoints();
       });
