@@ -55,22 +55,12 @@ and any copyrighted book (see doc 3).
 - llama.cpp: https://github.com/ggml-org/llama.cpp
 
 ## Our own license
-The code in this repository is under the **GNU General Public License, version 3** (`LICENSE` at the top
-of the repository, the same text as `GPL-3.0.txt` here). That was the owner's choice on 2026-10-22.
-
-What that means, plainly (this is not legal advice):
-- **The GPL does not allow extra limits on what people do with the code.** Anyone who has the program or
-  its source may use it for any purpose, change it, and give it on, as long as they pass on the source
-  and the same license. A rule such as "no commercial use" or "no copying" cannot be added to GPL code.
-- **What you can still control:** selling the finished, loaded drives (the GPL allows selling); the
-  Cindrix name and logo (a trademark is separate from the code license); the content you write yourself
-  (the emergency cards, Academy lessons, plans and guides can carry their own license, for example
-  "all rights reserved" or Creative Commons non-commercial, because they are content, not code); and,
-  if you own all the code, you can also offer it to others under a different, paid license (dual
-  licensing). Code from other people who have not agreed to that stays GPL.
-- **Whether the program has to be GPL at all** is a question for a lawyer. Kiwix and ffmpeg run as
-  separate programs next to ours, and the libraries inside it are MIT, BSD or Apache, so a stricter
-  license for our own code may be possible. If you want that, ask a lawyer before the first drive is sold.
+**Not decided yet.** The owner wants our own code limited to personal use with no commercial use.
+That cannot be done under the GPL (the GPL forbids such limits) and is not "open source" by the usual
+definition; it is a "source-available" or proprietary license. It looks possible here because Kiwix
+and ffmpeg run as separate programs and the libraries inside the program are MIT, BSD or Apache, but a
+lawyer should confirm that before the first drive is sold. Until a `LICENSE` file is added, nobody else
+has permission to reuse the code. This is not legal advice.
 
 ## Before you sell a drive
 1. Open `content/sources.json` and `manifest/content.json`: every item on the drive needs a source, an edition and a license.

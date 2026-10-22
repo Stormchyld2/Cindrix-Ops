@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { whatFailsNext, inventoryList, drillsList, mapPacks, modelStatus, listModels, libraryStatus, dashboardSuggestions, plansList, academyList, familyStatus, type Cascade, type Suggestion, type PlanInfo, type AcademyModule } from '../lib/api';
+  import { whatFailsNext, inventoryList, drillsList, mapPacks, modelStatus, listModels, libraryStatus, dashboardSuggestions, plansList, academyList, familyStatus, productInfo, type ProductInfo, type Cascade, type Suggestion, type PlanInfo, type AcademyModule } from '../lib/api';
   import { gatherFacts, planCounts, nextStep, stepStatus, KIND_NAME, type PlanFacts } from '../lib/planfacts';
   import { categories } from '../lib/categories';
   import { settings } from '../lib/settings.svelte';
@@ -14,6 +14,7 @@
   let drillsTotal = $state(0);
   let error = $state('');
   let loaded = $state(false);
+  let product: ProductInfo | null = $state(null);
   // more of the picture: plans being followed, learning, supplies by kind, and whether the drive is ready
   let plans: PlanInfo[] = $state([]);
   let facts: PlanFacts = $state({ checks: {}, lessons: new Set<string>() });
@@ -36,6 +37,7 @@
     } catch (e) {
       error = String(e);
     }
+    try { product = await productInfo(); } catch { /* every tile is shown */ }
     // These never block the rest of the page: a failure just leaves that panel empty.
     try { plans = await plansList(); facts = await gatherFacts(); } catch { /* no plans panel content */ }
     try { academy = await academyList(); } catch { /* none */ }
@@ -71,13 +73,60 @@
   const low = $derived.by(() => (data?.runs_out ?? []).filter((r) => r.days < settings.values.planCheckDays).slice(0, 6));
   const past = $derived.by(() => (data?.expiring ?? []).filter((e) => e.months < 0).length);
   const label: Record<string, string> = { urgent: 'Do now', soon: 'Soon', next: 'Next', good: 'All good' };
+  // The shortcut tiles. Every one leads to a screen that exists; a tile is left out when this edition does not have that part.
+  const ICONS: Record<string, string> = {
+    library: 'M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2V5zM4 19a2 2 0 0 1 2-2h13',
+    maps: 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14',
+    ask: 'M4 5h16v11H9l-5 4V5z',
+    intel: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18',
+    academy: 'M2 9l10-5 10 5-10 5L2 9zM6 11v5c3 2 9 2 12 0v-5',
+    plans: 'M9 6h11M9 12h11M9 18h11M3.5 6l1 1 2-2M3.5 12l1 1 2-2M3.5 18l1 1 2-2',
+    drills: 'M12 8v5l3 2M9 2h6M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16z',
+    inventory: 'M3 7l9-4 9 4v10l-9 4-9-4V7zM3 7l9 4 9-4M12 11v10',
+    medical: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 8v8M8 12h8',
+    family: 'M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM2 20c0-3 3-5 6-5s6 2 6 5M17 11a2.5 2.5 0 1 0 0-5M16 15c3 0 6 1.5 6 5',
+    binder: 'M6 3h12v18H6zM9 3v18M12 8h4M12 12h4',
+    music: 'M9 18V6l11-2v12M9 18a3 3 0 1 1-3-3 3 3 0 0 1 3 3zM20 16a3 3 0 1 1-3-3 3 3 0 0 1 3 3z',
+  };
+  const tiles = $derived.by(() => {
+    const p = product;
+    const all: { icon: string; label: string; tab: string; show: boolean }[] = [
+      { icon: 'library', label: 'Library', tab: 'Shelf', show: p ? p.library : true },
+      { icon: 'maps', label: 'Maps', tab: 'Maps', show: p ? p.maps : true },
+      { icon: 'ask', label: 'Ask', tab: 'Ask', show: p ? p.assistant : true },
+      { icon: 'intel', label: 'Intel', tab: 'Intel', show: p ? p.library : true },
+      { icon: 'academy', label: 'Academy', tab: 'Academy', show: true },
+      { icon: 'medical', label: 'Emergency cards', tab: 'Cards', show: p ? p.library : true },
+      { icon: 'plans', label: 'Plans', tab: 'What next', show: p ? p.plan : true },
+      { icon: 'drills', label: 'Drills', tab: 'Drills', show: p ? p.plan : true },
+      { icon: 'inventory', label: 'Inventory', tab: 'Inventory', show: p ? p.plan : true },
+      { icon: 'family', label: 'Family', tab: 'Family', show: p ? p.plan : true },
+      { icon: 'binder', label: 'Binder', tab: 'Binder', show: p ? p.plan : true },
+      { icon: 'music', label: 'Music', tab: 'Music', show: p ? p.music : true },
+    ];
+    return all.filter((t) => t.show);
+  });
   const today = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
 </script>
 
-<section>
-  <div class="row"><h1>Dashboard</h1><span class="muted">{today}</span></div>
-  <p class="sub">Where you stand today, worked out from what you have filled in. It is an estimate, not a prediction.</p>
+<section class="hero">
+  <div class="herotop">
+    <img class="herologo" src="/cindrix-logo.png" alt="" width="64" height="64" />
+    <div class="grow">
+      <h1>Dashboard</h1>
+      <div class="muted small">{product?.name ?? 'Cindrix Ops'} · {today}</div>
+    </div>
+  </div>
+  <nav class="shortcuts" aria-label="Shortcuts">
+    {#each tiles as t (t.label)}
+      <button class="sc" aria-label={'Open ' + t.label} title={'Open ' + t.label} onclick={() => go(t.tab)}>
+        <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={ICONS[t.icon]} /></svg>
+        <span>{t.label}</span>
+      </button>
+    {/each}
+  </nav>
 </section>
+<p class="sub">Where you stand today, worked out from what you have filled in. It is an estimate, not a prediction.</p>
 
 {#if error}<div class="warn" role="alert">{error}</div>{/if}
 
@@ -192,35 +241,17 @@
   </section>
 </div>
 
-<section class="feature" aria-label="What is in the program">
-  <div class="label">WHAT YOU CAN DO HERE</div>
-  <div class="fgrid">
-    {#each [
-      ['Maps', 'MAPS AND PLACES', 'Street map of the whole US, offline. Find a ZIP code or town, mark hospitals, water and fuel, plan routes.'],
-      ['Ask', 'ASK', 'Ask a question in plain words. Answers come from your library, with the source shown.'],
-      ['Library', 'LIBRARY', 'Your books, emergency cards and saved archives, to read with no internet.'],
-      ['Intel', 'INTEL', 'Browse the offline library like a small internet: encyclopedias, medical and how-to guides.'],
-      ['Academy', 'ACADEMY', 'Courses with short quizzes. Drop in more as folders.'],
-      ['What next', 'PLANS', 'Checks that come back, learning plans and emergency plans. Follow several at once.'],
-      ['Drills', 'DRILL MODE', 'Practise for an emergency with a timer and find the gaps while it is safe.'],
-      ['Binder', 'PRINT BINDER', 'A paper copy of your plan, your family page and your contacts.'],
-    ] as [tab, title, text]}
-      <button class="fcard" title={text} aria-label={'Open ' + title.toLowerCase()} onclick={() => go(tab)}>
-        <span class="ft">{title}</span>
-        <span class="fd">{text}</span>
-      </button>
-    {/each}
-  </div>
-  <p class="muted small foot">Runs with no internet. Everything stays on your device.</p>
-</section>
-
 <style>
-  .feature { margin-top: 12px; }
-  .fgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; margin-top: 8px; }
-  .fcard { display: flex; flex-direction: column; gap: 4px; text-align: left; padding: 11px 12px; background: var(--panel); border: 1px solid var(--line); border-top: 2px solid var(--line2); border-radius: 10px; }
-  .fcard:hover { border-color: var(--blue-line); }
-  .ft { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; color: var(--blue); }
-  .fd { font-size: 12.5px; color: var(--muted); line-height: 1.35; }
+  .hero { padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: linear-gradient(180deg, #090807cc, #090807f2), #090807 url('/splash-bg.jpg') center / cover no-repeat; margin-bottom: 10px; }
+  .herotop { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .herologo { width: 52px; height: 52px; object-fit: contain; }
+  .hero h1 { margin: 0; }
+  .shortcuts { display: grid; grid-template-columns: repeat(auto-fit, minmax(88px, 1fr)); gap: 8px; }
+  .sc { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 76px; padding: 10px 6px; text-align: center; color: var(--text); background: #14110ecc; border: 1px solid var(--line2); border-radius: 12px; font-size: 12.5px; letter-spacing: .02em; }
+  .sc svg { color: var(--accent); }
+  .sc:hover { border-color: var(--blue-line); }
+  .sc:active { transform: scale(.97); }
+  @media (max-width: 600px) { .shortcuts { grid-template-columns: repeat(3, 1fr); } .sc { min-height: 84px; } }
   .more { margin-top: 12px; }
   .meter { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
   .meter span { display: block; height: 100%; background: var(--blue); }

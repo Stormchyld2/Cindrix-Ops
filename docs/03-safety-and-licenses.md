@@ -34,8 +34,8 @@ Excluded: DeepL, Meta Seamless, iFixit (non-commercial license), any archive wit
 ## What GPL means for selling
 Shipping Kiwix components makes the app a GPL work. So the app is **open source** (this repository), with source links in the app. What is sold is the curated, tested and loaded drive, the user guide, updates, and support. The author has reviewed the licensing and is satisfied. This doc is not legal advice.
 
-## Our own code license (decided 2026-10-22)
-The code is GPL-3.0 (`LICENSE`). The GPL cannot be combined with extra limits on use, so protection comes from the Cindrix name and logo (trademark), a separate license for the content we write, selling the finished drives, and optionally a paid second license for code we own. See `licenses/README.md`.
+## Our own code license (open)
+Undecided. The owner wants personal use only and no commercial use, which the GPL does not allow. See `licenses/README.md` for the options. Doc text above that says the app must be GPL is the owner's earlier reading and is to be checked with a lawyer.
 
 ## Name
 "Cindrix" resembles "Citrix" (software company, many registered marks). The author has checked and is proceeding. Fallback names discussed earlier: Cindrel, Cindar, Cinderon.
