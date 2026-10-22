@@ -332,7 +332,7 @@
     </div>
     <div class="panel">
       <div class="label">SATELLITE MAPS BY COUNTY</div>
-      <p class="muted">Optional aerial photos for the Maps page (US counties, from the USGS NAIP program), downloaded once while you have internet. Arrives with Maps.</p>
+      <p class="muted">Aerial photos and the topo map for the Maps page come from the free USGS National Map. Put them on the drive once while you have internet: double-click scripts\Get-Imagery.bat (the whole US at a wide view), or see the top of scripts\get-imagery.ps1 for your own area in full detail.</p>
     </div>
     <div class="panel">
       <div class="label">ALL SETTINGS</div>

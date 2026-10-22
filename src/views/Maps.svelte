@@ -39,6 +39,26 @@
   let packs: Pack[] = $state([]);
   let streetPacks: Pack[] = $derived(packs.filter((p) => p.kind === 'street'));
   let street: Pack | undefined = $derived(streetPacks[0]);
+  // pictures: USGS topo maps (maps/us/topo) and aerial photos (maps/satellite); more than one file can be on the drive,
+  // for example the whole country at a wide view and one county sharp
+  let topoPacks: Pack[] = $derived(packs.filter((p) => p.kind === 'topo'));
+  let aerialPacks: Pack[] = $derived(packs.filter((p) => p.kind === 'satellite'));
+  type MapKind = 'street' | 'topo' | 'aerial';
+  let mapKind: MapKind = $state('street');
+  let rasterIds: Record<'topo' | 'aerial', string[]> = { topo: [], aerial: [] };
+  let vecLayers: { id: string; type: string }[] = [];
+  function applyKind() {
+    if (!map || !mapReady) return;
+    const show = (ids: string[], on: boolean) => { for (const id of ids) if (map!.getLayer(id)) map!.setLayoutProperty(id, 'visibility', on ? 'visible' : 'none'); };
+    show(rasterIds.topo, mapKind === 'topo');
+    show(rasterIds.aerial, mapKind === 'aerial');
+    // topo maps carry their own names and roads; over aerial photos only the roads, borders and names are kept
+    for (const l of vecLayers) {
+      const on = mapKind === 'street' || (mapKind === 'aerial' && (l.type === 'line' || l.type === 'symbol'));
+      if (map.getLayer(l.id)) map.setLayoutProperty(l.id, 'visibility', on ? 'visible' : 'none');
+    }
+  }
+  $effect(() => { mapKind; mapReady; applyKind(); });
   // one map source per street file (the lower 48, Alaska and Hawaii are separate files): 'protomaps', 'protomaps1', ...
   let srcNames: string[] = ['protomaps'];
   const poiIds = (gid: string): string[] => srcNames.flatMap((_, i) => [`poi-${gid}${i ? '-' + i : ''}`, `poi-${gid}${i ? '-' + i : ''}-label`]);
@@ -277,16 +297,42 @@
       // symbol layers that use picture icons are left out (no icon sheet ships); text-only ones are kept when the fonts are there
       const keep = (l: { type: string; layout?: Record<string, unknown>; 'source-layer'?: string }) =>
         l.type !== 'symbol' || (labelsOn && l['source-layer'] !== 'pois' && !(l.layout && 'icon-image' in l.layout));
+      // raster pictures: one source per file, drawn under the street lines
+      const imgSources: Record<string, unknown> = {};
+      const imgLayers: Record<'topo' | 'aerial', unknown[]> = { topo: [], aerial: [] };
+      rasterIds = { topo: [], aerial: [] };
+      for (const [kind, list] of [['topo', topoPacks], ['aerial', aerialPacks]] as const) {
+        // widest file first so a sharper file for one area is drawn over it
+        const sorted = [...list].sort((a, b) => b.mb - a.mb);
+        let i = 0;
+        for (const pk of sorted) {
+          try {
+            const u = await tileUrl(pk.rel);
+            protocol.add(new PMTiles(u));
+            const sid = `${kind}-src-${i}`, lid = `${kind}-img-${i}`;
+            imgSources[sid] = { type: 'raster', url: 'pmtiles://' + u, tileSize: 256, attribution: kind === 'aerial' ? 'Imagery: USGS The National Map (NAIP)' : 'Topo: USGS The National Map' };
+            imgLayers[kind].push({ id: lid, type: 'raster', source: sid, layout: { visibility: 'none' } });
+            rasterIds[kind].push(lid);
+            i++;
+          } catch { /* a damaged picture file is just left out */ }
+        }
+      }
       const style = {
         version: 8,
         ...(glyphs ? { glyphs } : {}),
-        sources: Object.fromEntries(usable.map((u, i) => [srcNames[i], { type: 'vector', url: 'pmtiles://' + u.url, attribution: '© OpenStreetMap contributors' }])),
+        sources: { ...Object.fromEntries(usable.map((u, i) => [srcNames[i], { type: 'vector', url: 'pmtiles://' + u.url, attribution: '© OpenStreetMap contributors' }])), ...imgSources },
         // the same drawing rules for every file; the background is drawn once, and each layer name is made different
-        layers: usable.flatMap((_, i) =>
-          layers(srcNames[i], namedFlavor('black'), { lang: 'en' })
-            .filter((l) => keep(l as never) && (i === 0 || (l as { type: string }).type !== 'background'))
-            .map((l) => (i === 0 ? l : { ...l, id: (l as { id: string }).id + '-' + i })),
-        ),
+        layers: (() => {
+          const vec = usable.flatMap((_, i) =>
+            layers(srcNames[i], namedFlavor('black'), { lang: 'en' })
+              .filter((l) => keep(l as never) && (i === 0 || (l as { type: string }).type !== 'background'))
+              .map((l) => (i === 0 ? l : { ...l, id: (l as { id: string }).id + '-' + i })),
+          ) as { id: string; type: string }[];
+          vecLayers = vec.map((l) => ({ id: l.id, type: l.type }));
+          // the background first, then the pictures, then everything else
+          const [bg, ...rest] = vec;
+          return [bg, ...imgLayers.topo, ...imgLayers.aerial, ...rest];
+        })(),
       } as unknown as StyleSpecification;
       const m = new maplibregl.Map({
         container: el,
@@ -715,6 +761,16 @@
             <button class="btn" class:primary={layersOpen} title="Choose which kinds of places are marked on the map: hospitals, water, fuel, shelter and more" onclick={() => (layersOpen = !layersOpen)}>Places on the map</button>
             <button class="btn" class:primary={cross} title="Show or hide the cross-hair and the coordinates of the middle of the map" onclick={() => (cross = !cross)}>Cross-hair</button>
             <button class="btn" title={full ? 'Go back to the normal page (or press Esc)' : 'Make the map fill the whole screen. Your pins and tools stay.'} onclick={toggleFull}>{full ? 'Exit full screen' : 'Full screen'}</button>
+          </div>
+          <div class="row" role="group" aria-label="Kind of map">
+            <span class="muted">MAP:</span>
+            <button class="btn" class:primary={mapKind === 'street'} title="The street map: roads, towns, water, buildings" onclick={() => (mapKind = 'street')}>Street</button>
+            <button class="btn" class:primary={mapKind === 'topo'} disabled={!topoPacks.length}
+              title={topoPacks.length ? 'USGS topographic map: contour lines, hills, trails' : 'No topo map on this drive yet. Double-click scripts\\Get-Imagery.bat to put one on it.'}
+              onclick={() => (mapKind = 'topo')}>Topo</button>
+            <button class="btn" class:primary={mapKind === 'aerial'} disabled={!aerialPacks.length}
+              title={aerialPacks.length ? 'Aerial photos from above, with roads and names drawn on top' : 'No aerial photos on this drive yet. Double-click scripts\\Get-Imagery.bat to put them on it.'}
+              onclick={() => (mapKind = 'aerial')}>Aerial</button>
           </div>
           <div class="row find">
             <input class="input grow" type="search" placeholder="Find a place: ZIP code, town and state, park, lake, or latitude and longitude" aria-label="Find a place" bind:value={findTerm}

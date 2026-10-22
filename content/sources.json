@@ -129,10 +129,10 @@
           "note": "Made on your computer by scripts\\get-addresses.ps1 into maps\\addresses. Lets the Maps screen find a street address offline. Credit: Overture Maps Foundation and its address sources, docs.overturemaps.org/attribution. Not every house is in it."
         },
         {
-          "name": "USGS NAIP aerial photos",
-          "license": "Public domain (US government)",
-          "status": "planned",
-          "note": "Optional per-county download in Settings, US only."
+          "name": "USGS aerial photos and topo map (The National Map)",
+          "license": "Public domain (US government). Credit: USGS The National Map.",
+          "status": "you add",
+          "note": "Made on your computer by scripts\\get-imagery.ps1 (Get-Imagery.bat): aerial to maps\\satellite\\us, topo to maps\\us\\topo. Whole US at a wide view, your own areas in full detail. Aerial photos are mostly NAIP (about 1 m); Alaska is coarser."
         }
       ]
     },

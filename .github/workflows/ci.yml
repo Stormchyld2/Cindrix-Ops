@@ -200,6 +200,38 @@ jobs:
           CINDRIX_ADDRESS_PACK: ${{ runner.temp }}/drive/maps/addresses/test
         run: cd core && cargo test --test address_pack -- --nocapture
 
+  imagery:
+    name: Topo and aerial download makes picture files the Maps screen can read
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get the pmtiles tool
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          url=$(gh api repos/protomaps/go-pmtiles/releases/latest --jq '.assets[] | select(.name | test("Linux_x86_64.tar.gz$")) | .browser_download_url' | head -n1)
+          [ -n "$url" ] || { echo "::error::no linux pmtiles download found"; exit 1; }
+          mkdir -p "$RUNNER_TEMP/pmt" && curl -fsSL "$url" | tar xz -C "$RUNNER_TEMP/pmt"
+          "$RUNNER_TEMP/pmt/pmtiles" version
+      - name: Fetch a very small area (Fairmont WV) as aerial photos and as topo
+        shell: pwsh
+        run: |
+          foreach ($layer in 'aerial','topo') {
+            try { ./scripts/get-imagery.ps1 -Target "$env:RUNNER_TEMP/drive" -Layer $layer -Bbox:"-80.16,39.46,-80.12,39.50" -Name test -MaxZoom 13 -Pmtiles "$env:RUNNER_TEMP/pmt/pmtiles" }
+            catch { $m = ($_ | Out-String) -replace "`r?`n", ' | '; Write-Host "::error::$layer $m"; exit 1 }
+          }
+      - name: The files are real PMTiles with pictures in them
+        shell: bash
+        run: |
+          set -e
+          for f in "$RUNNER_TEMP/drive/maps/satellite/us/test.pmtiles" "$RUNNER_TEMP/drive/maps/us/topo/test.pmtiles"; do
+            ls -l "$f"
+            "$RUNNER_TEMP/pmt/pmtiles" show "$f" | head -20
+          done
+
   search-check:
     name: Assistant search works against real kiwix-serve and real archives
     runs-on: ubuntu-latest
