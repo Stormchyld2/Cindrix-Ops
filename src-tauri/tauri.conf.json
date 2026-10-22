@@ -11,7 +11,7 @@
   },
   "app": {
     "windows": [
-      { "title": "Cindrix Ops", "width": 1180, "height": 780, "minWidth": 380, "minHeight": 560 }
+      { "title": "Cindrix Ops", "width": 1180, "height": 780, "maximized": true, "minWidth": 380, "minHeight": 560 }
     ],
     "security": {
       "csp": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; frame-src http://127.0.0.1:* cindrix-zim: http://cindrix-zim.localhost; media-src 'self' blob: cindrix-music: http://cindrix-music.localhost; img-src 'self' data: blob: cindrix-zim: http://cindrix-zim.localhost cindrix-music: http://cindrix-music.localhost; style-src 'self' 'unsafe-inline'; connect-src 'self' cindrix-zim: http://cindrix-zim.localhost ipc: http://ipc.localhost cindrix-tiles: http://cindrix-tiles.localhost cindrix-music: http://cindrix-music.localhost"

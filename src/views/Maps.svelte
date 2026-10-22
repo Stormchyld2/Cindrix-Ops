@@ -37,7 +37,11 @@
 
   // ---------- the tile map (only when a street pack is on the drive) ----------
   let packs: Pack[] = $state([]);
-  let street: Pack | undefined = $derived(packs.find((p) => p.kind === 'street'));
+  let streetPacks: Pack[] = $derived(packs.filter((p) => p.kind === 'street'));
+  let street: Pack | undefined = $derived(streetPacks[0]);
+  // one map source per street file (the lower 48, Alaska and Hawaii are separate files): 'protomaps', 'protomaps1', ...
+  let srcNames: string[] = ['protomaps'];
+  const poiIds = (gid: string): string[] => srcNames.flatMap((_, i) => [`poi-${gid}${i ? '-' + i : ''}`, `poi-${gid}${i ? '-' + i : ''}-label`]);
   let mapEl: HTMLDivElement | undefined = $state();
   let mapReady = $state(false);
   let tileError = $state('');
@@ -98,30 +102,33 @@
     if (!map || !mapReady) return;
     for (const g of POI_GROUPS) {
       const v = poiOn[g.id] ? 'visible' : 'none';
-      for (const id of [`poi-${g.id}`, `poi-${g.id}-label`]) if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', v);
+      for (const id of poiIds(g.id)) if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', v);
     }
   }
   function addPoiLayers(m: MLMap, withNames: boolean) {
     for (const g of POI_GROUPS) {
       const filter = ['match', ['get', 'kind'], g.kinds, true, false];
       const vis = poiOn[g.id] ? 'visible' : 'none';
-      m.addLayer({
-        id: `poi-${g.id}`, type: 'circle', source: 'protomaps', 'source-layer': 'pois', minzoom: 7, filter,
-        layout: { visibility: vis },
-        paint: { 'circle-color': g.color, 'circle-radius': ['interpolate', ['linear'], ['zoom'], 7, 2.5, 12, 5, 16, 8], 'circle-stroke-color': '#0b0d0c', 'circle-stroke-width': 1.5 },
-      } as never);
-      if (withNames) {
+      srcNames.forEach((src, i) => {
+        const sfx = i ? '-' + i : '';
         m.addLayer({
-          id: `poi-${g.id}-label`, type: 'symbol', source: 'protomaps', 'source-layer': 'pois', minzoom: 12.5, filter,
-          layout: { visibility: vis, 'text-field': ['coalesce', ['get', 'name'], ''], 'text-font': ['Noto Sans Regular'], 'text-size': 11, 'text-anchor': 'top', 'text-offset': [0, 0.8], 'text-optional': true, 'text-max-width': 8 },
-          paint: { 'text-color': '#ece7de', 'text-halo-color': '#0b0d0c', 'text-halo-width': 1.4 },
+          id: `poi-${g.id}${sfx}`, type: 'circle', source: src, 'source-layer': 'pois', minzoom: 7, filter,
+          layout: { visibility: vis },
+          paint: { 'circle-color': g.color, 'circle-radius': ['interpolate', ['linear'], ['zoom'], 7, 2.5, 12, 5, 16, 8], 'circle-stroke-color': '#0b0d0c', 'circle-stroke-width': 1.5 },
         } as never);
-      }
+        if (withNames) {
+          m.addLayer({
+            id: `poi-${g.id}${sfx}-label`, type: 'symbol', source: src, 'source-layer': 'pois', minzoom: 12.5, filter,
+            layout: { visibility: vis, 'text-field': ['coalesce', ['get', 'name'], ''], 'text-font': ['Noto Sans Regular'], 'text-size': 11, 'text-anchor': 'top', 'text-offset': [0, 0.8], 'text-optional': true, 'text-max-width': 8 },
+            paint: { 'text-color': '#ece7de', 'text-halo-color': '#0b0d0c', 'text-halo-width': 1.4 },
+          } as never);
+        }
+      });
     }
   }
   /** Is there a marked place under this point of the screen? */
   function poiAt(m: MLMap, point: { x: number; y: number }): PoiPick | null {
-    const layers = POI_GROUPS.filter((g) => poiOn[g.id] && m.getLayer(`poi-${g.id}`)).map((g) => `poi-${g.id}`);
+    const layers = POI_GROUPS.filter((g) => poiOn[g.id]).flatMap((g) => srcNames.map((_, i) => `poi-${g.id}${i ? '-' + i : ''}`)).filter((id) => m.getLayer(id));
     if (!layers.length) return null;
     const r = 8;
     const f = m.queryRenderedFeatures([[point.x - r, point.y - r], [point.x + r, point.y + r]], { layers })[0];
@@ -138,7 +145,7 @@
     if (!g) return;
     const c = map.getCenter();
     const from: [number, number] = [c.lat, c.lng];
-    const feats = map.querySourceFeatures('protomaps', { sourceLayer: 'pois', filter: ['match', ['get', 'kind'], g.kinds, true, false] as never });
+    const feats = srcNames.flatMap((src) => map!.querySourceFeatures(src, { sourceLayer: 'pois', filter: ['match', ['get', 'kind'], g.kinds, true, false] as never }));
     const seen = new Set<string>();
     const out: (PoiPick & { km: number; dir: string })[] = [];
     for (const f of feats) {
@@ -209,10 +216,10 @@
   });
 
   $effect(() => {
-    if (street && mapEl && !map) void initMap(street, mapEl);
+    if (streetPacks.length && mapEl && !map) void initMap(streetPacks, mapEl);
   });
 
-  async function initMap(pack: Pack, el: HTMLDivElement) {
+  async function initMap(streets: Pack[], el: HTMLDivElement) {
     try {
       const [maplibregl, { Protocol, PMTiles }, { layers, namedFlavor }] = await Promise.all([
         import('maplibre-gl'),
@@ -226,22 +233,35 @@
         // The cast keeps this compiling whichever handler signature the two libraries agree on.
         maplibregl.addProtocol('pmtiles', protocol.tile as never);
       }
-      const url = await tileUrl(pack.rel);
-      // Read the file's header first: it says which area and zoom levels the pack really holds.
+      // Read each file's header first: it says which area and zoom levels the pack really holds.
       // A pack cut for one town has nothing to show at the whole-country view the map used to open on.
-      const archive = new PMTiles(url);
-      protocol.add(archive);
-      let area: { w: number; s: number; e: number; n: number; minZoom: number; maxZoom: number } | null = null;
-      try {
-        const h = await archive.getHeader();
-        if ([h.minLon, h.minLat, h.maxLon, h.maxLat].every((v) => Number.isFinite(v)) && h.maxLon > h.minLon && h.maxLat > h.minLat) {
-          area = { w: h.minLon, s: h.minLat, e: h.maxLon, n: h.maxLat, minZoom: h.minZoom, maxZoom: h.maxZoom };
-          packInfo = `${pack.name}: covers ${h.minLat.toFixed(2)}, ${h.minLon.toFixed(2)} to ${h.maxLat.toFixed(2)}, ${h.maxLon.toFixed(2)}; zoom ${h.minZoom} to ${h.maxZoom}.`;
+      type Area = { w: number; s: number; e: number; n: number; minZoom: number; maxZoom: number };
+      const usable: { pack: Pack; url: string }[] = [];
+      const areas: Area[] = [];
+      for (const pack of streets) {
+        const url = await tileUrl(pack.rel);
+        const archive = new PMTiles(url);
+        protocol.add(archive);
+        try {
+          const h = await archive.getHeader();
+          if ([h.minLon, h.minLat, h.maxLon, h.maxLat].every((v) => Number.isFinite(v)) && h.maxLon > h.minLon && h.maxLat > h.minLat) {
+            areas.push({ w: h.minLon, s: h.minLat, e: h.maxLon, n: h.maxLat, minZoom: h.minZoom, maxZoom: h.maxZoom });
+          } else {
+            areas.push({ w: -180, s: -85, e: 180, n: 85, minZoom: 0, maxZoom: Number.isFinite(h.maxZoom) ? h.maxZoom : 14 });
+          }
+          usable.push({ pack, url });
+        } catch (e) {
+          tileError = 'The map file ' + pack.name + ' could not be read: ' + String((e as Error)?.message ?? e) + ' The file may be damaged or incomplete; cut it again with scripts\\get-maps.ps1.';
         }
-      } catch (e) {
-        tileError = 'The map file could not be read: ' + String((e as Error)?.message ?? e) + ' The file may be damaged or incomplete; cut it again with scripts\\get-maps.ps1.';
-        return;
       }
+      if (!usable.length) return;
+      const area: Area | null = {
+        w: Math.min(...areas.map((a) => a.w)), s: Math.min(...areas.map((a) => a.s)),
+        e: Math.max(...areas.map((a) => a.e)), n: Math.max(...areas.map((a) => a.n)),
+        minZoom: Math.min(...areas.map((a) => a.minZoom)), maxZoom: Math.max(...areas.map((a) => a.maxZoom)),
+      };
+      packInfo = `${usable.map((u) => u.pack.name).join(', ')}: covers ${area.s.toFixed(2)}, ${area.w.toFixed(2)} to ${area.n.toFixed(2)}, ${area.e.toFixed(2)}; zoom ${area.minZoom} to ${area.maxZoom}.`;
+      srcNames = usable.map((_, i) => (i ? 'protomaps' + i : 'protomaps'));
       // No glyph (font) files ship yet, so the text layers are left out: roads, water, land and
       // buildings are drawn, place names are not. Pin labels are drawn by this screen instead.
       // Place names need the font files in maps/fonts. When they are there the lettering is drawn (street, town and
@@ -260,8 +280,13 @@
       const style = {
         version: 8,
         ...(glyphs ? { glyphs } : {}),
-        sources: { protomaps: { type: 'vector', url: 'pmtiles://' + url, attribution: '© OpenStreetMap contributors' } },
-        layers: layers('protomaps', namedFlavor('black'), { lang: 'en' }).filter((l) => keep(l as never)),
+        sources: Object.fromEntries(usable.map((u, i) => [srcNames[i], { type: 'vector', url: 'pmtiles://' + u.url, attribution: '© OpenStreetMap contributors' }])),
+        // the same drawing rules for every file; the background is drawn once, and each layer name is made different
+        layers: usable.flatMap((_, i) =>
+          layers(srcNames[i], namedFlavor('black'), { lang: 'en' })
+            .filter((l) => keep(l as never) && (i === 0 || (l as { type: string }).type !== 'background'))
+            .map((l) => (i === 0 ? l : { ...l, id: (l as { id: string }).id + '-' + i })),
+        ),
       } as unknown as StyleSpecification;
       const m = new maplibregl.Map({
         container: el,
@@ -643,7 +668,7 @@
 
 {#if street}
   <div class="warn">
-    <strong>Map: {street.name}</strong> ({street.mb} MB, from this drive).{#if packInfo} This pack covers {packInfo.replace(street.name + ': covers ', '')}{/if}{#if partial} It covers only part of the country, so the map stops at its edge. This build comes with only a small sample area. To get the whole United States, double-click scripts\Get-Maps.bat (it needs internet and tens of gigabytes of space, and takes hours).{/if} Roads, water, land and buildings are drawn{#if labelsOn}, with names{:else}; place names need the map fonts (run scripts\get-maps.ps1 -FontsOnly){/if}. Use Places on the map to mark hospitals, water, fuel and more. Positions you place are approximate, and routes are straight lines between your points: this app does not plan roads and does not yet steer routes around no-go areas.
+    <strong>Map: {streetPacks.map((p) => p.name).join(', ')}</strong> ({streetPacks.reduce((a, p) => a + p.mb, 0)} MB, from this drive).{#if packInfo} This covers {packInfo.replace(/^.*?: covers /, '')}{/if}{#if partial} It covers only part of the country, so the map stops at its edge. This build comes with only a small sample area. To get the whole United States, double-click scripts\Get-Maps.bat (it needs internet and tens of gigabytes of space, and takes hours).{/if} Roads, water, land and buildings are drawn{#if labelsOn}, with names{:else}; place names need the map fonts (run scripts\get-maps.ps1 -FontsOnly){/if}. Use Places on the map to mark hospitals, water, fuel and more. Positions you place are approximate, and routes are straight lines between your points: this app does not plan roads and does not yet steer routes around no-go areas.
   </div>
 {:else}
   <div class="warn">
