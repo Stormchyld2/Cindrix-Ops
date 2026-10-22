@@ -90,3 +90,12 @@ larger address file (for example OpenAddresses), which is not included yet. The 
 
 ## Which map you have (2026-10-22)
 The downloadable Windows build carries only a small sample map (a few megabytes around Denver), because the whole US is tens of gigabytes. For the whole US, double-click `scripts\Get-Maps.bat` (it runs `get-maps.ps1 -Places`: the lower 48, Alaska, Hawaii, the places list and the fonts). The map style is now the darkest Protomaps look (`black`).
+
+## Route shields
+
+Highways and main roads carry their number as a small sign: blue with a red top for an interstate,
+white with a black edge for a US route, a white pill for a state route. The sign pictures are drawn
+by the program when the map opens (no picture files on the drive); the number and the kind of road
+(`shield_text` or `ref`, and `network` such as `US:I`) come from the map file's `roads` layer. They
+need the map fonts (`maps/fonts`); without them the map is drawn without shields. If a map file
+does not carry these properties, no shield appears.

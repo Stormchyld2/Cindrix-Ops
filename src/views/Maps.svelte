@@ -142,6 +142,57 @@
       for (const id of poiIds(g.id)) if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', v);
     }
   }
+  // Route shields: the little signs for interstates (blue), US routes and state routes. They are drawn here as pictures,
+  // so no picture file needs to be on the drive; the numbers come from the map file and need the map fonts.
+  function shieldPicture(kind: 'interstate' | 'us' | 'state'): { img: ImageData; opts: { pixelRatio: number; stretchX: [number, number][]; stretchY: [number, number][]; content: [number, number, number, number] } } | null {
+    const W = 64, H = 52;
+    const c = document.createElement('canvas');
+    c.width = W; c.height = H;
+    const g = c.getContext('2d');
+    if (!g) return null;
+    const rr = (x: number, y: number, w: number, h: number, r: number) => {
+      g.beginPath();
+      g.moveTo(x + r, y); g.lineTo(x + w - r, y); g.quadraticCurveTo(x + w, y, x + w, y + r);
+      g.lineTo(x + w, y + h - r); g.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      g.lineTo(x + r, y + h); g.quadraticCurveTo(x, y + h, x, y + h - r);
+      g.lineTo(x, y + r); g.quadraticCurveTo(x, y, x + r, y); g.closePath();
+    };
+    if (kind === 'interstate') {
+      rr(3, 3, W - 6, H - 6, 14); g.fillStyle = '#ffffff'; g.fill();
+      rr(6, 6, W - 12, H - 12, 11); g.fillStyle = '#1c4fa0'; g.fill();
+      g.save(); rr(6, 6, W - 12, H - 12, 11); g.clip(); g.fillStyle = '#c8102e'; g.fillRect(0, 0, W, 17); g.restore();
+    } else if (kind === 'us') {
+      rr(3, 3, W - 6, H - 6, 16); g.fillStyle = '#ffffff'; g.fill();
+      g.lineWidth = 4; g.strokeStyle = '#202124'; g.stroke();
+    } else {
+      rr(3, 3, W - 6, H - 6, 22); g.fillStyle = '#ffffff'; g.fill();
+      g.lineWidth = 3; g.strokeStyle = '#5f6368'; g.stroke();
+    }
+    return { img: g.getImageData(0, 0, W, H), opts: { pixelRatio: 2, stretchX: [[22, W - 22]], stretchY: [[20, H - 14]], content: [12, kind === 'interstate' ? 18 : 10, W - 12, H - 10] } };
+  }
+  function addShieldLayers(m: MLMap) {
+    for (const k of ['interstate', 'us', 'state'] as const) {
+      const p = shieldPicture(k);
+      if (p && !m.hasImage('shield-' + k)) m.addImage('shield-' + k, p.img, p.opts);
+    }
+    const net = ['to-string', ['coalesce', ['get', 'network'], '']];
+    const text = ['to-string', ['coalesce', ['get', 'shield_text'], ['get', 'ref'], '']];
+    srcNames.forEach((src, i) => {
+      const id = 'shields' + (i ? '-' + i : '');
+      m.addLayer({
+        id, type: 'symbol', source: src, 'source-layer': 'roads', minzoom: 8,
+        filter: ['all', ['in', ['get', 'kind'], ['literal', ['highway', 'major_road']]], ['!=', text, '']],
+        layout: {
+          'symbol-placement': 'line', 'symbol-spacing': 420,
+          'icon-image': ['case', ['==', net, 'US:I'], 'shield-interstate', ['==', net, 'US:US'], 'shield-us', 'shield-state'],
+          'icon-text-fit': 'both', 'icon-text-fit-padding': [1, 3, 1, 3], 'icon-rotation-alignment': 'viewport', 'text-rotation-alignment': 'viewport',
+          'text-field': text, 'text-font': ['Noto Sans Medium'], 'text-size': 11, 'icon-allow-overlap': false, 'text-optional': false,
+        },
+        paint: { 'text-color': ['case', ['==', net, 'US:I'], '#ffffff', '#202124'] },
+      } as unknown as Parameters<MLMap['addLayer']>[0]);
+      vecLayers.push({ id, type: 'symbol' });
+    });
+  }
   function addPoiLayers(m: MLMap, withNames: boolean) {
     for (const g of POI_GROUPS) {
       const filter = ['match', ['get', 'kind'], g.kinds, true, false];
@@ -421,6 +472,7 @@
         m.addLayer({ id: 'drawtmp-line', type: 'line', source: 'drawtmp', filter: ['!', ['has', 'pt']], paint: { 'line-color': '#1a73e8', 'line-width': 3, 'line-dasharray': [2, 2] } });
         m.addLayer({ id: 'drawtmp-pts', type: 'circle', source: 'drawtmp', filter: ['has', 'pt'], paint: { 'circle-radius': 5, 'circle-color': '#ffffff', 'circle-stroke-color': '#1a73e8', 'circle-stroke-width': 2 } });
         addPoiLayers(m, labelsOn);
+        if (labelsOn) { try { addShieldLayers(m); } catch { /* the shields are a nicety: the map works without them */ } }
         m.addLayer({ id: 'route-line', type: 'line', source: 'route', paint: { 'line-color': '#ff9a1f', 'line-width': 4 } });
         m.addLayer({ id: 'dir-casing', type: 'line', source: 'dir', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 9 } });
         m.addLayer({ id: 'dir-line', type: 'line', source: 'dir', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#1a73e8', 'line-width': 5.5 } });
