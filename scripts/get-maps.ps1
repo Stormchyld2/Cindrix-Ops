@@ -51,6 +51,13 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 
+# Everything this window says is also kept in <Target>\maps\get-maps-log.txt, so a message that scrolls past can be read later.
+try {
+  $logDir = Join-Path $Target 'maps'
+  New-Item -ItemType Directory -Force -Path $logDir | Out-Null
+  Start-Transcript -Path (Join-Path $logDir 'get-maps-log.txt') -Append | Out-Null
+} catch { }
+
 function Build-Places([string]$root) {
   $dir = Join-Path $root 'maps\places'
   New-Item -ItemType Directory -Force -Path $dir | Out-Null
@@ -202,8 +209,15 @@ foreach ($job in $jobs) {
   $part = "$out.part"
   if (Test-Path $part) { Remove-Item $part }
   Write-Host "Extracting $($job.Name) (box $($job.Box), zoom 0 to $MaxZoom). A big area can take a long time ..."
-  & $pm extract $Source $part "--bbox=$($job.Box)" "--maxzoom=$MaxZoom"
-  if ($LASTEXITCODE -ne 0) { throw "pmtiles extract failed for $($job.Name) (exit $LASTEXITCODE)." }
+  # A long download over the internet can be cut off partway (a "stream" or "connection reset" message). Try again a few times.
+  $ok = $false
+  for ($try = 1; $try -le 5 -and -not $ok; $try++) {
+    if (Test-Path $part) { Remove-Item $part }
+    & $pm extract $Source $part "--bbox=$($job.Box)" "--maxzoom=$MaxZoom"
+    if ($LASTEXITCODE -eq 0) { $ok = $true }
+    elseif ($try -lt 5) { Write-Host "The download was cut off (exit $LASTEXITCODE). Waiting 30 seconds, then trying again ($try of 5 done) ..."; Start-Sleep -Seconds 30 }
+  }
+  if (-not $ok) { throw "pmtiles extract failed for $($job.Name) after 5 tries (exit $LASTEXITCODE). Run Get-Maps.bat again; finished areas are kept." }
   # A real PMTiles v3 file starts with the letters PMTiles and the number 3.
   $head = New-Object byte[] 8
   $fs = [System.IO.File]::OpenRead($part)
