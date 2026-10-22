@@ -4,6 +4,17 @@ The reader is the **Intel** screen (its own tab in the top menu) where ZIM files
 pages: Wikipedia, medical guides, repair manuals and the websites you saved yourself. Adding, removing,
 saving websites and sharing stay in Library, then Archives. See [23](23-intel-search-settings.md).
 
+## Which one shows the pages (2026-10-21)
+
+Some archives (websites saved with a tool that relies on a browser's own features, such as the
+"True prepper" one) stay blank in the built-in reader. So Intel shows pages through the library
+server (`kiwix-serve`) whenever it is running, which handles every kind of archive. Settings, Intel
+lets the person pick the built-in reader instead; it is also what is used when the server is not
+running. Trade-off: a page shown by the server is in a separate web address, so Intel cannot follow
+the links clicked inside it (tab titles, the bookmark star and Back inside an archive only know the
+page that was opened, not later ones). Text size works. Owning the server, so both work together, is
+the plan in doc 24.
+
 ## Built in: no Kiwix program needed
 
 The program reads ZIM files itself (`core/src/zimread.rs`, `library.rs`). It understands:

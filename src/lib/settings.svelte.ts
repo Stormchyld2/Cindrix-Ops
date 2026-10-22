@@ -28,6 +28,7 @@ export type Settings = {
   autoRestartLibrary: boolean;
   // Intel
   intelStart: 'archives' | 'first';
+  intelReader: 'server' | 'builtin';
   intelRestoreTabs: boolean;
   // Music
   showMiniPlayer: boolean;
@@ -56,6 +57,7 @@ export const DEFAULTS: Settings = {
   autoScanShelf: true,
   autoRestartLibrary: true,
   intelStart: 'archives',
+  intelReader: 'server',
   intelRestoreTabs: false,
   showMiniPlayer: true,
   scanMusicOnStart: true,
@@ -80,6 +82,7 @@ export const CHOICES: Record<string, readonly string[]> = {
   answerLength: ['short', 'normal', 'long'],
   searchSpeed: ['quick', 'normal', 'thorough'],
   intelStart: ['archives', 'first'],
+  intelReader: ['server', 'builtin'],
   mapUnits: ['imperial', 'metric'],
 };
 

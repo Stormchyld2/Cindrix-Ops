@@ -52,7 +52,7 @@ One file, `user/settings.json`, on the drive. The list, defaults and ranges are 
 | General | interface size (85 to 150%), start screen, status bar |
 | Assistant | model choice; what it may search (books, archives, files, saved websites); passages read (1 to 6); answer length; how long to look through files; show sources; extra folders |
 | Library | put drive books on the Shelf automatically; pick up new archives by themselves |
-| Intel | what a new tab opens on; remember open tabs |
+| Intel | what a new tab opens on; whether pages are shown by the library server (default) or the built-in reader; remember open tabs |
 | Music | small player at the bottom; scan the music folder at start |
 | Maps | miles or kilometres |
 | Plan | act-now days, check days, use-by window in months (Inventory and What fails) |

@@ -42,6 +42,9 @@
 
   const tab = $derived(tabs.find((t) => t.id === active));
   const loc = $derived(tab ? tab.history[tab.idx] : undefined);
+  // Pages come from the library server (a proper web server, so every kind of archive works) when it is
+  // running and the person has not asked for the built-in reader.
+  const serverOn = $derived(settings.values.intelReader === 'server' && !!st?.url && st.url !== 'preview');
   const here = $derived(loc && loc.t === 'page' ? loc.path : '');
   const bookHere = $derived(bookOf(here));
   const marked = $derived(here !== '' && bookmarks.some((b) => b.path === here));
@@ -86,6 +89,7 @@
 
   onMount(async () => {
     origin = await zimOrigin();
+    try { st = await libraryStatus(); } catch { /* the built-in reader is used */ }
     window.addEventListener('message', onMessage);
     let restored = false;
     try {
@@ -181,7 +185,12 @@
 
   /** Put what a location holds on screen. */
   async function show(l: Loc) {
-    if (l.t === 'page') {
+    if (l.t === 'page' && serverOn && st?.url) {
+      // the page is in another window's hands from here: it cannot report back where it goes
+      pending = null;
+      src = st.url + l.path.replace(/^\//, '');
+      srcdoc = undefined;
+    } else if (l.t === 'page') {
       pending = l.path;
       const f = await zimFrame(l.path);
       // the frame is already at this address: no page-loaded message will come
@@ -350,7 +359,7 @@
     {#if plain && st?.url}
       <iframe title="Plain Kiwix screen" src={plainUrl ?? st.url} sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
     {:else if loc?.t === 'page'}
-      <iframe bind:this={frame} title="Archive page" {src} {srcdoc} sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
+      <iframe bind:this={frame} title="Archive page" {src} {srcdoc} style:zoom={serverOn ? zoom / 100 : undefined} sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
     {:else if loc?.t === 'results'}
       <div class="scroll">
         <h2>Results for “{loc.term}”</h2>
@@ -406,7 +415,7 @@
   </div>
   <div class="row fine muted">
     {#if st?.url && st.url !== 'preview'}
-      {#if !plain && bookHere}
+      {#if !plain && bookHere && !serverOn}
         <span>Page blank or broken?</span>
         <button class="linkbtn" onclick={openInServer}>Open {bookTitle(bookHere)} in the library server</button>
         <span>·</span>
