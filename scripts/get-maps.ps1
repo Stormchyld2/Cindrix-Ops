@@ -30,7 +30,7 @@ param(
   # A Protomaps daily build (.pmtiles). If left empty, the newest build is looked up.
   # The list of builds is at https://maps.protomaps.com/builds
   [string]$Source = '',
-  [ValidateSet('conus','alaska','hawaii')][string[]]$Regions = @('conus'),
+  [ValidateSet('conus','alaska','hawaii')][string[]]$Regions = @('conus','alaska','hawaii'),
   # Your own area instead of the regions above: "west,south,east,north" in decimal degrees.
   [string]$Bbox = '',
   # The file name (without .pmtiles) used for -Bbox.

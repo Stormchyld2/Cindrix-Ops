@@ -63,7 +63,9 @@ pub fn route(music_root: &Path, cache_dir: &Path, requested: &str) -> Option<Rou
 /// A picture sitting in the same folder as a track: cover, folder, front or album art.
 pub fn folder_art(track: &Path) -> Option<PathBuf> {
     let dir = track.parent()?;
+    let track_stem = track.file_stem().map(|s| s.to_string_lossy().to_lowercase());
     let mut best: Option<(usize, PathBuf)> = None;
+    let mut images: Vec<PathBuf> = Vec::new();
     for e in fs::read_dir(dir).ok()?.flatten() {
         if !e.file_type().map(|t| t.is_file()).unwrap_or(false) {
             continue;
@@ -73,14 +75,21 @@ pub fn folder_art(track: &Path) -> Option<PathBuf> {
         if !matches!(ext, "jpg" | "jpeg" | "png") || !valid_part(&name) {
             continue;
         }
-        let rank = ["cover", "folder", "front", "albumart", "album"].iter().position(|s| *s == stem);
+        images.push(e.path());
+        // a picture named like the song (Song.wav and Song.jpg) is the best match, then the usual album names
+        let rank = if Some(stem.to_string()) == track_stem {
+            Some(0)
+        } else {
+            ["cover", "folder", "front", "albumart", "albumartsmall", "albumartlarge", "album", "art", "thumb"].iter().position(|s| *s == stem).map(|r| r + 1)
+        };
         if let Some(r) = rank {
             if best.as_ref().map(|(b, _)| r < *b).unwrap_or(true) {
                 best = Some((r, e.path()));
             }
         }
     }
-    best.map(|(_, p)| p)
+    // A folder with one picture and nothing else named: that picture is the cover.
+    best.map(|(_, p)| p).or_else(|| if images.len() == 1 { images.pop() } else { None })
 }
 
 #[cfg(test)]
@@ -126,6 +135,22 @@ mod tests {
         // encoded twice (what the program used to send) is not a real name, so it is refused
         let twice = "/t%2FThe%2520Man%2520I'm%2520Tryin%2520To%2520Be%2Fi'LL%2520BE%2520THERE.mp3";
         assert_eq!(route(&m, &c, twice), None);
+    }
+
+    #[test]
+    fn folder_pictures_are_matched_by_song_name_usual_names_or_being_the_only_one() {
+        let (m, _c) = setup("folderart");
+        let dir = m.join("Artist/Album");
+        let track = dir.join("01 - Song (live).mp3");
+        assert_eq!(folder_art(&track), None); // no pictures
+        fs::write(dir.join("whatever.jpg"), b"x").unwrap();
+        assert_eq!(folder_art(&track), Some(dir.join("whatever.jpg"))); // the only picture
+        fs::write(dir.join("other.png"), b"x").unwrap();
+        assert_eq!(folder_art(&track), None); // two unnamed pictures: no guess
+        fs::write(dir.join("AlbumArtSmall.jpg"), b"x").unwrap();
+        assert_eq!(folder_art(&track), Some(dir.join("AlbumArtSmall.jpg")));
+        fs::write(dir.join("01 - Song (live).png"), b"x").unwrap();
+        assert_eq!(folder_art(&track), Some(dir.join("01 - Song (live).png"))); // named like the song wins
     }
 
     #[test]

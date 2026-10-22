@@ -21,6 +21,7 @@
   import { onMount } from 'svelte';
   import { modelStatus, libraryStatus, productInfo, librariesList, libraryAnswer, type ModelStatus, type ProductInfo, type LibraryEntry } from './lib/api';
   import { settings, applyUiScale } from './lib/settings.svelte';
+  import { installTooltips } from './lib/tooltips';
   let ms: ModelStatus | null = $state(null);
   let sharing = $state(false);
   let online = $state(false);
@@ -52,10 +53,16 @@
     poll();
     // the saved settings: open on the screen the owner chose
     void settings.load().then(() => {
+      // The Dashboard became the opening screen: switch it once for people who still have the old default.
+      if (!settings.values.dashboardDefaultDone) {
+        if (settings.values.startScreen === 'Ask') settings.set('startScreen', 'Dashboard');
+        settings.set('dashboardDefaultDone', true);
+      }
       const want = settings.values.startScreen;
-      if (group === 'Ask' && want !== 'Ask') group = want;
+      if (group === 'Dashboard' && want !== 'Dashboard') group = want;
     });
-    return () => clearInterval(t);
+    const stopTips = installTooltips();
+    return () => { clearInterval(t); stopTips(); };
   });
   // interface size (Settings, General)
   $effect(() => { if (settings.loaded) void applyUiScale(settings.values.uiScale); });
@@ -77,7 +84,7 @@
   );
   const planTabs = ['Start', 'Drills', 'Family', 'Binder', 'What fails'] as const;
 
-  let group: Group = $state('Ask');
+  let group: Group = $state('Dashboard');
   // If the current screen is switched off for this product, move to the first one that is on.
   $effect(() => { if (groups.length && !groups.includes(group)) group = groups[0]; });
   let plan: (typeof planTabs)[number] = $state('Start');

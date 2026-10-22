@@ -58,10 +58,16 @@
           "note": "All are DRAFTS until a clinician or qualified reviewer has signed them off. Not medical or legal advice."
         },
         {
-          "name": "Academy course (7 modules)",
+          "name": "Academy courses (Survival basics, 7 modules)",
           "license": "Written for this project, from public-domain US government manuals",
           "status": "in this build",
           "note": "Based on US Army field manuals (FM 21-76, FM 3-25.26, FM 3-05.70), FEMA/Ready.gov, CDC and Red Cross public guidance. Each lesson names its source. All are DRAFTS until a qualified reviewer signs them off. Not medical or legal advice."
+        },
+        {
+          "name": "Academy courses added by you or others",
+          "license": "Set by the author in each course's course.md",
+          "status": "you add",
+          "note": "A course with no license named is not shipped. Courses never contain medicine doses."
         }
       ]
     },
@@ -87,10 +93,16 @@
           "note": "Only titles checked as public domain in the US."
         },
         {
-          "name": "OpenStreetMap data",
+          "name": "OpenStreetMap street maps (Protomaps build, whole US)",
           "license": "ODbL 1.0",
           "status": "planned",
-          "note": "\u00a9 OpenStreetMap contributors is shown on every map."
+          "note": "Made on your computer by scripts\\get-maps.ps1. Credit \"© OpenStreetMap contributors\" is shown on every map."
+        },
+        {
+          "name": "GeoNames places list",
+          "license": "CC BY 4.0",
+          "status": "you add",
+          "note": "Made by scripts\\get-maps.ps1 -Places. Lets the Maps screen find towns, ZIP codes, parks and lakes offline. Credit: GeoNames, geonames.org."
         },
         {
           "name": "USGS NAIP aerial photos",

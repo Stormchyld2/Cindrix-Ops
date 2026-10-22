@@ -45,10 +45,38 @@
   let resizer: ResizeObserver | null = null;
   let startBox: { box: [[number, number], [number, number]]; maxZoom: number } | null = null;
   let markers: Marker[] = [];
+  // full screen, cursor readout, centre cross-hair
+  let stageEl: HTMLDivElement | undefined = $state();
+  let full = $state(false);
+  let apiFull = false;
+  let cursor: LatLon | null = $state(null);
+  let centre: LatLon | null = $state(null);
+  let cross = $state(true);
+  let drawer = $state(true);
+
+  function toggleFull() {
+    full = !full;
+    if (full) {
+      // Also ask the window to hide its own frame. If that is refused the map still fills the app.
+      try { void stageEl?.requestFullscreen?.().then(() => (apiFull = true)).catch(() => (apiFull = false)); } catch { apiFull = false; }
+    } else if (document.fullscreenElement) {
+      void document.exitFullscreen().catch(() => {});
+      apiFull = false;
+    }
+    queueMicrotask(() => map?.resize());
+    setTimeout(() => map?.resize(), 150);
+  }
+  function onFullChange() {
+    if (apiFull && !document.fullscreenElement) { full = false; apiFull = false; setTimeout(() => map?.resize(), 100); }
+  }
+  function onKey(e: KeyboardEvent) {
+    if (e.key === 'Escape' && full) { e.preventDefault(); toggleFull(); }
+  }
   let ml: typeof import('maplibre-gl') | null = null;
   let protocol: import('pmtiles').Protocol | null = null;
 
   onMount(async () => {
+    document.addEventListener('fullscreenchange', onFullChange);
     await refresh();
     try {
       packs = await mapPacks();
@@ -57,6 +85,8 @@
     }
   });
   onDestroy(() => {
+    document.removeEventListener('fullscreenchange', onFullChange);
+    if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
     resizer?.disconnect();
     map?.remove();
     map = null;
@@ -149,6 +179,11 @@
         zoomToPoints();
       });
       m.on('click', (e) => onMapClick(e.lngLat.lat, e.lngLat.lng));
+      m.on('mousemove', (e) => { cursor = [Math.round(e.lngLat.lat * 1e5) / 1e5, Math.round(e.lngLat.lng * 1e5) / 1e5]; });
+      m.on('mouseout', () => { cursor = null; });
+      const setCentre = () => { const c = m.getCenter(); centre = [Math.round(c.lat * 1e5) / 1e5, Math.round(c.lng * 1e5) / 1e5]; };
+      m.on('move', setCentre);
+      setCentre();
       map = m;
     } catch (e) {
       tileError = 'The map viewer could not start: ' + String(e);
@@ -431,6 +466,24 @@
   const pinColor = (k: string) => (k === 'rendezvous' ? '#6fbf73' : '#5aa9e6');
 </script>
 
+{#snippet pinList()}
+  <ul class="plain">
+    {#each pins as p}
+      <li>
+        <span class="dot" style="background:{pinColor(p.kind)}"></span>
+        {p.label} <span class="muted">{p.lat.toFixed(4)}, {p.lon.toFixed(4)}</span>
+        <button class="link" title="Go to this pin on the map" onclick={() => map?.jumpTo({ center: [p.lon, p.lat], zoom: Math.max(map.getZoom(), 12) })}>go to</button>
+        <button class="link" title="Add this pin to the end of your route" onclick={() => toRoute(p.id)}>add to route</button>
+        <button class="link" title="Delete this pin" onclick={() => removePin(p.id)}>remove</button>
+      </li>
+    {:else}
+      <li class="muted">No pins yet. Choose Pins above, then click the map.</li>
+    {/each}
+  </ul>
+{/snippet}
+
+<svelte:window onkeydown={onKey} />
+
 <section>
   <h1>Maps</h1>
   <p class="sub">Plan with your own points: places to meet, routes between them, and areas to avoid. Save the plan, print it, and export the route for a phone map app.</p>
@@ -474,28 +527,74 @@
     </div>
 
     {#if street}
-      <div class="row">
-        <span class="label">Click the map to add:</span>
-        {#each [['off', 'Nothing'], ['pin', 'Pins'], ['rendezvous', 'Rendezvous points'], ['corner', 'No-go corners']] as [k, t]}
-          <button class="btn" class:primary={addMode === k} onclick={() => (addMode = k as typeof addMode)}>{t}</button>
-        {/each}
-        <button class="btn" onclick={zoomToPoints} disabled={pins.length === 0 && nogo.length === 0}>Zoom to my points</button>
+      <div class="stage" class:full bind:this={stageEl}>
+        <div class="tools">
+          <div class="row">
+            <span class="label">Click the map to add:</span>
+            {#each [['off', 'Nothing', 'Clicking the map does nothing, so you can move it safely'], ['pin', 'Pins', 'Each click drops a pin'], ['rendezvous', 'Rendezvous points', 'Each click marks a place to meet'], ['corner', 'No-go corners', 'Each click adds a corner of an area to avoid']] as [k, t, tip]}
+              <button class="btn" class:primary={addMode === k} title={tip} onclick={() => (addMode = k as typeof addMode)}>{t}</button>
+            {/each}
+            <button class="btn" title="Zoom so all your pins and areas fit on screen" onclick={zoomToPoints} disabled={pins.length === 0 && nogo.length === 0}>Zoom to my points</button>
+            <button class="btn" class:primary={cross} title="Show or hide the cross-hair and the coordinates of the middle of the map" onclick={() => (cross = !cross)}>Cross-hair</button>
+            <button class="btn" title={full ? 'Go back to the normal page (or press Esc)' : 'Make the map fill the whole screen. Your pins and tools stay.'} onclick={toggleFull}>{full ? 'Exit full screen' : 'Full screen'}</button>
+          </div>
+          <div class="row find">
+            <input class="input grow" type="search" placeholder="Find a place: town and state, ZIP code, park, lake, or latitude and longitude" aria-label="Find a place" bind:value={findTerm}
+              onkeydown={(e) => { if (e.key === 'Enter') void findPlace(); }} />
+            <button class="btn" title="Look this place up and move the map to it" onclick={findPlace} disabled={!findTerm.trim() || findBusy}>Find</button>
+            <button class="btn" title="Keep the place you just found as a pin on your map" onclick={pinFound} disabled={!foundMarker}>Pin it</button>
+          </div>
+          {#if finds.length > 1}
+            <ul class="finds" aria-label="Places found">
+              {#each finds as h}
+                <li><button onclick={() => goToPlace(h)}>{h.name}{h.state ? ', ' + h.state : ''} <span class="muted">{h.kind}</span></button></li>
+              {/each}
+            </ul>
+          {/if}
+          {#if findNote}<p class="muted fine">{findNote}</p>{/if}
+          {#if addMode === 'corner'}
+            <div class="row">
+              <span class="muted">{draft.length} corner{draft.length === 1 ? '' : 's'} so far</span>
+              <button class="btn" title="Close the area from the corners clicked so far" onclick={finishArea} disabled={draft.length < 3}>Finish area</button>
+              {#if draft.length > 0}<button class="link" title="Throw away these corners and begin again" onclick={() => (draft = [])}>start over</button>{/if}
+            </div>
+          {/if}
+        </div>
+        <div class="mapbox">
+          <div class="tilemap" bind:this={mapEl} role="application" aria-label="Map"></div>
+          {#if cross}<div class="cross" aria-hidden="true"><span></span></div>{/if}
+          <div class="hud" aria-live="off">
+            {#if cursor}<div>CURSOR {cursor[0].toFixed(5)}, {cursor[1].toFixed(5)}</div>{/if}
+            {#if cross && centre}<div>CENTRE {centre[0].toFixed(5)}, {centre[1].toFixed(5)}</div>{/if}
+          </div>
+          {#if full}
+            <aside class="drawer" class:closed={!drawer}>
+              <button class="link" title="Show or hide your list of pins and areas" onclick={() => (drawer = !drawer)}>{drawer ? 'Hide list ›' : '‹ My points'}</button>
+              {#if drawer}
+                <div class="label">My points</div>
+                {@render pinList()}
+                {#if route.length > 0}
+                  <p class="muted small">Route: {route.map((id) => pins.find((p) => p.id === id)?.label ?? '?').join(' → ')}
+                    <button class="link" title="Remove the route but keep the pins" onclick={() => (route = [])}>clear route</button></p>
+                {/if}
+                {#if stats}<p class="small"><strong>Route:</strong> {settings.values.mapUnits === 'metric' ? `${stats.km.toFixed(1)} km` : `${stats.miles.toFixed(1)} miles`}, straight line</p>{/if}
+                <div class="label">No-go areas</div>
+                <ul class="plain">
+                  {#each nogo as a, i}
+                    <li>{a.label} <button class="link" title="Remove this area" onclick={() => (nogo = nogo.filter((_, j) => j !== i))}>remove</button></li>
+                  {:else}<li class="muted">None.</li>{/each}
+                </ul>
+                <div class="row">
+                  <input class="input" placeholder="Map name" bind:value={name} aria-label="Map name" />
+                  <button class="btn primary" title="Save this map and everything on it" onclick={save}>Save</button>
+                </div>
+                {#if message}<p class="small">{message}</p>{/if}
+                {#if error}<p class="small errtxt">{error}</p>{/if}
+              {/if}
+            </aside>
+          {/if}
+        </div>
       </div>
-      <div class="row find">
-        <input class="input grow" type="search" placeholder="Find a place: town and state, ZIP code, park, lake, or latitude and longitude" aria-label="Find a place" bind:value={findTerm}
-          onkeydown={(e) => { if (e.key === 'Enter') void findPlace(); }} />
-        <button class="btn" onclick={findPlace} disabled={!findTerm.trim() || findBusy}>Find</button>
-        <button class="btn" onclick={pinFound} disabled={!foundMarker}>Pin it</button>
-      </div>
-      {#if finds.length > 1}
-        <ul class="finds" aria-label="Places found">
-          {#each finds as h}
-            <li><button onclick={() => goToPlace(h)}>{h.name}{h.state ? ', ' + h.state : ''} <span class="muted">{h.kind}</span></button></li>
-          {/each}
-        </ul>
-      {/if}
-      {#if findNote}<p class="muted fine">{findNote}</p>{/if}
-      <div class="tilemap" bind:this={mapEl} role="application" aria-label="Map"></div>
     {:else}
       <svg viewBox="0 0 {W} {H}" role="img" aria-label="Plan view of your points" class="plan">
         <rect width={W} height={H} fill="#0f1110" />
@@ -541,16 +640,7 @@
           <input class="input" placeholder="Longitude, e.g. -80.1" bind:value={pLon} aria-label="Longitude" inputmode="decimal" />
           <button class="btn" onclick={addPin}>Add</button>
         </div>
-        <ul class="plain">
-          {#each pins as p}
-            <li>
-              <span class="dot" style="background:{pinColor(p.kind)}"></span>
-              {p.label} <span class="muted">{p.lat.toFixed(4)}, {p.lon.toFixed(4)}</span>
-              <button class="link" onclick={() => toRoute(p.id)}>add to route</button>
-              <button class="link" onclick={() => removePin(p.id)}>remove</button>
-            </li>
-          {/each}
-        </ul>
+        {@render pinList()}
         {#if route.length > 0}
           <p class="muted">Route order: {route.map((id) => pins.find((p) => p.id === id)?.label ?? '?').join(' → ')}
             <button class="link" onclick={() => (route = [])}>clear route</button></p>
@@ -584,7 +674,7 @@
 
     <div class="label notes-label">Notes</div>
     <textarea class="input" bind:value={notes} placeholder="Written notes for this map: gates, water on the way, who meets where." aria-label="Notes"></textarea>
-    <p class="muted small">Map data comes from © OpenStreetMap contributors. Saved maps are plain files in the user/saved-maps folder.</p>
+    <p class="muted small">Map data comes from © OpenStreetMap contributors. Place names: GeoNames (CC BY 4.0). Saved maps are plain files in the user/saved-maps folder.</p>
   </div>
 </div>
 
@@ -612,7 +702,23 @@
   .finds { list-style: none; margin: 0; padding: 4px; border: 1px solid var(--line2); border-radius: 8px; background: var(--panel2); }
   .finds button { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 6px 8px; border-radius: 6px; }
   .finds button:hover { background: var(--blue-soft); }
-  .tilemap { width: 100%; height: clamp(380px, calc(100vh - 340px), 900px); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #0f1110; }
+  .stage { display: flex; flex-direction: column; gap: 8px; }
+  .stage.full { position: fixed; inset: 0; z-index: 2000; background: #0b0d0c; padding: 10px; }
+  .tools { display: flex; flex-direction: column; gap: 8px; }
+  .mapbox { position: relative; flex: 1; min-height: 0; }
+  .stage.full .mapbox { display: flex; }
+  .stage.full .tilemap { height: auto; flex: 1; }
+  .cross { position: absolute; inset: 0; pointer-events: none; display: grid; place-items: center; }
+  .cross span { width: 34px; height: 34px; position: relative; opacity: .85; }
+  .cross span::before, .cross span::after { content: ''; position: absolute; background: #ff9a1f; }
+  .cross span::before { left: 50%; top: 0; bottom: 0; width: 1px; }
+  .cross span::after { top: 50%; left: 0; right: 0; height: 1px; }
+  .hud { position: absolute; left: 10px; bottom: 28px; padding: 6px 9px; background: #0b0d0ccc; border: 1px solid #3a3f3a; border-left: 3px solid #ff9a1f; border-radius: 4px; font-family: var(--mono, monospace); font-size: 11px; letter-spacing: .06em; color: #cfd6cc; pointer-events: none; }
+  .hud:empty { display: none; }
+  .drawer { position: absolute; top: 10px; right: 10px; bottom: 28px; width: 290px; overflow: auto; padding: 10px; background: #0b0d0cee; border: 1px solid #3a3f3a; border-radius: 8px; display: flex; flex-direction: column; gap: 8px; z-index: 5; }
+  .drawer.closed { width: auto; bottom: auto; }
+  .errtxt { color: #ffb4a6; }
+  .tilemap { width: 100%; height: clamp(520px, calc(100vh - 260px), 1200px); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #0f1110; }
   :global(.pinmark) { display: flex; align-items: center; gap: 6px; pointer-events: none; }
   :global(.pinmark .pdot) { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #0f1110; display: inline-block; }
   :global(.pinmark .plab) { color: #ece7de; font-size: 12px; text-shadow: 0 0 3px #000, 0 0 3px #000; white-space: nowrap; }

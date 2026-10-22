@@ -323,6 +323,12 @@ jobs:
           if [ ! -f out/Cindrix/engines/llama-server.exe ]; then echo "::error::llama-server.exe missing: $(ls -R out/Cindrix/engines | tr '\n' ' ')"; exit 1; fi
           printf 'Put a Qwen3.5 .gguf model file in this folder (for example a 2B or 4B Q4 file).\r\n' > out/Cindrix/models/README.txt
           printf 'Run cindrix-ops.exe. Needs Microsoft WebView2 (already on Windows 11). Put a model file in the models folder.\r\n' > out/Cindrix/README.txt
+      - name: Add the licenses (our texts, plus the license files of the libraries inside the program)
+        shell: bash
+        run: |
+          mkdir -p out/Cindrix/LICENSES
+          cp licenses/*.md licenses/*.txt out/Cindrix/LICENSES/
+          node scripts/collect-licenses.mjs out/Cindrix/LICENSES/third-party
       - name: Include the drive and map scripts (so a downloaded copy can fetch its own library and maps)
         shell: bash
         run: |

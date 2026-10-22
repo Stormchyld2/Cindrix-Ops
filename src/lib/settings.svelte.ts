@@ -12,6 +12,8 @@ export type Settings = {
   // General
   uiScale: number;
   startScreen: Screen;
+  /** The Dashboard became the opening screen; this remembers that the switch was done once. */
+  dashboardDefaultDone: boolean;
   showStatusBar: boolean;
   // Assistant
   searchBooks: boolean;
@@ -43,7 +45,8 @@ export type Settings = {
 
 export const DEFAULTS: Settings = {
   uiScale: 100,
-  startScreen: 'Ask',
+  startScreen: 'Dashboard',
+  dashboardDefaultDone: false,
   showStatusBar: true,
   searchBooks: true,
   searchArchives: true,

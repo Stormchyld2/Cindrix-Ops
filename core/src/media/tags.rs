@@ -411,7 +411,7 @@ fn ogg<R: Read + Seek>(r: &mut R) -> Option<Tags> {
 
 // ---------- WAV ----------
 
-fn wav<R: Read + Seek>(r: &mut R) -> Option<Tags> {
+fn wav<R: Read + Seek>(r: &mut R, want_art: bool) -> Option<(Tags, Option<Art>)> {
     let len = r.seek(SeekFrom::End(0)).ok()?;
     let h = read_at(r, 0, 12)?;
     if &h[..4] != b"RIFF" || &h[8..12] != b"WAVE" {
@@ -419,6 +419,7 @@ fn wav<R: Read + Seek>(r: &mut R) -> Option<Tags> {
     }
     let mut pos = 12u64;
     let mut tags = Tags::default();
+    let mut art = None;
     for _ in 0..64 {
         if pos + 8 > len {
             break;
@@ -432,16 +433,20 @@ fn wav<R: Read + Seek>(r: &mut R) -> Option<Tags> {
                     tags.fill(wav_info(&b[4..]));
                 }
             }
-        } else if (&ch[..4] == b"id3 " || &ch[..4] == b"ID3 ") && (10..=1 << 20).contains(&size) {
+        } else if (&ch[..4] == b"id3 " || &ch[..4] == b"ID3 ") && (10..=(1u64 << 20) + MAX_ART as u64 + 4096).contains(&size) && (want_art || size <= 1 << 20) {
+            // A cover picture lives in this chunk too, so it can be much larger than the text-only tag.
             if let Some(b) = read_at(r, body, size as usize) {
-                if let Some((t, _)) = id3v2(&mut Cursor::new(b), false) {
+                if let Some((t, a)) = id3v2(&mut Cursor::new(b), want_art) {
                     tags.fill(t);
+                    if art.is_none() {
+                        art = a;
+                    }
                 }
             }
         }
         pos = body + size + (size & 1);
     }
-    Some(tags)
+    Some((tags, art))
 }
 
 fn wav_info(b: &[u8]) -> Tags {
@@ -666,7 +671,7 @@ fn read_all(path: &Path, want_art: bool) -> (Tags, Option<Art>) {
         Kind::Mpeg => mpeg(r, want_art),
         Kind::Flac => flac(r, want_art).unwrap_or_default(),
         Kind::Ogg => (ogg(r).unwrap_or_default(), None),
-        Kind::Wav => (wav(r).unwrap_or_default(), None),
+        Kind::Wav => wav(r, want_art).unwrap_or_default(),
         Kind::Mp4 => mp4(r, want_art).unwrap_or_default(),
         Kind::Asf => (asf(r).unwrap_or_default(), None),
         Kind::Unknown => (Tags::default(), None),
@@ -679,7 +684,7 @@ pub fn read_tags(path: &Path) -> Tags {
     read_all(path, false).0
 }
 
-/// The picture embedded in an audio file, when it has one (MP3, FLAC, M4A).
+/// The picture embedded in an audio file, when it has one (MP3, WAV, FLAC, M4A).
 pub fn read_art(path: &Path) -> Option<Art> {
     read_all(path, true).1
 }
@@ -918,8 +923,34 @@ mod tests {
         f.extend(b"LIST");
         f.extend((info.len() as u32).to_le_bytes());
         f.extend(&info);
-        let t = wav(&mut Cursor::new(f)).unwrap();
+        let t = wav(&mut Cursor::new(f), false).unwrap().0;
         assert_eq!(t, Tags { title: "Siren Test".into(), artist: "Alarm Co".into(), album: "Signals".into(), track: 2, year: 2020 });
+    }
+
+    #[test]
+    fn wav_with_an_id3_chunk_gives_its_cover_picture() {
+        let mut pic = vec![0u8];
+        pic.extend(b"image/jpeg\0");
+        pic.push(3);
+        pic.extend(b"front\0");
+        pic.extend(JPEG);
+        let tag = id3_tag(3, &[id3_frame(3, "TIT2", &text(0, "Wav Song")), id3_frame(3, "APIC", &pic)], 0);
+        let mut f = b"RIFF\0\0\0\0WAVE".to_vec();
+        f.extend(b"data");
+        f.extend(1000u32.to_le_bytes());
+        f.extend(vec![0u8; 1000]);
+        f.extend(b"id3 ");
+        f.extend((tag.len() as u32).to_le_bytes());
+        f.extend(&tag);
+        if tag.len() % 2 == 1 {
+            f.push(0);
+        }
+        let (t, art) = wav(&mut Cursor::new(f.clone()), true).unwrap();
+        assert_eq!(t.title, "Wav Song");
+        let art = art.expect("cover from the WAV");
+        assert_eq!((art.mime, art.data.as_slice()), ("image/jpeg", &JPEG[..]));
+        // not read unless asked for
+        assert!(wav(&mut Cursor::new(f), false).unwrap().1.is_none());
     }
 
     fn atom(name: &[u8], body: &[u8]) -> Vec<u8> {

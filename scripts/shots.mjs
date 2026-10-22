@@ -55,6 +55,10 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
   await page.goto(url);
   try {
+  // the program opens on the Dashboard; take the first picture of Ask
+  await page.getByRole('heading', { name: 'Dashboard' }).first().waitFor();
+  await shoot(page, `${label}-0-opens-on-dashboard`);
+  await page.getByRole('button', { name: 'Ask', exact: true }).click();
   await shoot(page, `${label}-1-ask`);
 
   await page.getByRole('button', { name: 'Library', exact: true }).click();
