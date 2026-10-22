@@ -1,0 +1,19 @@
+# input TAB key. Checked by core (norm_street) and by the download's SQL in CI.
+Main Street	MAIN ST
+N. Main St.	N MAIN ST
+North Main Street	N MAIN ST
+123 is not a street	123 IS NOT A ST
+Martin Luther King Jr Boulevard	MARTIN LUTHER KING JR BLVD
+County Road 12	COUNTY RD 12
+Saint Marks Place	ST MARKS PL
+St. Marks Pl	ST MARKS PL
+Mount Vernon Avenue	MT VERNON AVE
+O'Brien Lane	O BRIEN LN
+Avenida de las Palmas	AVENIDA DE LAS PALMAS
+Highway 6	HWY 6
+West 5th Street	W 5TH ST
+Southwest Fort Road	SW FT RD
+Elm   Court	ELM CT
+Oak Av	OAK AVE
+Pine Circle	PINE CIR
+Lake Shore Drive	LAKE SHORE DR

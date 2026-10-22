@@ -370,17 +370,17 @@ export async function mapPacks(): Promise<Pack[]> {
 
 // ---------- finding a place (a town, a ZIP code, a park, a latitude and longitude) ----------
 export type PlaceHit = { name: string; state: string; kind: string; lat: number; lon: number };
-export type PlaceResults = { places: PlaceHit[]; has_list: boolean };
+export type PlaceResults = { places: PlaceHit[]; has_list: boolean; has_addresses: boolean };
 
-export async function placeSearch(query: string): Promise<PlaceResults> {
-  if (inTauri) return call<PlaceResults>('place_search', { query });
+export async function placeSearch(query: string, near?: [number, number]): Promise<PlaceResults> {
+  if (inTauri) return call<PlaceResults>('place_search', { query, nearLat: near?.[0] ?? null, nearLon: near?.[1] ?? null });
   // Browser preview: a few sample places.
   const sample: PlaceHit[] = [
     { name: 'Denver', state: 'CO', kind: 'city', lat: 39.7392, lon: -104.9903 },
     { name: 'Colorado', state: 'CO', kind: 'state', lat: 39.0, lon: -105.5 },
   ];
   const q = query.trim().toLowerCase();
-  return { places: q ? sample.filter((p) => p.name.toLowerCase().startsWith(q)) : [], has_list: false };
+  return { places: q ? sample.filter((p) => p.name.toLowerCase().startsWith(q)) : [], has_list: false, has_addresses: false };
 }
 
 /** The address the map library reads a pack from. Only the desktop app can serve it. */

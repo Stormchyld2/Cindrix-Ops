@@ -466,6 +466,8 @@ struct PlaceResults {
     places: Vec<PlaceDto>,
     /// Is the big list of places on the drive? Without it only states and coordinates are found.
     has_list: bool,
+    /// Are street address files on the drive (maps/addresses)?
+    has_addresses: bool,
 }
 
 static PLACES: Mutex<Option<(std::path::PathBuf, Option<std::time::SystemTime>, std::sync::Arc<cindrix_core::places::Index>)>> = Mutex::new(None);
@@ -485,15 +487,34 @@ fn place_index() -> std::sync::Arc<cindrix_core::places::Index> {
 }
 
 #[tauri::command]
-async fn place_search(query: String) -> PlaceResults {
+async fn place_search(query: String, near_lat: Option<f64>, near_lon: Option<f64>) -> PlaceResults {
     // Reading the list can take a moment the first time, so it is not done on the window's thread.
     tauri::async_runtime::spawn_blocking(move || {
         let ix = place_index();
-        let places = ix.search(&query, 8).into_iter().map(|p| PlaceDto { name: p.name, state: p.state, kind: p.kind, lat: p.lat, lon: p.lon }).collect();
-        PlaceResults { places, has_list: ix.has_list() }
+        let dir = drive_or_program("maps").join("addresses");
+        let has_addresses = cindrix_core::addresses::has_addresses(&dir);
+        // Something that starts with a house number is a street address.
+        let mut places: Vec<PlaceDto> = Vec::new();
+        if has_addresses {
+            let near = near_lat.zip(near_lon);
+            places = cindrix_core::addresses::search(&dir, &query, near, 8)
+                .into_iter()
+                .map(|h| PlaceDto {
+                    name: if h.near { format!("{} (nearby)", h.label()) } else { h.label() },
+                    state: String::new(),
+                    kind: "address".into(),
+                    lat: h.lat,
+                    lon: h.lon,
+                })
+                .collect();
+        }
+        if places.is_empty() {
+            places = ix.search(&query, 8).into_iter().map(|p| PlaceDto { name: p.name, state: p.state, kind: p.kind, lat: p.lat, lon: p.lon }).collect();
+        }
+        PlaceResults { places, has_list: ix.has_list(), has_addresses }
     })
     .await
-    .unwrap_or(PlaceResults { places: vec![], has_list: false })
+    .unwrap_or(PlaceResults { places: vec![], has_list: false, has_addresses: false })
 }
 
 fn tile_reply(status: u16, content_range: Option<String>, body: Vec<u8>) -> tauri::http::Response<Vec<u8>> {

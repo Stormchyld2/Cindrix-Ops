@@ -180,6 +180,24 @@ jobs:
           name: zim-check-log
           path: ${{ runner.temp }}/zimlog.txt
 
+  addresses:
+    name: Street address download makes files the program can search
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Street-name rules agree between the download and the program
+        shell: pwsh
+        run: ./scripts/get-addresses.ps1 -Target "$env:RUNNER_TEMP/drive" -SelfTest core/tests/address_keys.tsv
+      - name: Download a small area (central Denver) the same way a person would
+        shell: pwsh
+        run: ./scripts/get-addresses.ps1 -Target "$env:RUNNER_TEMP/drive" -Bbox:"-105.00,39.73,-104.97,39.76" -Name test
+      - name: The program reads what the download wrote
+        env:
+          CINDRIX_ADDRESS_PACK: ${{ runner.temp }}/drive/maps/addresses/test
+        run: cd core && cargo test --test address_pack -- --nocapture
+
   search-check:
     name: Assistant search works against real kiwix-serve and real archives
     runs-on: ubuntu-latest

@@ -381,7 +381,7 @@
   let findNote = $state('');
   let findBusy = $state(false);
   let foundMarker: Marker | null = null;
-  const ZOOM_FOR: Record<string, number> = { state: 6, county: 9, city: 11, zip: 13, point: 15 };
+  const ZOOM_FOR: Record<string, number> = { state: 6, county: 9, city: 11, zip: 13, point: 15, address: 17 };
 
   async function findPlace() {
     const q = findTerm.trim();
@@ -389,11 +389,12 @@
     findBusy = true;
     findNote = '';
     try {
-      const r = await placeSearch(q);
+      const c = map?.getCenter();
+      const r = await placeSearch(q, c ? [c.lat, c.lng] : undefined);
       finds = r.places;
       if (!finds.length) {
         findNote = r.has_list
-          ? 'Nothing matches. Try the town and state ("Denver, CO"), a ZIP code, or a latitude and longitude.'
+          ? 'Nothing matches. Try the town and state ("Denver, CO"), a ZIP code, or a latitude and longitude.' + (r.has_addresses ? ' For a street address type the house number first ("123 Main St, Denver CO"); the address data does not have every house.' : ' To look up street addresses, run Get-Addresses.bat from the scripts folder on the drive.')
           : 'Nothing matches. Without the places list on the drive only states and a latitude and longitude are found (see Settings, Maps, or run scripts\\get-maps.ps1 with -Places).';
       } else if (finds.length === 1) {
         goToPlace(finds[0]);
@@ -681,7 +682,7 @@
           {#if finds.length > 1}
             <ul class="finds" aria-label="Places found">
               {#each finds as h}
-                <li><button onclick={() => goToPlace(h)}>{h.name}{h.state ? ', ' + h.state : ''} <span class="muted">{h.kind}</span></button></li>
+                <li><button onclick={() => goToPlace(h)}>{h.name}{h.state ? ', ' + h.state : ''} <span class="muted">{h.kind === 'address' ? '' : h.kind}</span></button></li>
               {/each}
             </ul>
           {/if}

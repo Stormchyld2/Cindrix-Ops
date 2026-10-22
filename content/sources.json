@@ -123,6 +123,12 @@
           "note": "Made by scripts\\get-maps.ps1 -Places. Lets the Maps screen find towns, ZIP codes, parks and lakes offline. Credit: GeoNames, geonames.org."
         },
         {
+          "name": "Overture Maps street addresses",
+          "license": "Mixed: each source keeps its own open license (CC BY, CDLA Permissive and others)",
+          "status": "you add",
+          "note": "Made on your computer by scripts\\get-addresses.ps1 into maps\\addresses. Lets the Maps screen find a street address offline. Credit: Overture Maps Foundation and its address sources, docs.overturemaps.org/attribution. Not every house is in it."
+        },
+        {
           "name": "USGS NAIP aerial photos",
           "license": "Public domain (US government)",
           "status": "planned",

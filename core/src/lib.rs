@@ -1,6 +1,7 @@
 //! Cindrix Ops core. Standard library only.
 
 pub mod academy;
+pub mod addresses;
 pub mod calendar;
 pub mod cards;
 pub mod cascade;
