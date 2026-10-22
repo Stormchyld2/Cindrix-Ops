@@ -57,6 +57,23 @@
     {:else}Search-only mode. {status.message}{/if}
   </p>
 {/if}
+<div class="warn" role="note">
+  <strong>This helper can be wrong.</strong> It is a small program that reads a few pages from your library and
+  puts them in its own words. It can miss details or get things mixed up, so use it to find the right page,
+  and check the page it names before you act. For anything about health, safety or medicine, trust the
+  source and a real person, not this answer. It never gives medicine doses.
+</div>
+<details class="panel how" open={thread.length === 0}>
+  <summary>How to use Ask</summary>
+  <ul>
+    <li>Ask one thing at a time, in plain words: "How do I make water safe to drink?" works better than "water, fire and shelter".</li>
+    <li>Use the words a book would use ("purify", "bleeding", "hypothermia"). The search matches words, so a different word may find nothing.</li>
+    <li>Look at the <b>Sources</b> under each answer and open them. The source is right; the summary may not be.</li>
+    <li>If it says it could not find an answer, the library may not cover it. Try other words, or look in Library, Intel or Academy.</li>
+    <li>For an emergency, open the emergency card when one is offered. Those were written and checked by people.</li>
+    <li>It is slower on a phone than on a laptop. Wait for the answer to finish.</li>
+  </ul>
+</details>
 <section class="chat">
   {#if thread.length === 0}
     <p class="muted">Ask a question. Answers come only from the library on this drive and show where they came from. It looks in the emergency cards{searching.length ? ', ' + searching.join(', ') : ''}. You can change that in Settings.</p>
@@ -65,6 +82,9 @@
     <div class="msg {m.who}">
       <div class="label">{m.who === 'you' ? 'YOU' : 'CINDRIX'}</div>
       <div class="text">{m.text}</div>
+      {#if m.reply?.kind === 'Answered'}
+        <div class="muted small">Check this against the source before you rely on it.</div>
+      {/if}
       {#if settings.values.showSourceChips && m.reply?.sources.length}
         <div class="sources">Sources: {#each m.reply.sources as s}<span class="chip">{s}</span>{/each}</div>
       {/if}
@@ -89,6 +109,11 @@
   .sources { margin-top: 10px; font-size: 12px; color: var(--muted); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   .chip { padding: 3px 10px; border-radius: 999px; background: #1f2a1d; border: 1px solid #34502f; color: #9fd18f; }
   .link { margin-top: 8px; background: none; border: 0; color: var(--blue); padding: 0; text-decoration: underline; }
+  .warn { margin: 0 0 12px; padding: 12px 14px; border-radius: 12px; border: 1px solid #7a5a1c; background: #2a2210; color: #f0d9a0; max-width: 760px; }
+  .how { max-width: 760px; margin: 0 0 12px; padding: 10px 14px; }
+  .how summary { cursor: pointer; font-weight: 600; }
+  .how ul { margin: 8px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+  .small { font-size: 12px; margin-top: 8px; }
   .status { font-size: 12px; margin: 0 0 8px; }
   .grow { flex: 1 1 280px; padding: 13px 14px; }
 </style>

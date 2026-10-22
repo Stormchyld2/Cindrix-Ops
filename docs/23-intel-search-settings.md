@@ -60,3 +60,7 @@ One file, `user/settings.json`, on the drive. The list, defaults and ranges are 
 
 Sharing the library on the network is deliberately **not** a setting: it is off at every start and is
 turned on, with a warning, in Archives.
+
+
+## Ask warning
+The Ask screen always shows a notice that the helper can be wrong (it is a small model working from a few pages), a short "How to use Ask" list (open at first, folded once a question is asked), and a reminder under each written answer to check the source. Wording is plain; it says again that Ask never gives medicine doses. See doc 25 for how to test it.
