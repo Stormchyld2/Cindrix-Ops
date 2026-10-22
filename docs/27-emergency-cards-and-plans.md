@@ -77,3 +77,10 @@ The Windows build no longer carries cards, plans, drills, courses or seed guides
 README). Only the credits list (`content/sources.json`) and the tiny sample library stay beside the program. The program reads
 these folders from the drive root (and `user\...` for the person's own additions). The "Open the folder" button copies templates
 from the drive's own folder when the shipped content is not there.
+
+## Ask: kept chats and openable sources (2026-10-22)
+* The chat lives in `src/lib/chat.svelte.ts`, so it stays when you look at another screen. Each answered chat is saved as plain
+  text in `user/chats` (a few KB each); "Past chats" lists, reads and deletes them; "New chat" starts again.
+* Each source under an answer carries a link (`Passage.link`, `Reply.links`): archive pages open in Intel in a tab of their own.
+  Sources from books, files and saved sites have no page to open yet and stay as labels.
+* The top bar (brand, sections and the sub-tabs) is fixed at the top; the brand reads CINDRIX OPS with no edition name.

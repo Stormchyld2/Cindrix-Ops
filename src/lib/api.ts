@@ -2,7 +2,7 @@
 // so the screens can be previewed and screenshotted.
 
 export type Card = { id: string; title: string; kind: string; status: string; reviewer: string; reviewed: string; body: string };
-export type Reply = { kind: 'Refused' | 'NotFound' | 'Answered' | 'Replaced'; text: string; sources: string[]; card: string | null };
+export type Reply = { kind: 'Refused' | 'NotFound' | 'Answered' | 'Replaced'; text: string; sources: string[]; links?: string[]; card: string | null };
 export type Item = {
   id: string; category: string; name: string; location: string; quantity: number; unit: string;
   use_per_day: number; use_by: string; notes: string;
@@ -178,6 +178,26 @@ export async function familySave(family: Family, passphrase?: string): Promise<v
 export async function exportText(name: string, text: string): Promise<string> {
   if (inTauri) return call<string>('export_text', { name, text });
   return 'user\\exports\\' + name;
+}
+
+// ---------- Ask chats (saved as plain text under user/chats) ----------
+export type ChatInfo = { name: string; when: number };
+let memChats: Record<string, { text: string; when: number }> = {};
+export async function chatSave(name: string, text: string): Promise<void> {
+  if (inTauri) return call<void>('chat_save', { name, text });
+  memChats[name] = { text, when: Math.floor(Date.now() / 1000) };
+}
+export async function chatList(): Promise<ChatInfo[]> {
+  if (inTauri) return call<ChatInfo[]>('chat_list');
+  return Object.entries(memChats).map(([name, v]) => ({ name, when: v.when })).sort((a, b) => b.when - a.when);
+}
+export async function chatRead(name: string): Promise<string> {
+  if (inTauri) return call<string>('chat_read', { name });
+  return memChats[name]?.text ?? '';
+}
+export async function chatDelete(name: string): Promise<void> {
+  if (inTauri) return call<void>('chat_delete', { name });
+  delete memChats[name];
 }
 
 // ---------- bookshelf ----------

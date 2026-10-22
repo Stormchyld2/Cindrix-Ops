@@ -137,7 +137,7 @@ pub fn search(base: &Path, roots: &[PathBuf], question: &str, limit: usize, lim:
                     let head = if head.is_empty() { stem.clone() } else { head };
                     let sc = retrieval::score(&q, &head, &body);
                     if sc >= retrieval::MIN_SCORE {
-                        found.push(Passage { source: source.clone(), heading: head, text: body, score: sc });
+                        found.push(Passage { source: source.clone(), heading: head, text: body, score: sc, link: String::new() });
                     }
                 }
             }
@@ -146,13 +146,13 @@ pub fn search(base: &Path, roots: &[PathBuf], question: &str, limit: usize, lim:
                 let plain = html_to_text(&text);
                 let sc = retrieval::score(&q, &title, &plain);
                 if sc >= retrieval::MIN_SCORE {
-                    found.push(Passage { source: source.clone(), heading: title.clone(), text: best_chunk(&title, &plain, question), score: sc });
+                    found.push(Passage { source: source.clone(), heading: title.clone(), text: best_chunk(&title, &plain, question), score: sc, link: String::new() });
                 }
             }
             _ => {
                 let sc = retrieval::score(&q, &stem, &text);
                 if sc >= retrieval::MIN_SCORE {
-                    found.push(Passage { source: source.clone(), heading: stem.clone(), text: best_chunk(&stem, &text, question), score: sc });
+                    found.push(Passage { source: source.clone(), heading: stem.clone(), text: best_chunk(&stem, &text, question), score: sc, link: String::new() });
                 }
             }
         }

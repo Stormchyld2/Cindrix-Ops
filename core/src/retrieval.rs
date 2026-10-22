@@ -10,6 +10,8 @@ pub struct Passage {
     pub heading: String,
     pub text: String,
     pub score: f64,
+    /// Where to open the page this came from: an Intel address (`/content/<book>/<page>`), `card:<id>`, or empty.
+    pub link: String,
 }
 
 const STOP: &[&str] = &[
@@ -82,7 +84,7 @@ pub fn search(dir: &Path, question: &str, limit: usize) -> Vec<Passage> {
                 for (head, body) in sections(&text) {
                     let sc = score(&q, &head, &body);
                     if sc >= MIN_SCORE {
-                        found.push(Passage { source: src.clone(), heading: head, text: body, score: sc });
+                        found.push(Passage { source: src.clone(), heading: head, text: body, score: sc, link: String::new() });
                     }
                 }
             }

@@ -40,6 +40,8 @@ pub struct Reply {
     pub kind: Kind,
     pub text: String,
     pub sources: Vec<String>,
+    /// Where each source opens, in the same order as `sources` (empty text when it cannot be opened).
+    pub links: Vec<String>,
     /// Card to show next to the reply, if any.
     pub card: Option<String>,
 }
@@ -62,17 +64,19 @@ pub fn answer_stream(question: &str, library: &Path, model: &dyn Model, emit: &m
 pub fn answer_stream_with(question: &str, passages: &dyn Fn() -> Vec<retrieval::Passage>, model: &dyn Model, emit: &mut dyn FnMut(Event)) -> Reply {
     if let Some(fixed) = safety::gate(question) {
         emit(Event::Replace(fixed.to_string()));
-        return Reply { kind: Kind::Refused, text: fixed.to_string(), sources: vec![], card: Some(safety::FIXED_REPLY_CARD.to_string()) };
+        return Reply { kind: Kind::Refused, text: fixed.to_string(), sources: vec![], links: vec![], card: Some(safety::FIXED_REPLY_CARD.to_string()) };
     }
     let passages = passages();
     let (system, user) = match prompt::build_parts(question, &passages) {
         Some(p) => p,
         None => {
             emit(Event::Text(prompt::NOT_FOUND.to_string()));
-            return Reply { kind: Kind::NotFound, text: prompt::NOT_FOUND.to_string(), sources: vec![], card: None };
+            return Reply { kind: Kind::NotFound, text: prompt::NOT_FOUND.to_string(), sources: vec![], links: vec![], card: None };
         }
     };
-    let sources = prompt::source_labels(&passages);
+    let refs = prompt::source_refs(&passages);
+    let sources: Vec<String> = refs.iter().map(|r| r.0.clone()).collect();
+    let links: Vec<String> = refs.iter().map(|r| r.1.clone()).collect();
 
     let mut guard = SafeStream::new();
     let mut shown = String::new();
@@ -94,31 +98,31 @@ pub fn answer_stream_with(question: &str, passages: &dyn Fn() -> Vec<retrieval::
 
     if replaced || guard.is_tripped() {
         emit(Event::Replace(safety::FIXED_REPLY.to_string()));
-        return Reply { kind: Kind::Replaced, text: safety::FIXED_REPLY.to_string(), sources: vec![], card: Some(safety::FIXED_REPLY_CARD.to_string()) };
+        return Reply { kind: Kind::Replaced, text: safety::FIXED_REPLY.to_string(), sources: vec![], links: vec![], card: Some(safety::FIXED_REPLY_CARD.to_string()) };
     }
     match result {
         Ok(_) => match guard.finish() {
             Out::Replace => {
                 emit(Event::Replace(safety::FIXED_REPLY.to_string()));
-                Reply { kind: Kind::Replaced, text: safety::FIXED_REPLY.to_string(), sources: vec![], card: Some(safety::FIXED_REPLY_CARD.to_string()) }
+                Reply { kind: Kind::Replaced, text: safety::FIXED_REPLY.to_string(), sources: vec![], links: vec![], card: Some(safety::FIXED_REPLY_CARD.to_string()) }
             }
             Out::Emit(t) => {
                 shown.push_str(&t);
                 emit(Event::Text(t));
-                Reply { kind: Kind::Answered, text: shown, sources, card: None }
+                Reply { kind: Kind::Answered, text: shown, sources, links: links.clone(), card: None }
             }
-            Out::Nothing => Reply { kind: Kind::Answered, text: shown, sources, card: None },
+            Out::Nothing => Reply { kind: Kind::Answered, text: shown, sources, links: links.clone(), card: None },
         },
         Err(_) => {
             let msg = "The model isn't available right now. You can still read the Library and the emergency cards.";
             if shown.is_empty() {
                 emit(Event::Replace(msg.to_string()));
-                Reply { kind: Kind::Replaced, text: msg.to_string(), sources: vec![], card: None }
+                Reply { kind: Kind::Replaced, text: msg.to_string(), sources: vec![], links: vec![], card: None }
             } else {
                 let tail = "\n\n(The model stopped before it finished.)";
                 emit(Event::Text(tail.to_string()));
                 shown.push_str(tail);
-                Reply { kind: Kind::Answered, text: shown, sources, card: None }
+                Reply { kind: Kind::Answered, text: shown, sources, links: links.clone(), card: None }
             }
         }
     }

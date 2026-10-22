@@ -20,15 +20,59 @@ impl UserDir {
     pub fn family_path(&self) -> PathBuf {
         self.root.join("family.json")
     }
-    /// Save a readable plain-text copy in `exports/` (never locked). The name must be a plain file name ending in .txt.
-    pub fn write_export(&self, name: &str, text: &str) -> Result<PathBuf, String> {
-        let ok = name.ends_with(".txt") && name.len() > 4 && !name.contains(['/', '\\', ':']) && !name.starts_with('.');
-        if !ok {
+    fn safe_txt(name: &str) -> bool {
+        name.ends_with(".txt") && name.len() > 4 && name.len() <= 120 && !name.contains(['/', '\\', ':']) && !name.starts_with('.')
+    }
+    fn write_txt(&self, dir: &str, name: &str, text: &str) -> Result<PathBuf, String> {
+        if !Self::safe_txt(name) {
             return Err("That file name cannot be used.".into());
         }
-        let path = self.root.join("exports").join(name);
+        let path = self.root.join(dir).join(name);
         fsio::write_atomic(&path, text.as_bytes()).map_err(|e| format!("The copy could not be saved: {}", e))?;
         Ok(path)
+    }
+    /// Save a readable plain-text copy in `exports/` (never locked). The name must be a plain file name ending in .txt.
+    pub fn write_export(&self, name: &str, text: &str) -> Result<PathBuf, String> {
+        self.write_txt("exports", name, text)
+    }
+    /// Save a past Ask chat as a text file in `chats/`.
+    pub fn write_chat(&self, name: &str, text: &str) -> Result<PathBuf, String> {
+        if text.len() > 400_000 {
+            return Err("That chat is too long to save.".into());
+        }
+        self.write_txt("chats", name, text)
+    }
+    /// The saved chats, newest first (at most 200): file name and modified time in seconds.
+    pub fn list_chats(&self) -> Vec<(String, u64)> {
+        let mut v: Vec<(String, u64)> = fs::read_dir(self.root.join("chats"))
+            .map(|rd| {
+                rd.flatten()
+                    .filter_map(|e| {
+                        let n = e.file_name().to_string_lossy().to_string();
+                        if !Self::safe_txt(&n) {
+                            return None;
+                        }
+                        let t = e.metadata().ok()?.modified().ok()?.duration_since(std::time::UNIX_EPOCH).ok()?.as_secs();
+                        Some((n, t))
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+        v.sort_by(|a, b| b.1.cmp(&a.1).then(b.0.cmp(&a.0)));
+        v.truncate(200);
+        v
+    }
+    pub fn read_chat(&self, name: &str) -> Result<String, String> {
+        if !Self::safe_txt(name) {
+            return Err("That chat could not be found.".into());
+        }
+        fs::read_to_string(self.root.join("chats").join(name)).map_err(|_| "That chat could not be found.".to_string())
+    }
+    pub fn delete_chat(&self, name: &str) -> Result<(), String> {
+        if !Self::safe_txt(name) {
+            return Err("That chat could not be found.".into());
+        }
+        fs::remove_file(self.root.join("chats").join(name)).map_err(|e| e.to_string())
     }
     pub fn backups(&self) -> PathBuf {
         self.root.join("backups")
@@ -134,6 +178,25 @@ mod tests {
         for bad in ["../x.txt", "a/b.txt", "a\\b.txt", "x.json", ".txt", ".hidden.txt", "c:x.txt"] {
             assert!(u.write_export(bad, "x").is_err(), "{}", bad);
         }
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn chats_are_saved_listed_read_and_deleted_by_plain_names_only() {
+        let dir = std::env::temp_dir().join(format!("cx-chats-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let u = UserDir::new(&dir);
+        assert!(u.list_chats().is_empty());
+        u.write_chat("2026-10-22-1100-water.txt", "YOU: water?\n").unwrap();
+        u.write_chat("2026-10-22-1100-water.txt", "YOU: water?\nCINDRIX: boil it\n").unwrap();
+        u.write_chat("b.txt", "x").unwrap();
+        assert_eq!(u.list_chats().len(), 2);
+        assert!(u.read_chat("2026-10-22-1100-water.txt").unwrap().contains("boil it"));
+        assert!(u.read_chat("../family.json").is_err());
+        assert!(u.write_chat("../x.txt", "x").is_err());
+        u.delete_chat("b.txt").unwrap();
+        assert_eq!(u.list_chats().len(), 1);
+        assert!(u.delete_chat("a/b.txt").is_err());
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

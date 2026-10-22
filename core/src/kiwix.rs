@@ -495,7 +495,7 @@ pub fn search(port: u16, question: &str, limit: usize) -> Vec<Passage> {
         // Our own measure of how well the page answers the question (the search engine's order only
         // says which pages contain the words), kept in the range 3 to 8.
         let score = 3.0 + 0.5 * relevance(&keys, &title, &text).min(10.0) - 0.01 * rank as f64;
-        scored.push((bi, Passage { source: book, heading: title, text, score }));
+        scored.push((bi, Passage { source: book, heading: title, text, score, link: path.clone() }));
     }
     scored.sort_by(|a, b| b.1.score.partial_cmp(&a.1.score).unwrap_or(std::cmp::Ordering::Equal));
     // The best page of every archive first, so a small archive is not buried by Wikipedia; then the best of the rest.

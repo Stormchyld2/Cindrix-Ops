@@ -5,6 +5,7 @@
     type ZimBook, type ZimBookmark, type ZimHit, type LibraryStatus,
   } from '../lib/api';
   import { settings } from '../lib/settings.svelte';
+  import { intelRequest } from '../lib/chat.svelte';
 
   // Intel is the offline internet: a small browser for the archives (.zim files) on the drive.
   // Pages come from the archives through a private address, so nothing here touches the network.
@@ -120,7 +121,22 @@
       if (t && t.history.length === 1 && t.history[0].t === 'start') await go(homeOf(books[0].name));
     }
     poll = setInterval(refreshBooks, 3000);
+    await takeRequest();
   });
+  // another screen asked for a page (a source under an Ask answer): open it in a tab of its own
+  async function takeRequest() {
+    const want = intelRequest.path;
+    if (!want) return;
+    intelRequest.path = '';
+    if (tabs.length < MAX_TABS) {
+      const t: Tab = { id: nextId++, history: [{ t: 'page', path: want }], idx: 0 };
+      tabs = [...tabs, t];
+      await activate(t.id);
+    } else {
+      await go({ t: 'page', path: want });
+    }
+  }
+  $effect(() => { if (intelRequest.path && tabs.length) void takeRequest(); });
   onDestroy(() => {
     window.removeEventListener('message', onMessage);
     clearTimeout(debounce);

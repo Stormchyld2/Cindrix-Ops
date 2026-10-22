@@ -21,6 +21,7 @@
   import MiniPlayer from './lib/MiniPlayer.svelte';
   import Splash from './lib/Splash.svelte';
   import { onMount } from 'svelte';
+  import { intelRequest } from './lib/chat.svelte';
   import { modelStatus, libraryStatus, productInfo, librariesList, libraryAnswer, type ModelStatus, type ProductInfo, type LibraryEntry } from './lib/api';
   import { settings, applyUiScale } from './lib/settings.svelte';
   import { installTooltips, removeTooltips } from './lib/tooltips';
@@ -110,6 +111,11 @@
     lib = 'Archives';
     group = 'Library';
   }
+  /** An Ask source: an emergency card, or a page in an archive (opened in Intel). */
+  function openSource(link: string) {
+    if (link.startsWith('card:')) { openCard(link.slice(5)); return; }
+    if (link.startsWith('/content/')) { intelRequest.path = link; group = 'Intel'; }
+  }
   function openIntel() {
     group = 'Intel';
   }
@@ -137,7 +143,7 @@
         <path d="M12 12.6c.5 1.2 1.9 1.9 1.9 3.5a1.9 1.9 0 0 1-3.8 0c0-1 .6-1.6 1.2-2.2.4.7.7.8.7-1.3z" fill="#ffe3a0" />
       </svg>
       <div>
-        <div class="name">CINDRIX <span>OPS</span>{#if product && product.id !== 'go'}<small> {product.id.toUpperCase()}</small>{/if}</div>
+        <div class="name">CINDRIX <span>OPS</span></div>
         <div class="tag">Carry the library. Keep the fire.</div>
       </div>
     </div>
@@ -170,7 +176,7 @@
     {#if group === 'Dashboard'}
       <Dashboard go={goTo} />
     {:else if group === 'Ask'}
-      <Ask {openCard} />
+      <Ask {openCard} {openSource} />
     {:else if group === 'Library'}
       {#if lib === 'Shelf'}
         <Shelf />
@@ -252,7 +258,8 @@
   .dlg .end { justify-content: flex-end; }
   .libnote { margin: 8px 16px 0; display: flex; gap: 12px; align-items: center; justify-content: space-between; }
   .shell { min-height: 100vh; display: flex; flex-direction: column; }
-  header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px 24px;
+  /* the top bar stays put while the page scrolls under it */
+  header { position: sticky; top: 0; z-index: 50; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px 24px;
     padding: 12px 24px; background: var(--panel2); border-bottom: 1px solid var(--line); border-top: 3px solid var(--accent); }
   .brand { display: flex; gap: 12px; align-items: center; }
   .name { font-family: var(--display); font-weight: 700; font-size: 24px; letter-spacing: .12em; line-height: 1; }

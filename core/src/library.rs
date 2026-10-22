@@ -241,7 +241,7 @@ impl Library {
                     continue;
                 }
                 let text = best_chunk(&title, &text, question);
-                out.push(Passage { source: b.title.clone(), heading: title, text, score: (4.0 + score * 0.5 - taken as f64 * 0.3).min(7.0) });
+                out.push(Passage { source: b.title.clone(), heading: title, text, score: (4.0 + score * 0.5 - taken as f64 * 0.3).min(7.0), link: format!("/content/{}/{}", encode_path(&b.name), encode_path(&addr)) });
                 taken += 1;
             }
         }

@@ -131,6 +131,7 @@ struct ReplyDto {
     kind: &'static str,
     text: String,
     sources: Vec<String>,
+    links: Vec<String>,
     card: Option<String>,
 }
 
@@ -850,6 +851,7 @@ fn reply_dto(r: pipeline::Reply) -> ReplyDto {
         },
         text: r.text,
         sources: r.sources,
+        links: r.links,
         card: r.card,
     }
 }
@@ -1238,6 +1240,33 @@ fn family_save(json: String, passphrase: Option<String>) -> Result<(), String> {
 #[tauri::command]
 fn export_text(name: String, text: String) -> Result<String, String> {
     user().write_export(&name, &text).map(|p| p.display().to_string())
+}
+
+#[derive(Serialize)]
+struct ChatInfoDto {
+    name: String,
+    when: u64,
+}
+
+/// Save an Ask chat as a plain text file under `user/chats`.
+#[tauri::command]
+fn chat_save(name: String, text: String) -> Result<(), String> {
+    user().write_chat(&name, &text).map(|_| ())
+}
+
+#[tauri::command]
+fn chat_list() -> Vec<ChatInfoDto> {
+    user().list_chats().into_iter().map(|(name, when)| ChatInfoDto { name, when }).collect()
+}
+
+#[tauri::command]
+fn chat_read(name: String) -> Result<String, String> {
+    user().read_chat(&name)
+}
+
+#[tauri::command]
+fn chat_delete(name: String) -> Result<(), String> {
+    user().delete_chat(&name)
 }
 
 // ---------- saving websites ----------
@@ -2136,6 +2165,10 @@ pub fn run() {
             what_fails_next,
             family_status,
             export_text,
+            chat_save,
+            chat_list,
+            chat_read,
+            chat_delete,
             family_load,
             family_save
         ])
