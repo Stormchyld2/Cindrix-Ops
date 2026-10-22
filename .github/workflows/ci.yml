@@ -333,7 +333,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p out/Cindrix/scripts out/Cindrix/manifest
-          cp scripts/build-drive.ps1 scripts/get-maps.ps1 out/Cindrix/scripts/
+          cp scripts/build-drive.ps1 scripts/get-maps.ps1 scripts/Get-Maps.bat out/Cindrix/scripts/
           cp manifest/content.json out/Cindrix/manifest/
       - name: Add a small test map (this also runs the real map download script)
         continue-on-error: true

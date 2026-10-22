@@ -253,7 +253,7 @@
         version: 8,
         ...(glyphs ? { glyphs } : {}),
         sources: { protomaps: { type: 'vector', url: 'pmtiles://' + url, attribution: '© OpenStreetMap contributors' } },
-        layers: layers('protomaps', namedFlavor('dark'), { lang: 'en' }).filter((l) => keep(l as never)),
+        layers: layers('protomaps', namedFlavor('black'), { lang: 'en' }).filter((l) => keep(l as never)),
       } as unknown as StyleSpecification;
       const m = new maplibregl.Map({
         container: el,
@@ -624,7 +624,7 @@
 
 {#if street}
   <div class="warn">
-    <strong>Map: {street.name}</strong> ({street.mb} MB, from this drive).{#if packInfo} This pack covers {packInfo.replace(street.name + ': covers ', '')}{/if}{#if partial} It covers only part of the country, so the map stops at its edge. To cover more, run scripts\get-maps.ps1 again with a bigger area (or without -Bbox for the whole lower 48).{/if} Roads, water, land and buildings are drawn{#if labelsOn}, with names{:else}; place names need the map fonts (run scripts\get-maps.ps1 -FontsOnly){/if}. Use Places on the map to mark hospitals, water, fuel and more. Positions you place are approximate, and routes are straight lines between your points: this app does not plan roads and does not yet steer routes around no-go areas.
+    <strong>Map: {street.name}</strong> ({street.mb} MB, from this drive).{#if packInfo} This pack covers {packInfo.replace(street.name + ': covers ', '')}{/if}{#if partial} It covers only part of the country, so the map stops at its edge. This build comes with only a small sample area. To get the whole United States, double-click scripts\Get-Maps.bat (it needs internet and tens of gigabytes of space, and takes hours).{/if} Roads, water, land and buildings are drawn{#if labelsOn}, with names{:else}; place names need the map fonts (run scripts\get-maps.ps1 -FontsOnly){/if}. Use Places on the map to mark hospitals, water, fuel and more. Positions you place are approximate, and routes are straight lines between your points: this app does not plan roads and does not yet steer routes around no-go areas.
   </div>
 {:else}
   <div class="warn">

@@ -86,3 +86,7 @@ larger address file (for example OpenAddresses), which is not included yet. The 
 - **ZIP search:** needs the places list (`maps\places\places.tsv`, GeoNames, CC BY 4.0). The Windows build made by CI now includes the list and the fonts, so ZIP codes, towns, parks and lakes are found with no setup. If a build has no list, the Find box says how to make it.
 - **Not built:** street-address search, terrain shading and contours (they need elevation data), live position, and turn-by-turn roads.
 - Ideas for this screen came from looking at other offline map programs; the look is our own (dark, amber and blue).
+
+
+## Which map you have (2026-10-22)
+The downloadable Windows build carries only a small sample map (a few megabytes around Denver), because the whole US is tens of gigabytes. For the whole US, double-click `scripts\Get-Maps.bat` (it runs `get-maps.ps1 -Places`: the lower 48, Alaska, Hawaii, the places list and the fonts). The map style is now the darkest Protomaps look (`black`).

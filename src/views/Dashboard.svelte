@@ -242,12 +242,12 @@
 </div>
 
 <style>
-  .hero { padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: linear-gradient(180deg, #090807cc, #090807f2), #090807 url('/splash-bg.jpg') center / cover no-repeat; margin-bottom: 10px; }
+  .hero { padding: 14px; border: 1px solid var(--line); border-top: 2px solid var(--line2); border-radius: 12px; background: var(--panel); margin-bottom: 10px; }
   .herotop { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
   .herologo { width: 52px; height: 52px; object-fit: contain; }
   .hero h1 { margin: 0; }
   .shortcuts { display: grid; grid-template-columns: repeat(auto-fit, minmax(88px, 1fr)); gap: 8px; }
-  .sc { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 76px; padding: 10px 6px; text-align: center; color: var(--text); background: #14110ecc; border: 1px solid var(--line2); border-radius: 12px; font-size: 12.5px; letter-spacing: .02em; }
+  .sc { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 76px; padding: 10px 6px; text-align: center; color: var(--text); background: var(--panel2, #14110e); border: 1px solid var(--line2); border-radius: 12px; font-size: 12.5px; letter-spacing: .02em; }
   .sc svg { color: var(--accent); }
   .sc:hover { border-color: var(--blue-line); }
   .sc:active { transform: scale(.97); }
