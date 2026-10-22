@@ -55,3 +55,10 @@ names are hidden until its passphrase is typed there (it is not kept).
 * Academy course `seed-vault` (3 modules, 9 lessons, quizzes) and the plan **Build a seed vault**.
 * Easier to find: Plan tabs are named Get ready, Plans, Drills, Family, Binder, Seed vault, What fails next; the Dashboard
   has a Seed vault tile; the Seed vault page links to the course.
+
+## Ten more medical cards (2026-10-22)
+Overdose and naloxone, electric shock, knocked-out tooth, cut-off finger or limb, nosebleed, sepsis, fainting, fever in a child,
+severe belly pain, object stuck in a wound. Checked against the live pages on the day: Mayo Clinic (electric shock), University of
+Michigan Health (knocked-out tooth, amputation), Kane County Health Department (overdose), CDC (sepsis symptoms), Healthline
+(nosebleed). **Written from standard guidance and not yet read on the live page:** fainting, fever in a child, belly pain,
+object in a wound, and the 911 criteria on the sepsis card. These need the first check by a person.

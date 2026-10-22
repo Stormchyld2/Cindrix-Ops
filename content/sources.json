@@ -76,7 +76,7 @@
           "note": "A course with no license named is not shipped. Courses never contain medicine doses."
         },
         {
-          "name": "Emergency cards (49) and walkthroughs (27 plans)",
+          "name": "Emergency cards (59) and walkthroughs (27 plans)",
           "license": "Written for this project; facts paraphrased from public guidance",
           "status": "in this build",
           "note": "Drafts, not yet reviewed by a qualified person. Sources: Ready.gov / FEMA, CDC, National Weather Service, USDA FSIS, American Red Cross, American Heart Association, Stop the Bleed, Poison Help, WHO oral rehydration guidance, SAMHSA 988. Each card names its source. US government pages are public domain; the Red Cross and other guidance is paraphrased in our own words, not copied."

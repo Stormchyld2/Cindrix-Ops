@@ -8,7 +8,7 @@ fn shipped_cards_load_are_grouped_and_carry_a_source() {
     let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../content/cards");
     let l = cards::load_dirs(&[dir]);
     assert!(l.problems.is_empty(), "problems: {:?}", l.problems);
-    assert!(l.cards.len() >= 45, "only {} cards", l.cards.len());
+    assert!(l.cards.len() >= 58, "only {} cards", l.cards.len());
     let mut titles = std::collections::HashSet::new();
     for c in &l.cards {
         assert!(titles.insert(c.title.clone()), "two cards called {}", c.title);
