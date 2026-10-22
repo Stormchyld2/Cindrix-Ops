@@ -48,7 +48,10 @@
     } catch { /* none */ }
     try {
       const f = (await familyStatus()).exists;
+      let drive: { name: string; edition: string } | null = null;
+      try { drive = (await libraryStatus()).drive ?? null; } catch { /* shown as not found */ }
       ready = [
+        { label: 'Drive', ok: !!drive, tab: 'Settings', text: drive ? drive.name + ' (' + drive.edition + ')' : 'No Cindrix drive found, so the program folder is being used' },
         { label: 'Family page', ok: f, tab: 'Family', text: f ? 'Filled in' : 'Not filled in yet' },
         { label: 'Assistant', ok: facts.checks.model, tab: 'Settings', text: facts.checks.model ? 'A model file is ready' : 'No model file yet' },
         { label: 'Library', ok: facts.checks.library, tab: 'Library', text: facts.checks.library ? 'Archives found' : 'No archives found yet' },
