@@ -1,10 +1,10 @@
 # CindrixOps — Architecture Evolution & Proposed Features
 
 **Document status:** PROPOSAL / DISCUSSION ONLY — NOT AUTHORIZATION TO IMPLEMENT  
-**Version:** 0.1  
+**Version:** 0.2  
 **Prepared:** 2026-10-22  
 **Audience:** Project owner, Claude, ChatGPT, future maintainers  
-**Suggested repository location:** `architecture/CINDRIXOPS_ARCHITECTURE_EVOLUTION_PROPOSED_FEATURES.md` (confirm repository conventions first)
+**Repository location:** `docs/CINDRIXOPS_ARCHITECTURE_EVOLUTION_PROPOSED_FEATURES.md`
 
 > **Change-control rule:** This document records ideas developed during design discussions. It does not override existing architecture documents, approved requirements, implemented code, or the project's current roadmap. Do not implement, refactor, migrate data, rename modules, or alter UI based solely on this document. First reconcile each proposal with the repository and obtain explicit owner approval.
 
@@ -311,7 +311,38 @@ Next safe action:
 Questions requiring owner decision:
 ```
 
-## 14. Proposal status register
+## 14. GitHub Actions verification and build continuity
+
+GitHub Actions is the project's existing automated test/build mechanism, as reported by the owner. Preserve and reuse the actual repository workflows rather than inventing replacement CI. Before making changes, inspect `.github/workflows/`, required checks, branch protections, artifact retention, and current run results.
+
+### Developer verification contract
+
+1. Record the base branch and exact commit SHA before starting; inspect open pull requests and unfinished changes.
+2. Make scoped changes with appropriate regression tests. Run available local checks when feasible.
+3. Push to an appropriate working branch and use the existing GitHub Actions workflows to validate tests and build targets. Do not assume a workflow checks a platform or test suite without inspecting it.
+4. Record workflow names, run URLs/IDs, conclusions, commit SHA, and build artifact names/retention where available.
+5. Treat failing, cancelled, skipped, or pending required checks as **not verified**. Investigate failures; do not declare the milestone complete.
+6. Distinguish **CI verified** (required automated checks pass) from **device/UI validated** (Windows and/or Android application tested on target hardware). Neither substitutes for the other.
+7. Preserve build artifacts where workflows produce them; do not claim Windows installers, portable bundles, or Android APKs were generated unless the run actually produced them.
+8. Update the checkpoint and architecture records with verified changes only. Never overwrite another developer's work, bypass required checks, or merge without the owner's agreed workflow.
+
+### Additional checkpoint fields
+
+```text
+Base commit / resulting commit SHA:
+GitHub Actions workflow names and run URLs:
+Required checks and conclusions:
+Windows build artifact (if produced):
+Android APK artifact (if produced):
+CI verification status:
+Manual device/UI verification status:
+Known failures, skipped checks, and coverage gaps:
+Next safe action:
+```
+
+**Handoff rule:** Claude, ChatGPT, and human maintainers should resume from the last *verified* commit, not merely the latest pushed commit. If the current HEAD is newer, inspect and reconcile its changes before proceeding.
+
+## 15. Proposal status register
 
 | Proposal | Status | Notes |
 |---|---|---|
