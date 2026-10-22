@@ -2,7 +2,7 @@
 // so the screens can be previewed and screenshotted.
 
 export type Card = { id: string; title: string; kind: string; status: string; reviewer: string; reviewed: string; body: string };
-export type Reply = { kind: 'Refused' | 'NotFound' | 'Answered' | 'Replaced'; text: string; sources: string[]; links?: string[]; card: string | null };
+export type Reply = { kind: 'Refused' | 'NotFound' | 'Answered' | 'Replaced'; text: string; sources: string[]; links?: string[]; excerpts?: string[]; card: string | null };
 export type Item = {
   id: string; category: string; name: string; location: string; quantity: number; unit: string;
   use_per_day: number; use_by: string; notes: string;

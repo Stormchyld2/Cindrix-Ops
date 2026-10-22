@@ -132,6 +132,7 @@ struct ReplyDto {
     text: String,
     sources: Vec<String>,
     links: Vec<String>,
+    excerpts: Vec<String>,
     card: Option<String>,
 }
 
@@ -1123,6 +1124,7 @@ fn reply_dto(r: pipeline::Reply) -> ReplyDto {
         text: r.text,
         sources: r.sources,
         links: r.links,
+        excerpts: r.excerpts,
         card: r.card,
     }
 }

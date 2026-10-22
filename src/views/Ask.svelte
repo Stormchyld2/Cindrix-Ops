@@ -2,14 +2,16 @@
   import { onMount, onDestroy } from 'svelte';
   import { ask, modelStatus, chatSave, chatList, chatRead, chatDelete, type ModelStatus, type ChatInfo } from '../lib/api';
   import { settings } from '../lib/settings.svelte';
-  import { chat, chatText, newChatFile, resetChat } from '../lib/chat.svelte';
+  import { chat, chatText, newChatFile, resetChat, parseChat, type Msg } from '../lib/chat.svelte';
 
   let { openCard, openSource }: { openCard: (id: string) => void; openSource: (link: string) => void } = $props();
 
   let status: ModelStatus | null = $state(null);
   let timer: ReturnType<typeof setInterval> | undefined;
   let past: ChatInfo[] = $state([]);
-  let viewing: { name: string; text: string } | null = $state(null);
+  let viewing: { name: string; msgs: Msg[] } | null = $state(null);
+  let excerpt: { title: string; text: string } | null = $state(null);
+  let scroller: HTMLDivElement | undefined = $state();
   let note = $state('');
 
   // what the assistant is allowed to look in (Settings, Assistant)
@@ -72,8 +74,27 @@
     viewing = null;
   }
   async function view(name: string) {
-    try { viewing = { name, text: await chatRead(name) }; } catch (e) { note = String(e); }
+    try { viewing = { name, msgs: parseChat(await chatRead(name)) }; } catch (e) { note = String(e); }
   }
+  /** Put a saved chat back on screen so the talk can carry on from it. */
+  function carryOn() {
+    if (!viewing || chat.busy) return;
+    chat.thread = viewing.msgs;
+    chat.file = viewing.name;
+    viewing = null;
+  }
+  /** A source with a page opens it; one without shows the words it gave. */
+  function openChip(m: Msg, k: number) {
+    const link = m.reply?.links?.[k];
+    if (link) { openSource(link); return; }
+    const text = m.reply?.excerpts?.[k];
+    excerpt = { title: m.reply?.sources[k] ?? 'Source', text: text || 'This source has no page to open and no saved words to show.' };
+  }
+  // keep the newest words in view as an answer arrives
+  $effect(() => {
+    chat.thread.length; chat.thread[chat.thread.length - 1]?.text;
+    if (scroller) queueMicrotask(() => { if (scroller) scroller.scrollTop = scroller.scrollHeight; });
+  });
   async function remove(name: string) {
     try {
       await chatDelete(name);
@@ -85,6 +106,28 @@
   const nice = (name: string) => name.replace(/\.txt$/, '').replace(/^(\d{4}-\d{2}-\d{2})-(\d{2})(\d{2})-/, '$1 $2:$3  ').replace(/-/g, ' ');
 </script>
 
+{#snippet messages(list: Msg[])}
+  {#each list as m}
+    <div class="msg {m.who}">
+      <div class="label">{m.who === 'you' ? 'YOU' : 'CINDRIX'}</div>
+      <div class="text">{m.text}</div>
+      {#if m.reply?.kind === 'Answered'}
+        <div class="muted small">Check this against the source before you rely on it.</div>
+      {/if}
+      {#if settings.values.showSourceChips && m.reply?.sources.length}
+        <div class="sources">Sources: {#each m.reply.sources as s, k}
+          <button class="chip open" title={m.reply?.links?.[k] ? 'Open this page' : 'Show the words this source gave'} onclick={() => openChip(m, k)}>{s} ↗</button>
+        {/each}</div>
+      {/if}
+      {#if m.reply?.card}
+        <button class="link" onclick={() => openCard(m.reply!.card!)}>Open the emergency card</button>
+      {/if}
+    </div>
+  {/each}
+{/snippet}
+
+<div class="askpage">
+<div class="scroller" bind:this={scroller}>
 {#if status}
   <p class="muted status">
     {#if status.state === 'ready'}Model ready: {status.model} ({status.size}).
@@ -113,39 +156,25 @@
   {#if chat.thread.length === 0 && !viewing}
     <p class="muted">Ask a question. Answers come only from the library on this drive and show where they came from. It looks in the emergency cards{searching.length ? ', ' + searching.join(', ') : ''}. You can change that in Settings.</p>
   {/if}
-  {#each chat.thread as m}
-    <div class="msg {m.who}">
-      <div class="label">{m.who === 'you' ? 'YOU' : 'CINDRIX'}</div>
-      <div class="text">{m.text}</div>
-      {#if m.reply?.kind === 'Answered'}
-        <div class="muted small">Check this against the source before you rely on it.</div>
-      {/if}
-      {#if settings.values.showSourceChips && m.reply?.sources.length}
-        <div class="sources">Sources: {#each m.reply.sources as s, k}
-          {#if m.reply?.links?.[k]}<button class="chip open" title="Open this page" onclick={() => openSource(m.reply!.links![k])}>{s} ↗</button>{:else}<span class="chip">{s}</span>{/if}
-        {/each}</div>
-      {/if}
-      {#if m.reply?.card}
-        <button class="link" onclick={() => openCard(m.reply!.card!)}>Open the emergency card</button>
-      {/if}
-    </div>
-  {/each}
+  {@render messages(chat.thread)}
 </section>
 {#if viewing}
   <section class="panel past">
-    <div class="row between"><strong>{nice(viewing.name)}</strong><button class="btn" onclick={() => (viewing = null)}>Close</button></div>
-    <pre class="transcript">{viewing.text}</pre>
+    <div class="row between"><strong>{nice(viewing.name)}</strong>
+      <span class="row"><button class="btn" disabled={chat.busy} title="Put this chat back on screen and carry on from it" onclick={carryOn}>Carry on this chat</button><button class="btn" onclick={() => (viewing = null)}>Close</button></span></div>
+    <div class="chat">{@render messages(viewing.msgs)}</div>
   </section>
 {/if}
 {#if note}<div class="warn" role="alert">{note}</div>{/if}
-<form class="row" onsubmit={(e) => { e.preventDefault(); send(); }}>
+</div>
+<form class="row bar" onsubmit={(e) => { e.preventDefault(); send(); }}>
   <label class="sr" for="q">Question</label>
   <input id="q" class="input grow" bind:value={chat.question} placeholder="Ask anything. It stays on this device." autocomplete="off" />
   <button class="btn primary" type="submit" disabled={chat.busy}>Send</button>
   <button class="btn" type="button" title="Start a new chat. The one on screen is already saved." disabled={chat.busy || chat.thread.length === 0} onclick={newChat}>New chat</button>
 </form>
 {#if past.length}
-  <details class="panel how">
+  <details class="panel how pastbox">
     <summary>Past chats ({past.length})</summary>
     <p class="muted small">Saved on the drive in <code>user\chats</code> as plain text. A chat takes only a few kilobytes.</p>
     <ul class="pastlist">
@@ -155,8 +184,24 @@
     </ul>
   </details>
 {/if}
+</div>
+{#if excerpt}
+  <div class="scrim" role="presentation" onclick={() => (excerpt = null)}>
+    <div class="dialog" role="dialog" aria-modal="true" aria-label="Source" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => { if (e.key === 'Escape') excerpt = null; }}>
+      <strong>{excerpt.title}</strong>
+      <pre class="transcript">{excerpt.text}</pre>
+      <button class="btn" onclick={() => (excerpt = null)}>Close</button>
+    </div>
+  </div>
+{/if}
 
 <style>
+  .askpage { display: flex; flex-direction: column; height: calc(100vh - 120px); min-height: 440px; gap: 10px; }
+  .scroller { flex: 1 1 auto; overflow-y: auto; min-height: 0; padding-right: 4px; }
+  .bar { flex: none; }
+  .pastbox { flex: none; max-height: 34vh; overflow-y: auto; margin: 0; }
+  .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; z-index: 50; }
+  .dialog { background: var(--panel, #1b1f24); border: 1px solid var(--line, #444); border-radius: 10px; padding: 16px; width: min(640px, 92vw); max-height: 80vh; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
   .chat { display: flex; flex-direction: column; gap: 14px; flex: 1; }
   .msg { padding: 12px 14px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); max-width: 760px; }
   .msg.you { align-self: flex-end; background: #27231e; border-color: #3a342c; }
