@@ -582,6 +582,30 @@ async fn phone_export(name: String, west: f64, south: f64, east: f64, north: f64
     .map_err(|_| "The phone map could not be made. Please try again.".to_string())?
 }
 
+#[derive(Serialize)]
+struct DeviceDto {
+    path: String,
+    label: String,
+    phone: bool,
+}
+
+/// The plugged-in drives and cards a phone map can be copied to.
+#[tauri::command]
+fn phone_devices(file: String) -> Vec<DeviceDto> {
+    cindrix_core::phonepack::devices_in(&cindrix_core::drive::candidate_roots(), std::path::Path::new(&file))
+        .into_iter()
+        .map(|d| DeviceDto { path: d.path.to_string_lossy().to_string(), label: d.label, phone: d.looks_like_phone })
+        .collect()
+}
+
+/// Copy the phone map to the chosen place. Returns where it went.
+#[tauri::command]
+async fn phone_send(file: String, dest: String) -> Result<String, String> {
+    tauri::async_runtime::spawn_blocking(move || cindrix_core::phonepack::send(std::path::Path::new(&file), std::path::Path::new(&dest)).map(|p| p.to_string_lossy().to_string()))
+        .await
+        .map_err(|_| "The copy could not be made. Please try again.".to_string())?
+}
+
 // ---------- finding a place on the map (offline list on the drive, core/src/places.rs) ----------
 
 #[derive(Serialize)]
@@ -2246,6 +2270,8 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             phone_estimate,
+            phone_devices,
+            phone_send,
             phone_export,
             list_cards,
             own_content,

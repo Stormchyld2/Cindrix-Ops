@@ -6,6 +6,8 @@ You tick which kinds to carry (street, topo, aerial photos), choose how sharp ea
 the size before the file is made. Your pins, drawings, areas to avoid, saved route and the directions
 on screen go inside the same file. The file is written to a `.part` file first and renamed when done.
 
+After the file is made, a box opens listing the plugged-in drives and cards (a phone that shows as a drive is put first), plus "Choose a folder". Picking one copies the file there (into `Download` on a phone), under a temporary name first, and checks the size. A phone in the usual "charging" mode, or one that only shares files over MTP, may not show as a drive; use "Choose a folder" or copy by hand.
+
 The code is `core/src/phonepack.rs` (tested there). The viewer that opens these files on the phone is a
 separate project; this page is the format it reads.
 

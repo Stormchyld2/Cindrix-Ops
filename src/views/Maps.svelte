@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy, untrack } from 'svelte';
   import { toDms, toMgrs } from '../lib/coords';
-  import { mapsList, mapLoad, mapSave, mapDelete, mapExportGpx, routeStats, mapPacks, tileUrl, placeSearch, phoneEstimate, phoneExport, directions as askDirections, type PhoneKind, type Directions, type DirRoute, type PlaceHit, type MapMeta, type LatLon, type RouteStats, type Pack } from '../lib/api';
+  import { mapsList, mapLoad, mapSave, mapDelete, mapExportGpx, routeStats, mapPacks, tileUrl, placeSearch, phoneEstimate, phoneExport, phoneDevices, phoneSend, pickFolder, type Device, directions as askDirections, type PhoneKind, type Directions, type DirRoute, type PlaceHit, type MapMeta, type LatLon, type RouteStats, type Pack } from '../lib/api';
   import type { Map as MLMap, Marker, StyleSpecification, GeoJSONSource } from 'maplibre-gl';
   import { settings } from '../lib/settings.svelte';
   import { POI_GROUPS, kindName, groupOf, distanceKm, compass } from '../lib/mapkinds';
@@ -635,6 +635,25 @@
   let phoneBusy = $state(false);
   let phoneMsg = $state('');
   let phoneErr = $state('');
+  let phoneFile = $state('');
+  let sendOpen = $state(false);
+  let sendDevices: Device[] = $state([]);
+  let sendBusy = $state(false);
+  let sendMsg = $state('');
+  let sendErr = $state('');
+
+  async function sendStart() {
+    sendMsg = ''; sendErr = ''; sendOpen = true; sendBusy = true;
+    try { sendDevices = await phoneDevices(phoneFile); } catch (e) { sendErr = String(e); } finally { sendBusy = false; }
+  }
+  async function sendTo(dest: string) {
+    sendMsg = ''; sendErr = ''; sendBusy = true;
+    try { sendMsg = 'Sent. It is now at ' + (await phoneSend(phoneFile, dest)); } catch (e) { sendErr = String(e); } finally { sendBusy = false; }
+  }
+  async function sendToFolder() {
+    const f = await pickFolder();
+    if (f) await sendTo(f);
+  }
   const KIND_WORDS: Record<string, string> = { street: 'Street map', topo: 'Topo (hills, contours)', aerial: 'Aerial photos' };
   const fmtBytes = (b: number) => (b >= 1073741824 ? (b / 1073741824).toFixed(1) + ' GB' : b >= 1048576 ? Math.round(b / 1048576) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB');
 
@@ -673,7 +692,9 @@
       const c = map.getCenter();
       const json = JSON.stringify({ pins, route, nogo, drawings, directions: dirRoute ? { points: dirRoute.points, km: dirRoute.km, minutes: dirRoute.minutes, steps: dirRoute.steps } : null });
       const where = await phoneExport(phoneName.trim() || 'Phone map', phoneBox, [c.lat, c.lng], map.getZoom(), json, choices);
-      phoneMsg = 'Done. The file is ' + where + ' - copy it to your phone.';
+      phoneFile = where;
+      phoneMsg = 'Done. The file is ' + where + '.';
+      await sendStart();
     } catch (e) { phoneErr = String(e); } finally { phoneBusy = false; }
   }
   const snapshot = () => JSON.stringify({ pins, route, nogo, drawings });
@@ -1239,6 +1260,30 @@
 {#if error}<div class="warn err" role="alert">{error}</div>{/if}
 {#if message}<div class="ok-note" role="status">{message}</div>{/if}
 
+{#if sendOpen}
+  <div class="scrim" role="presentation" onclick={() => (sendOpen = false)}>
+    <div class="dialog" role="dialog" aria-modal="true" aria-label="Send to a device" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => { if (e.key === 'Escape') sendOpen = false; }}>
+      <div class="label">Send to a device</div>
+      <p class="muted small">Pick where to copy the phone map. A phone shows here when it is plugged in and set to transfer files as a drive or card.</p>
+      <div class="list">
+        {#each sendDevices as d}
+          <button class="item" disabled={sendBusy} title="Copy the phone map to this device" onclick={() => void sendTo(d.path)}>{d.label}</button>
+        {:else}
+          <p class="muted small">{sendBusy ? 'Looking for devices...' : 'No device found. Plug the phone or card in, then press Look again.'}</p>
+        {/each}
+      </div>
+      <div class="drow">
+        <button class="btn" disabled={sendBusy} title="Look for devices again" onclick={() => void sendStart()}>Look again</button>
+        <button class="btn" disabled={sendBusy} title="Pick any folder yourself" onclick={() => void sendToFolder()}>Choose a folder...</button>
+        <button class="btn" title="Close this box" onclick={() => (sendOpen = false)}>Close</button>
+      </div>
+      {#if sendBusy}<p class="small" role="status">Copying... this can take a while for a big map.</p>{/if}
+      {#if sendErr}<p class="small" role="alert">{sendErr}</p>{/if}
+      {#if sendMsg}<p class="small" role="status">{sendMsg}</p>{/if}
+    </div>
+  </div>
+{/if}
+
 <div class="cols">
 <div class="sidecol">
   <div class="panel sidebox">
@@ -1330,6 +1375,7 @@
     {/if}
     {#if phoneErr}<p class="small" role="alert">{phoneErr}</p>{/if}
     {#if phoneMsg}<p class="small" role="status">{phoneMsg}</p>{/if}
+    {#if phoneFile && !sendOpen}<button class="btn" title="Choose a device to copy the phone map to" onclick={() => void sendStart()}>Send to a device...</button>{/if}
   </div>
 
   <div class="panel side">
@@ -1698,6 +1744,8 @@
   .gsep { width: 1px; align-self: stretch; background: #dadce0; margin: 2px 4px; }
   .sidecol { flex: 1 1 220px; max-width: 300px; display: flex; flex-direction: column; gap: 14px; }
   .sidecol .side { flex: none; max-width: none; }
+  .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; z-index: 50; }
+  .dialog { background: var(--panel, #1b1f24); color: inherit; border: 1px solid var(--line, #444); border-radius: 10px; padding: 16px; width: min(440px, 92vw); display: flex; flex-direction: column; gap: 10px; }
   .sidebox { display: flex; flex-direction: column; gap: 8px; }
   .drow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   .drow .grow { flex: 1 1 120px; }

@@ -402,6 +402,20 @@ export async function phoneExport(name: string, box: [number, number, number, nu
   return 'user/exports/' + name + '.cmap (preview only)';
 }
 
+export type Device = { path: string; label: string; phone: boolean };
+
+/** Drives and cards that are plugged in, other than the one the file is on. */
+export async function phoneDevices(file: string): Promise<Device[]> {
+  if (inTauri) return call<Device[]>('phone_devices', { file });
+  return [{ path: 'E:\\', label: 'E: (looks like a phone)', phone: true }];
+}
+
+/** Copy the phone map to a device or folder; returns where it went. */
+export async function phoneSend(file: string, dest: string): Promise<string> {
+  if (inTauri) return call<string>('phone_send', { file, dest });
+  return dest + ' (preview only)';
+}
+
 // ---------- finding a place (a town, a ZIP code, a park, a latitude and longitude) ----------
 export type PlaceHit = { name: string; state: string; kind: string; lat: number; lon: number };
 export type PlaceResults = { places: PlaceHit[]; has_list: boolean; has_addresses: boolean };

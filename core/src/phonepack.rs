@@ -353,6 +353,63 @@ pub fn read_manifest(path: &Path) -> R<String> {
     String::from_utf8(m).map_err(|_| "damaged phone map".to_string())
 }
 
+/// A place a phone map can be copied to: a drive or card that is plugged in.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Device {
+    pub path: PathBuf,
+    /// A short name for the list ("Drive E:", "Looks like a phone").
+    pub label: String,
+    pub looks_like_phone: bool,
+}
+
+/// The plugged-in drives and cards among `roots`, leaving out the one holding `file` (the drive it came from).
+pub fn devices_in(roots: &[PathBuf], file: &Path) -> Vec<Device> {
+    let mut out = Vec::new();
+    for r in roots {
+        if file.starts_with(r) {
+            continue;
+        }
+        if fs::read_dir(r).is_err() {
+            continue;
+        }
+        let phone = r.join("Android").is_dir() || r.join("DCIM").is_dir();
+        let name = r.to_string_lossy().trim_end_matches(['\\', '/']).to_string();
+        out.push(Device { path: r.clone(), label: if phone { format!("{} (looks like a phone)", name) } else { name }, looks_like_phone: phone });
+    }
+    out.sort_by_key(|d| !d.looks_like_phone);
+    out
+}
+
+/// Copy the phone map into `dest` (a folder on the chosen device). On a phone drive the file goes in
+/// its `Download` folder when there is one. The copy is finished under a temporary name, then renamed,
+/// and its size is checked. Returns where it went.
+pub fn send(file: &Path, dest: &Path) -> R<PathBuf> {
+    let name = file.file_name().ok_or("That file has no name.")?;
+    let mut dir = dest.to_path_buf();
+    if dir.join("Android").is_dir() && dir.join("Download").is_dir() {
+        dir = dir.join("Download");
+    }
+    if !dir.is_dir() {
+        return Err("That place cannot be reached. Check that it is still plugged in.".into());
+    }
+    let target = dir.join(name);
+    let tmp = dir.join(format!("{}.part", name.to_string_lossy()));
+    let want = fs::metadata(file).map_err(|e| format!("Could not read the phone map: {}", e))?.len();
+    let done = fs::copy(file, &tmp).map_err(|e| {
+        let _ = fs::remove_file(&tmp);
+        format!("Could not copy to {}: {}. There may not be enough room.", dir.display(), e)
+    })?;
+    if done != want {
+        let _ = fs::remove_file(&tmp);
+        return Err("The copy did not finish. Please try again.".into());
+    }
+    if target.exists() {
+        let _ = fs::remove_file(&target);
+    }
+    fs::rename(&tmp, &target).map_err(|e| format!("Could not finish the copy: {}", e))?;
+    Ok(target)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -470,6 +527,32 @@ mod tests {
         assert!(build(&out, "x", &empty, ((0.0, 0.0), 1.0), "{}", &[Choice { source: src, max_zoom: 14 }], None).unwrap_err().contains("nothing in this area"));
         assert!(!out.exists() && !out.with_extension("cmap.part").exists());
         assert!(read_manifest(&d.join("s.pmtiles")).is_err());
+        let _ = fs::remove_dir_all(&d);
+    }
+
+    #[test]
+    fn sending_lists_other_drives_and_copies_safely() {
+        let d = dir("send");
+        let home = d.join("drive");
+        let phone = d.join("phone");
+        let card = d.join("card");
+        for p in [&home, &phone, &card] {
+            fs::create_dir_all(p).unwrap();
+        }
+        fs::create_dir_all(phone.join("Android")).unwrap();
+        fs::create_dir_all(phone.join("Download")).unwrap();
+        let f = home.join("trail.cmap");
+        fs::write(&f, b"0123456789").unwrap();
+        let list = devices_in(&[home.clone(), card.clone(), phone.clone(), d.join("gone")], &f);
+        assert_eq!(list.len(), 2, "the source drive and missing places are left out");
+        assert!(list[0].looks_like_phone && list[0].path == phone, "phones come first");
+        let got = send(&f, &phone).unwrap();
+        assert_eq!(got, phone.join("Download").join("trail.cmap"));
+        assert_eq!(fs::read(&got).unwrap(), b"0123456789");
+        let got2 = send(&f, &card).unwrap();
+        assert_eq!(got2, card.join("trail.cmap"));
+        assert!(send(&f, &d.join("gone")).unwrap_err().contains("cannot be reached"));
+        assert!(!card.join("trail.cmap.part").exists());
         let _ = fs::remove_dir_all(&d);
     }
 }
