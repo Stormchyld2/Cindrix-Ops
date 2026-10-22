@@ -290,7 +290,12 @@ jobs:
           # only the credits list and the tiny sample library stay beside the program.
           mkdir -p out/Cindrix/content && cp content/sources.json out/Cindrix/content/ && cp -r content/library-sample out/Cindrix/content/
           mkdir -p out/Cindrix/models out/Cindrix/engines
-          url=$(gh api "repos/ggml-org/llama.cpp/releases?per_page=15" --jq '[.[].assets[] | select(.name | test("bin-win-cpu-x64\\.zip$"))][0].browser_download_url')
+          url=""
+          for try in 1 2 3 4 5; do
+            url=$(gh api "repos/ggml-org/llama.cpp/releases?per_page=15" --jq '[.[].assets[] | select(.name | test("bin-win-cpu-x64\\.zip$"))][0].browser_download_url' || true)
+            if [ -n "$url" ] && [ "$url" != "null" ]; then break; fi
+            echo "llama.cpp release list not ready (try $try); waiting"; sleep 20
+          done
           if [ -z "$url" ] || [ "$url" = "null" ]; then echo "::error::no llama.cpp windows cpu asset found"; exit 1; fi
           echo "llama.cpp: $url"
           curl -fsSL -o llama.zip "$url"
