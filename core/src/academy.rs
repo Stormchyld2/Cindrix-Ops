@@ -409,7 +409,9 @@ pub fn load_all(dirs: &[PathBuf]) -> Loaded {
 
 // ---------- results ----------
 
-pub const HEADER: &str = "date,lesson,score,total";
+pub const HEADER: &str = "date,lesson,score,total,person";
+/// The first layout, before results were kept for each person. Still read; its rows belong to nobody in particular.
+const HEADER_V1: &str = "date,lesson,score,total";
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Result_ {
@@ -417,6 +419,8 @@ pub struct Result_ {
     pub lesson: String,
     pub score: u32,
     pub total: u32,
+    /// Who took the quiz (a name from the Family page), or empty when nobody was chosen.
+    pub person: String,
 }
 
 pub struct Log {
@@ -436,22 +440,23 @@ impl Log {
             Err(e) => return Err(e.to_string()),
         };
         let mut lines = text.lines();
-        match lines.next() {
-            Some(h) if h.trim() == HEADER => {}
+        let v1 = match lines.next() {
+            Some(h) if h.trim() == HEADER => false,
+            Some(h) if h.trim() == HEADER_V1 => true,
             None => return Ok(vec![]),
             _ => return Err("academy.csv has an unexpected header".into()),
-        }
+        };
         let mut out = Vec::new();
         for (i, l) in lines.enumerate() {
             if l.trim().is_empty() {
                 continue;
             }
             let f = split_record(l);
-            if f.len() != 4 {
+            if f.len() != if v1 { 4 } else { 5 } {
                 return Err(format!("academy.csv line {} is damaged", i + 2));
             }
             let n = |s: &str| s.trim().parse::<u32>().map_err(|_| format!("academy.csv line {}: not a number: {}", i + 2, s));
-            out.push(Result_ { date: f[0].clone(), lesson: f[1].clone(), score: n(&f[2])?, total: n(&f[3])? });
+            out.push(Result_ { date: f[0].clone(), lesson: f[1].clone(), score: n(&f[2])?, total: n(&f[3])?, person: if v1 { String::new() } else { f[4].clone() } });
         }
         Ok(out)
     }
@@ -465,7 +470,7 @@ impl Log {
         let mut csv = String::from(HEADER);
         csv.push('\n');
         for r in &all {
-            csv.push_str(&format!("{},{},{},{}\n", quote(&r.date), quote(&r.lesson), r.score, r.total));
+            csv.push_str(&format!("{},{},{},{},{}\n", quote(&r.date), quote(&r.lesson), r.score, r.total, quote(&r.person)));
         }
         fsio::write_atomic(&self.path, csv.as_bytes()).map_err(|e| e.to_string())
     }
@@ -481,8 +486,13 @@ pub struct Progress {
 }
 
 pub fn progress_for(results: &[Result_], lesson: &str) -> Progress {
+    progress_of(results, lesson, None)
+}
+
+/// Like `progress_for`, but only for one person's results (None: everyone's together).
+pub fn progress_of(results: &[Result_], lesson: &str, person: Option<&str>) -> Progress {
     let mut p = Progress::default();
-    for r in results.iter().filter(|r| r.lesson == lesson) {
+    for r in results.iter().filter(|r| r.lesson == lesson && person.map(|n| r.person == n).unwrap_or(true)) {
         p.tries += 1;
         if r.score >= p.best_score {
             p.best_score = r.score;
@@ -560,11 +570,11 @@ mod tests {
         let d = tmp("log");
         let log = Log::new(&d);
         assert!(log.list().unwrap().is_empty());
-        log.add(Result_ { date: "2026-10-20".into(), lesson: "m/l".into(), score: 1, total: 3 }).unwrap();
-        log.add(Result_ { date: "2026-10-21".into(), lesson: "m/l".into(), score: 3, total: 3 }).unwrap();
-        log.add(Result_ { date: "2026-10-22".into(), lesson: "m/l".into(), score: 2, total: 3 }).unwrap();
-        log.add(Result_ { date: "2026-10-22".into(), lesson: "m/other".into(), score: 0, total: 2 }).unwrap();
-        assert!(log.add(Result_ { date: "d".into(), lesson: "m/l".into(), score: 4, total: 3 }).is_err());
+        log.add(Result_ { date: "2026-10-20".into(), lesson: "m/l".into(), score: 1, total: 3, person: String::new() }).unwrap();
+        log.add(Result_ { date: "2026-10-21".into(), lesson: "m/l".into(), score: 3, total: 3, person: String::new() }).unwrap();
+        log.add(Result_ { date: "2026-10-22".into(), lesson: "m/l".into(), score: 2, total: 3, person: String::new() }).unwrap();
+        log.add(Result_ { date: "2026-10-22".into(), lesson: "m/other".into(), score: 0, total: 2, person: String::new() }).unwrap();
+        assert!(log.add(Result_ { date: "d".into(), lesson: "m/l".into(), score: 4, total: 3, person: String::new() }).is_err());
         let all = log.list().unwrap();
         assert_eq!(all.len(), 4);
         let p = progress_for(&all, "m/l");
@@ -573,7 +583,7 @@ mod tests {
         // a damaged file is reported and left alone
         fs::write(&log.path, "date,lesson,score,total\nx,y\n").unwrap();
         assert!(log.list().is_err());
-        assert!(log.add(Result_ { date: "d".into(), lesson: "l".into(), score: 0, total: 1 }).is_err());
+        assert!(log.add(Result_ { date: "d".into(), lesson: "l".into(), score: 0, total: 1, person: String::new() }).is_err());
         assert_eq!(fs::read_to_string(&log.path).unwrap(), "date,lesson,score,total\nx,y\n");
     }
 

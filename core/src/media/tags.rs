@@ -446,7 +446,42 @@ fn wav<R: Read + Seek>(r: &mut R, want_art: bool) -> Option<(Tags, Option<Art>)>
         }
         pos = body + size + (size & 1);
     }
+    if want_art && art.is_none() {
+        // Some programs write the picture where the chunk list does not lead to it (after the audio
+        // with no chunk around it, or in a file whose length fields are wrong). Look for the tag itself.
+        if let Some((t, a)) = id3_scan(r, len) {
+            tags.fill(t);
+            art = a;
+        }
+    }
     Some((tags, art))
+}
+
+/// Look through the start and the end of a file for an ID3 tag that carries a picture.
+fn id3_scan<R: Read + Seek>(r: &mut R, len: u64) -> Option<(Tags, Option<Art>)> {
+    const WINDOW: u64 = 24 * 1024 * 1024;
+    let spans: Vec<(u64, u64)> = if len <= WINDOW * 2 { vec![(0, len)] } else { vec![(0, WINDOW), (len - WINDOW, len)] };
+    for (a, b) in spans {
+        let buf = read_at(r, a, (b - a) as usize)?;
+        let mut i = 0usize;
+        while let Some(k) = find(&buf[i..], b"ID3") {
+            let at = i + k;
+            i = at + 3;
+            let Some(h) = buf.get(at..at + 10) else { break };
+            if !(2..=4).contains(&h[3]) || h[4] == 0xFF || h[6..10].iter().any(|&x| x & 0x80 != 0) {
+                continue;
+            }
+            let total = 10 + synchsafe(&h[6..10]) as usize;
+            if total < 20 || total > MAX_ART + (1 << 20) + 4096 {
+                continue;
+            }
+            let end = (at + total).min(buf.len());
+            if let Some((t, Some(art))) = id3v2(&mut Cursor::new(buf[at..end].to_vec()), true) {
+                return Some((t, Some(art)));
+            }
+        }
+    }
+    None
 }
 
 fn wav_info(b: &[u8]) -> Tags {
@@ -951,6 +986,40 @@ mod tests {
         assert_eq!((art.mime, art.data.as_slice()), ("image/jpeg", &JPEG[..]));
         // not read unless asked for
         assert!(wav(&mut Cursor::new(f), false).unwrap().1.is_none());
+    }
+
+    fn wav_pic_tag() -> Vec<u8> {
+        let mut pic = vec![0u8];
+        pic.extend(b"image/jpeg\0");
+        pic.push(3);
+        pic.extend(b"front\0");
+        pic.extend(JPEG);
+        id3_tag(3, &[id3_frame(3, "TIT2", &text(0, "Odd Wav")), id3_frame(3, "APIC", &pic)], 0)
+    }
+
+    #[test]
+    fn wav_picture_after_the_audio_without_a_chunk_is_found() {
+        let mut f = b"RIFF\0\0\0\0WAVE".to_vec();
+        f.extend(b"data");
+        f.extend(500u32.to_le_bytes());
+        f.extend(vec![0u8; 500]);
+        f.extend(wav_pic_tag());
+        let art = wav(&mut Cursor::new(f), true).unwrap().1.expect("cover found by the wider search");
+        assert_eq!(art.data.as_slice(), &JPEG[..]);
+    }
+
+    #[test]
+    fn wav_with_a_wrong_audio_length_still_gives_its_picture() {
+        let tag = wav_pic_tag();
+        let mut f = b"RIFF\0\0\0\0WAVE".to_vec();
+        f.extend(b"data");
+        f.extend(0xFFFF_FFFFu32.to_le_bytes()); // streaming writers leave this unknown
+        f.extend(vec![0u8; 800]);
+        f.extend(b"id3 ");
+        f.extend((tag.len() as u32).to_le_bytes());
+        f.extend(&tag);
+        let art = wav(&mut Cursor::new(f), true).unwrap().1.expect("cover found by the wider search");
+        assert_eq!(art.data.as_slice(), &JPEG[..]);
     }
 
     fn atom(name: &[u8], body: &[u8]) -> Vec<u8> {

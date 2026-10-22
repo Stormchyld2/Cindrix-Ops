@@ -6,6 +6,7 @@
 
   let cards: Card[] = $state([]);
   let open: Card | null = $state(null);
+  let q = $state('');
 
   onMount(async () => {
     cards = await listCards();
@@ -14,32 +15,77 @@
       cardToOpen = null;
     }
   });
+
+  const GROUPS: [string, string][] = [
+    ['medical', 'FIRST AID AND HEALTH'],
+    ['disaster', 'WEATHER AND DISASTERS'],
+    ['home', 'AT HOME: FIRE, GAS, POWER, WATER'],
+  ];
+  const kindOf = (c: Card) => (c.kind === 'emergency' || !GROUPS.some(([k]) => k === c.kind) ? 'medical' : c.kind);
+  const shown = $derived(cards.filter((c) => !q.trim() || (c.title + ' ' + c.body).toLowerCase().includes(q.trim().toLowerCase())));
+  const groups = $derived(GROUPS.map(([k, t]) => ({ title: t, list: shown.filter((c) => kindOf(c) === k) })).filter((g) => g.list.length));
+
+  // **bold** inside a line, shown without ever inserting raw HTML
+  function parts(t: string): { b: boolean; t: string }[] {
+    return t.split('**').map((x, i) => ({ b: i % 2 === 1, t: x })).filter((x) => x.t);
+  }
+  type Block = { kind: 'p' | 'ol' | 'ul'; lines: string[] };
+  function blocks(body: string): Block[] {
+    const out: Block[] = [];
+    for (const raw of body.split('\n')) {
+      const line = raw.trim();
+      if (!line) { out.push({ kind: 'p', lines: [] }); continue; }
+      const num = /^\d+\.\s+(.*)$/.exec(line);
+      const dash = /^[-*]\s+(.*)$/.exec(line);
+      const k = num ? 'ol' : dash ? 'ul' : 'p';
+      const text = num ? num[1] : dash ? dash[1] : line;
+      const last = out[out.length - 1];
+      if (last && last.kind === k && last.lines.length && k !== 'p') last.lines.push(text);
+      else out.push({ kind: k, lines: [text] });
+    }
+    return out.filter((b) => b.lines.length);
+  }
 </script>
 
 <section>
   <h1>Emergency cards</h1>
-  <p class="sub">One screen each. No model needed.</p>
-  <div class="list">
-    {#each cards as c}
-      <button class="card" class:on={open?.id === c.id} onclick={() => (open = c)}>
-        <strong>{c.title}</strong>
-        {#if c.status !== 'reviewed'}<span class="badge">Draft · clinical review pending</span>{/if}
-      </button>
+  <p class="sub">One screen each. No model needed. {cards.length} cards. You can add your own in Settings, “Your own cards and plans”.</p>
+  {#if !open}
+    <input class="input find" type="search" placeholder="Find a card (bleeding, flood, choking…)" aria-label="Find a card" bind:value={q} />
+    {#each groups as g (g.title)}
+      <div class="label gh">{g.title}</div>
+      <div class="list">
+        {#each g.list as c (c.id)}
+          <button class="card" onclick={() => { open = c; window.scrollTo?.(0, 0); }}>
+            <strong>{c.title}</strong>
+            {#if c.status !== 'reviewed'}<span class="badge">Draft · review pending</span>{/if}
+          </button>
+        {/each}
+      </div>
     {/each}
-  </div>
-  {#if open}
+    {#if cards.length && !groups.length}<p class="muted">No card matches “{q}”.</p>{/if}
+  {:else}
+    <div class="row"><button class="btn" onclick={() => (open = null)}>← All cards</button></div>
     <article class="panel">
       <h2>{open.title}</h2>
-      <pre>{open.body}</pre>
+      {#each blocks(open.body) as b}
+        {#if b.kind === 'p'}<p>{#each parts(b.lines[0]) as x}{#if x.b}<b>{x.t}</b>{:else}{x.t}{/if}{/each}</p>
+        {:else if b.kind === 'ol'}<ol>{#each b.lines as l}<li>{#each parts(l) as x}{#if x.b}<b>{x.t}</b>{:else}{x.t}{/if}{/each}</li>{/each}</ol>
+        {:else}<ul>{#each b.lines as l}<li>{#each parts(l) as x}{#if x.b}<b>{x.t}</b>{:else}{x.t}{/if}{/each}</li>{/each}</ul>{/if}
+      {/each}
     </article>
   {/if}
 </section>
 
 <style>
-  .list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; margin: 12px 0 16px; }
+  .find { max-width: 420px; margin-top: 6px; }
+  .gh { margin-top: 16px; }
+  .list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; margin: 8px 0 8px; }
   .card { text-align: left; padding: 14px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
-  .card.on { border-color: var(--blue); }
+  .card:hover { border-color: var(--blue-line); }
   .badge { align-self: flex-start; }
+  article { margin-top: 10px; max-width: 760px; }
   article h2 { margin-bottom: 8px; }
-  pre { margin: 0; white-space: pre-wrap; font: inherit; }
+  article p, article li { line-height: 1.6; }
+  article ol, article ul { padding-left: 22px; }
 </style>

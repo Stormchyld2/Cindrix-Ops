@@ -14,7 +14,7 @@ use cindrix_core::maps::{self, MapStore};
 use cindrix_core::modelhost::ModelHost;
 use cindrix_core::product::Product;
 use cindrix_core::shelf::{Book, Mark, Marks, Shelf};
-use cindrix_core::{calendar, cards, cascade, pipeline};
+use cindrix_core::{calendar, cards, cascade, pipeline, training};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -134,12 +134,91 @@ struct ReplyDto {
     card: Option<String>,
 }
 
+/// Every `cards` folder to read: the program's own, the main drive's, each other library's, and the user's.
+/// A card in a later folder replaces one with the same file name in an earlier one.
+fn card_dirs() -> Vec<PathBuf> {
+    let r = root();
+    let mut v = vec![content_sub("cards"), r.join("cards")];
+    for o in libs::other_roots(&r) {
+        v.push(o.join("cards"));
+        v.push(o.join("content").join("cards"));
+    }
+    v.push(r.join("user").join("cards"));
+    let mut seen: Vec<PathBuf> = Vec::new();
+    v.retain(|d| {
+        let key = d.canonicalize().unwrap_or_else(|_| d.clone());
+        d.is_dir() && !seen.contains(&key) && {
+            seen.push(key);
+            true
+        }
+    });
+    v
+}
+
 #[tauri::command]
 fn list_cards() -> Vec<CardDto> {
-    cards::load_dir(&content_sub("cards"))
+    cards::load_dirs(&card_dirs())
+        .cards
         .into_iter()
         .map(|c| CardDto { id: c.id, title: c.title, kind: c.kind, status: c.status, reviewer: c.reviewer, reviewed: c.reviewed, body: c.body })
         .collect()
+}
+
+#[derive(Serialize)]
+struct OwnFolderDto {
+    key: &'static str,
+    title: String,
+    help: String,
+    path: String,
+    files: usize,
+    problems: Vec<CourseProblemDto>,
+}
+
+fn count_md(dir: &std::path::Path) -> usize {
+    std::fs::read_dir(dir)
+        .map(|rd| rd.flatten().filter(|e| { let n = e.file_name().to_string_lossy().to_string(); !n.starts_with('_') && n.ends_with(".md") }).count())
+        .unwrap_or(0)
+}
+
+/// The folders where a person drops their own cards and walkthroughs, and anything wrong with the files in them.
+#[tauri::command]
+fn own_content() -> Vec<OwnFolderDto> {
+    let r = root().join("user");
+    let card_problems = cards::load_dirs(&card_dirs()).problems.into_iter().map(|p| CourseProblemDto { place: p.place, message: p.message }).collect();
+    let plan_problems = plans::load_all(&plan_dirs()).problems.into_iter().map(|p| CourseProblemDto { place: p.place, message: p.message }).collect();
+    vec![
+        OwnFolderDto { key: "cards", title: "Emergency cards".into(), help: "One text file per card. Copy the template in the folder, change the words and save it with a new name.".into(), path: r.join("cards").display().to_string(), files: count_md(&r.join("cards")), problems: card_problems },
+        OwnFolderDto { key: "plans", title: "Plans and walkthroughs (including “keep it from failing”)".into(), help: "One text file per plan. Copy a template in the folder, change the words and save it with a new name.".into(), path: r.join("plans").display().to_string(), files: count_md(&r.join("plans")), problems: plan_problems },
+    ]
+}
+
+/// Make the folder (with the template and the how-to copied in) and show it in the file manager.
+#[tauri::command]
+fn open_own_folder(key: String) -> Result<String, String> {
+    let (sub, files): (&str, &[&str]) = match key.as_str() {
+        "cards" => ("cards", &["_template-card.md", "_how-to-add-a-card.md"]),
+        "plans" => ("plans", &["_template-plan.md", "_template-keep-it-from-failing.md", "_how-to-add-a-plan.md"]),
+        _ => return Err("There is no such folder.".into()),
+    };
+    let dir = root().join("user").join(sub);
+    std::fs::create_dir_all(&dir).map_err(|e| format!("The folder could not be made: {}", e))?;
+    let from = content_sub(sub);
+    for f in files {
+        let to = dir.join(f);
+        if !to.exists() {
+            if let Ok(bytes) = std::fs::read(from.join(f)) {
+                let _ = std::fs::write(&to, bytes);
+            }
+        }
+    }
+    #[cfg(windows)]
+    let started = std::process::Command::new("explorer").arg(&dir).spawn();
+    #[cfg(target_os = "macos")]
+    let started = std::process::Command::new("open").arg(&dir).spawn();
+    #[cfg(all(unix, not(target_os = "macos")))]
+    let started = std::process::Command::new("xdg-open").arg(&dir).spawn();
+    started.map_err(|e| format!("The folder is at {} but could not be opened: {}", dir.display(), e))?;
+    Ok(dir.display().to_string())
 }
 
 // ---------- the model ----------
@@ -952,6 +1031,26 @@ struct ItemDto {
     use_per_day: f64,
     use_by: String,
     notes: String,
+    #[serde(default)]
+    brand: String,
+    #[serde(default)]
+    size: String,
+    #[serde(default)]
+    for_whom: String,
+    #[serde(default)]
+    bought: String,
+    #[serde(default)]
+    target: f64,
+    #[serde(default)]
+    condition: String,
+    #[serde(default)]
+    checked: String,
+    #[serde(default)]
+    cost: f64,
+    #[serde(default)]
+    source: String,
+    #[serde(default)]
+    serial: String,
     /// "ok", "check" or "act" (filled in when listing)
     #[serde(default)]
     status: String,
@@ -962,7 +1061,9 @@ struct ItemDto {
 impl From<ItemDto> for Item {
     fn from(d: ItemDto) -> Item {
         Item { id: d.id, category: d.category, name: d.name, location: d.location, quantity: d.quantity,
-               unit: d.unit, use_per_day: d.use_per_day, use_by: d.use_by, notes: d.notes }
+               unit: d.unit, use_per_day: d.use_per_day, use_by: d.use_by, notes: d.notes,
+               brand: d.brand, size: d.size, for_whom: d.for_whom, bought: d.bought, target: d.target, condition: d.condition,
+               checked: d.checked, cost: d.cost, source: d.source, serial: d.serial }
     }
 }
 
@@ -971,6 +1072,8 @@ fn to_dto(i: &Item, t: &inventory::Thresholds) -> ItemDto {
     ItemDto {
         id: i.id.clone(), category: i.category.clone(), name: i.name.clone(), location: i.location.clone(),
         quantity: i.quantity, unit: i.unit.clone(), use_per_day: i.use_per_day, use_by: i.use_by.clone(), notes: i.notes.clone(),
+        brand: i.brand.clone(), size: i.size.clone(), for_whom: i.for_whom.clone(), bought: i.bought.clone(), target: i.target,
+        condition: i.condition.clone(), checked: i.checked.clone(), cost: i.cost, source: i.source.clone(), serial: i.serial.clone(),
         status: match inventory::status_with(i, y, m, t) { Status::Ok => "ok", Status::Check => "check", Status::ActNow => "act" }.to_string(),
         days_left: inventory::days_left(i),
     }
@@ -1445,7 +1548,8 @@ struct LessonBodyDto {
 }
 
 #[tauri::command]
-fn academy_list() -> Result<Vec<ModuleDto>, String> {
+fn academy_list(person: Option<String>) -> Result<Vec<ModuleDto>, String> {
+    let person = person.filter(|p| !p.trim().is_empty());
     let results = academy::Log::new(&root().join("user")).list()?;
     let mut out = Vec::new();
     for c in academy::load_all(&academy_dirs()).courses {
@@ -1462,7 +1566,7 @@ fn academy_list() -> Result<Vec<ModuleDto>, String> {
                     .lessons
                     .into_iter()
                     .map(|l| {
-                        let p = academy::progress_for(&results, &l.id);
+                        let p = academy::progress_of(&results, &l.id, person.as_deref());
                         LessonDto { questions: l.quiz.len(), tries: p.tries, best_score: p.best_score, total: p.total, last_date: p.last_date, id: l.id, title: l.title, minutes: l.minutes, status: l.status, source: l.source }
                     })
                     .collect(),
@@ -1498,12 +1602,122 @@ fn academy_lesson(id: String) -> Result<LessonBodyDto, String> {
 }
 
 #[tauri::command]
-fn academy_save(lesson: String, score: u32, total: u32) -> Result<(), String> {
+fn academy_save(lesson: String, score: u32, total: u32, person: Option<String>) -> Result<(), String> {
     let known = academy::load_all(&academy_dirs()).courses.iter().any(|c| c.modules.iter().any(|m| m.lessons.iter().any(|l| l.id == lesson)));
     if !known {
         return Err("There is no such lesson.".into());
     }
-    academy::Log::new(&root().join("user")).add(academy::Result_ { date: calendar::today_string(), lesson, score, total })
+    academy::Log::new(&root().join("user")).add(academy::Result_ { date: calendar::today_string(), lesson, score, total, person: person.unwrap_or_default().trim().to_string() })
+}
+
+// ---------- how much to have ----------
+
+#[derive(Serialize)]
+struct NeedDto {
+    category: &'static str,
+    name: String,
+    unit: &'static str,
+    amount: f64,
+    why: String,
+    basis: &'static str,
+}
+
+#[tauri::command]
+fn stock_needs(adults: u32, children: u32, babies: u32, small_pets: u32, large_pets: u32, days: u32) -> Vec<NeedDto> {
+    cindrix_core::stockplan::needs(&cindrix_core::stockplan::Household { adults, children, babies, small_pets, large_pets, days })
+        .into_iter()
+        .map(|n| NeedDto { category: n.category, name: n.name, unit: n.unit, amount: n.amount, why: n.why, basis: n.basis })
+        .collect()
+}
+
+// ---------- training sign-off ----------
+
+#[derive(Serialize)]
+struct TrainLessonDto {
+    id: String,
+    title: String,
+    module: String,
+    minutes: u32,
+    questions: u32,
+    state: &'static str,
+    best_score: u32,
+    total: u32,
+    last_date: String,
+}
+#[derive(Serialize)]
+struct TrainCourseDto {
+    id: String,
+    title: String,
+    summary: String,
+    chosen: bool,
+    signed_by: String,
+    signed_date: String,
+    passed: u32,
+    needed: u32,
+    minutes_left: u32,
+    complete: bool,
+    lessons: Vec<TrainLessonDto>,
+}
+#[derive(Serialize)]
+struct TrainSuggestionDto {
+    course: String,
+    title: String,
+    reason: String,
+}
+#[derive(Serialize)]
+struct TrainReportDto {
+    person: String,
+    passed: u32,
+    needed: u32,
+    signed: u32,
+    chosen: u32,
+    courses: Vec<TrainCourseDto>,
+    suggestions: Vec<TrainSuggestionDto>,
+}
+
+/// Where each person stands in the Academy. The names come from the Family page (the interface asks for them).
+#[tauri::command]
+fn training_reports(people: Vec<String>) -> Result<Vec<TrainReportDto>, String> {
+    let results = academy::Log::new(&root().join("user")).list()?;
+    let roster = training::Roster::new(&root().join("user")).list()?;
+    let courses = academy::load_all(&academy_dirs()).courses;
+    Ok(people
+        .iter()
+        .filter(|p| !p.trim().is_empty())
+        .map(|p| {
+            let r = training::report(&courses, &results, &roster, p.trim());
+            TrainReportDto {
+                person: r.person,
+                passed: r.passed,
+                needed: r.needed,
+                signed: r.signed,
+                chosen: r.chosen,
+                courses: r
+                    .courses
+                    .into_iter()
+                    .map(|c| {
+                        let complete = c.complete();
+                        TrainCourseDto {
+                            id: c.id, title: c.title, summary: c.summary, chosen: c.chosen, signed_by: c.signed_by, signed_date: c.signed_date,
+                            passed: c.passed, needed: c.needed, minutes_left: c.minutes_left, complete,
+                            lessons: c.lessons.into_iter().map(|l| TrainLessonDto { id: l.id, title: l.title, module: l.module, minutes: l.minutes, questions: l.questions, state: l.state, best_score: l.best_score, total: l.total, last_date: l.last_date }).collect(),
+                        }
+                    })
+                    .collect(),
+                suggestions: r.suggestions.into_iter().map(|s| TrainSuggestionDto { course: s.course, title: s.title, reason: s.reason }).collect(),
+            }
+        })
+        .collect())
+}
+
+#[tauri::command]
+fn training_enrol(person: String, course: String, on: bool) -> Result<(), String> {
+    training::Roster::new(&root().join("user")).set_enrolled(person.trim(), &course, on)
+}
+
+#[tauri::command]
+fn training_signoff(person: String, course: String, by: String, on: bool) -> Result<(), String> {
+    training::Roster::new(&root().join("user")).set_signed(person.trim(), &course, &by, &calendar::today_string(), on)
 }
 
 // ---------- plans (what comes after the first walkthrough) ----------
@@ -1741,6 +1955,8 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             list_cards,
+            own_content,
+            open_own_folder,
             ask_stream,
             model_status,
             library_status,
@@ -1782,6 +1998,10 @@ pub fn run() {
             academy_problems,
             academy_lesson,
             academy_save,
+            training_reports,
+            stock_needs,
+            training_enrol,
+            training_signoff,
             plans_list,
             plans_problems,
             plan_follow,

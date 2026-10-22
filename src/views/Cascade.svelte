@@ -16,6 +16,18 @@
     }
   });
 
+  const keep: [string, string][] = [
+    ['keep-water-from-failing', 'Water'], ['keep-food-from-failing', 'Food'], ['keep-power-from-failing', 'Power and light'],
+    ['keep-warm-and-cool-from-failing', 'Warmth and cooling'], ['keep-cooking-fuel-from-failing', 'Cooking and fuel'],
+    ['keep-communication-from-failing', 'Communication'], ['keep-medicine-from-failing', 'Medicine and health'],
+    ['keep-sanitation-from-failing', 'Toilets and hygiene'], ['keep-the-car-from-failing', 'The car and go-bags'],
+    ['keep-papers-and-cash-from-failing', 'Papers and cash'], ['keep-home-safe-from-failing', 'Home safety'],
+    ['keep-pets-from-failing', 'Pets'], ['keep-babies-and-children-from-failing', 'Babies and children'], ['keep-knowledge-from-failing', 'Knowledge and maps'],
+  ];
+  function openPlan(id: string) {
+    try { sessionStorage.setItem('cindrix.openPlan', id); } catch { /* the Plans page just opens on its list */ }
+    go('What next');
+  }
   function fmt(d: number | null): string {
     return d == null ? 'Not set' : d < 10 ? d.toFixed(1) + ' days' : Math.round(d) + ' days';
   }
@@ -69,6 +81,16 @@
   <div class="row"><button class="btn" onclick={() => go('Inventory')}>Open Inventory</button></div>
 {/if}
 
+<section class="panel">
+  <div class="label">HOW TO KEEP IT FROM FAILING</div>
+  <p class="muted">Counting what runs out is the first half. Each walkthrough below shows what to do, and how, so that thing does not fail in the first place. Pick the one that is short or running low.</p>
+  <div class="row keep">
+    {#each keep as [id, label]}
+      <button class="btn" onclick={() => openPlan(id)} aria-label={`Open the walkthrough: keep ${label} from failing`}>{label}</button>
+    {/each}
+  </div>
+</section>
+
 <style>
   .tiles { display: flex; flex-wrap: wrap; gap: 12px; }
   .tile { flex: 1 1 180px; padding: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
@@ -76,4 +98,5 @@
   .line { display: flex; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); align-items: center; }
   .grow { flex: 1; }
   .small { font-size: 13px; }
+  .keep { gap: 8px; margin-top: 8px; }
 </style>

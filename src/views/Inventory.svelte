@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { inventoryList, inventorySave, inventoryDelete, type Item } from '../lib/api';
+  import { inventoryList, inventorySave, inventoryDelete, stockNeeds, type Item, type Need } from '../lib/api';
   import { onMount } from 'svelte';
-  import { categories, categoryHint } from '../lib/categories';
+  import { categories, categoryHint, categoryUnits, categoryAsk, forWhomChoices, conditionChoices } from '../lib/categories';
+  import { learner, loadPeople } from '../lib/learner.svelte';
 
   let items: Item[] = $state([]);
   let error = $state('');
@@ -12,13 +13,69 @@
   let selected: string[] = $state([]);
   let confirming = $state(false);
   let dlg: HTMLDialogElement;
+  let plandlg: HTMLDialogElement;
+  // the plan-what-to-have dialog
+  let hh = $state(loadHousehold());
+  let needs: Need[] = $state([]);
+  let picks: string[] = $state([]);
+  let applied = $state('');
+  function loadHousehold() {
+    try {
+      const t = localStorage.getItem('cindrix.household');
+      if (t) return { adults: 2, children: 0, babies: 0, small: 0, large: 0, days: 14, ...JSON.parse(t) };
+    } catch { /* use the defaults */ }
+    return { adults: 2, children: 0, babies: 0, small: 0, large: 0, days: 14 };
+  }
+  const needCategories = $derived([...new Set(needs.map((n) => n.category))]);
+  function have(name: string): number | null {
+    const m = items.filter((i) => i.name.toLowerCase() === name.toLowerCase());
+    return m.length ? m.reduce((a, i) => a + i.quantity, 0) : null;
+  }
+  async function showNeeds() {
+    applied = '';
+    try { localStorage.setItem('cindrix.household', JSON.stringify(hh)); } catch { /* not remembered */ }
+    try {
+      const n = (x: unknown) => Math.max(0, Math.floor(Number(x) || 0));
+      needs = await stockNeeds(n(hh.adults), n(hh.children), n(hh.babies), n(hh.small), n(hh.large), n(hh.days) || 14);
+      picks = needs.map((x) => x.name);
+      if (!needs.length) error = 'Add at least one person to see what to have.';
+    } catch (e) {
+      error = String(e);
+    }
+  }
+  async function applyNeeds() {
+    let added = 0, updated = 0;
+    try {
+      for (const n of needs.filter((x) => picks.includes(x.name))) {
+        const ex = items.find((i) => i.name.toLowerCase() === n.name.toLowerCase());
+        if (ex) {
+          items = await inventorySave({ ...ex, target: n.amount, size: ex.size || '' });
+          updated++;
+        } else {
+          items = await inventorySave({ ...blank(), category: n.category, name: n.name, quantity: 0, unit: n.unit, target: n.amount, notes: n.why });
+          added++;
+        }
+      }
+      applied = `Done: ${updated} updated, ${added} added. Open “Low or expiring” to see what is short.`;
+      show = 'low';
+    } catch (e) {
+      error = String(e);
+    }
+  }
+  function openPlan() {
+    applied = '';
+    plandlg.showModal();
+  }
   let form: Item = $state(blank());
 
   function blank(): Item {
-    return { id: '', category: 'Water', name: '', location: '', quantity: 1, unit: '', use_per_day: 0, use_by: '', notes: '' };
+    return { id: '', category: 'Water', name: '', location: '', quantity: 1, unit: '', use_per_day: 0, use_by: '', notes: '', brand: '', size: '', for_whom: '', bought: '', target: 0, condition: '', checked: '', cost: 0, source: '', serial: '' };
   }
 
-  onMount(load);
+  onMount(async () => {
+    if (!learner.loaded) void loadPeople();
+    await load();
+  });
 
   async function load() {
     try {
@@ -55,13 +112,13 @@
     dlg.showModal();
   }
   function openEdit(i: Item) {
-    form = { ...i };
+    form = { ...blank(), ...i };
     dlg.showModal();
   }
   async function saveForm() {
     if (!form.name.trim()) return;
     try {
-      items = await inventorySave({ ...form, name: form.name.trim(), quantity: Number(form.quantity) || 0, use_per_day: Number(form.use_per_day) || 0 });
+      items = await inventorySave({ ...form, name: form.name.trim(), quantity: Number(form.quantity) || 0, use_per_day: Number(form.use_per_day) || 0, target: Number(form.target) || 0, cost: Number(form.cost) || 0 });
       dlg.close();
     } catch (e) {
       error = String(e);
@@ -97,6 +154,7 @@
     <h1>Inventory</h1>
     <p class="sub">Everything you have, where it is, how long it lasts and when it expires.</p>
   </div>
+  <button class="btn" onclick={openPlan} title="Work out what to have on hand and how much, for your household">How much should I have?</button>
   <button class="plus" aria-label="Create new item" title="Create new item" onclick={openNew}>+</button>
 </section>
 
@@ -149,7 +207,7 @@
         <input type="checkbox" bind:group={selected} value={i.id} aria-label={'Select ' + i.name} />
         <button class="name" onclick={() => openEdit(i)}>
           <strong>{i.name}</strong>
-          <span class="muted small">{i.location || 'No place set'}{i.notes ? ' · ' + i.notes : ''}</span>
+          <span class="muted small">{i.location || 'No place set'}{i.brand ? ' · ' + i.brand : ''}{i.size ? ' · ' + i.size : ''}{i.for_whom ? ' · for ' + i.for_whom : ''}{i.target ? ' · want ' + i.target : ''}{i.notes ? ' · ' + i.notes : ''}</span>
         </button>
         <div class="qty">
           <button class="mini" aria-label="Remove one" onclick={() => step(i, -1)}>−</button>
@@ -169,26 +227,133 @@
 <dialog bind:this={dlg} aria-labelledby="dt">
   <form class="dform" onsubmit={(e) => { e.preventDefault(); saveForm(); }}>
     <h2 id="dt">{form.id ? 'Edit item' : 'New item'}</h2>
-    <label>Item<input class="input" bind:value={form.name} required /></label>
-    <label>Category
-      <select class="input" bind:value={form.category}>{#each categories as c}<option>{c}</option>{/each}</select>
-      {#if categoryHint[form.category]}<span class="muted hint">For example: {categoryHint[form.category]}</span>{/if}
-    </label>
-    <label>Where it is<input class="input" bind:value={form.location} placeholder="Pantry, Garage, Go-bag..." /></label>
-    <div class="row">
-      <label class="half">How many<input class="input" type="number" min="0" step="any" bind:value={form.quantity} /></label>
-      <label class="half">Unit<input class="input" bind:value={form.unit} placeholder="gal, meals, pcs" /></label>
-    </div>
-    <div class="row">
-      <label class="half">Used per day<input class="input" type="number" min="0" step="any" bind:value={form.use_per_day} /></label>
-      <label class="half">Use by (YYYY-MM)<input class="input" bind:value={form.use_by} placeholder="2027-06" pattern="\d{'{4}'}-\d{'{2}'}|" /></label>
-    </div>
+    <p class="muted hint">Only the item name is needed. Each extra answer makes “days left”, the shopping list and the checks more true.</p>
+
+    <fieldset>
+      <legend>1. What is it?</legend>
+      <label>Item<input class="input" bind:value={form.name} required placeholder="Bottled water" /></label>
+      <label>Category
+        <select class="input" bind:value={form.category}>{#each categories as c}<option>{c}</option>{/each}</select>
+        {#if categoryHint[form.category]}<span class="muted hint">For example: {categoryHint[form.category]}</span>{/if}
+      </label>
+      <div class="row">
+        <label class="half">Brand or type<input class="input" bind:value={form.brand} placeholder="Mountain House, AA lithium…" /></label>
+        <label class="half">Size of one<input class="input" bind:value={form.size} placeholder="1 gal, 15 oz can, 10 ft" /></label>
+      </div>
+      <label>Model or serial number<input class="input" bind:value={form.serial} placeholder="For gear you might need to repair or replace" /></label>
+    </fieldset>
+
+    <fieldset>
+      <legend>2. How much?</legend>
+      <div class="row">
+        <label class="half">How many do you have<input class="input" type="number" min="0" step="any" bind:value={form.quantity} /></label>
+        <label class="half">Unit
+          <input class="input" list="units" bind:value={form.unit} placeholder="gal, meals, pcs" />
+          <datalist id="units">{#each categoryUnits[form.category] ?? [] as u}<option value={u}></option>{/each}</datalist>
+        </label>
+      </div>
+      <div class="row">
+        <label class="half">How many do you want to keep<input class="input" type="number" min="0" step="any" bind:value={form.target} />
+          <span class="muted hint">0 means no goal. Below it, the item shows as “Check”. “How much should I have?” fills this in for you.</span></label>
+        <label class="half">Used per day<input class="input" type="number" min="0" step="any" bind:value={form.use_per_day} />
+          <span class="muted hint">All together, per day. It makes “days left” true.</span></label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>3. Who and where?</legend>
+      <label>Who is it for
+        <input class="input" list="whom" bind:value={form.for_whom} placeholder="Everyone, a name, Pets…" />
+        <datalist id="whom">{#each [...forWhomChoices, ...learner.people] as w}<option value={w}></option>{/each}</datalist>
+      </label>
+      <label>Where it is
+        <input class="input" list="places" bind:value={form.location} placeholder="Pantry, Garage, Go-bag…" />
+        <datalist id="places">{#each locations.filter((l) => l !== 'All') as l}<option value={l}></option>{/each}</datalist>
+      </label>
+    </fieldset>
+
+    <fieldset>
+      <legend>4. Dates and condition</legend>
+      <div class="row">
+        <label class="half">Bought or packed<input class="input" type="month" bind:value={form.bought} /></label>
+        <label class="half">Use by or replace by<input class="input" type="month" bind:value={form.use_by} /></label>
+      </div>
+      <div class="row">
+        <label class="half">Last looked at<input class="input" type="date" bind:value={form.checked} /></label>
+        <label class="half">Condition
+          <select class="input" bind:value={form.condition}>{#each conditionChoices as c}<option value={c}>{c || 'Not set'}</option>{/each}</select>
+        </label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>5. Buying</legend>
+      <div class="row">
+        <label class="half">Cost (all together, $)<input class="input" type="number" min="0" step="any" bind:value={form.cost} /></label>
+        <label class="half">Where to get more<input class="input" bind:value={form.source} placeholder="Store, website, neighbour" /></label>
+      </div>
+    </fieldset>
+
+    {#if categoryAsk[form.category]?.length}
+      <div class="ask">
+        <strong>For {form.category.toLowerCase()}, also think about:</strong>
+        <ul>{#each categoryAsk[form.category] as q}<li>{q}</li>{/each}</ul>
+      </div>
+    {/if}
+
     <label>Notes<input class="input" bind:value={form.notes} /></label>
     <div class="row">
       <button class="btn primary" type="submit">Save item</button>
       <button class="btn" type="button" onclick={() => dlg.close()}>Cancel</button>
     </div>
   </form>
+</dialog>
+
+<dialog bind:this={plandlg} aria-labelledby="pt" class="wide">
+  <div class="dform">
+    <h2 id="pt">How much should I have?</h2>
+    <p class="muted hint">Tell us who you are looking after and for how many days. The list below shows what to have on hand, from the Red Cross and Ready.gov where they give a number, and a plain rule of thumb where they do not (each line says which). Then set them as your goals, and the Inventory will show what is short.</p>
+    <div class="row">
+      <label class="third">Adults<input class="input" type="number" min="0" bind:value={hh.adults} /></label>
+      <label class="third">Children<input class="input" type="number" min="0" bind:value={hh.children} /></label>
+      <label class="third">Babies<input class="input" type="number" min="0" bind:value={hh.babies} /></label>
+      <label class="third">Small pets<input class="input" type="number" min="0" bind:value={hh.small} /></label>
+      <label class="third">Large dogs<input class="input" type="number" min="0" bind:value={hh.large} /></label>
+      <label class="third">For how long
+        <select class="input" bind:value={hh.days}>
+          <option value={3}>3 days (to leave with)</option>
+          <option value={7}>1 week</option>
+          <option value={14}>2 weeks (for home)</option>
+          <option value={30}>1 month</option>
+          <option value={90}>3 months</option>
+          <option value={180}>6 months</option>
+          <option value={365}>1 year</option>
+        </select>
+      </label>
+    </div>
+    <div class="row"><button class="btn primary" onclick={showNeeds}>Show what to have</button></div>
+    {#if needs.length}
+      {#each needCategories as cat}
+        <div class="label">{cat.toUpperCase()}</div>
+        {#each needs.filter((n) => n.category === cat) as n (n.name)}
+          <label class="need">
+            <input type="checkbox" checked={picks.includes(n.name)} onchange={() => (picks = picks.includes(n.name) ? picks.filter((x) => x !== n.name) : [...picks, n.name])} aria-label={'Use ' + n.name} />
+            <span class="grow"><strong>{n.name}</strong> <span class="mono">{Number.isInteger(n.amount) ? n.amount : n.amount.toFixed(1)} {n.unit}</span>
+              {#if have(n.name) != null}<span class="muted small"> · you have {have(n.name)}</span>{/if}
+              <span class="muted small block">{n.why}{n.why ? ' ' : ''}<em>({n.basis})</em></span></span>
+          </label>
+        {/each}
+      {/each}
+      <p class="muted hint">Items with the same name are updated. The others are added with “0 on hand” so they show as things to get. Rename or delete extras afterwards.</p>
+      <div class="row">
+        <button class="btn primary" onclick={applyNeeds} disabled={!picks.length}>Set {picks.length} as my goals</button>
+        <button class="btn" onclick={() => plandlg.close()}>Close</button>
+      </div>
+      {#if applied}<div class="done">{applied}</div>{/if}
+    {:else}
+      <div class="row"><button class="btn" onclick={() => plandlg.close()}>Close</button></div>
+    {/if}
+  </div>
 </dialog>
 
 <style>
@@ -228,4 +393,16 @@
   .dform label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
   .half { flex: 1 1 140px; }
   .hint { font-size: 12px; display: block; margin-top: 2px; }
+  .dform fieldset { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 10px; margin: 0; }
+  .dform legend { font-size: 13px; color: var(--blue); padding: 0 6px; letter-spacing: .04em; }
+  .ask { padding: 10px 12px; border-left: 3px solid var(--blue); background: var(--panel2); border-radius: 4px; font-size: 13px; }
+  .ask ul { margin: 6px 0 0; padding-left: 18px; }
+  dialog { max-height: 92vh; overflow: auto; max-width: min(640px, 96vw); }
+  dialog.wide { max-width: min(760px, 96vw); }
+  .third { flex: 1 1 110px; }
+  .need { display: flex !important; flex-direction: row !important; gap: 10px !important; align-items: flex-start; padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px !important; color: inherit !important; }
+  .need input { width: 20px; height: 20px; accent-color: var(--blue); margin-top: 2px; }
+  .need .grow { flex: 1; }
+  .block { display: block; }
+  .done { padding: 10px 12px; border: 1px solid var(--blue-line); background: var(--blue-soft); border-radius: 8px; }
 </style>

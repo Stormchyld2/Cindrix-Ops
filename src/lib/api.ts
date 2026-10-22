@@ -5,8 +5,13 @@ export type Card = { id: string; title: string; kind: string; status: string; re
 export type Reply = { kind: 'Refused' | 'NotFound' | 'Answered' | 'Replaced'; text: string; sources: string[]; card: string | null };
 export type Item = {
   id: string; category: string; name: string; location: string; quantity: number; unit: string;
-  use_per_day: number; use_by: string; notes: string; status?: string; days_left?: number | null;
+  use_per_day: number; use_by: string; notes: string;
+  /** The extra questions. All are optional text or numbers; an old item simply has them empty. */
+  brand?: string; size?: string; for_whom?: string; bought?: string; target?: number; condition?: string;
+  checked?: string; cost?: number; source?: string; serial?: string;
+  status?: string; days_left?: number | null;
 };
+export type Need = { category: string; name: string; unit: string; amount: number; why: string; basis: string };
 export type Cascade = {
   runs_out: { name: string; location: string; days: number }[];
   expiring: { name: string; months: number }[];
@@ -48,6 +53,20 @@ function decorate(i: Item): Item {
   const d = i.use_per_day > 0 ? i.quantity / i.use_per_day : null;
   const status = d !== null && d < 7 ? 'act' : d !== null && d < 14 ? 'check' : 'ok';
   return { ...i, days_left: d, status };
+}
+
+// ---------- your own cards and plans ----------
+export type OwnFolder = { key: 'cards' | 'plans'; title: string; help: string; path: string; files: number; problems: { place: string; message: string }[] };
+export async function ownContent(): Promise<OwnFolder[]> {
+  if (inTauri) return call<OwnFolder[]>('own_content');
+  return [
+    { key: 'cards', title: 'Emergency cards', help: 'One text file per card.', path: 'user\\cards', files: 0, problems: [] },
+    { key: 'plans', title: 'Plans and walkthroughs (including “keep it from failing”)', help: 'One text file per plan.', path: 'user\\plans', files: 0, problems: [] },
+  ];
+}
+export async function openOwnFolder(key: string): Promise<string> {
+  if (inTauri) return call<string>('open_own_folder', { key });
+  return 'user\\' + key;
 }
 
 // ---------- calls ----------
@@ -480,8 +499,8 @@ const previewLesson: AcademyLesson = {
 };
 let memAcademy: Record<string, { tries: number; best: number; total: number }> = {};
 
-export async function academyList(): Promise<AcademyModule[]> {
-  if (inTauri) return call<AcademyModule[]>('academy_list');
+export async function academyList(person?: string): Promise<AcademyModule[]> {
+  if (inTauri) return call<AcademyModule[]>('academy_list', { person: person ?? null });
   const r = memAcademy[previewLesson.id];
   return [{ id: 'survival-basics:01-first-72-hours', title: 'The first 72 hours', summary: 'Water, shelter and a plan for the first three days.', course: 'survival-basics', course_title: 'Survival basics', course_summary: 'The core course.', course_author: '', lessons: [{ id: previewLesson.id, title: previewLesson.title, minutes: previewLesson.minutes, status: 'draft', source: previewLesson.source, questions: previewLesson.quiz.length, tries: r?.tries ?? 0, best_score: r?.best ?? 0, total: r?.total ?? 0, last_date: r ? 'today' : '' }] }];
 }
@@ -525,11 +544,55 @@ export async function planTick(plan: string, step: string, done: boolean): Promi
   if (s) { s.state = done ? 'done' : 'todo'; s.last_done = done ? 'today' : ''; s.due_in = done && s.every_days ? s.every_days : null; }
 }
 
-export async function academySave(lesson: string, score: number, total: number): Promise<void> {
-  if (inTauri) return call<void>('academy_save', { lesson, score, total });
+export async function academySave(lesson: string, score: number, total: number, person?: string): Promise<void> {
+  if (inTauri) return call<void>('academy_save', { lesson, score, total, person: person ?? null });
   const r = memAcademy[lesson] ?? { tries: 0, best: 0, total };
   r.tries++; r.best = Math.max(r.best, score); r.total = total;
   memAcademy[lesson] = r;
+}
+
+// ---------- how much to have ----------
+export async function stockNeeds(adults: number, children: number, babies: number, smallPets: number, largePets: number, days: number): Promise<Need[]> {
+  if (inTauri) return call<Need[]>('stock_needs', { adults, children, babies, smallPets, largePets, days });
+  const p = adults + children + babies;
+  return [
+    { category: 'Water', name: 'Drinking and cooking water', unit: 'gal', amount: p * days, why: '1 gallon per person per day.', basis: 'Red Cross' },
+    { category: 'Food', name: 'Food that keeps (meals)', unit: 'meals', amount: (adults + children) * 3 * days, why: 'Three meals a day for each adult and child.', basis: 'Red Cross' },
+  ];
+}
+
+// ---------- training sign-off ----------
+export type TrainLesson = { id: string; title: string; module: string; minutes: number; questions: number; state: 'passed' | 'tried' | 'new' | 'noquiz'; best_score: number; total: number; last_date: string };
+export type TrainCourse = { id: string; title: string; summary: string; chosen: boolean; signed_by: string; signed_date: string; passed: number; needed: number; minutes_left: number; complete: boolean; lessons: TrainLesson[] };
+export type TrainSuggestion = { course: string; title: string; reason: string };
+export type TrainReport = { person: string; passed: number; needed: number; signed: number; chosen: number; courses: TrainCourse[]; suggestions: TrainSuggestion[] };
+
+const memTrain: Record<string, { chosen: boolean; signed_by: string; signed_date: string }> = {};
+export async function trainingReports(people: string[]): Promise<TrainReport[]> {
+  if (inTauri) return call<TrainReport[]>('training_reports', { people });
+  return people.map((person) => {
+    const k = person + '|survival-basics';
+    const m = memTrain[k];
+    const r = memAcademy[previewLesson.id];
+    const passed = r && r.total > 0 && r.best * 100 >= 70 * r.total;
+    const lessons: TrainLesson[] = [
+      { id: previewLesson.id, title: previewLesson.title, module: 'The first 72 hours', minutes: previewLesson.minutes, questions: 1, state: passed ? 'passed' : r ? 'tried' : 'new', best_score: r?.best ?? 0, total: r?.total ?? 0, last_date: r ? 'today' : '' },
+      { id: 'preview/two', title: 'Staying warm and sheltered', module: 'The first 72 hours', minutes: 10, questions: 3, state: 'new', best_score: 0, total: 0, last_date: '' },
+    ];
+    const course: TrainCourse = { id: 'survival-basics', title: 'Survival basics', summary: 'The core course.', chosen: !!m?.chosen || !!r, signed_by: m?.signed_by ?? '', signed_date: m?.signed_date ?? '', passed: lessons.filter((l) => l.state === 'passed').length, needed: 2, minutes_left: passed ? 10 : 18, complete: false, lessons };
+    const other: TrainCourse = { id: 'field-first-aid', title: 'Field first aid', summary: 'Bleeding, burns, breaks and shock.', chosen: false, signed_by: '', signed_date: '', passed: 0, needed: 4, minutes_left: 40, complete: false, lessons: [] };
+    return { person, passed: course.passed, needed: course.chosen ? course.needed : 0, signed: course.signed_date ? 1 : 0, chosen: course.chosen ? 1 : 0, courses: [course, other], suggestions: course.chosen ? [{ course: course.id, title: course.title, reason: 'Keep going: 1 lesson left, about 10 minutes.' }, { course: other.id, title: other.title, reason: 'Next in the usual order.' }] : [{ course: course.id, title: course.title, reason: 'A good place to start.' }] };
+  });
+}
+export async function trainingEnrol(person: string, course: string, on: boolean): Promise<void> {
+  if (inTauri) return call<void>('training_enrol', { person, course, on });
+  const k = person + '|' + course;
+  memTrain[k] = { ...(memTrain[k] ?? { signed_by: '', signed_date: '' }), chosen: on };
+}
+export async function trainingSignoff(person: string, course: string, by: string, on: boolean): Promise<void> {
+  if (inTauri) return call<void>('training_signoff', { person, course, by, on });
+  const k = person + '|' + course;
+  memTrain[k] = { chosen: true, signed_by: on ? by : '', signed_date: on ? 'today' : '' };
 }
 
 // ---------- sources and licenses ----------

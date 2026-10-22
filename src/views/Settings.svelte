@@ -2,14 +2,29 @@
   import { onMount, onDestroy } from 'svelte';
   import {
     modelStatus, listModels, selectModel, libraryStatus, sourcesList, pickFolder,
-    librariesList, libraryAnswer, libraryForget,
+    librariesList, libraryAnswer, libraryForget, ownContent, openOwnFolder, type OwnFolder,
     type ModelStatus, type ModelChoice, type LibraryStatus, type Sources, type LibraryEntry,
   } from '../lib/api';
   import { settings, RANGES, SCREENS, type Settings } from '../lib/settings.svelte';
 
   let { openArchives }: { openArchives: () => void } = $props();
 
-  const tabs = ['General', 'Assistant', 'Library', 'Intel', 'Music', 'Maps', 'Plan', 'Drive', 'Sources and licenses', 'About'] as const;
+  let own: OwnFolder[] = $state([]);
+  let ownNote: Record<string, string> = $state({});
+  async function loadOwn() {
+    try { own = await ownContent(); } catch { own = []; }
+  }
+  async function openFolder(key: string) {
+    try {
+      const p = await openOwnFolder(key);
+      ownNote[key] = 'Opened ' + p;
+      await loadOwn();
+    } catch (e) {
+      ownNote[key] = String(e);
+    }
+  }
+
+  const tabs = ['General', 'Assistant', 'Library', 'Intel', 'Music', 'Maps', 'Plan', 'Your own cards and plans', 'Drive', 'Sources and licenses', 'About'] as const;
   let tab: (typeof tabs)[number] = $state('General');
 
   type BoolKey = { [K in keyof Settings]: Settings[K] extends boolean ? K : never }[keyof Settings];
@@ -56,6 +71,7 @@
     await refresh();
     models = await listModels();
     sources = await sourcesList();
+    void loadOwn();
     timer = setInterval(refresh, 2500);
   });
   onDestroy(() => { if (timer) clearInterval(timer); });
@@ -247,6 +263,32 @@
       {@render slider('planExpiryMonths', 'Check when the use-by date is within', 'months', 'Items already past their date are always act now.')}
     </div>
     {@render reset(['planActDays', 'planCheckDays', 'planExpiryMonths'])}
+  {:else if tab === 'Your own cards and plans'}
+    <div class="panel">
+      <div class="label">ADD YOUR OWN</div>
+      <p>Drop a text file in the folder and it shows up by itself: an <strong>emergency card</strong> in the Library, a <strong>plan or “keep it from failing” walkthrough</strong> on the What next page. Each folder opens with a template and a short guide inside, so you can copy the template, change the words and save it with a new name. Nothing is sent anywhere.</p>
+    </div>
+    {#each own as f (f.key)}
+      <div class="panel">
+        <div class="label">{f.title.toUpperCase()}</div>
+        <p class="muted fine">{f.help}</p>
+        <p class="path">{f.path}</p>
+        <p class="fine">{f.files} file{f.files === 1 ? '' : 's'} of your own in this folder.</p>
+        <div class="row"><button class="btn primary" onclick={() => openFolder(f.key)} title="Opens the folder, and puts the template and the guide in it the first time">Open the folder</button></div>
+        {#if ownNote[f.key]}<p class="fine">{ownNote[f.key]}</p>{/if}
+        {#if f.problems.length}
+          <details class="probs" open>
+            <summary>{f.problems.length} file{f.problems.length === 1 ? ' was' : 's were'} left out</summary>
+            <p class="muted fine">The rest still works. Fix the file and it appears next time.</p>
+            <ul>{#each f.problems as p}<li><code>{p.place}</code>: {p.message}</li>{/each}</ul>
+          </details>
+        {/if}
+      </div>
+    {/each}
+    <div class="panel">
+      <div class="label">ALSO ON THE DRIVE</div>
+      <p class="muted fine">Cards and plans are also read from a <code>cards</code> and a <code>plans</code> folder at the top of the drive (next to <code>music</code> and <code>library</code>), so a whole set can be copied in at once. A file with the same name in your own folder replaces the one that came with the program.</p>
+    </div>
   {:else if tab === 'Drive'}
     <div class="panel">
       <div class="label">THE DRIVE</div>

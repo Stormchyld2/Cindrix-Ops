@@ -364,3 +364,13 @@ jobs:
         with:
           name: Cindrix-windows-portable
           path: out/Cindrix
+      - name: Make the content pack (cards and plans to copy into a drive that already exists)
+        shell: bash
+        run: |
+          mkdir -p pack/content
+          cp -r content/cards content/plans pack/content/
+          printf 'Copy the "content" folder in here onto the top of your Cindrix drive and choose to merge or replace when asked.\r\nNo new folders are needed. Your own cards go in user\\cards and your own plans in user\\plans (Settings, Your own cards and plans, opens them).\r\n' > pack/README.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Cindrix-content-pack
+          path: pack

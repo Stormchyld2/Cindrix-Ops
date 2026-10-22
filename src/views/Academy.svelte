@@ -1,6 +1,11 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { academyList, academyLesson, academySave, academyProblems, type AcademyModule, type AcademyLesson, type CourseProblem } from '../lib/api';
+  import { learner, chooseLearner, loadPeople } from '../lib/learner.svelte';
+  import Training from './Training.svelte';
+
+  let { go }: { go?: (tab: string) => void } = $props();
+  let training = $state(false);
 
   let modules: AcademyModule[] = $state([]);
   let problems: CourseProblem[] = $state([]);
@@ -17,14 +22,28 @@
 
   async function load() {
     try {
-      modules = await academyList();
+      modules = await academyList(learner.name || undefined);
       problems = await academyProblems();
     } catch (e) {
       error = String(e);
     }
     loaded = true;
   }
-  onMount(load);
+  onMount(async () => {
+    if (!learner.loaded) await loadPeople();
+    await load();
+  });
+  async function pickLearner(n: string) {
+    chooseLearner(n);
+    await load();
+  }
+  async function fromTraining(person: string, course: string | null, lessonId: string | null) {
+    chooseLearner(person);
+    training = false;
+    courseId = course;
+    await load();
+    if (lessonId) await open(lessonId);
+  }
 
   // the modules, grouped under their course
   const courses = $derived.by(() => {
@@ -74,7 +93,7 @@
   async function save() {
     if (!lesson) return;
     try {
-      await academySave(lesson.id, score, lesson.quiz.length);
+      await academySave(lesson.id, score, lesson.quiz.length, learner.name || undefined);
       savedNote = `Saved: ${score} of ${lesson.quiz.length}.`;
       await load();
     } catch (e) {
@@ -93,16 +112,31 @@
 </script>
 
 <section class="wrap">
-  {#if !lesson}
+  {#if training}
+    <Training back={() => (training = false)} goFamily={() => go?.('Family')} openCourse={(p, c) => fromTraining(p, c, null)} openLesson={(p, l) => fromTraining(p, null, l)} />
+  {:else if !lesson}
     {#if !openCourse}
       <div>
         <h1>Academy</h1>
         <p class="sub">Courses you can work through at your own pace, with a short quiz after each lesson. Choose a course to go inside it. Courses are plain folders on this drive, so nothing needs the internet. Your progress stays on this drive.</p>
       </div>
       {#if error}<div class="warn">{error}</div>{/if}
+      <div class="panel who row">
+        {#if learner.people.length}
+          <label class="row grow">Learning as
+            <select class="input" value={learner.name} onchange={(e) => pickLearner(e.currentTarget.value)} aria-label="Who is learning">
+              <option value="">Nobody chosen (everyone together)</option>
+              {#each learner.people as n}<option value={n}>{n}</option>{/each}
+            </select>
+          </label>
+        {:else}
+          <span class="grow muted">Add people on the Family page to keep each person's progress apart.</span>
+        {/if}
+        <button class="btn primary" onclick={() => (training = true)} title="See what each person has learned and still needs to learn">Training sign-off</button>
+      </div>
       {#if allLessons.length}
         <div class="panel prog">
-          <span class="label">YOUR PROGRESS</span>
+          <span class="label">{learner.name ? learner.name.toUpperCase() + '’S PROGRESS' : 'YOUR PROGRESS'}</span>
           <span>{finished} of {allLessons.length} lessons done · about {Math.round(minutes / 60 * 10) / 10} hours in all</span>
           <div class="track"><span style="width:{(finished / allLessons.length) * 100}%"></span></div>
         </div>
@@ -220,6 +254,8 @@
 </section>
 
 <style>
+  .who { align-items: center; gap: 10px; flex-wrap: wrap; justify-content: space-between; }
+  .who label { gap: 8px; align-items: center; }
   .course { margin-top: 8px; }
   .ctitle { font-size: 20px; letter-spacing: .1em; font-family: var(--display); text-transform: uppercase; margin: 0; }
   .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }

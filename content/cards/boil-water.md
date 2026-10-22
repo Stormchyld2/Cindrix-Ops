@@ -1,17 +1,25 @@
 ---
-title: Make water safe to drink
-kind: emergency
+title: Boil-water advisory and making water safe
+kind: home
 status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Sample text.**
+**DRAFT. Not yet reviewed by a qualified person.**
 
-1. If the water is cloudy, let it settle and pour it through a clean cloth or coffee filter.
-2. Bring it to a **rolling boil for 1 minute**. Above about 6,500 feet (2,000 m), boil for **3 minutes**.
-3. Let it cool. Store it in clean, covered containers.
-4. If you can't boil, use purification tablets or unscented household bleach as directed on the label.
+**Best: boil.**
+1. Strain cloudy water through a clean cloth or coffee filter.
+2. Bring it to a **rolling boil for 1 minute** (3 minutes above 6,500 feet / 2,000 m). Let it cool.
+3. Store in clean, covered containers and write the date on them.
 
-Plan on about 1 gallon of water per person per day.
+**No fuel: household bleach.** Use plain, unscented bleach with 5% to 9% sodium hypochlorite (check the label). For **clear water: 8 drops per gallon** (2 drops per quart or liter). Stir and **wait 30 minutes.** For cloudy or very cold water use **double**. It should smell slightly of chlorine.
 
-Reference only, not medical advice.
+**Filters** remove germs but not viruses unless they say so. Add bleach after filtering to be safe. Chlorine and iodine tablets: follow the label (they do not kill Cryptosporidium). Avoid iodine if pregnant or with thyroid problems.
+
+**Sun:** clear bottles laid in strong sun for 6 hours (2 days if cloudy) help, but only for clear water.
+
+Use safe water for drinking, brushing teeth, washing dishes, washing food and making ice, until officials say the tap is safe.
+
+Source: CDC (making water safe in an emergency), checked 2026-10-22.
+
+Reference only, not medical advice. In an emergency, call 911.

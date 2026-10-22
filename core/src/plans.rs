@@ -7,7 +7,7 @@
 //! ---
 //! title: Keep it fresh
 //! summary: Short checks to repeat so your supplies and plans stay true.
-//! kind: checks            (checks, learning or scenario)
+//! kind: checks            (checks, learning, scenario, prevent = keep a supply from failing, or planning)
 //! author: Cindrix
 //! version: 1
 //! status: draft           (draft until a qualified person has read it)
@@ -117,9 +117,9 @@ pub fn parse_plan(id: &str, text: &str) -> Result<Plan, String> {
         return Err("the plan has no title".into());
     }
     let kind = match get("kind").to_lowercase().as_str() {
-        "checks" | "learning" | "scenario" => get("kind").to_lowercase(),
+        "checks" | "learning" | "scenario" | "prevent" | "planning" => get("kind").to_lowercase(),
         "" => "scenario".to_string(),
-        other => return Err(format!("kind must be checks, learning or scenario (found \"{}\")", other)),
+        other => return Err(format!("kind must be checks, learning, scenario, prevent or planning (found \"{}\")", other)),
     };
     let version = get("version").parse::<u32>().unwrap_or(1).max(1);
     let status = if get("status").eq_ignore_ascii_case("reviewed") { "reviewed".to_string() } else { "draft".to_string() };

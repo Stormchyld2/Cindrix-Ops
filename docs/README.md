@@ -28,5 +28,6 @@ Mockups of every screen are in [`../mockups`](../mockups).
 - [22. Real test](22-real-test.md)
 - [23. Intel, search and settings](23-intel-search-settings.md): the offline internet tab, what the assistant searches, every setting
 - [26. Plans that carry on](26-plans.md): repeating checks, learning plans, emergency plans, several at once
+- [27. Emergency cards, walkthroughs, inventory questions, training sign-off](27-emergency-cards-and-plans.md)
 - [25. Testing Ask](25-ask-test.md): a 30-question check of the small models
 - [24. Hosts, libraries and browser clients](24-hosts-libraries-browser-clients.md): Vault and Hub as hosts for one drive, asking before reading a drive, browser tabs as clients

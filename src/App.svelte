@@ -179,7 +179,7 @@
     {:else if group === 'Intel'}
       <Intel {openArchives} />
     {:else if group === 'Academy'}
-      <Academy />
+      <Academy go={goTo} />
     {:else if group === 'Maps'}
       <Maps />
     {:else if group === 'Music'}

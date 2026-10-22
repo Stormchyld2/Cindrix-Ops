@@ -71,7 +71,7 @@ mod tests {
 
     fn item(id: &str) -> Item {
         Item { id: id.into(), category: "Water".into(), name: "Jug".into(), location: "Pantry".into(),
-               quantity: 3.0, unit: "gal".into(), use_per_day: 1.0, use_by: "".into(), notes: "".into() }
+               quantity: 3.0, unit: "gal".into(), use_per_day: 1.0, use_by: "".into(), notes: "".into(), ..Default::default() }
     }
 
     #[test]

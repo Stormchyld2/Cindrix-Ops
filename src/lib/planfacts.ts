@@ -48,4 +48,4 @@ export function nextStep(p: PlanInfo, f: PlanFacts): PlanStep | undefined {
   return p.steps.find((s) => stepStatus(s, f) === 'due') ?? p.steps.find((s) => stepStatus(s, f) === 'todo');
 }
 
-export const KIND_NAME: Record<string, string> = { checks: 'Repeating checks', learning: 'Learning plan', scenario: 'Emergency plan' };
+export const KIND_NAME: Record<string, string> = { checks: 'Repeating checks', learning: 'Learning plan', scenario: 'Emergency plan', prevent: 'Keep it from failing', planning: 'Planning guide' };

@@ -16,7 +16,7 @@ Windows comes first; Android and iPhone wrap it later.
   question and the library list (`all_zim_files()` is the one place archives are listed from).
 - `src/`: Svelte 5 interface. `App.svelte` holds the top navigation; screens are in `src/views/`;
   `src/lib/api.ts` is the only place that calls Tauri commands. `src/lib/Splash.svelte` is the loading screen (logo and background are in `public/`); it shows in the real program, and in a browser only with `?splash`.
-- `core/src/academy.rs` (course folders) and `plans.rs` (plan files and progress): both read plain files, skip anything with a medicine dose, and are tested in `core/`.
+- `core/src/academy.rs` (course folders), `plans.rs` (plan files and progress), `cards.rs` (emergency cards from several `cards` folders), `training.rs` (per-person Academy sign-off) and `stockplan.rs` (how much to have): all read plain files, skip anything with a medicine dose, and are tested in `core/`. People's names come from the Family page.
 - `src/lib/tooltips.ts` gives every button hover text (fallback for new ones); `src/lib/planfacts.ts` works out what plan steps can tick themselves from.
 - `crypto/`: passphrase lock. `content/`: shipped sample content (cards, academy, plans). `docs/`: design docs, numbered. `licenses/`: license texts and credits; `scripts/collect-licenses.mjs` adds the libraries' own at build time.
 - `mockups/`: design mockups. Match them when changing a screen.
@@ -54,4 +54,5 @@ Windows comes first; Android and iPhone wrap it later.
   silently; use `fsio::backup_then_write` / `write_atomic`.
 - Add a test in `core/` for every new piece of logic, and keep `docs/` in step with what is built.
 - Anything new that is shipped or downloaded needs a line in `content/sources.json` and `licenses/README.md`.
+- New cards, plans and categories need no code: a `.md` file in `content/cards` or `content/plans` (templates: `_template-card.md`, `_template-plan.md`, `_template-keep-it-from-failing.md`). Every card needs a `Source:` line.
 - The program opens on the Dashboard. New buttons get hover text automatically; give important ones their own `title`.

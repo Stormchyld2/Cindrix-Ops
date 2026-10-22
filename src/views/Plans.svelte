@@ -23,11 +23,37 @@
     }
     loaded = true;
   }
-  onMount(load);
+  onMount(async () => {
+    await load();
+    try {
+      const want = sessionStorage.getItem('cindrix.openPlan');
+      if (want) { sessionStorage.removeItem('cindrix.openPlan'); if (plans.some((p) => p.id === want)) openId = want; }
+    } catch { /* nothing asked for */ }
+  });
 
   const open = $derived(openId ? plans.find((p) => p.id === openId) : undefined);
   // the plans being followed come first
   const ordered = $derived([...plans].sort((a, b) => Number(b.followed) - Number(a.followed)));
+  const GROUPS: [string, string][] = [
+    ['planning', 'HOW MUCH TO HAVE'],
+    ['prevent', 'KEEP IT FROM FAILING'],
+    ['scenario', 'EMERGENCY PLANS'],
+    ['checks', 'REPEATING CHECKS'],
+    ['learning', 'LEARNING'],
+  ];
+  const groups = $derived.by(() => {
+    const out: { title: string; list: PlanInfo[] }[] = [];
+    const mine = ordered.filter((p) => p.followed);
+    if (mine.length) out.push({ title: 'PLANS YOU ARE FOLLOWING', list: mine });
+    for (const [k, t] of GROUPS) {
+      const l = ordered.filter((p) => p.kind === k && !p.followed).sort((a, b) => a.title.localeCompare(b.title));
+      if (l.length) out.push({ title: t, list: l });
+    }
+    const known = GROUPS.map(([k]) => k);
+    const rest = ordered.filter((p) => !p.followed && !known.includes(p.kind));
+    if (rest.length) out.push({ title: 'OTHER', list: rest });
+    return out;
+  });
   const followedCount = $derived(plans.filter((p) => p.followed).length);
 
   async function follow(p: PlanInfo, on: boolean) {
@@ -49,7 +75,7 @@
 {#if !open}
   <section>
     <h1>Plans</h1>
-    <p class="sub">The first walkthrough gets you ready. These plans keep going after that: checks that come back on a schedule, things to learn, and a plan for each kind of emergency. Follow as many as you like at the same time. Choose a plan to go inside it.</p>
+    <p class="sub">The first walkthrough gets you ready. These plans keep going after that: checks that come back on a schedule, things to learn, a plan for each kind of emergency, a guide to keep each thing from failing, and a guide to how much to have. Follow as many as you like at the same time. Choose a plan to go inside it.</p>
   </section>
   {#if error}<div class="warn err" role="alert">{error}</div>{/if}
 
@@ -60,7 +86,11 @@
       <span class="csum">The nine-step walkthrough: water, food, health, power, where to go, a binder and a drill. Do this first.</span>
       <span class="meta">Opens the walkthrough →</span>
     </button>
-    {#each ordered as p (p.id)}
+  </div>
+  {#each groups as g (g.title)}
+    <div class="label gh">{g.title}</div>
+    <div class="cards">
+        {#each g.list as p (p.id)}
       {@const c = planCounts(p, facts)}
       <button class="card" class:on={p.followed} onclick={() => (openId = p.id)} aria-label={`Open the plan ${p.title}`}>
         <span class="kind">{KIND_NAME[p.kind] ?? p.kind}{p.followed ? ' · FOLLOWING' : ''}</span>
@@ -69,8 +99,9 @@
         <span class="track"><span style="width:{c.total ? (c.done / c.total) * 100 : 0}%"></span></span>
         <span class="meta">{c.done} of {c.total} done{c.due ? ` · ${c.due} due again` : ''}{p.status !== 'reviewed' ? ' · not yet reviewed' : ''}</span>
       </button>
-    {/each}
-  </div>
+        {/each}
+    </div>
+  {/each}
   {#if loaded && plans.length === 0 && !error}<p class="muted">No plans found. A plan is a text file in a <code>plans</code> folder.</p>{/if}
   {#if followedCount === 0 && plans.length}<p class="muted">You are not following any plan yet. Open one and press "Follow this plan" to keep track of it on the Dashboard.</p>{/if}
   {#if problems.length}
@@ -131,6 +162,7 @@
 {/if}
 
 <style>
+  .gh { margin-top: 18px; }
   .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-top: 12px; }
   .card { display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 16px; background: var(--panel); border: 1px solid var(--line); border-top: 2px solid var(--line2); border-radius: 12px; }
   .card:hover { border-color: var(--blue-line); }

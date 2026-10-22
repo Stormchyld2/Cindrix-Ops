@@ -92,7 +92,7 @@ mod tests {
 
     fn it(name: &str, cat: &str, q: f64, per: f64, use_by: &str, loc: &str) -> Item {
         Item { id: "1".into(), category: cat.into(), name: name.into(), location: loc.into(), quantity: q,
-               unit: "x".into(), use_per_day: per, use_by: use_by.into(), notes: "".into() }
+               unit: "x".into(), use_per_day: per, use_by: use_by.into(), notes: "".into(), ..Default::default() }
     }
 
     #[test]
