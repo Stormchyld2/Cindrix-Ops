@@ -195,7 +195,7 @@ mod tests {
     fn the_shipped_drills_all_parse_and_never_give_doses() {
         let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../content/drills");
         let drills = load_dir(&dir);
-        assert!(drills.len() >= 6, "found {}", drills.len());
+        assert!(drills.len() >= 20, "found {}", drills.len());
         for d in &drills {
             assert!(d.minutes > 0 && !d.summary.is_empty(), "{}", d.id);
             assert!(d.status == "draft" || d.status == "reviewed");
