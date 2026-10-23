@@ -73,7 +73,9 @@ pub fn files_under(roots: &[PathBuf], lim: &Limits, started: Instant) -> (Vec<Pa
             let name = e.file_name().to_string_lossy().to_string();
             let p = e.path();
             if ft.is_dir() {
-                if depth > 0 && !skipped(&name) && !(lim.hide_user && name.eq_ignore_ascii_case("user")) {
+                // each person's journal and comms plan (`user/people`) are never searched, not even for the host
+                let private = name.eq_ignore_ascii_case("people") && dir.file_name().map_or(false, |n| n.to_string_lossy().eq_ignore_ascii_case("user"));
+                if depth > 0 && !skipped(&name) && !private && !(lim.hide_user && name.eq_ignore_ascii_case("user")) {
                     walk(&p, depth - 1, lim, started, seen, out, stopped);
                 }
             } else if ft.is_file() && !name.starts_with('.') {
@@ -238,6 +240,17 @@ mod tests {
         let guest = files_under(std::slice::from_ref(&d), &Limits { hide_user: true, ..Limits::default() }, Instant::now()).0;
         assert_eq!(host, 3);
         assert_eq!(guest.iter().map(|f| shown(&d, f)).collect::<Vec<_>>(), vec!["ok/readme.txt".to_string()]);
+    }
+
+    #[test]
+    fn journals_and_comms_plans_are_never_searched() {
+        let d = tmp("people");
+        let words = "Boil water for one minute. Boil water. Boil water.";
+        put(&d, "user/people/Anna/journal/2026-10-23.md", words);
+        put(&d, "user/people/Anna/comms-plan.md", words);
+        put(&d, "user/notes.md", words);
+        let host = files_under(std::slice::from_ref(&d), &Limits::default(), Instant::now()).0;
+        assert_eq!(host.iter().map(|f| shown(&d, f)).collect::<Vec<_>>(), vec!["user/notes.md".to_string()]);
     }
 
     #[test]

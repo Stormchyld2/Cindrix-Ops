@@ -17,6 +17,8 @@ use std::sync::Arc;
 pub const GUEST_COMMANDS: &[&str] = &[
     "list_cards",
     "guides_list",
+    "photos_list",
+    "photo_read",
     "model_status",
     "library_status",
     "product_info",
@@ -425,9 +427,10 @@ mod tests {
 
     #[test]
     fn guests_read_the_library_but_cannot_write_the_hosts_files() {
-        for c in ["list_cards", "shelf_read", "ask_stream", "zim_search_all", "academy_lesson"] { assert!(guest_allowed(c), "{}", c); }
+        for c in ["list_cards", "guides_list", "photos_list", "photo_read", "shelf_read", "ask_stream", "zim_search_all", "academy_lesson"] { assert!(guest_allowed(c), "{}", c); }
         for c in ["family_save", "inventory_save_item", "settings_save", "profile_load", "profile_save", "archive_remove", "shelf_add",
-                  "chat_read", "chat_save", "library_share", "pick_folder", "phone_send", "map_save", "academy_save", "plan_tick", "crawl_start"] {
+                  "chat_read", "chat_save", "library_share", "pick_folder", "phone_send", "map_save", "academy_save", "plan_tick", "crawl_start",
+                  "journal_list", "journal_save", "comms_plan_load", "comms_plan_save", "photo_add", "photo_delete"] {
             assert!(!guest_allowed(c), "{}", c);
         }
     }

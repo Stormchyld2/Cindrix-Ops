@@ -2044,6 +2044,80 @@ fn guides_list(section: String) -> Result<Vec<CardDto>, String> {
     guides_for(&section, true)
 }
 
+// ---------- a folder for each person: journal, photos, comms plan (core/src/people.rs) ----------
+
+#[derive(Serialize)]
+struct JournalEntryDto {
+    date: String,
+    text: String,
+}
+
+#[tauri::command]
+fn journal_list(person: String) -> Result<Vec<JournalEntryDto>, String> {
+    Ok(cindrix_core::people::journal_list(&root().join("user"), &person)?.into_iter().map(|e| JournalEntryDto { date: e.date, text: e.text }).collect())
+}
+
+#[tauri::command]
+fn journal_save(person: String, date: String, text: String) -> Result<(), String> {
+    cindrix_core::people::journal_save(&root().join("user"), &person, &date, &text)
+}
+
+#[tauri::command]
+fn comms_plan_load(person: String) -> Result<String, String> {
+    cindrix_core::people::plan_load(&root().join("user"), &person)
+}
+
+#[tauri::command]
+fn comms_plan_save(person: String, text: String) -> Result<(), String> {
+    cindrix_core::people::plan_save(&root().join("user"), &person, &text)
+}
+
+#[derive(Serialize)]
+struct PhotoDto {
+    name: String,
+    bytes: u64,
+    when: u64,
+}
+
+/// The pictures of one album: `shared` (everyone) or `mine` (one person's own, host only).
+pub fn photos_for(scope: &str, person: &str) -> Result<Vec<PhotoDto>, String> {
+    let dir = cindrix_core::people::photo_dir(&root().join("user"), scope, person)?;
+    Ok(cindrix_core::people::photos_list(&dir).into_iter().map(|p| PhotoDto { name: p.name, bytes: p.bytes, when: p.when }).collect())
+}
+
+pub fn photo_bytes(scope: &str, person: &str, name: &str) -> Result<Vec<u8>, String> {
+    let dir = cindrix_core::people::photo_dir(&root().join("user"), scope, person)?;
+    cindrix_core::people::photo_read(&dir, name)
+}
+
+#[tauri::command]
+fn photos_list(scope: String, person: String) -> Result<Vec<PhotoDto>, String> {
+    photos_for(&scope, &person)
+}
+
+#[tauri::command]
+fn photo_read(scope: String, person: String, name: String) -> Result<tauri::ipc::Response, String> {
+    Ok(tauri::ipc::Response::new(photo_bytes(&scope, &person, &name)?))
+}
+
+/// Add a picture. The bytes are the raw request body; the name, album and person come in headers.
+#[tauri::command]
+fn photo_add(request: tauri::ipc::Request<'_>) -> Result<String, String> {
+    let bytes = match request.body() {
+        tauri::ipc::InvokeBody::Raw(v) => v.clone(),
+        _ => return Err("No picture was received.".into()),
+    };
+    let header = |k: &str| -> String { request.headers().get(k).and_then(|v| v.to_str().ok()).map(percent_decode).unwrap_or_default() };
+    let dir = cindrix_core::people::photo_dir(&root().join("user"), &header("x-scope"), &header("x-person"))?;
+    cindrix_core::people::photo_add(&dir, &header("x-file-name"), &bytes)
+}
+
+#[tauri::command]
+fn photo_delete(scope: String, person: String, name: String) -> Result<(), String> {
+    let dir = cindrix_core::people::photo_dir(&root().join("user"), &scope, &person)?;
+    cindrix_core::people::photo_delete(&dir, &name)
+}
+
 // ---------- how much to have ----------
 
 #[derive(Serialize)]
@@ -2455,6 +2529,14 @@ pub fn run() {
             seed_delete,
             seed_guides,
             guides_list,
+            journal_list,
+            journal_save,
+            comms_plan_load,
+            comms_plan_save,
+            photos_list,
+            photo_read,
+            photo_add,
+            photo_delete,
             training_enrol,
             training_signoff,
             plans_list,

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { whatFailsNext, inventoryList, drillsList, mapPacks, modelStatus, listModels, libraryStatus, shareInfo, dashboardSuggestions, plansList, academyList, familyStatus, productInfo, type ProductInfo, type ShareInfo, type Cascade, type Suggestion, type PlanInfo, type AcademyModule } from '../lib/api';
+  import { inShare, whatFailsNext, inventoryList, drillsList, mapPacks, modelStatus, listModels, libraryStatus, shareInfo, dashboardSuggestions, plansList, academyList, familyStatus, productInfo, type ProductInfo, type ShareInfo, type Cascade, type Suggestion, type PlanInfo, type AcademyModule } from '../lib/api';
   import { gatherFacts, planCounts, nextStep, stepStatus, KIND_NAME, type PlanFacts } from '../lib/planfacts';
   import { categories } from '../lib/categories';
   import { settings } from '../lib/settings.svelte';
@@ -123,7 +123,7 @@
       { icon: 'inventory', label: 'Inventory', tab: 'Inventory', show: p ? p.plan : true },
       { icon: 'family', label: 'Family', tab: 'Family', show: p ? p.plan : true },
       { icon: 'agro', label: 'Agro', tab: 'guide:crop-guides', show: p ? p.plan : true },
-      { icon: 'comms', label: 'Comms', tab: 'soon:Comms', show: true },
+      { icon: 'comms', label: 'Comms', tab: 'CommsPlan', show: !inShare },
       { icon: 'seeds', label: 'Seed vault', tab: 'Seed vault', show: p ? p.plan : true },
       { icon: 'binder', label: 'Binder', tab: 'Binder', show: p ? p.plan : true },
       { icon: 'music', label: 'Music', tab: 'Music', show: p ? p.music : true },

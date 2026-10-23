@@ -19,11 +19,14 @@
   import SeedVault from './views/SeedVault.svelte';
   import Music from './views/Music.svelte';
   import Guides from './views/Guides.svelte';
+  import Journal from './views/Journal.svelte';
+  import Photos from './views/Photos.svelte';
+  import CommsPlan from './views/CommsPlan.svelte';
   import MiniPlayer from './lib/MiniPlayer.svelte';
   import Splash from './lib/Splash.svelte';
   import { onMount } from 'svelte';
   import { intelRequest, sourceRequest, viewRequest } from './lib/chat.svelte';
-  import { modelStatus, libraryStatus, productInfo, librariesList, libraryAnswer, type ModelStatus, type ProductInfo, type LibraryEntry } from './lib/api';
+  import { inShare, modelStatus, libraryStatus, productInfo, librariesList, libraryAnswer, type ModelStatus, type ProductInfo, type LibraryEntry } from './lib/api';
   import { settings, applyUiScale } from './lib/settings.svelte';
   import { installTooltips, removeTooltips } from './lib/tooltips';
   let ms: ModelStatus | null = $state(null);
@@ -77,8 +80,8 @@
   $effect(() => { if (settings.loaded) void applyUiScale(settings.values.uiScale); });
 
   // Intel is the offline internet: the archives read like web pages. It goes with the library.
-  type Group = 'Dashboard' | 'Ask' | 'Library' | 'Intel' | 'Academy' | 'Maps' | 'Music' | 'Plan' | 'Inventory' | 'Settings' | 'Corner' | 'Guides' | 'Soon';
-  const allGroups: Group[] = ['Dashboard', 'Ask', 'Library', 'Intel', 'Academy', 'Maps', 'Music', 'Plan', 'Inventory', 'Settings', 'Corner'];
+  type Group = 'Dashboard' | 'Ask' | 'Library' | 'Intel' | 'Academy' | 'Maps' | 'Music' | 'Plan' | 'Inventory' | 'Settings' | 'Corner' | 'Guides' | 'Journal' | 'Photos' | 'CommsPlan' | 'Soon';
+  const allGroups: Group[] = ['Dashboard', 'Ask', 'Library', 'Intel', 'Academy', 'Maps', 'Music', 'Plan', 'Inventory', 'Settings', 'Corner', 'Journal', 'Photos', 'CommsPlan'];
   // Each product switches parts of the program on or off (core/src/product.rs).
   const groups = $derived(
     allGroups.filter((g) => {
@@ -189,20 +192,21 @@
       { id: 'Morale', cat: 'morale', show: true, entries: [
         { label: 'Reading Corner', tab: 'Corner', note: 'enjoyment books', show: p ? p.library : true },
         { label: 'Music', tab: 'Music', show: p ? p.music : true }, { label: '', tab: '', rule: true },
-        { label: 'Journal', tab: 'soon:Journal', note: 'private' }, { label: 'Photos', tab: 'soon:Photos' } ] },
+        { label: 'Journal', tab: 'Journal', note: 'private', show: !inShare }, { label: 'Photos', tab: 'Photos' } ] },
       { id: 'Comms', cat: 'comms', show: true, entries: [
-        { label: 'Comms plan', tab: 'soon:Comms plan', note: 'private' }, { label: 'Radio reference', tab: 'guide:radio-reference' },
-        { label: 'Signals', tab: 'soon:Signals', note: 'on the map' }, { label: '', tab: '', rule: true },
-        { label: 'Sharing', tab: 'settings:Sharing', note: 'hotspot' } ] },
+        { label: 'Comms plan', tab: 'CommsPlan', note: 'private', show: !inShare }, { label: 'Radio reference', tab: 'guide:radio-reference' },
+        { label: 'Signals', tab: 'soon:Signals', note: 'on the map' }, { label: '', tab: '', rule: true, show: !inShare },
+        { label: 'Sharing', tab: 'settings:Sharing', note: 'hotspot', show: !inShare } ] },
       { id: 'System', cat: 'system', show: true, entries: [
-        { label: 'Settings', tab: 'settings:General' }, { label: 'My details', tab: 'settings:My details' } ] },
+        { label: 'Settings', tab: 'settings:General' }, { label: 'My details', tab: 'settings:My details', show: !inShare } ] },
     ];
   });
   /** Which word in the top bar the current screen belongs under. */
   const activeTop = $derived.by(() => {
     switch (group) {
       case 'Library': case 'Intel': return 'Intel';
-      case 'Music': case 'Corner': return 'Morale';
+      case 'Music': case 'Corner': case 'Journal': case 'Photos': return 'Morale';
+      case 'CommsPlan': return 'Comms';
       case 'Plan': return plan === 'Seed vault' ? 'Agro' : 'Operations';
       case 'Inventory': return 'Operations';
       case 'Settings': return settingsFromComms ? 'Comms' : 'System';
@@ -254,7 +258,7 @@
             {#if t.entries && openMenu === t.id}
               <div class="menu" role="menu">
                 {#each t.entries as e}
-                  {#if e.rule}<hr />
+                  {#if e.rule}{#if e.show !== false}<hr />{/if}
                   {:else if e.show !== false}
                     <button role="menuitem" aria-label={e.label} onclick={(ev) => { ev.stopPropagation(); pick(e.tab); }}>{e.label}{#if e.note}<small>{e.note}</small>{/if}</button>
                   {/if}
@@ -294,6 +298,12 @@
       <Music />
     {:else if group === 'Guides'}
       <Guides section={guideSection} title={guideInfo[guideSection]?.title ?? 'Guides'} intro={guideInfo[guideSection]?.intro ?? ''} />
+    {:else if group === 'Journal'}
+      <Journal />
+    {:else if group === 'Photos'}
+      <Photos />
+    {:else if group === 'CommsPlan'}
+      <CommsPlan />
     {:else if group === 'Corner'}
       <Shelf corner />
     {:else if group === 'Plan'}

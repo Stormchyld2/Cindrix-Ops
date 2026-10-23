@@ -85,6 +85,53 @@ export async function guidesList(section: string): Promise<Card[]> {
   return [];
 }
 
+// ---------- a folder for each person: journal, photos, comms plan ----------
+export type JournalEntry = { date: string; text: string };
+const memJournal: Record<string, JournalEntry[]> = {};
+export async function journalList(person: string): Promise<JournalEntry[]> {
+  if (tauriHost) return call<JournalEntry[]>('journal_list', { person });
+  return [...(memJournal[person] ?? [])].sort((a, b) => b.date.localeCompare(a.date));
+}
+export async function journalSave(person: string, date: string, text: string): Promise<void> {
+  if (tauriHost) return call<void>('journal_save', { person, date, text });
+  const rest = (memJournal[person] ?? []).filter((e) => e.date !== date);
+  memJournal[person] = text.trim() ? [...rest, { date, text }] : rest;
+}
+let memPlan = '';
+export async function commsPlanLoad(person: string): Promise<string> {
+  if (tauriHost) return call<string>('comms_plan_load', { person });
+  return memPlan || 'My family\'s communication plan\n\nWho carries a radio or a phone:\n';
+}
+export async function commsPlanSave(person: string, text: string): Promise<void> {
+  if (tauriHost) return call<void>('comms_plan_save', { person, text });
+  memPlan = text;
+}
+
+export type Photo = { name: string; bytes: number; when: number };
+/** `shared` is the album everyone may see; `mine` is one person's own (host only). */
+export async function photosList(scope: 'shared' | 'mine', person: string): Promise<Photo[]> {
+  if (inTauri) return call<Photo[]>('photos_list', { scope, person });
+  return [];
+}
+export async function photoRead(scope: 'shared' | 'mine', person: string, name: string): Promise<Uint8Array> {
+  if (inShare) {
+    const r = await fetch('/api/photo_read?name=' + encodeURIComponent(name));
+    if (!r.ok) throw 'This picture could not be opened.';
+    return new Uint8Array(await r.arrayBuffer());
+  }
+  if (tauriHost) return new Uint8Array(await call<ArrayBuffer>('photo_read', { scope, person, name }));
+  throw 'Pictures can only be opened in the program.';
+}
+export async function photoAdd(file: File, scope: 'shared' | 'mine', person: string): Promise<string> {
+  if (!tauriHost) throw 'Pictures can only be added in the program.';
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const { invoke } = await import('@tauri-apps/api/core');
+  return invoke<string>('photo_add', bytes, { headers: { 'x-file-name': encodeURIComponent(file.name), 'x-scope': scope, 'x-person': encodeURIComponent(person) } });
+}
+export async function photoDelete(scope: 'shared' | 'mine', person: string, name: string): Promise<void> {
+  if (tauriHost) return call<void>('photo_delete', { scope, person, name });
+}
+
 // ---------- your own cards and plans ----------
 export type OwnFolder = { key: 'cards' | 'plans' | 'seed-guides' | 'drills' | 'academy'; title: string; help: string; path: string; files: number; problems: { place: string; message: string }[] };
 export async function ownContent(): Promise<OwnFolder[]> {

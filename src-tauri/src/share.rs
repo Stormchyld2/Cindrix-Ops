@@ -348,6 +348,16 @@ fn route(app: &tauri::AppHandle, req: &Request, who: &str, stream: &mut TcpStrea
         send(stream, &Response::text(405, "Not allowed."));
         return;
     }
+    if req.path == "/api/photo_read" {
+        // only the shared album: a person's own pictures never leave the laptop
+        let name = req.query_value("name").unwrap_or("").to_string();
+        let r = match crate::photo_bytes("shared", "", &name) {
+            Ok(b) => Response::new(200, cindrix_core::people::mime_of(&name), b),
+            Err(e) => json_err(404, &e),
+        };
+        send(stream, &r);
+        return;
+    }
     if req.path == "/api/shelf_read" {
         let id = req.query_value("id").unwrap_or("").to_string();
         let r = match crate::shelf_for(&id).read(&id) {
@@ -398,6 +408,7 @@ fn dispatch(app: &tauri::AppHandle, cmd: &str, a: &Value) -> Result<Value, Strin
     let st = app.state::<AppState>();
     match cmd {
         "list_cards" => tv(crate::list_cards()),
+        "photos_list" => tv(crate::photos_for("shared", "")?),
         "guides_list" => { let section: String = arg(a, "section")?; tv(crate::guides_for(&section, false)?) }
         "model_status" => tv(crate::model_status(st)),
         "library_status" => {
