@@ -329,7 +329,20 @@ jobs:
           node-version: 22
       - run: npm install
       - run: npx tauri icon src-tauri/icon.svg
-      - run: npx tauri build --no-bundle
+      - name: Build the Windows app
+        shell: bash
+        run: |
+          set +e
+          npx tauri build --no-bundle 2>&1 | tee build.log
+          code=${PIPESTATUS[0]}
+          if [ "$code" != "0" ]; then
+            # show the compiler's complaints as annotations, so they can be read without the full log
+            msg=$(grep -E -A14 '^(error|warning: unused)' build.log | head -90 | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g')
+            echo "::error title=Build errors::${msg}"
+            msg2=$(grep -v '^\s*Compiling' build.log | tail -25 | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g')
+            echo "::error title=End of build log::${msg2}"
+          fi
+          exit $code
       - name: Assemble portable folder
         shell: bash
         env:
