@@ -320,9 +320,9 @@ For each scenario, test both **normal operation** and **degraded operation** (in
 4. **Loss of primary computer/drive:** restore verified backup or use independent Hub with essential records.
 5. **Multi-month disruption:** seed/growing guidance, maintenance, replenishment, training, and long-term resource forecasts.
 6. **Sensitive-data protection:** unauthorized search cannot expose household medical records; authorized user can retrieve them offline.
+7. **Conflicting device edits:** Vault and Hub both change the same item; conflict is visible and resolvable without silent overwrite.
 8. **Extended winter power outage across modules:** activate the incident; Family, Inventory, Maps, Library, Plan and Comms each contribute to one operational picture; changing a stored-water quantity updates the readiness and incident estimates without a second edit; with one module's data missing or the assistant off, the rest still work and say what is missing.
 9. **Single point of failure:** mark the generator unavailable; the dependency planner shows the well pump, water supply and heating that depend on it.
-7. **Conflicting device edits:** Vault and Hub both change the same item; conflict is visible and resolvable without silent overwrite.
 
 Success requires explicit expected outcomes, reproducible tests, and documented limitations—not merely that a screen renders.
 
