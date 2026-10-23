@@ -197,11 +197,12 @@
 
 <style>
   .askpage { display: flex; flex-direction: column; height: calc(100vh - 120px); min-height: 440px; gap: 10px; }
-  .scroller { flex: 1 1 auto; overflow-y: auto; min-height: 0; padding-right: 4px; }
+  .scroller { flex: 1 1 auto; overflow-y: auto; min-height: 0; scrollbar-width: none; -ms-overflow-style: none; }
+  .scroller::-webkit-scrollbar, .pastbox::-webkit-scrollbar, .dialog::-webkit-scrollbar { display: none; }
   .bar { flex: none; }
-  .pastbox { flex: none; max-height: 34vh; overflow-y: auto; margin: 0; }
+  .pastbox { flex: none; max-height: 34vh; overflow-y: auto; scrollbar-width: none; margin: 0; }
   .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; z-index: 50; }
-  .dialog { background: var(--panel, #1b1f24); border: 1px solid var(--line, #444); border-radius: 10px; padding: 16px; width: min(640px, 92vw); max-height: 80vh; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+  .dialog { background: var(--panel, #1b1f24); border: 1px solid var(--line, #444); border-radius: 10px; padding: 16px; width: min(640px, 92vw); max-height: 80vh; overflow-y: auto; scrollbar-width: none; display: flex; flex-direction: column; gap: 10px; }
   .chat { display: flex; flex-direction: column; gap: 14px; flex: 1; }
   .msg { padding: 12px 14px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); max-width: 760px; }
   .msg.you { align-self: flex-end; background: #27231e; border-color: #3a342c; }
