@@ -1,7 +1,7 @@
 # CindrixOps — Architecture Evolution & Proposed Features
 
 **Document status:** PROPOSAL / DISCUSSION ONLY — NOT AUTHORIZATION TO IMPLEMENT  
-**Version:** 0.6  
+**Version:** 0.7  
 **Prepared:** 2026-10-22  
 **Audience:** Project owner, Claude, ChatGPT, future maintainers  
 **Repository location:** `docs/CINDRIXOPS_ARCHITECTURE_EVOLUTION_PROPOSED_FEATURES.md`
@@ -34,8 +34,11 @@ This document preserves brainstorming from the October 2026 UI/UX and architectu
 8. **Privacy and least privilege:** Encrypt sensitive personal records, minimize cross-module disclosure, and distinguish ordinary reference content from private household records.
 9. **Accessible emergency operation:** Keyboard support, readable contrast, predictable navigation, printable fallbacks, and simplified crisis workflows.
 10. **No invented status:** Distinguish zero, unknown, not configured, stale, estimated, and verified.
+11. **Usable alone, better together:** Every feature must be usable independently, but become more useful when connected to the rest of CindrixOps. Use this as the test for every future addition (agricultural reference, communications, medical, emergency operations, Android Hub).
 
 **Constraint to verify:** A local-file-first, SQL-free architecture was discussed as a preference. Confirm CindrixOps' actual documented storage rules before adopting this as a binding constraint. The proposed design below is compatible with ordinary files and disposable indexes; it does not require SQL.
+
+**Product identity (proposed wording):** *CindrixOps — Offline Preparedness, Knowledge, and Emergency Operations Platform.* Someone could use it casually for years to maintain their preparedness, then activate an emergency response without learning a different application.
 
 ## 3. Proposed CindrixOps Operations Core (COC)
 
@@ -72,6 +75,8 @@ Music and other independent modules need not depend on operational data; integra
 | Unified retrieval | Federated search across authorized local sources | Source-specific adapters, freshness, citations, permission checks |
 | Sync interface | Vault–Hub data exchange | Offline independence, conflicts, versioning, authentication |
 | Data resilience | Atomic writes, integrity, backup/restore, migrations | Recovery testing before high-value migrations |
+
+**The same eight services, grouped as six:** *Unified Records* (identities for people, supplies, equipment, locations, vehicles, incidents); *Event System* (modules told when something changes); *Rules and Forecasting* (readiness gaps, consumption, deadlines, equipment dependencies); *Knowledge and Retrieval* (Library, ZIM, emergency cards and references, with source attribution); *Operations Manager* (incidents, tasks, checklists, accountability, decisions, recovery); *Device Synchronization* (permitted records between Vault and Hub, no internet). The rules engine is deterministic: the local assistant may explain its results and find knowledge, but must not calculate critical quantities or decide that an emergency checklist is complete. The logical layout is not a requirement to move everything into one file or database; the portable, local-file-first design stays.
 
 ### 3.3 Canonical record candidates
 
@@ -123,6 +128,22 @@ Organise the code and the data around three layers. Every module can contribute 
 | **Preparedness** | Household profiles, plans, inventory, seed management, equipment, maintenance, drills |
 | **Operations** | Emergency checklists, resource forecasts, evacuation decisions, offline navigation, communications, recovery |
 
+### 3.7 Worked integration example: adding a portable generator
+
+The person adds a generator to Inventory once: model, fuel type, rated capacity, storage location, maintenance information. Through the Operations Core the rest of the application could then:
+
+1. register it as available equipment;
+2. link it to the household's backup-power plan;
+3. identify compatible stored fuel;
+4. estimate runtime from user-provided load and consumption figures (assumptions shown);
+5. add inspection and maintenance tasks;
+6. reference it in a power-outage drill;
+7. show applicable operating and carbon-monoxide guidance from the Library;
+8. include it in the emergency equipment checklist;
+9. update the readiness assessment when its condition or fuel availability changes.
+
+The same principle applies to water storage, vehicles, radios, medical supplies, seeds and food. Each record can also be opened in a reusable **Context Panel** (see 4.4 and 7) listing its related inventory, plans, library references, drills, forecast and incident allocation.
+
 ## 4. Unified Knowledge Retrieval (UKR) — highest-leverage ASK proposal
 
 ### 4.1 Why
@@ -161,6 +182,12 @@ Question / search request
 Example: `generator -> stored fuel -> power-outage plan -> maintenance task -> safety reference -> drill`. Another: `pressure canner -> manufacturer manual -> approved preservation guidance -> altitude setting -> training lesson`.
 
 Store explicit relationships with source and confidence. Automated link suggestions require review for safety-critical associations. A graph **does not require a graph database**; portable records and indexes are possible.
+
+### 4.5 Worked example: ASK during an outage (illustrative only)
+
+Question: *"We just lost power. How long can we manage without electricity?"*
+
+Without the Operations Core, ASK retrieves general material on outages, generator safety, refrigeration and preparedness. With it, ASK could check the household profile (how many people), Inventory (generators, batteries, fuel, lighting, stored water), equipment records (status, fuel consumption), the Plan's power-outage procedures, the Library's safety guidance and Maps' saved alternate shelter locations, and use the deterministic forecasting engine for runtimes. A tailored answer might read: *"Your inventory lists one generator, 15 gallons of gasoline and two battery lanterns. Based on your recorded fuel consumption, estimated runtime is about 22 hours at the stated load. Your outage plan says to check refrigerated medications and verify backup lighting. Three references in your library cover generator safety, refrigerated food and winter heating."* That text is an illustration, **not a calculation from real inventory**. Retrieval must keep working without the model: ranked results, the relevant plans, emergency cards and direct links (4.3). The retrieval service should be a foundational Operations Core service shared by the Dashboard, Plan, Inventory, Academy, Intel and ASK, not an ASK-only feature. A geographic filter (state, county, growing conditions) should prioritize regional agricultural guidance instead of searching every state equally.
 
 ## 5. Emergency Operations Center (EOC)
 
@@ -258,11 +285,24 @@ Easy to overlook, and valuable in prolonged emergencies:
 
 Treat essential capabilities as a chain of dependencies instead of independent inventory items. For example: an **electric well pump** depends on **electricity**; a **generator** depends on **fuel**; **fuel availability** depends on both **storage** and **consumption**. The planner would identify these links and show how a **single failure affects several essential capabilities** at once (losing the generator takes out the pump, which takes out water, and so on). Dependencies are entered or confirmed by the person, shown plainly, and feed the readiness assessment and the incident resource estimates. Equipment status (6.5) and inventory (6.2) are its inputs.
 
+### 6.12 Later ideas (worthwhile, but must not delay the core)
+
+- Offline local-network collaboration between Vault computers and Hub devices.
+- Compatible radio or sensor integrations for telemetry and environmental observations.
+- QR-code equipment labels and inventory transfers.
+- GPS breadcrumb recording and route history.
+- Offline speech recognition and text-to-speech.
+- Scenario simulation for testing supply and equipment dependencies.
+- Optional map-based community resource coordination.
+- Locally generated printable field manuals assembled from the user's plans and references.
+
+For device synchronization, favor explicit pairing, authenticated connections and conflict-aware transfers rather than assuming two devices always hold the same information.
+
 ## 7. User interface evolution — preserve identity
 
 Screenshots suggest an established dark charcoal, orange/blue accent, technical-grid identity. **Do not redesign the app wholesale.** Proposed refinements:
 
-- Dashboard emphasizes actual readiness and actionable issues, not just navigation shortcuts.
+- Dashboard emphasizes actual readiness and actionable issues, not just navigation shortcuts. It becomes the main entry into the Operations Core: in normal preparedness mode it shows household readiness, overdue equipment checks, inventory shortages, upcoming drills, recent library resources and active projects; during an incident the same Dashboard switches to an operational view of the current incident, household accountability, essential resources, critical tasks, communications and situation reports.
 - Reusable contextual side panel showing related plans, inventory, references, training, and tasks.
 - Universal search distinguishes **operational record**, **reference**, **map**, **plan**, and **training** results.
 - Settings grouped into scalable categories rather than an expanding multi-row tab strip.
@@ -279,7 +319,8 @@ All UI changes require owner review and should follow existing component/design 
 - **Vault:** desktop management, large archives, extensive maps, local models, deep planning and editing.
 - **Hub:** independent Android field access to selected records, checklists, maps, contacts, and incident updates.
 - Shared versioned data contracts; explicit authenticated pairing; scoped sync; conflict reporting and resolution; schema migration handling.
-- Hub remains useful if Vault is off, unreachable, or destroyed.
+- Hub is optimised for mobile use: field checklists, offline maps, household information, inventory access and incident updates. Both editions run independently; when a trusted connection is available they exchange changes, report conflicts and synchronise without any cloud service.
+- Hub remains useful if Vault is off, unreachable, or destroyed. It must never depend on a running Vault computer for its essential emergency records.
 - Prefer selective transfer of necessary records and content rather than assuming mobile storage can hold the entire Vault library.
 - Consider local network/device-to-device exchange as a later phase after durable local storage and conflicts are proven.
 
@@ -291,7 +332,7 @@ All UI changes require owner review and should follow existing component/design 
 2. Atomic writes and versioned schema migrations; never mutate the only copy without recoverability.
 3. Versioned backups, integrity checks, restore tests, and clear lost-key policy.
 4. Verify portable-drive removal/reinsertion, low disk space, read-only media, partial writes, corrupted indexes, and damaged resource archives.
-5. Self-test screen for source availability, indexes, map packs, AI models, storage health, and backup status.
+5. **System self-test**, on startup or on request: verify critical files, available storage, model readiness, archive indexes, map resources and backup health. It reports missing capabilities **without ever blocking access to emergency information**.
 6. Separate data security from content licensing and archive authenticity; validate downloaded/imported packs.
 7. Protect against malicious document content and prompt injection in local reference sources.
 8. Graceful degradation: critical plans and emergency cards available without AI, internet, or optional content packs.
@@ -309,6 +350,35 @@ All UI changes require owner review and should follow existing component/design 
 | 6 — Content & mobility | CNAR curation, Vault–Hub interoperability, optional integrations | Provenance audits, sync conflict tests, mobile offline tests |
 
 Phases may be reordered after repository inspection. Content curation can proceed in parallel once metadata/pack contracts are stable.
+
+### 10.1 Alternative five-phase summary
+
+| Phase | Focus | Result |
+|---|---|---|
+| 1 | Shared data model, encryption, backups, integrity testing | Reliable foundation |
+| 2 | Household readiness, inventory integration, equipment dependencies | Unified preparedness system |
+| 3 | Emergency Operations Center, incident logs, response checklists | Operational response capability |
+| 4 | Evacuation, communications, advanced maps, medical records | Coordinated emergency operations |
+| 5 | Agricultural resources, Vault–Hub sync, sensors, simulation | Long-term resilience platform |
+
+The national agricultural knowledge system and large offline reference packs can be built alongside these phases, since they are mainly content pipelines, provided their interfaces and data formats are settled early.
+
+### 10.2 Staging without disrupting the existing application
+
+Do not rewrite CindrixOps or change its established visual design. Build in stages:
+
+1. Define shared record schemas and stable IDs; one authoritative owner for each record type.
+2. Build the Operations Core interfaces: retrieving records, publishing changes, resolving relationships.
+3. Connect Inventory, Family and Plan first; they are the foundation of the preparedness system.
+4. Add the deterministic rules engine: resource forecasting, readiness assessments, dependency tracking.
+5. Connect Library, Intel, Academy, Maps and Ask: source-linked knowledge and contextual navigation.
+6. Introduce the Emergency Operations Center on the existing data.
+7. Add Vault–Hub synchronisation: device identity, permissions, versioning, conflict resolution.
+8. Verify offline operation and failure recovery: missing drives, corrupted files, interrupted writes, unavailable models, disconnected devices.
+
+Keep the core file-based; the preference is to avoid SQL/SQLite (confirm against the project's actual storage rules, see section 2). Structured JSON or other documented portable formats hold authoritative records; disposable indexes speed up search. Sensitive records are encrypted; writes are atomic and recoverable.
+
+Before implementation, hold a **scenario-based design review** covering a 72-hour outage, a 30-day utility failure, evacuation, loss of the primary computer and a multi-month disruption. Every proposed feature should show how it helps in at least one scenario, and every critical workflow must remain usable with no internet and no AI.
 
 ## 11. Scenario-based acceptance tests
 
@@ -541,6 +611,10 @@ Inspect existing Maps code and export pipeline; confirm the canonical `.cmap` v1
 | Knowledge / Preparedness / Operations layers (3.6) | Proposed | Internal division, not new tabs |
 | Additional long-duration capabilities (6.10) | Proposed | Twelve items, each needs its own scope and safety review |
 | Dependency planner (6.11) | Proposed | Person-confirmed dependencies, deterministic |
+| System self-test (section 9) | Proposed | Never blocks emergency information |
+| Later ideas (6.12) | Proposed, deferred | Must not delay the core |
+| "Usable alone, better together" principle (section 2) | Proposed for approval | Test for every future feature |
+| Staged integration order (10.2) | Proposed | Not approved; scenario-based design review first |
 | Unified Knowledge Retrieval | Proposed | Shared service, ASK primary consumer |
 | Context Panel / knowledge relationships | Proposed | Explicit and reviewed links |
 | Preparedness / Response / Recovery modes | Proposed | Existing UI not presumed implemented |
