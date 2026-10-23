@@ -21,9 +21,21 @@ pub const MAX_BYTES: usize = 400 * 1024 * 1024;
 /// Shelf under Intel, so the two never overlap. On the drive they live in a `leisure` folder.
 pub const LEISURE: &str = "Reading Corner";
 
-/// Is this book one for enjoyment?
+/// Between the Reading Corner name and a genre, in a category like "Reading Corner / Mystery".
+pub const GENRE_SEP: &str = " / ";
+
+/// Is this book one for enjoyment? Either plain "Reading Corner" or one with a genre after it.
 pub fn is_leisure(category: &str) -> bool {
-    category.trim().eq_ignore_ascii_case(LEISURE)
+    let c = category.trim();
+    c.eq_ignore_ascii_case(LEISURE)
+        || (c.len() > LEISURE.len() + GENRE_SEP.len() && c[..LEISURE.len()].eq_ignore_ascii_case(LEISURE) && c[LEISURE.len()..].starts_with(GENRE_SEP))
+}
+
+/// The genre of a Reading Corner book ("Mystery"), or None when it has none.
+pub fn genre_of(category: &str) -> Option<String> {
+    if !is_leisure(category) { return None; }
+    let g = category.trim()[LEISURE.len()..].strip_prefix(GENRE_SEP)?.trim();
+    if g.is_empty() { None } else { Some(g.to_string()) }
 }
 
 /// The category a book found on the drive gets, from the folder it sits in:
@@ -32,11 +44,16 @@ pub fn is_leisure(category: &str) -> bool {
 pub fn category_for(rel: &str) -> String {
     let parts: Vec<&str> = rel.split('/').collect();
     let dirs = &parts[..parts.len().saturating_sub(1)];
-    if dirs.iter().any(|d| {
+    let at = dirs.iter().position(|d| {
         let d = d.trim().to_lowercase().replace(['-', '_'], " ");
         d == "leisure" || d == "reading corner"
-    }) {
-        return LEISURE.to_string();
+    });
+    if let Some(i) = at {
+        // a folder inside the leisure folder names the genre: leisure/Mystery/x.pdf -> "Reading Corner / Mystery"
+        return match dirs.get(i + 1) {
+            Some(g) => format!("{}{}{}", LEISURE, GENRE_SEP, title_from_filename(&format!("{}.x", g))),
+            None => LEISURE.to_string(),
+        };
     }
     let folder = if parts.len() >= 3 { parts[parts.len() - 2] } else if parts.len() == 2 && parts[0] != "library" { parts[0] } else { "" };
     if folder.is_empty() { "Drive library".to_string() } else { title_from_filename(&format!("{}.x", folder)) }
@@ -290,7 +307,20 @@ impl Shelf {
             let category = category_for(&rel);
             match self.add_with(&name, &bytes, &category, today, "From the drive") {
                 Ok(b) => rep.added.push(b.title),
-                Err(e) if e.starts_with("That book is already on your shelf") => rep.known += 1,
+                Err(e) if e.starts_with("That book is already on your shelf") => {
+                    rep.known += 1;
+                    // a file that was moved to another folder (another genre) takes that folder's category;
+                    // books the person added by hand are not touched
+                    let fp = fingerprint(&bytes);
+                    if let Ok(mut books) = self.list() {
+                        if let Some(b) = books.iter_mut().find(|b| b.fingerprint == fp && b.license == "From the drive") {
+                            if b.category != category {
+                                b.category = category.clone();
+                                let _ = self.save(&books);
+                            }
+                        }
+                    }
+                }
                 Err(e) => rep.problems.push(format!("{}: {}", rel, e)),
             }
             seen.push(key.clone());
@@ -490,7 +520,7 @@ mod tests {
     #[test]
     fn leisure_folders_make_reading_corner_books() {
         assert_eq!(category_for("leisure/old-man-and-the-sea.pdf"), LEISURE);
-        assert_eq!(category_for("library/Leisure/novels/x.pdf"), LEISURE);
+        assert_eq!(category_for("library/Leisure/novels/x.pdf"), "Reading Corner / Novels");
         assert_eq!(category_for("books/reading-corner/x.txt"), LEISURE);
         assert_eq!(category_for("library/manuals/fm_21-76-1.pdf"), "Manuals");
         assert_eq!(category_for("library/first aid.pdf"), "Drive library");
@@ -499,6 +529,36 @@ mod tests {
         assert!(is_leisure("reading corner"));
         assert!(is_leisure(" Reading Corner "));
         assert!(!is_leisure("Manuals"));
+    }
+
+    #[test]
+    fn a_folder_inside_leisure_is_a_genre() {
+        assert_eq!(category_for("leisure/Mystery/x.pdf"), "Reading Corner / Mystery");
+        assert_eq!(category_for("leisure/sci-fi/deep/x.pdf"), "Reading Corner / Sci Fi");
+        assert_eq!(category_for("leisure/x.pdf"), LEISURE);
+        assert!(is_leisure("Reading Corner / Mystery") && is_leisure("reading corner / westerns"));
+        assert!(!is_leisure("Reading Cornerstone") && !is_leisure("Reading Corner / ") && !is_leisure("Mystery"));
+        assert_eq!(genre_of("Reading Corner / Mystery").as_deref(), Some("Mystery"));
+        assert_eq!(genre_of(LEISURE), None);
+        assert_eq!(genre_of("Manuals"), None);
+    }
+
+    #[test]
+    fn moving_a_file_to_another_genre_folder_moves_the_book() {
+        let root = tmp("genre");
+        fs::create_dir_all(root.join("leisure/Mystery")).unwrap();
+        fs::write(root.join("leisure/Mystery/story.pdf"), b"%PDF-1.4
+a story").unwrap();
+        let shelf = Shelf::new(&tmp("genre-shelf"), "u");
+        shelf.import_from_drive(&root, &drive_book_files(&root), "2026-10-23");
+        assert_eq!(shelf.list().unwrap()[0].category, "Reading Corner / Mystery");
+        fs::create_dir_all(root.join("leisure/Westerns")).unwrap();
+        fs::rename(root.join("leisure/Mystery/story.pdf"), root.join("leisure/Westerns/story.pdf")).unwrap();
+        let rep = shelf.import_from_drive(&root, &drive_book_files(&root), "2026-10-24");
+        assert!(rep.added.is_empty());
+        let books = shelf.list().unwrap();
+        assert_eq!(books.len(), 1);
+        assert_eq!(books[0].category, "Reading Corner / Westerns");
     }
 
     #[test]

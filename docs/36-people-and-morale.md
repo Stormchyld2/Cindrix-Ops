@@ -39,3 +39,10 @@ Guests cannot sign in as a person or write to their own folder. That needs a PIN
 Plain pages in `content/guides/<section>/*.md`, written like emergency cards (title, kind, status header, a `Source:` line at the end). Sections: crop-guides, planting-calendar, food-preservation, livestock, soil-and-water, radio-reference. Read by `cards::load_dirs`, so a page naming a medicine amount is left out. The drive's `guides/<section>` and `user/guides/<section>` are read too (the second not for guests). `core/tests/guides_content.rs` checks every shipped page has a Source line and none claims to be reviewed.
 
 All pages are drafts written from general practice and public guidance. Home canning times and pressures are left out on purpose: the page sends people to the USDA Complete Guide to Home Canning.
+
+## Reading Corner genres, search and sort (2026-10-23)
+A folder inside `leisure` is a genre: `leisure\Mystery\book.pdf` gets the category `Reading Corner / Mystery` (`shelf::category_for`,
+`is_leisure`, `genre_of`). The Reading Corner shows one filter button per genre (books with none are under "No genre"). Moving a file
+to another genre folder and pressing "Look for books on the drive" moves the book too (books added by hand keep their category). Both shelves
+have a search box (title, author, category) and a sort (title, author, newest). The Shelf's own buttons are the folder names under
+`library`, `books` and `manuals`, as before.

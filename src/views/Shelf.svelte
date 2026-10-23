@@ -8,7 +8,11 @@
   // The Reading Corner (Morale) is the same shelf for books to enjoy; the Shelf (Intel) keeps the manuals. A book is in one or the other.
   let { corner = false }: { corner?: boolean } = $props();
   const LEISURE = 'Reading Corner';
-  const isLeisure = (c: string) => c.trim().toLowerCase() === LEISURE.toLowerCase();
+  // "Reading Corner" or "Reading Corner / Mystery": the part after the slash is the genre, taken from the folder name
+  const isLeisure = (c: string) => { const t = c.trim().toLowerCase(), l = LEISURE.toLowerCase(); return t === l || t.startsWith(l + ' / '); };
+  const genreOf = (c: string) => { const i = c.indexOf('/'); return i >= 0 ? c.slice(i + 1).trim() : ''; };
+  /** The word on a filter button: the genre in the Reading Corner, the category on the Shelf. */
+  const labelOf = (b: Book) => (corner ? genreOf(b.category) || 'No genre' : b.category);
 
   let books: Book[] = $state([]);
   let everyBook: Book[] = $state([]);
@@ -65,8 +69,18 @@
     if (settings.values.autoScanShelf) await scan(true);
   });
 
-  let categories = $derived(['All', ...Array.from(new Set(books.map((b) => b.category))).sort()]);
-  let shown = $derived(books.filter((b) => filter === 'All' || b.category === filter));
+  let query = $state('');
+  let sortBy = $state<'title' | 'author' | 'newest'>('title');
+  let categories = $derived(['All', ...Array.from(new Set(books.map(labelOf))).sort()]);
+  let shown = $derived.by(() => {
+    const q = query.trim().toLowerCase();
+    const found = books.filter((b) => (filter === 'All' || labelOf(b) === filter) && (!q || `${b.title} ${b.author} ${b.category}`.toLowerCase().includes(q)));
+    const by = (a: Book, b: Book) =>
+      sortBy === 'author' ? (a.author || '~').localeCompare(b.author || '~') || a.title.localeCompare(b.title)
+      : sortBy === 'newest' ? b.added.localeCompare(a.added) || a.title.localeCompare(b.title)
+      : a.title.localeCompare(b.title);
+    return [...found].sort(by);
+  });
   let resume = $derived(books.filter((b) => b.last_page > 1).sort((a, b) => b.last_page - a.last_page)[0] ?? null);
 
   async function addFiles(files: FileList | File[] | null) {
@@ -154,11 +168,21 @@
         <button class="pill" class:on={filter === c} onclick={() => (filter = c)}>{c}</button>
       {/each}
     </div>
+    <div class="row finder">
+      <input class="input" type="search" placeholder="Search by title or author" aria-label="Search the books" bind:value={query} />
+      <label class="sortpick">Sort by
+        <select class="input" bind:value={sortBy} aria-label="Sort the books">
+          <option value="title">Title, A to Z</option>
+          <option value="author">Author, A to Z</option>
+          <option value="newest">Newest first</option>
+        </select>
+      </label>
+    </div>
 
     {#if shown.length === 0}
       <div class="empty panel">
         <strong>{corner ? 'Your Reading Corner is empty.' : 'Your shelf is empty.'}</strong>
-        {#if corner}<p class="muted">Drag a book here, or use “Add a book”. PDF, Markdown and text files in a folder called <b>leisure</b> on the drive are put here automatically; press “Look for books on the drive” after adding some. You can also move a book here from the Shelf with “Move to Reading Corner”.</p>
+        {#if corner}<p class="muted">Drag a book here, or use “Add a book”. PDF, Markdown and text files in a folder called <b>leisure</b> on the drive are put here automatically. A folder inside it, like <b>leisure\Mystery</b>, becomes a genre button; press “Look for books on the drive” after adding some. You can also move a book here from the Shelf with “Move to Reading Corner”.</p>
         {:else}<p class="muted">Drag a PDF here, or use “Add a book”. PDF, Markdown and text files in the drive's library, books or manuals folder are put on the shelf automatically; press “Look for books on the drive” after adding some. Books you add stay on this drive and never leave it. Books for enjoying go in a folder called <b>leisure</b> and show in the Reading Corner instead.</p>{/if}
       </div>
     {/if}
@@ -224,6 +248,10 @@
   .resume { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
   .swatch { width: 54px; height: 72px; border-radius: 6px; border: 1px solid var(--line2); }
   .grow { flex: 1 1 200px; }
+  .finder { gap: 12px; align-items: center; flex-wrap: wrap; margin: 10px 0 4px; }
+  .finder .input { min-width: 240px; }
+  .sortpick { display: inline-flex; gap: 8px; align-items: center; color: var(--muted); font-size: 13px; }
+  .sortpick .input { min-width: 160px; }
   .pills { display: flex; flex-wrap: wrap; gap: 8px; }
   .pill { padding: 7px 14px; border-radius: 999px; border: 1px solid var(--line2); background: transparent; color: #b5ada0; font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: .1em; }
   .pill.on { border-color: var(--blue); background: var(--blue-soft); color: var(--blue); }
