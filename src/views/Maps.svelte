@@ -307,6 +307,7 @@
     }
   });
   onDestroy(() => {
+    trail('Maps screen closed');
     document.removeEventListener('fullscreenchange', onFullChange);
     if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
     resizer?.disconnect();
@@ -524,6 +525,7 @@
   const ring = (pts: LatLon[]) => [...pts, pts[0]].map(([la, lo]) => [lo, la]);
 
   function onMapClick(lat: number, lon: number, point?: { x: number; y: number }) {
+    trail('map click, tool ' + addMode);
     const p: LatLon = [Math.round(lat * 1e6) / 1e6, Math.round(lon * 1e6) / 1e6];
     const p5: LatLon = [Math.round(lat * 1e5) / 1e5, Math.round(lon * 1e5) / 1e5];
     if (addMode === 'pin' || addMode === 'rendezvous') {
@@ -642,6 +644,16 @@
     try { src.setData(data as never); } catch (e) { noteProblem('could not update ' + id + ': ' + String(e)); }
   }
 
+
+  // a short trail of what happened, kept outside this screen so it survives the screen being rebuilt
+  type TrailWindow = Window & { __cindrixTrail?: string[] };
+  function trail(t: string) {
+    const w = window as TrailWindow;
+    const list = (w.__cindrixTrail ??= []);
+    list.push(new Date().toLocaleTimeString() + ' ' + t);
+    if (list.length > 40) list.shift();
+  }
+
   // ---------- a map check, so a failure can be read off the screen ----------
   let problems: string[] = $state([]);
   let checkText = $state('');
@@ -649,6 +661,7 @@
   const onWinError = (e: ErrorEvent) => noteProblem('error: ' + (e.message || String(e.error)));
   const onWinReject = (e: PromiseRejectionEvent) => noteProblem('rejected: ' + String(e.reason));
   onMount(() => {
+    trail('Maps screen opened');
     window.addEventListener('error', onWinError);
     window.addEventListener('unhandledrejection', onWinReject);
     return () => { window.removeEventListener('error', onWinError); window.removeEventListener('unhandledrejection', onWinReject); };
@@ -665,6 +678,7 @@
       'layers: draw-line ' + has('draw-line') + ', draw-fill ' + has('draw-fill') + ', drawtmp-pts ' + has('drawtmp-pts') + ', nogo-fill ' + has('nogo-fill') + ', dir-line ' + has('dir-line'),
       'drawn shapes the map holds: ' + count('draw') + ', unfinished: ' + count('drawtmp') + ', directions line: ' + count('dir'),
       'zoom: ' + (m ? m.getZoom().toFixed(1) : '?') + ', screen size ' + window.innerWidth + 'x' + window.innerHeight,
+      'trail (newest last):\n  ' + (((window as TrailWindow).__cindrixTrail ?? []).slice(-18).join('\n  ') || 'nothing yet'),
       'problems: ' + (problems.length ? '\n  ' + problems.join('\n  ') : 'none seen'),
     ];
     checkText = lines.join('\n');
@@ -786,6 +800,7 @@
     canRedo = false;
   }
   function restore(json: string) {
+    trail('undo or redo');
     const f = JSON.parse(json) as { pins: Pin[]; route: number[]; nogo: Area[]; drawings: Drawing[] };
     pins = f.pins;
     route = f.route;
@@ -830,6 +845,7 @@
   }
   const nextDrawId = () => drawings.reduce((m, d) => Math.max(m, d.id), 0) + 1;
   function addDrawing(kind: DrawKind, points: LatLon[], radiusM?: number, label = '') {
+    trail('drawing added: ' + kind);
     pushUndo();
     const id = nextDrawId();
     drawings = [...drawings, { id, kind, label, color: drawColor, width: drawWidth, points, ...(radiusM ? { radiusM } : {}) }];
@@ -839,6 +855,7 @@
     addMode = 'off';
   }
   function finishBuilding() {
+    trail('finish pressed, points ' + building.length);
     if (addMode === 'line' && building.length >= 2) addDrawing('line', building);
     else if (addMode === 'shape' && building.length >= 3) addDrawing('shape', building);
   }
@@ -847,6 +864,7 @@
     drawings = drawings.map((d) => (d.id === selectedId ? { ...d, [key]: value } : d));
   }
   function deleteDrawing(id: number) {
+    trail('drawing deleted: ' + id);
     pushUndo();
     drawings = drawings.filter((d) => d.id !== id);
     if (selectedId === id) selectedId = null;
@@ -1186,6 +1204,7 @@
   });
 
   function newMap() {
+    trail('new map pressed');
     current = null;
     name = notes = '';
     pins = [];
@@ -1201,6 +1220,7 @@
   }
 
   async function open(id: string) {
+    trail('saved map opened');
     try {
       const m = await mapLoad(id);
       const f = JSON.parse(m.json) as Partial<MapFile>;
@@ -1602,7 +1622,7 @@
               {/if}
               <div class="gwidths">
                 <button class="gbtn" title="Remove this drawing (Delete key)" onclick={() => { if (sel) deleteDrawing(sel.id); }}>Delete</button>
-                <button class="gbtn" title="Done with this drawing" onclick={() => (selectedId = null)}>Done</button>
+                <button class="gbtn" title="Done with this drawing" onclick={() => { trail('Done pressed'); selectedId = null; }}>Done</button>
               </div>
               <div class="gmuted">Drag the round handles on the map to reshape it.</div>
             </aside>
