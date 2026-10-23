@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cindrix Ops: top bar and Dashboard (mockup)</title>
+<style>
+  :root {
+    --bg:#0f1110; --panel:#161918; --panel2:#1b1f1d; --line:#262c29; --text:#ece7de; --muted:#9a9388;
+    --accent:#ff9a1f; --accent-soft:#ff9a1f1f; --accent-line:#ff9a1f66;
+    --blue:#5aa9e6; --blue-soft:#5aa9e61f; --blue-line:#5aa9e670;
+    --danger:#e5533d; --ok:#6fbf73;
+    --mono: ui-monospace,'Cascadia Mono',Consolas,monospace;
+    --display:'Arial Narrow','Segoe UI',system-ui,sans-serif;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:var(--display); font-size:15px; }
+  .note { background:#241c0f; border-bottom:1px solid var(--accent-line); color:var(--accent); font-family:var(--mono); font-size:12px; padding:8px 16px; letter-spacing:.06em; }
+
+  /* ---------- top bar ---------- */
+  header { display:flex; align-items:center; gap:14px; padding:10px 16px; border-bottom:1px solid var(--line); background:var(--panel); position:relative; }
+  .brand { font-family:var(--mono); font-weight:700; letter-spacing:.2em; font-size:13px; color:var(--accent); white-space:nowrap; }
+  nav { display:flex; gap:4px; flex:1; }
+  .item { position:relative; }
+  .item > button { padding:8px 14px; border:1px solid transparent; border-radius:6px; background:transparent; color:#aab3ad; font-family:var(--mono); font-size:12px; text-transform:uppercase; letter-spacing:.12em; cursor:pointer; display:flex; gap:6px; align-items:center; }
+  .item > button:hover { color:var(--text); }
+  .item.on > button { background:var(--blue-soft); color:var(--blue); border-color:var(--blue-line); font-weight:600; }
+  .item > button .caret { font-size:9px; opacity:.7; }
+  .menu { display:none; position:absolute; top:calc(100% + 6px); left:0; min-width:210px; background:var(--panel2); border:1px solid var(--line); border-top:2px solid var(--blue); border-radius:0 0 6px 6px; padding:6px; z-index:5; box-shadow:0 10px 24px #000a; }
+  .item.open .menu { display:block; }
+  .menu button { display:flex; width:100%; justify-content:space-between; padding:9px 10px; border:0; border-radius:4px; background:transparent; color:var(--text); font-family:var(--display); font-size:15px; text-align:left; cursor:pointer; }
+  .menu button:hover { background:var(--blue-soft); }
+  .menu button small { color:var(--muted); font-family:var(--mono); font-size:10px; letter-spacing:.08em; text-transform:uppercase; align-self:center; }
+  .menu hr { border:0; border-top:1px solid var(--line); margin:6px 0; }
+  .status { display:flex; gap:10px; font-family:var(--mono); font-size:11px; color:var(--muted); letter-spacing:.08em; white-space:nowrap; }
+  .dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; background:var(--ok); }
+  .dot.warn { background:var(--accent); }
+  .burger { display:none; background:transparent; border:1px solid var(--line); color:var(--text); border-radius:6px; padding:7px 11px; font-size:16px; }
+
+  /* ---------- dashboard ---------- */
+  main { padding:16px; max-width:1200px; margin:0 auto; }
+  .quick { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; align-items:center; }
+  .quick span.label { font-family:var(--mono); font-size:10px; color:var(--muted); letter-spacing:.14em; text-transform:uppercase; margin-right:4px; }
+  .quick button { padding:5px 11px; background:transparent; border:1px solid var(--line); color:#c9c4ba; border-radius:4px; font-family:var(--mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase; cursor:pointer; }
+  .quick button:hover { border-color:var(--blue-line); color:var(--blue); }
+  .grid { display:grid; grid-template-columns:repeat(12,1fr); gap:12px; }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; position:relative; }
+  .panel::before, .panel::after { content:""; position:absolute; width:10px; height:10px; border:2px solid var(--accent-line); }
+  .panel::before { top:-1px; left:-1px; border-right:0; border-bottom:0; }
+  .panel::after { bottom:-1px; right:-1px; border-left:0; border-top:0; }
+  .panel h2 { margin:0 0 10px; font-family:var(--mono); font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); font-weight:600; }
+  .span4 { grid-column:span 4; } .span6 { grid-column:span 6; } .span8 { grid-column:span 8; } .span12 { grid-column:span 12; }
+  .row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-top:1px solid var(--line); gap:10px; }
+  .row:first-of-type { border-top:0; }
+  .tag { font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; padding:3px 8px; border-radius:3px; border:1px solid; white-space:nowrap; }
+  .good { color:var(--ok); border-color:#6fbf7366; } .warn { color:var(--accent); border-color:var(--accent-line); } .bad { color:var(--danger); border-color:#e5533d77; }
+  .big { font-size:34px; font-weight:700; line-height:1; }
+  .bar { height:6px; background:#222826; border-radius:3px; overflow:hidden; margin-top:8px; }
+  .bar i { display:block; height:100%; background:var(--blue); }
+  a.go { color:var(--blue); font-family:var(--mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase; text-decoration:none; }
+
+  /* ---------- small screens ---------- */
+  @media (max-width:860px) {
+    nav { display:none; position:absolute; top:100%; left:0; right:0; background:var(--panel); border-bottom:1px solid var(--line); flex-direction:column; padding:8px; z-index:6; }
+    nav.show { display:flex; }
+    .burger { display:block; margin-left:auto; }
+    .status { display:none; }
+    .menu { position:static; box-shadow:none; margin:4px 0 4px 12px; }
+    .span4,.span6,.span8 { grid-column:span 12; }
+  }
+</style>
+</head>
+<body>
+<div class="note">MOCKUP ONLY. Nothing here is built. Click the top bar words to open them. Names and numbers are made up.</div>
+
+<header>
+  <div class="brand">CINDRIX OPS</div>
+  <button class="burger" onclick="document.querySelector('nav').classList.toggle('show')" aria-label="Menu">&#9776;</button>
+  <nav>
+    <div class="item on" data-m="0"><button>Dashboard</button></div>
+    <div class="item" data-m="0"><button>Ask</button></div>
+    <div class="item" id="ops"><button>Operations <span class="caret">&#9660;</span></button>
+      <div class="menu">
+        <button>Get ready</button><button>Plans</button><button>Drills</button>
+        <button>Inventory</button><button>Family</button><button>Binder</button>
+        <button>Seed vault</button><button>What fails next</button>
+      </div></div>
+    <div class="item"><button>Intel <span class="caret">&#9660;</span></button>
+      <div class="menu">
+        <button>Shelf <small>manuals</small></button><button>Archives</button><button>Emergency cards</button>
+      </div></div>
+    <div class="item"><button>Academy <span class="caret">&#9660;</span></button>
+      <div class="menu"><button>Courses</button><button>Training sign-off</button></div></div>
+    <div class="item" data-m="0"><button>Maps</button></div>
+    <div class="item"><button>Morale <span class="caret">&#9660;</span></button>
+      <div class="menu">
+        <button>Reading Corner <small>enjoyment books</small></button>
+        <button>Music</button>
+        <hr>
+        <button>Journal <small>private</small></button>
+        <button>Photos</button>
+      </div></div>
+    <div class="item"><button>System <span class="caret">&#9660;</span></button>
+      <div class="menu"><button>Settings</button><button>Sharing</button><button>My details</button></div></div>
+  </nav>
+  <div class="status">
+    <span><span class="dot"></span>DRIVE OK</span>
+    <span><span class="dot warn"></span>SHARING OFF</span>
+  </div>
+</header>
+
+<main>
+  <div class="quick">
+    <span class="label">Quick</span>
+    <button>Ask</button><button>Maps</button><button>Cards</button><button>Next plan step</button><button>Inventory</button><button>Music</button>
+  </div>
+
+  <div class="grid">
+    <div class="panel span8">
+      <h2>Needs your attention</h2>
+      <div class="row"><span>Water: 6 days left for 4 people</span><span class="tag warn">Low</span></div>
+      <div class="row"><span>Fire drill not done in 90 days</span><span class="tag warn">Due</span></div>
+      <div class="row"><span>First aid course: 2 people not signed off</span><span class="tag warn">Training</span></div>
+      <div class="row"><span>Radio batteries checked</span><span class="tag good">OK</span></div>
+      <div class="row"><span>Backup copy of your files: 3 weeks old</span><span class="tag bad">Old</span></div>
+    </div>
+
+    <div class="panel span4">
+      <h2>Readiness</h2>
+      <div class="big">72%</div>
+      <div class="bar"><i style="width:72%"></i></div>
+      <p style="color:var(--muted);margin:10px 0 0;font-size:13px">Based on supplies, training and plan steps done.</p>
+      <p style="margin:10px 0 0"><a class="go" href="#">Open plan &rsaquo;</a></p>
+    </div>
+
+    <div class="panel span4">
+      <h2>Next plan step</h2>
+      <div style="font-size:17px;margin-bottom:6px">Fill the water barrels</div>
+      <div style="color:var(--muted);font-size:13px">Plan: Grid down, week 1 &middot; Step 3 of 12</div>
+      <p style="margin:12px 0 0"><a class="go" href="#">Open step &rsaquo;</a></p>
+    </div>
+
+    <div class="panel span4">
+      <h2>Sharing</h2>
+      <div class="row"><span>Hotspot</span><span class="tag warn">Off</span></div>
+      <div class="row"><span>Guests connected</span><span>0</span></div>
+      <p style="margin:12px 0 0"><a class="go" href="#">Open sharing &rsaquo;</a></p>
+    </div>
+
+    <div class="panel span4">
+      <h2>Libraries</h2>
+      <div class="row"><span>Vault (D:)</span><span class="tag good">Read</span></div>
+      <div class="row"><span>Go stick</span><span class="tag warn">Ask first</span></div>
+      <p style="margin:12px 0 0"><a class="go" href="#">Open settings &rsaquo;</a></p>
+    </div>
+
+    <div class="panel span12">
+      <h2>Recently opened</h2>
+      <div class="row"><span>Card: Water purification</span><a class="go" href="#">Open</a></div>
+      <div class="row"><span>Book: Where There Is No Doctor, p. 41</span><a class="go" href="#">Open</a></div>
+      <div class="row"><span>Lesson: Radio basics</span><a class="go" href="#">Open</a></div>
+    </div>
+  </div>
+</main>
+
+<script>
+  // Click opens a menu; clicking elsewhere (or another word) closes it.
+  document.querySelectorAll('.item').forEach(function (it) {
+    if (!it.querySelector('.menu')) return;
+    it.querySelector('button').addEventListener('click', function (e) {
+      e.stopPropagation();
+      var was = it.classList.contains('open');
+      document.querySelectorAll('.item.open').forEach(function (o) { o.classList.remove('open'); });
+      if (!was) it.classList.add('open');
+    });
+  });
+  document.addEventListener('click', function () {
+    document.querySelectorAll('.item.open').forEach(function (o) { o.classList.remove('open'); });
+  });
+  document.getElementById('ops').classList.add('open');
+</script>
+</body>
+</html>
