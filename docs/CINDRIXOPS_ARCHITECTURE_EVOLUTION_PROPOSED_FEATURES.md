@@ -1,7 +1,7 @@
 # CindrixOps — Architecture Evolution & Proposed Features
 
 **Document status:** PROPOSAL / DISCUSSION ONLY — NOT AUTHORIZATION TO IMPLEMENT  
-**Version:** 0.5  
+**Version:** 0.6  
 **Prepared:** 2026-10-22  
 **Audience:** Project owner, Claude, ChatGPT, future maintainers  
 **Repository location:** `docs/CINDRIXOPS_ARCHITECTURE_EVOLUTION_PROPOSED_FEATURES.md`
@@ -85,6 +85,44 @@ Candidate events: `inventory.quantity_changed`, `equipment.status_changed`, `pla
 
 Consumers should derive projections (e.g., water days remaining) from authoritative records. Avoid event-driven cascades that write back into the same source indefinitely. Define idempotency, replay/rebuild, and partial-failure behavior. For file-first storage, consider append-only change logs only after confirming repository conventions; generated indexes and projections should be rebuildable.
 
+### 3.5 Making every module work together — worked scenario
+
+This is where the most architectural effort should go. Consider an **extended winter power outage**:
+
+```text
+              Winter storm incident activated
+   (selected manually, or created from verified imported information)
+                                |
+   Family ──── account for people and special needs
+   Inventory ─ estimate fuel, water and food reserves
+   Maps ────── identify alternate destinations
+   Library ─── retrieve authoritative cold-weather guidance
+   Plan ────── load winter outage procedures
+   Comms ───── show contacts and radio check schedules
+                                |
+                  Unified operational picture
+   Prioritized tasks · known shortages · verified references
+                 · reassessment checkpoints
+```
+
+Design rules that follow from it:
+
+1. **One authoritative record for each piece of information.** Changing a water quantity in Inventory updates the readiness assessment and the incident's resource estimates automatically. It must not require updating three separate records. Derived figures are projections that can be rebuilt (see 3.4).
+2. **Each module works on its own when another is unavailable.** The Plan still opens if Inventory has not been filled in; Inventory still works if the Maps pack is missing; the incident view shows "not entered" for what is missing rather than failing. Offline, with no assistant model, or with a library drive unplugged, the essentials remain usable.
+3. **Information is entered once.** A household of six entered on the Family page is the number the water planner, the inventory days-left figures and What Fails Next all use.
+4. **Distinguish stored, portable and assigned supplies.** Home stores, evacuation loads, and supplies assigned to a person or vehicle are different pools (important when leaving unexpectedly).
+5. **The system recommends; the person decides.** Starting an incident, evacuating, or changing medical instructions always needs the person's confirmation.
+
+### 3.6 Internal layers (not new navigation tabs)
+
+Organise the code and the data around three layers. Every module can contribute to an operational decision without being tightly coupled to every other module.
+
+| Layer | What belongs in it |
+|---|---|
+| **Knowledge** | Library, Intel, Academy, agricultural references, offline maps, local AI retrieval |
+| **Preparedness** | Household profiles, plans, inventory, seed management, equipment, maintenance, drills |
+| **Operations** | Emergency checklists, resource forecasts, evacuation decisions, offline navigation, communications, recovery |
+
 ## 4. Unified Knowledge Retrieval (UKR) — highest-leverage ASK proposal
 
 ### 4.1 Why
@@ -148,6 +186,10 @@ These are application workflow states, **not automatic emergency declarations**.
 
 **Safety:** Never silently trigger evacuation, transmit emergency messages, alter medication instructions, or claim live weather/road status from offline data.
 
+### 5.3 Illustrative incident dashboard (not live data)
+
+A first sketch of the Response view, shown for discussion only: the active incident's name (for example *Extended power outage*), response mode, household accounted for (for example 4 of 4), stored-water estimate in days, backup-power hours, the next scheduled check, and a short list of immediate priorities with tick boxes: confirm everyone is safe and accounted for; check hazards and essential medical needs; review water, food and power; record conditions and the next reassessment. Numbers are examples. Real figures come only from the household's own records and are shown with their assumptions.
+
 ## 6. Proposed cross-module feature expansions
 
 ### 6.1 Household Readiness Engine
@@ -195,7 +237,26 @@ Content strategy: inventory public-domain/open-license and permissioned sources;
 
 ### 6.10 Additional long-duration resilience capabilities
 
-Document vault (encrypted), financial continuity/expense records, voluntary mutual-aid contacts and resource requests, local weather observation logs, supply substitution references, field printing, maintenance schedules, and post-incident review.
+Easy to overlook, and valuable in prolonged emergencies:
+
+| Capability | Why it matters |
+|---|---|
+| Incident journal | Records decisions, observations, actions and changing conditions with timestamps |
+| Situation reports | Printable household or community status summaries |
+| Shift and duty roster | Assigns responsibilities, check-ins and rest periods during long incidents |
+| Resource rationing planner | Models alternative consumption scenarios without automatically imposing unsafe limits |
+| Offline document vault | Identification copies, insurance documents, manuals and emergency records, encrypted |
+| Financial continuity | Cash reserves, expenses, insurance claims and essential obligations |
+| Neighborhood mutual aid | Voluntary contacts, available skills, resource requests and assistance records |
+| Missing-person accountability | Last confirmed contact, expected locations and unresolved check-ins (unconfirmed is not the same as missing) |
+| Weather observation log | Local temperature, precipitation, wind and manually entered alerts, without pretending to have live forecasts |
+| Offline printing | Paper emergency plans, maps, medical summaries and contact sheets |
+| Supply substitution references | Links shortages to verified alternatives and the relevant safety warnings |
+| Post-incident review | Turns lessons learned into updated plans, drills and inventory requirements |
+
+### 6.11 Dependency planner
+
+Treat essential capabilities as a chain of dependencies instead of independent inventory items. For example: an **electric well pump** depends on **electricity**; a **generator** depends on **fuel**; **fuel availability** depends on both **storage** and **consumption**. The planner would identify these links and show how a **single failure affects several essential capabilities** at once (losing the generator takes out the pump, which takes out water, and so on). Dependencies are entered or confirmed by the person, shown plainly, and feed the readiness assessment and the incident resource estimates. Equipment status (6.5) and inventory (6.2) are its inputs.
 
 ## 7. User interface evolution — preserve identity
 
@@ -259,11 +320,15 @@ For each scenario, test both **normal operation** and **degraded operation** (in
 4. **Loss of primary computer/drive:** restore verified backup or use independent Hub with essential records.
 5. **Multi-month disruption:** seed/growing guidance, maintenance, replenishment, training, and long-term resource forecasts.
 6. **Sensitive-data protection:** unauthorized search cannot expose household medical records; authorized user can retrieve them offline.
+8. **Extended winter power outage across modules:** activate the incident; Family, Inventory, Maps, Library, Plan and Comms each contribute to one operational picture; changing a stored-water quantity updates the readiness and incident estimates without a second edit; with one module's data missing or the assistant off, the rest still work and say what is missing.
+9. **Single point of failure:** mark the generator unavailable; the dependency planner shows the well pump, water supply and heating that depend on it.
 7. **Conflicting device edits:** Vault and Hub both change the same item; conflict is visible and resolvable without silent overwrite.
 
 Success requires explicit expected outcomes, reproducible tests, and documented limitations—not merely that a screen renders.
 
 ## 12. Decisions needed from project owner
+
+**Owner direction (2026-10-22):** Vault should be **both** a preparedness and reference application **and** a full emergency operations system: help people prepare, recognize what is happening, make informed decisions, carry out their plans and recover afterwards, all without the internet. Design for both a normal preparedness mode and a dedicated emergency operations mode. The scope of each piece still needs approval below.
 
 **All items below remain open until explicitly approved.**
 
@@ -472,6 +537,10 @@ Inspect existing Maps code and export pipeline; confirm the canonical `.cmap` v1
 | Proposal | Status | Notes |
 |---|---|---|
 | Operations Core | Proposed | Shared integration architecture |
+| Cross-module scenario, one-record rule, module independence (3.5) | Proposed | Design rules; owner direction: both preparedness/reference and operations |
+| Knowledge / Preparedness / Operations layers (3.6) | Proposed | Internal division, not new tabs |
+| Additional long-duration capabilities (6.10) | Proposed | Twelve items, each needs its own scope and safety review |
+| Dependency planner (6.11) | Proposed | Person-confirmed dependencies, deterministic |
 | Unified Knowledge Retrieval | Proposed | Shared service, ASK primary consumer |
 | Context Panel / knowledge relationships | Proposed | Explicit and reviewed links |
 | Preparedness / Response / Recovery modes | Proposed | Existing UI not presumed implemented |
