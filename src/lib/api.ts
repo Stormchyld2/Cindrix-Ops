@@ -120,7 +120,7 @@ export async function photosList(scope: 'shared' | 'mine', person: string): Prom
 }
 export async function photoRead(scope: 'shared' | 'mine', person: string, name: string): Promise<Uint8Array> {
   if (inShare) {
-    const r = await fetch('/api/photo_read?name=' + encodeURIComponent(name));
+    const r = await fetch('/api/photo_read?scope=' + scope + '&name=' + encodeURIComponent(name));
     if (!r.ok) throw 'This picture could not be opened.';
     return new Uint8Array(await r.arrayBuffer());
   }
@@ -128,13 +128,28 @@ export async function photoRead(scope: 'shared' | 'mine', person: string, name: 
   throw 'Pictures can only be opened in the program.';
 }
 export async function photoAdd(file: File, scope: 'shared' | 'mine', person: string): Promise<string> {
+  if (inShare) {
+    // a family member who joined with an invite: the host puts it in their own album or the shared one
+    let r: Response;
+    try {
+      r = await fetch('/api/photo_add', { method: 'POST', headers: { 'x-file-name': encodeURIComponent(file.name), 'x-scope': scope }, body: file });
+    } catch { throw 'The host could not be reached. Check that you are still on its Wi-Fi.'; }
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw (data as { error?: string }).error ?? 'The picture could not be added.';
+    return data as string;
+  }
   if (!tauriHost) throw 'Pictures can only be added in the program.';
   const bytes = new Uint8Array(await file.arrayBuffer());
   const { invoke } = await import('@tauri-apps/api/core');
   return invoke<string>('photo_add', bytes, { headers: { 'x-file-name': encodeURIComponent(file.name), 'x-scope': scope, 'x-person': encodeURIComponent(person) } });
 }
 export async function photoDelete(scope: 'shared' | 'mine', person: string, name: string): Promise<void> {
-  if (tauriHost) return call<void>('photo_delete', { scope, person, name });
+  if (inTauri) return call<void>('photo_delete', { scope, person, name });
+}
+/** Who this browser is: the family member whose invite it used, or null for a guest (and on the host itself). */
+export async function whoami(): Promise<string | null> {
+  if (!inShare) return null;
+  try { return (await shareCall<{ person: string | null }>('whoami')).person; } catch { return null; }
 }
 
 // ---------- your own cards and plans ----------
@@ -1086,8 +1101,8 @@ export async function pickFolder(): Promise<string | null> {
 
 // ---------- sharing with other devices (docs/34-share-server.md) ----------
 export type ShareAddress = { label: string; url: string; hotspot: boolean };
-export type ShareInfo = { on: boolean; auto: boolean; reason: string; pin: string; port: number; addresses: ShareAddress[]; hotspot_up: boolean; signed_in: number };
-const noShare: ShareInfo = { on: false, auto: true, reason: '', pin: '', port: 8765, addresses: [], hotspot_up: false, signed_in: 0 };
+export type ShareInfo = { on: boolean; auto: boolean; reason: string; pin: string; port: number; addresses: ShareAddress[]; hotspot_up: boolean; signed_in: number; trusted: number };
+const noShare: ShareInfo = { on: false, auto: true, reason: '', pin: '', port: 8765, addresses: [], hotspot_up: false, signed_in: 0, trusted: 0 };
 export async function shareInfo(): Promise<ShareInfo> {
   if (tauriHost) return call<ShareInfo>('share_info');
   return noShare;
@@ -1100,4 +1115,20 @@ export async function shareSet(enable: boolean): Promise<ShareInfo> {
 export async function shareSetPin(pin: string): Promise<ShareInfo> {
   if (tauriHost) return call<ShareInfo>('share_set_pin', { pin });
   return noShare;
+}
+
+// ---------- invites and trusted devices (docs/34-share-server.md) ----------
+export type Invite = { url: string; person: string; minutes: number };
+export type TrustedDevice = { id: string; person: string; since: number };
+export async function shareInvite(person: string): Promise<Invite> {
+  if (tauriHost) return call<Invite>('share_invite', { person });
+  throw 'Invites are made on the host computer.';
+}
+export async function shareTrusted(): Promise<TrustedDevice[]> {
+  if (tauriHost) return call<TrustedDevice[]>('share_trusted');
+  return [];
+}
+export async function shareRevoke(id: string): Promise<TrustedDevice[]> {
+  if (tauriHost) return call<TrustedDevice[]>('share_revoke', { id });
+  return [];
 }

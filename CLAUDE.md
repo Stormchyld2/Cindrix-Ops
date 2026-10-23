@@ -32,7 +32,7 @@ Windows comes first; Android and iPhone wrap it later.
 - Only drives with `cindrix-drive.json` count as libraries, are remembered by the marker's `id` (the
   edition word: `vault`, `go`, `hub`; not the drive letter), and the person is asked before one is read.
   Several libraries can be on at once. (Built for archives and loose files; see doc 24.)
-- Sharing stays off at every start, and switches on by itself only when a hotspot starts (owner, 2026-10-22; docs/34). Guests need a PIN and are read-only and get all library content (archives, Shelf,
+- Sharing stays off at every start, and switches on by itself only when a hotspot starts (owner, 2026-10-22; docs/34). Guests need a PIN and are read-only (a PIN never makes a named person; a one-use invite QR makes a trusted family device that may add pictures to the shared album and its own, docs/34) and get all library content (archives, Shelf,
   music, maps, Academy, Ask); the family page, inventory and the person's own notes stay host-only.
   Do not rely on browser features that need HTTPS.
 - The Hub assistant is on by default with the model file on the drive; memory on the phone is the limit.

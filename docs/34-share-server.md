@@ -34,3 +34,14 @@
 4. As a guest: open an archive page, a book, a card, a lesson; ask a question; open Maps; play a song. Try a wrong PIN five times (it should wait a minute).
 5. As a guest, try something that changes things (Family page, Inventory): it should refuse in plain words.
 6. Turn the hotspot off: sharing goes off and the phone loses the page.
+
+## Family devices: invites and trusted devices (decided 2026-10-23, built, not yet run on real hardware)
+
+Owner's decisions: there is **no guest sign-in as a person**. A PIN always makes an anonymous, read-only guest. The only way to become a named person is an **invite**.
+
+- **Invite:** Settings, Sharing, Family devices. The host picks a name from the Family page and gets a QR code holding `http://<address>/join?c=<code>`. The code is 48 random hex characters, works **once**, and runs out after 10 minutes (`INVITE_SECONDS`). At most 16 are open at a time.
+- **Trusted device:** opening the link sets the `cx` cookie to a new token for a **year** and lists the device in `user/trusted-devices.txt` (id, token, date, name), so it stays trusted after a restart. Changing the PIN signs guests out but not trusted devices. The host can remove a device in the same screen; it then needs the PIN again and is a guest.
+- **What a trusted person may do** (`share::PERSON_COMMANDS`, `share::photo_target`): everything a guest may, plus `whoami`, `photo_add`, `photo_delete`, in the **shared album** and in **their own album** (`user/people/<name>/photos`). The album name always comes from the invite, never from the browser, so nobody can reach another person's album. The journal, comms plan, family page and inventory stay host-only.
+- **Uploads:** the headers are read first (`read_head`); a picture body (up to 40 MB) is accepted only from a trusted device, everything else stays under 1 MB.
+- **Risk to say plainly:** the address is plain HTTP, so someone else on the same network who sees the invite link in transit could use it before the owner's phone does. That is why it works once and expires, and why Sharing tells the owner to make an invite only with the person present.
+

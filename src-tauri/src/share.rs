@@ -7,7 +7,7 @@
 
 use crate::{AppState, StreamEvent};
 use cindrix_core::hotspot;
-use cindrix_core::share::{self, Auth, Gate, Request, Response, SignIn};
+use cindrix_core::share::{self, Auth, Gate, Request, Response, Role, SignIn};
 use serde::Serialize;
 use serde_json::{json, Value};
 use std::io::{BufReader, Write};
@@ -48,6 +48,7 @@ impl Share {
         let mut a = self.auth.lock().unwrap();
         if !self.pin_loaded.swap(true, Ordering::SeqCst) {
             a.set_pin(&load_pin());
+            a.set_trusted(share::trusted_from_text(&std::fs::read_to_string(trusted_file()).unwrap_or_default()));
         }
         a
     }
@@ -57,6 +58,14 @@ impl Share {
 
 fn pin_file() -> std::path::PathBuf {
     crate::root().join("user").join("share-pin.txt")
+}
+
+fn trusted_file() -> std::path::PathBuf {
+    crate::root().join("user").join("trusted-devices.txt")
+}
+
+fn save_trusted(a: &Auth) {
+    let _ = cindrix_core::fsio::write_atomic(&trusted_file(), share::trusted_to_text(a.trusted()).as_bytes());
 }
 
 fn load_pin() -> String {
@@ -96,6 +105,8 @@ pub struct ShareInfo {
     pub addresses: Vec<AddrDto>,
     pub hotspot_up: bool,
     pub signed_in: usize,
+    /// Devices the host has said belong to a family member (they joined with an invite).
+    pub trusted: usize,
 }
 
 pub fn info(app: &tauri::AppHandle) -> ShareInfo {
@@ -128,6 +139,7 @@ pub fn info(app: &tauri::AppHandle) -> ShareInfo {
         addresses,
         hotspot_up: hs.is_some(),
         signed_in: a.signed_in(),
+        trusted: a.trusted().len(),
     }
 }
 
@@ -231,6 +243,61 @@ pub fn share_set_pin(pin: String, app: tauri::AppHandle) -> Result<ShareInfo, St
     Ok(info(&app))
 }
 
+// ---------- invites and trusted devices ----------
+
+#[derive(Serialize)]
+pub struct InviteDto {
+    /// The address the QR code carries. It works once and runs out after ten minutes.
+    pub url: String,
+    pub person: String,
+    pub minutes: u64,
+}
+
+#[derive(Serialize)]
+pub struct TrustedDto {
+    pub id: String,
+    pub person: String,
+    pub since: u64,
+}
+
+#[tauri::command]
+pub fn share_invite(person: String, app: tauri::AppHandle) -> Result<InviteDto, String> {
+    let inf = info(&app);
+    if !inf.on {
+        return Err("Turn sharing on first, then make the invite.".into());
+    }
+    let Some(addr) = inf.addresses.first() else {
+        return Err("No network address was found. Turn on the hotspot, or join a Wi-Fi network.".into());
+    };
+    let person = cindrix_core::people::folder_name(&person)?;
+    let code = {
+        let st = app.state::<AppState>();
+        let made = st.share.auth().new_invite(&person, now());
+        made?
+    };
+    Ok(InviteDto { url: format!("{}join?c={}", addr.url, code), person, minutes: share::INVITE_SECONDS / 60 })
+}
+
+#[tauri::command]
+pub fn share_trusted(app: tauri::AppHandle) -> Vec<TrustedDto> {
+    let st = app.state::<AppState>();
+    let a = st.share.auth();
+    let list: Vec<TrustedDto> = a.trusted().iter().map(|t| TrustedDto { id: t.id.clone(), person: t.person.clone(), since: t.since }).collect();
+    list
+}
+
+#[tauri::command]
+pub fn share_revoke(id: String, app: tauri::AppHandle) -> Vec<TrustedDto> {
+    {
+        let st = app.state::<AppState>();
+        let mut a = st.share.auth();
+        if a.revoke(&id) {
+            save_trusted(&a);
+        }
+    }
+    share_trusted(app)
+}
+
 // ---------- the server ----------
 
 fn accept_loop(app: tauri::AppHandle, listener: TcpListener, stop: Arc<AtomicBool>) {
@@ -259,15 +326,33 @@ fn handle(app: &tauri::AppHandle, mut stream: TcpStream, peer: SocketAddr) -> Re
     let _ = stream.set_read_timeout(Some(Duration::from_secs(20)));
     let _ = stream.set_write_timeout(Some(Duration::from_secs(120)));
     let read = stream.try_clone().map_err(|e| e.to_string())?;
-    let req = match share::read_request(&mut BufReader::new(read)) {
+    let mut reader = BufReader::new(read);
+    let mut req = match share::read_head(&mut reader) {
         Ok(r) => r,
         Err(e) => {
             send(&mut stream, &Response::text(400, &e));
             return Ok(());
         }
     };
+    // a picture is the one big thing a browser may send, and only a trusted family member may: check before taking it in
+    let upload = req.method == "POST" && req.path == "/api/photo_add";
+    if upload && !matches!(role_of(app, &req), Role::Person(_)) {
+        send(&mut stream, &json_err(403, "Only a family member who joined with an invite can add pictures."));
+        return Ok(());
+    }
+    let max = if upload { cindrix_core::people::MAX_PHOTO_BYTES + 1024 } else { share::MAX_BODY };
+    if let Err(e) = share::read_body(&mut reader, &mut req, max) {
+        send(&mut stream, &Response::text(400, &e));
+        return Ok(());
+    }
     route(app, &req, &peer.ip().to_string(), &mut stream);
     Ok(())
+}
+
+fn role_of(app: &tauri::AppHandle, req: &Request) -> Role {
+    let st = app.state::<AppState>();
+    let role = st.share.auth().role(&req.cookie("cx").unwrap_or_default());
+    role
 }
 
 fn now() -> u64 {
@@ -326,9 +411,30 @@ fn route(app: &tauri::AppHandle, req: &Request, who: &str, stream: &mut TcpStrea
         return;
     }
 
+    // an invite from a QR code: the device becomes a trusted device for one named person
+    if req.path == "/join" && req.method == "GET" {
+        let code = req.query_value("c").unwrap_or("").to_string();
+        let got = {
+            let mut a = sh.auth();
+            let t = a.redeem(&code, now());
+            if t.is_some() {
+                save_trusted(&a);
+            }
+            t
+        };
+        let r = match got {
+            Some(t) => Response::new(302, "text/plain", vec![])
+                .with("Location", "/")
+                .with("Set-Cookie", &format!("cx={}; Path=/; HttpOnly; SameSite=Lax; Max-Age=31536000", t.token)),
+            None => pin_page("This invite has been used or has run out. Ask for a new one, or type the PIN."),
+        };
+        send(stream, &r);
+        return;
+    }
+
     // everything else needs the sign-in
-    let signed = sh.auth().valid(&req.cookie("cx").unwrap_or_default());
-    if !signed {
+    let role = role_of(app, req);
+    if role == Role::Nobody {
         let api = req.path.starts_with("/api/") || req.path.starts_with("/tiles/") || req.path.starts_with("/music/");
         send(stream, &if api { json_err(401, "Type the PIN first.") } else { pin_page("") });
         return;
@@ -338,8 +444,10 @@ fn route(app: &tauri::AppHandle, req: &Request, who: &str, stream: &mut TcpStrea
         if let Some(cmd) = req.path.strip_prefix("/api/") {
             if cmd == "ask_stream" {
                 ask_sse(app, req, stream);
+            } else if cmd == "photo_add" {
+                send(stream, &photo_add_call(req, &role));
             } else {
-                send(stream, &api_call(app, cmd, &req.body));
+                send(stream, &api_call(app, cmd, &req.body, &role));
             }
             return;
         }
@@ -349,9 +457,9 @@ fn route(app: &tauri::AppHandle, req: &Request, who: &str, stream: &mut TcpStrea
         return;
     }
     if req.path == "/api/photo_read" {
-        // only the shared album: a person's own pictures never leave the laptop
+        // the shared album for everyone; a trusted person's own album only for that person
         let name = req.query_value("name").unwrap_or("").to_string();
-        let r = match crate::photo_bytes("shared", "", &name) {
+        let r = match share::photo_target(&role, req.query_value("scope").unwrap_or("shared"), false).and_then(|(sc, pe)| crate::photo_bytes(sc, &pe, &name)) {
             Ok(b) => Response::new(200, cindrix_core::people::mime_of(&name), b),
             Err(e) => json_err(404, &e),
         };
@@ -385,12 +493,12 @@ fn route(app: &tauri::AppHandle, req: &Request, who: &str, stream: &mut TcpStrea
 }
 
 /// Run one of the actions guests may use and give the answer as JSON.
-fn api_call(app: &tauri::AppHandle, cmd: &str, body: &[u8]) -> Response {
-    if !share::guest_allowed(cmd) {
+fn api_call(app: &tauri::AppHandle, cmd: &str, body: &[u8], role: &Role) -> Response {
+    if !share::command_allowed(role, cmd) {
         return json_err(403, "This can only be done on the host computer or phone.");
     }
     let args: Value = if body.is_empty() { json!({}) } else { serde_json::from_slice(body).unwrap_or_else(|_| json!({})) };
-    match dispatch(app, cmd, &args) {
+    match dispatch(app, cmd, &args, role) {
         Ok(v) => Response::json(200, &v.to_string()),
         Err(e) => json_err(400, &e),
     }
@@ -404,11 +512,24 @@ fn arg<T: serde::de::DeserializeOwned>(a: &Value, key: &str) -> Result<T, String
     serde_json::from_value(a.get(key).cloned().unwrap_or(Value::Null)).map_err(|_| format!("Something was missing from the request ({}).", key))
 }
 
-fn dispatch(app: &tauri::AppHandle, cmd: &str, a: &Value) -> Result<Value, String> {
+fn dispatch(app: &tauri::AppHandle, cmd: &str, a: &Value, role: &Role) -> Result<Value, String> {
     let st = app.state::<AppState>();
     match cmd {
         "list_cards" => tv(crate::list_cards()),
-        "photos_list" => tv(crate::photos_for("shared", "")?),
+        "whoami" => Ok(json!({ "person": match role { Role::Person(p) => Some(p.clone()), _ => None } })),
+        "photos_list" => {
+            let scope: String = a.get("scope").and_then(|v| v.as_str()).unwrap_or("shared").to_string();
+            let (sc, pe) = share::photo_target(role, &scope, false)?;
+            tv(crate::photos_for(sc, &pe)?)
+        }
+        "photo_delete" => {
+            let scope: String = arg(a, "scope")?;
+            let name: String = arg(a, "name")?;
+            let (sc, pe) = share::photo_target(role, &scope, true)?;
+            let dir = cindrix_core::people::photo_dir(&crate::root().join("user"), sc, &pe)?;
+            cindrix_core::people::photo_delete(&dir, &name)?;
+            Ok(Value::Null)
+        }
         "guides_list" => { let section: String = arg(a, "section")?; tv(crate::guides_for(&section, false)?) }
         "model_status" => tv(crate::model_status(st)),
         "library_status" => {
@@ -449,6 +570,20 @@ fn dispatch(app: &tauri::AppHandle, cmd: &str, a: &Value) -> Result<Value, Strin
             arg(a, "drillsTotal")?,
         )?),
         _ => Err("This is not available from another device.".into()),
+    }
+}
+
+/// A trusted person adds a picture. The picture is the body; the album and the file name are in headers.
+fn photo_add_call(req: &Request, role: &Role) -> Response {
+    let scope = req.header("x-scope").unwrap_or("shared").to_string();
+    let name = share::url_decode(req.header("x-file-name").unwrap_or("photo"));
+    let r = share::photo_target(role, &scope, true).and_then(|(sc, pe)| {
+        let dir = cindrix_core::people::photo_dir(&crate::root().join("user"), sc, &pe)?;
+        cindrix_core::people::photo_add(&dir, &name, &req.body)
+    });
+    match r {
+        Ok(n) => Response::json(200, &json!(n).to_string()),
+        Err(e) => json_err(400, &e),
     }
 }
 

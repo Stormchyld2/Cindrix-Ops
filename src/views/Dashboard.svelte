@@ -15,7 +15,7 @@
   let error = $state('');
   let loaded = $state(false);
   let product: ProductInfo | null = $state(null);
-  let sharing: ShareInfo = $state({ on: false, auto: true, reason: '', pin: '', port: 8765, addresses: [], hotspot_up: false, signed_in: 0 });
+  let sharing: ShareInfo = $state({ on: false, auto: true, reason: '', pin: '', port: 8765, addresses: [], hotspot_up: false, signed_in: 0, trusted: 0 });
   onMount(async () => { try { sharing = await shareInfo(); } catch { /* the panel just shows Off */ } });
   // more of the picture: plans being followed, learning, supplies by kind, and whether the drive is ready
   let plans: PlanInfo[] = $state([]);
@@ -185,7 +185,8 @@
     <div class="label">SHARING</div>
     <div class="line"><div class="grow">Sharing with other devices</div><span class="chip {sharing.on ? 'good' : 'soon'}">{sharing.on ? 'On' : 'Off'}</span></div>
     <div class="line"><div class="grow">Hotspot</div><span class="chip {sharing.hotspot_up ? 'good' : 'soon'}">{sharing.hotspot_up ? 'On' : 'Off'}</span></div>
-    <div class="line"><div class="grow">Devices signed in</div><span>{sharing.signed_in}</span></div>
+    <div class="line"><div class="grow">Guests signed in</div><span>{sharing.signed_in}</span></div>
+    <div class="line"><div class="grow">Family devices</div><span>{sharing.trusted}</span></div>
     <div class="row gap"><button class="btn" onclick={() => go('settings:Sharing')}>Open Sharing</button></div>
   </section>
 

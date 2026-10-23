@@ -1,7 +1,7 @@
 <script lang="ts">
   // Family pictures: a shared album that other devices on the hotspot can look at, and each person's own album (this computer only).
   import { onMount, onDestroy } from 'svelte';
-  import { photosList, photoRead, photoAdd, photoDelete, inShare, type Photo } from '../lib/api';
+  import { photosList, photoRead, photoAdd, photoDelete, whoami, inShare, type Photo } from '../lib/api';
   import { who } from '../lib/person.svelte';
   import PersonPick from '../lib/PersonPick.svelte';
 
@@ -14,6 +14,9 @@
   let dragging = $state(false);
   let viewing: Photo | null = $state(null);
   let removing: Photo | null = $state(null);
+  /** On another device: the family member this browser joined as, if it used an invite. */
+  let me: string | null = $state(null);
+  const canWrite = $derived(!inShare || !!me);
   let fileInput: HTMLInputElement | undefined = $state();
   const mime = (n: string) => ({ jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp' } as Record<string, string>)[n.split('.').pop()?.toLowerCase() ?? ''] ?? 'image/jpeg';
 
@@ -40,7 +43,7 @@
     return { destroy: () => io.disconnect() };
   }
   async function addFiles(files: FileList | File[] | null) {
-    if (!files || busy || inShare) return;
+    if (!files || busy || !canWrite) return;
     busy = true;
     note = '';
     const failed: string[] = [];
@@ -61,23 +64,23 @@
     await load();
   }
   function pickScope(s: Scope) { scope = s; void load(); }
-  onMount(load);
+  onMount(async () => { me = await whoami(); await load(); });
   onDestroy(forget);
 </script>
 
 <section
   class:drag={dragging}
   aria-label="Photos"
-  ondragover={(e) => { if (!inShare) { e.preventDefault(); dragging = true; } }}
+  ondragover={(e) => { if (canWrite) { e.preventDefault(); dragging = true; } }}
   ondragleave={() => (dragging = false)}
   ondrop={(e) => { e.preventDefault(); dragging = false; void addFiles(e.dataTransfer?.files ?? null); }}
 >
   <div class="top">
     <div>
       <h1>Photos</h1>
-      <p class="sub">{inShare ? 'The shared family album.' : 'The shared album can be seen by other devices on your hotspot. Each person’s own album stays on this computer.'}</p>
+      <p class="sub">{inShare ? (me ? `Joined as ${me}. You can add pictures to the shared album or your own.` : 'The shared family album.') : 'The shared album can be seen by other devices on your hotspot. Each person’s own album stays on this computer.'}</p>
     </div>
-    {#if !inShare}
+    {#if canWrite}
       <div class="row">
         <input bind:this={fileInput} id="add-photo" class="sr" type="file" accept="image/jpeg,image/png,image/gif,image/webp" multiple onchange={(e) => addFiles(e.currentTarget.files)} />
         <label class="btn primary add" for="add-photo" aria-label="Add pictures">{busy ? 'Adding…' : '+ Add pictures'}</label>
@@ -85,11 +88,11 @@
     {/if}
   </div>
 
-  {#if !inShare}
+  {#if canWrite}
     <div class="row tabs">
       <button class="pill" class:on={scope === 'shared'} onclick={() => pickScope('shared')}>Shared album</button>
-      <button class="pill" class:on={scope === 'mine'} onclick={() => pickScope('mine')}>Own album</button>
-      {#if scope === 'mine'}<PersonPick onchange={load} />{/if}
+      <button class="pill" class:on={scope === 'mine'} onclick={() => pickScope('mine')}>{inShare ? 'My album' : 'Own album'}</button>
+      {#if scope === 'mine' && !inShare}<PersonPick onchange={load} />{/if}
     </div>
   {/if}
   {#if note}<p class="notice" role="status">{note}</p>{/if}
@@ -97,7 +100,7 @@
   {#if photos.length === 0}
     <div class="panel empty">
       <strong>No pictures here yet.</strong>
-      <p class="muted">{inShare ? 'Nothing has been shared yet.' : 'Drag pictures here, or use “Add pictures”. JPEG, PNG, GIF and WebP pictures work. They are copied onto this drive, and never leave it.'}</p>
+      <p class="muted">{inShare && !me ? 'Nothing has been shared yet.' : inShare ? 'Use “Add pictures” to put some here.' : 'Drag pictures here, or use “Add pictures”. JPEG, PNG, GIF and WebP pictures work. They are copied onto this drive, and never leave it.'}</p>
     </div>
   {/if}
 
@@ -117,7 +120,7 @@
       <h2>{v.name}</h2>
       {#if urls[v.name]}<img class="big" src={urls[v.name]} alt={v.name} />{:else}<p class="muted">Opening…</p>{/if}
       <div class="row end">
-        {#if !inShare}<button class="btn danger" onclick={() => (removing = v)}>Remove</button>{/if}
+        {#if canWrite}<button class="btn danger" onclick={() => (removing = v)}>Remove</button>{/if}
         <button class="btn" onclick={() => (viewing = null)}>Close</button>
       </div>
     </div>

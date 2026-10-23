@@ -1,7 +1,9 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { shareInfo, shareSet, shareSetPin, type ShareInfo } from '../lib/api';
+  import { shareInfo, shareSet, shareSetPin, shareInvite, shareTrusted, shareRevoke, type ShareInfo, type Invite, type TrustedDevice } from '../lib/api';
   import { qrMatrix } from '../lib/qr';
+  import { everyone, loadPersonList } from '../lib/person.svelte';
+  import { learner } from '../lib/learner.svelte';
 
   let info = $state<ShareInfo | null>(null);
   let error = $state('');
@@ -12,7 +14,7 @@
   async function refresh() {
     try { info = await shareInfo(); } catch (e) { error = String(e); }
   }
-  onMount(() => { void refresh(); timer = setInterval(refresh, 3000); });
+  onMount(() => { void refresh(); void loadPersonList(); void loadTrusted(); timer = setInterval(() => { void refresh(); void loadTrusted(); }, 3000); });
   onDestroy(() => { if (timer) clearInterval(timer); });
 
   async function toggle() {
@@ -26,16 +28,32 @@
     try { info = await shareSetPin(value); pinText = ''; } catch (e) { error = String(e); }
   }
 
-  const main = $derived(info?.addresses[0]);
-  const code = $derived.by(() => {
-    if (!main) return null;
+  function qrFor(url: string | undefined) {
+    if (!url) return null;
     try {
-      const m = qrMatrix(main.url);
+      const m = qrMatrix(url);
       let d = '';
       m.forEach((row, y) => row.forEach((v, x) => { if (v) d += `M${x + 4} ${y + 4}h1v1h-1z`; }));
       return { size: m.length + 8, d };
     } catch { return null; }
-  });
+  }
+  const main = $derived(info?.addresses[0]);
+  const code = $derived(qrFor(main?.url));
+
+  // family members: an invite code works once and makes the phone that scans it a trusted device
+  let trusted = $state<TrustedDevice[]>([]);
+  let invitee = $state('');
+  let invite = $state<Invite | null>(null);
+  const inviteCode = $derived(qrFor(invite?.url));
+  async function loadTrusted() { try { trusted = await shareTrusted(); } catch { /* the list just stays as it was */ } }
+  async function makeInvite() {
+    error = '';
+    try { invite = await shareInvite(invitee || everyone()[0]); } catch (e) { error = String(e); }
+  }
+  async function removeDevice(id: string) {
+    try { trusted = await shareRevoke(id); } catch (e) { error = String(e); }
+  }
+  const when = (t: number) => new Date(t * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 </script>
 
 <div class="panel">
@@ -56,7 +74,7 @@
 
     {#if info.on}
       <div class="how">
-        <p><b>On the other device:</b> join this computer's or phone's Wi-Fi or hotspot, then scan the code or type the address in a web browser. It asks for the PIN once.</p>
+        <p><b>On the other device:</b> join this computer's or phone's Wi-Fi or hotspot, then scan the code or type the address in a web browser. It asks for the PIN once. Anyone who types the PIN is a guest and can only read.</p>
         <div class="join">
           {#if code}
             <svg class="qr" viewBox="0 0 {code.size} {code.size}" role="img" aria-label="Code to scan for {main?.url}"><rect width={code.size} height={code.size} fill="#fff" /><path d={code.d} fill="#000" /></svg>
@@ -70,9 +88,37 @@
             {/each}
             <div class="small muted pinlabel">PIN</div>
             <div class="pin">{info.pin}</div>
-            <div class="small muted">{info.signed_in} device{info.signed_in === 1 ? '' : 's'} signed in</div>
+            <div class="small muted">{info.signed_in} guest{info.signed_in === 1 ? '' : 's'} signed in</div>
           </div>
         </div>
+      </div>
+
+      <div class="family">
+        <div class="label sub">FAMILY DEVICES</div>
+        <p class="small">A family member's own phone or laptop can join with an invite instead of the PIN. It then stays trusted, shows their name, and lets them add pictures to the shared album and to their own. Make the invite for the right person, and have them scan it within {invite?.minutes ?? 10} minutes. It works once.</p>
+        <div class="row">
+          <select class="input" bind:value={invitee} aria-label="Who is this invite for">
+            {#each everyone() as n}<option value={n}>{n}</option>{/each}
+          </select>
+          <button class="btn primary" onclick={makeInvite} title="Make a one-time code for this person's phone">Make an invite</button>
+        </div>
+        {#if learner.locked}<p class="small muted">The Family page is locked, so only “Me” is listed. Unlock it on the Family page to invite someone else.</p>{/if}
+        {#if invite && inviteCode}
+          <div class="join">
+            <svg class="qr" viewBox="0 0 {inviteCode.size} {inviteCode.size}" role="img" aria-label="Invite code for {invite.person}"><rect width={inviteCode.size} height={inviteCode.size} fill="#fff" /><path d={inviteCode.d} fill="#000" /></svg>
+            <div>
+              <p><b>Invite for {invite.person}</b></p>
+              <p class="small muted">Have them scan this with their phone's camera while it is on this Wi-Fi or hotspot. It works once and runs out after {invite.minutes} minutes. Do not post or send a picture of it.</p>
+              <button class="btn" onclick={() => (invite = null)}>Hide the invite</button>
+            </div>
+          </div>
+        {/if}
+        <div class="small muted pinlabel">Trusted devices</div>
+        {#each trusted as t (t.id)}
+          <div class="line"><div class="grow"><b>{t.person}</b> <span class="small muted">joined {when(t.since)}</span></div><button class="btn" onclick={() => removeDevice(t.id)} title="This device will have to use the PIN again, as a guest">Remove</button></div>
+        {:else}
+          <p class="small muted">No family device has joined yet.</p>
+        {/each}
       </div>
     {/if}
 
@@ -89,8 +135,11 @@
     <details class="more">
       <summary>What guests can and cannot do</summary>
       <ul>
-        <li>They can read: archives, the shelf, emergency cards, Academy, plans, drills, maps, music and Ask.</li>
-        <li>They cannot change anything, and cannot see your family page, inventory, notes, chats or My details.</li>
+        <li>A PIN makes a guest. Guests can read: archives, the shelf, emergency cards, Academy, plans, drills, maps, music and Ask.</li>
+        <li>Guests cannot change anything, and cannot see your family page, inventory, notes, chats or My details.</li>
+        <li>A family member who joined with an invite can also add and remove pictures in the shared album and in their own. Nothing else changes: the journal, family page and inventory stay on this computer.</li>
+        <li>Invites only travel over your own Wi-Fi or hotspot, but that network is not scrambled. Make an invite only when the person is with you, and remove a device you no longer trust.</li>
+        <li>Changing the PIN signs guests out. Family devices stay until you remove them.</li>
         <li>Ask for guests never reads your own notes. Two questions at a time; others wait their turn.</li>
         <li>The first time, Windows may ask whether to let this program use the network. Say yes for private networks.</li>
         <li>Sharing is off whenever the program starts, until a hotspot is on (or you turn it on here).</li>
@@ -113,4 +162,7 @@
   .more summary { cursor: pointer; font-weight: 600; }
   .more ul { margin: 8px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
   .small { font-size: 12px; }
+  .family { margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
+  .line { display: flex; gap: 12px; align-items: center; padding: 6px 0; border-top: 1px solid var(--line); }
+  .grow { flex: 1; }
 </style>

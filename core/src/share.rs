@@ -129,6 +129,14 @@ fn read_line<R: BufRead>(r: &mut R) -> Result<String, String> {
 
 /// Read one request: the first line, the headers and, if the request says it has one, the body.
 pub fn read_request<R: BufRead>(r: &mut R) -> Result<Request, String> {
+    let mut req = read_head(r)?;
+    read_body(r, &mut req, MAX_BODY)?;
+    Ok(req)
+}
+
+/// Read the first line and the headers only. The body is read afterwards with `read_body`, so the
+/// host can decide who may send a big one (a picture) before taking it in.
+pub fn read_head<R: BufRead>(r: &mut R) -> Result<Request, String> {
     let first = read_line(r)?;
     let mut it = first.split_whitespace();
     let (Some(method), Some(target)) = (it.next(), it.next()) else { return Err("That was not a web request.".into()) };
@@ -145,15 +153,19 @@ pub fn read_request<R: BufRead>(r: &mut R) -> Result<Request, String> {
         if headers.len() >= MAX_HEADERS { return Err("The request had too many headers.".into()); }
         if let Some((k, v)) = l.split_once(':') { headers.push((k.trim().to_string(), v.trim().to_string())); }
     }
-    let mut req = Request { method: method.to_uppercase(), path: url_decode(path), raw_path: path.to_string(), raw_query: qs.to_string(), query, headers, body: vec![] };
+    Ok(Request { method: method.to_uppercase(), path: url_decode(path), raw_path: path.to_string(), raw_query: qs.to_string(), query, headers, body: vec![] })
+}
+
+/// Read the body the headers promise, if it is no longer than `max` bytes.
+pub fn read_body<R: BufRead>(r: &mut R, req: &mut Request, max: usize) -> Result<(), String> {
     let len: usize = req.header("content-length").and_then(|v| v.parse().ok()).unwrap_or(0);
-    if len > MAX_BODY { return Err("The request was too big.".into()); }
+    if len > max { return Err("The request was too big.".into()); }
     if len > 0 {
         let mut body = vec![0u8; len];
         r.read_exact(&mut body).map_err(|e| e.to_string())?;
         req.body = body;
     }
-    Ok(req)
+    Ok(())
 }
 
 // ---------- building a reply ----------
@@ -281,6 +293,8 @@ pub const LOCKOUT_SECONDS: u64 = 60;
 pub struct Auth {
     pin: String,
     tokens: Vec<String>,
+    invites: Vec<Invite>,
+    trusted: Vec<Trusted>,
     /// per device address: wrong tries so far, and until when (seconds) it must wait
     tries: HashMap<String, (u32, u64)>,
 }
@@ -294,7 +308,7 @@ pub enum SignIn {
 }
 
 impl Auth {
-    pub fn new(pin: &str) -> Auth { Auth { pin: pin.to_string(), tokens: vec![], tries: HashMap::new() } }
+    pub fn new(pin: &str) -> Auth { Auth { pin: pin.to_string(), tokens: vec![], invites: vec![], trusted: vec![], tries: HashMap::new() } }
     pub fn pin(&self) -> &str { &self.pin }
     /// A new PIN also signs everyone out.
     pub fn set_pin(&mut self, pin: &str) { self.pin = pin.to_string(); self.tokens.clear(); self.tries.clear(); }
@@ -314,6 +328,95 @@ impl Auth {
     }
     pub fn valid(&self, token: &str) -> bool { !token.is_empty() && self.tokens.iter().any(|t| same(t, token)) }
     pub fn signed_in(&self) -> usize { self.tokens.len() }
+
+    /// Who a browser is: a named family member on a trusted device, a guest who typed the PIN, or nobody yet.
+    pub fn role(&self, token: &str) -> Role {
+        if token.is_empty() { return Role::Nobody; }
+        if let Some(t) = self.trusted.iter().find(|t| same(&t.token, token)) { return Role::Person(t.person.clone()); }
+        if self.valid(token) { Role::Guest } else { Role::Nobody }
+    }
+
+    /// A one-use invite for a named person, good for `INVITE_SECONDS`. The name must be one a folder can be made for.
+    pub fn new_invite(&mut self, person: &str, now: u64) -> Result<String, String> {
+        let person = crate::people::folder_name(person)?;
+        self.invites.retain(|i| i.expires > now);
+        if self.invites.len() >= 16 { self.invites.remove(0); }
+        let code = new_token();
+        self.invites.push(Invite { code: code.clone(), person, expires: now + INVITE_SECONDS });
+        Ok(code)
+    }
+
+    /// Use an invite. It works once; the device that used it becomes a trusted device for that person.
+    pub fn redeem(&mut self, code: &str, now: u64) -> Option<Trusted> {
+        self.invites.retain(|i| i.expires > now);
+        let at = self.invites.iter().position(|i| !code.is_empty() && same(&i.code, code))?;
+        let inv = self.invites.remove(at);
+        let token = new_token();
+        let t = Trusted { id: token[..8].to_string(), token, person: inv.person, since: now };
+        self.trusted.push(t.clone());
+        Some(t)
+    }
+
+    pub fn trusted(&self) -> &[Trusted] { &self.trusted }
+    pub fn set_trusted(&mut self, list: Vec<Trusted>) { self.trusted = list; }
+    /// Take a device off the trusted list. It is a guest-who-must-type-the-PIN again.
+    pub fn revoke(&mut self, id: &str) -> bool {
+        let before = self.trusted.len();
+        self.trusted.retain(|t| t.id != id);
+        self.trusted.len() != before
+    }
+}
+
+/// How long an invite can be used after the host makes it.
+pub const INVITE_SECONDS: u64 = 600;
+
+#[derive(Debug)]
+struct Invite { code: String, person: String, expires: u64 }
+
+/// A phone or laptop the host has said belongs to a family member.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Trusted { pub id: String, pub token: String, pub person: String, pub since: u64 }
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Role { Nobody, Guest, Person(String) }
+
+/// The list kept in a plain file so trusted devices stay trusted after a restart: id, token, since, name.
+pub fn trusted_to_text(list: &[Trusted]) -> String {
+    list.iter().map(|t| format!("{}\t{}\t{}\t{}\n", t.id, t.token, t.since, t.person)).collect()
+}
+pub fn trusted_from_text(text: &str) -> Vec<Trusted> {
+    text.lines()
+        .filter_map(|l| {
+            let mut p = l.splitn(4, '\t');
+            let (id, token, since, person) = (p.next()?, p.next()?, p.next()?, p.next()?);
+            if id.is_empty() || token.len() < 32 || person.trim().is_empty() { return None; }
+            Some(Trusted { id: id.to_string(), token: token.to_string(), since: since.parse().ok()?, person: person.trim().to_string() })
+        })
+        .collect()
+}
+
+/// What a trusted person may do on top of what a guest may.
+pub const PERSON_COMMANDS: &[&str] = &["whoami", "photo_add", "photo_delete"];
+
+pub fn command_allowed(role: &Role, cmd: &str) -> bool {
+    match role {
+        Role::Nobody => false,
+        Role::Guest => guest_allowed(cmd),
+        Role::Person(_) => guest_allowed(cmd) || PERSON_COMMANDS.contains(&cmd),
+    }
+}
+
+/// Which album folder a request may reach: (scope, person). A guest only ever gets the shared album, and a
+/// trusted person's own album is always their own: the name the browser sends is ignored.
+pub fn photo_target(role: &Role, scope: &str, write: bool) -> Result<(&'static str, String), String> {
+    match (role, scope) {
+        (Role::Nobody, _) => Err("Type the PIN first.".into()),
+        (Role::Guest, _) if write => Err("Only a family member who joined with an invite can change pictures.".into()),
+        (_, "shared") => Ok(("shared", String::new())),
+        (Role::Person(p), "mine") => Ok(("mine", p.clone())),
+        (Role::Guest, "mine") => Err("Own albums are for family members who joined with an invite.".into()),
+        _ => Err("That album is not known.".into()),
+    }
 }
 
 // ---------- only a few questions at once ----------
@@ -443,5 +546,78 @@ mod tests {
         assert!(g.enter().is_none());
         drop(a);
         assert!(g.enter().is_some());
+    }
+
+    #[test]
+    fn an_invite_works_once_and_makes_a_trusted_person() {
+        let mut a = Auth::new("1234");
+        let code = a.new_invite("  Dana ", 100).unwrap();
+        assert_eq!(a.role("nope"), Role::Nobody);
+        let t = a.redeem(&code, 150).unwrap();
+        assert_eq!(t.person, "Dana");
+        assert_eq!(a.role(&t.token), Role::Person("Dana".into()));
+        assert!(a.redeem(&code, 151).is_none(), "second use");
+        assert!(a.redeem("", 151).is_none());
+    }
+
+    #[test]
+    fn an_old_invite_stops_working_and_bad_names_are_refused() {
+        let mut a = Auth::new("1234");
+        let code = a.new_invite("Dana", 100).unwrap();
+        assert!(a.redeem(&code, 100 + INVITE_SECONDS).is_none());
+        assert!(a.new_invite("   ", 100).is_err());
+        assert!(a.new_invite("CON", 100).is_err());
+    }
+
+    #[test]
+    fn a_new_pin_signs_guests_out_but_trusted_devices_stay_and_can_be_removed() {
+        let mut a = Auth::new("1234");
+        let g = match a.sign_in("x", "1234", 0) { SignIn::Ok(t) => t, _ => panic!() };
+        let c = a.new_invite("Dana", 0).unwrap();
+        let t = a.redeem(&c, 1).unwrap();
+        assert_eq!(a.role(&g), Role::Guest);
+        a.set_pin("5678");
+        assert_eq!(a.role(&g), Role::Nobody);
+        assert_eq!(a.role(&t.token), Role::Person("Dana".into()));
+        assert!(a.revoke(&t.id));
+        assert_eq!(a.role(&t.token), Role::Nobody);
+        assert!(!a.revoke(&t.id));
+    }
+
+    #[test]
+    fn the_trusted_list_survives_being_written_and_read() {
+        let mut a = Auth::new("1234");
+        let c = a.new_invite("Dana Smith", 5).unwrap();
+        a.redeem(&c, 6).unwrap();
+        let text = trusted_to_text(a.trusted());
+        assert_eq!(trusted_from_text(&text), a.trusted().to_vec());
+        assert!(trusted_from_text("junk\nshort\ttok\t1\tx\n").is_empty());
+    }
+
+    #[test]
+    fn only_trusted_people_change_pictures_and_only_in_their_own_album() {
+        let guest = Role::Guest;
+        let dana = Role::Person("Dana".into());
+        assert!(command_allowed(&guest, "photos_list") && !command_allowed(&guest, "photo_add") && !command_allowed(&guest, "whoami"));
+        assert!(command_allowed(&dana, "photo_add") && command_allowed(&dana, "photo_delete") && command_allowed(&dana, "whoami"));
+        assert!(!command_allowed(&dana, "journal_save") && !command_allowed(&dana, "family_save") && !command_allowed(&dana, "settings_save"));
+        assert!(!command_allowed(&Role::Nobody, "photos_list"));
+        assert_eq!(photo_target(&guest, "shared", false).unwrap(), ("shared", String::new()));
+        assert!(photo_target(&guest, "shared", true).is_err());
+        assert!(photo_target(&guest, "mine", false).is_err());
+        assert_eq!(photo_target(&dana, "mine", true).unwrap(), ("mine", "Dana".to_string()));
+        assert_eq!(photo_target(&dana, "shared", true).unwrap(), ("shared", String::new()));
+        assert!(photo_target(&dana, "../x", true).is_err());
+        assert!(photo_target(&Role::Nobody, "shared", false).is_err());
+    }
+
+    #[test]
+    fn head_and_body_can_be_read_apart() {
+        let mut c = Cursor::new(b"POST /api/photo_add HTTP/1.1\r\nContent-Length: 3\r\n\r\nabc".to_vec());
+        let mut r = read_head(&mut c).unwrap();
+        assert!(r.body.is_empty());
+        assert!(read_body(&mut c.clone(), &mut r.clone(), 2).is_err());
+        read_body(&mut c, &mut r, 10).unwrap();
+        assert_eq!(r.body, b"abc");
     }
 }
