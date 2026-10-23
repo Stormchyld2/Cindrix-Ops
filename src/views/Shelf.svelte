@@ -69,6 +69,8 @@
     if (settings.values.autoScanShelf) await scan(true);
   });
 
+  // up to this many kinds show as buttons; more than that become one dropdown
+  const MAX_BUTTONS = 9;
   let query = $state('');
   let sortBy = $state<'title' | 'author' | 'newest'>('title');
   let categories = $derived(['All', ...Array.from(new Set(books.map(labelOf))).sort()]);
@@ -163,11 +165,21 @@
       </div>
     {/if}
 
-    <div class="pills">
-      {#each categories as c}
-        <button class="pill" class:on={filter === c} onclick={() => (filter = c)}>{c}</button>
-      {/each}
-    </div>
+    {#if categories.length > MAX_BUTTONS}
+      <div class="row finder">
+        <label class="sortpick">{corner ? 'Genre' : 'Category'}
+          <select class="input" bind:value={filter} aria-label={corner ? 'Show one genre' : 'Show one category'}>
+            {#each categories as c}<option value={c}>{c === 'All' ? 'All' : c}</option>{/each}
+          </select>
+        </label>
+      </div>
+    {:else}
+      <div class="pills">
+        {#each categories as c}
+          <button class="pill" class:on={filter === c} onclick={() => (filter = c)}>{c}</button>
+        {/each}
+      </div>
+    {/if}
     <div class="row finder">
       <input class="input" type="search" placeholder="Search by title or author" aria-label="Search the books" bind:value={query} />
       <label class="sortpick">Sort by
