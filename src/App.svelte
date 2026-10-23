@@ -76,14 +76,14 @@
   $effect(() => { if (settings.loaded) void applyUiScale(settings.values.uiScale); });
 
   // Intel is the offline internet: the archives read like web pages. It goes with the library.
-  type Group = 'Dashboard' | 'Ask' | 'Library' | 'Intel' | 'Academy' | 'Maps' | 'Music' | 'Plan' | 'Inventory' | 'Settings' | 'Soon';
-  const allGroups: Group[] = ['Dashboard', 'Ask', 'Library', 'Intel', 'Academy', 'Maps', 'Music', 'Plan', 'Inventory', 'Settings'];
+  type Group = 'Dashboard' | 'Ask' | 'Library' | 'Intel' | 'Academy' | 'Maps' | 'Music' | 'Plan' | 'Inventory' | 'Settings' | 'Corner' | 'Soon';
+  const allGroups: Group[] = ['Dashboard', 'Ask', 'Library', 'Intel', 'Academy', 'Maps', 'Music', 'Plan', 'Inventory', 'Settings', 'Corner'];
   // Each product switches parts of the program on or off (core/src/product.rs).
   const groups = $derived(
     allGroups.filter((g) => {
       if (!product) return true;
       if (g === 'Ask') return product.assistant;
-      if (g === 'Library' || g === 'Intel') return product.library;
+      if (g === 'Library' || g === 'Intel' || g === 'Corner') return product.library;
       if (g === 'Maps') return product.maps;
       if (g === 'Music') return product.music;
       if (g === 'Plan' || g === 'Inventory') return product.plan;
@@ -176,7 +176,7 @@
         { label: 'Seed vault', tab: 'Seed vault' } ] },
       { id: 'Maps', cat: 'maps', tab: 'Maps', show: p ? p.maps : true },
       { id: 'Morale', cat: 'morale', show: true, entries: [
-        { label: 'Reading Corner', tab: 'soon:Reading Corner', note: 'enjoyment books' },
+        { label: 'Reading Corner', tab: 'Corner', note: 'enjoyment books', show: p ? p.library : true },
         { label: 'Music', tab: 'Music', show: p ? p.music : true }, { label: '', tab: '', rule: true },
         { label: 'Journal', tab: 'soon:Journal', note: 'private' }, { label: 'Photos', tab: 'soon:Photos' } ] },
       { id: 'Comms', cat: 'comms', show: true, entries: [
@@ -191,7 +191,7 @@
   const activeTop = $derived.by(() => {
     switch (group) {
       case 'Library': case 'Intel': return 'Intel';
-      case 'Music': return 'Morale';
+      case 'Music': case 'Corner': return 'Morale';
       case 'Plan': return plan === 'Seed vault' ? 'Agro' : 'Operations';
       case 'Inventory': return 'Operations';
       case 'Settings': return settingsFromComms ? 'Comms' : 'System';
@@ -277,6 +277,8 @@
       <Maps />
     {:else if group === 'Music'}
       <Music />
+    {:else if group === 'Corner'}
+      <Shelf corner />
     {:else if group === 'Plan'}
       {#if plan === 'Start'}
         <Start go={goTo} />

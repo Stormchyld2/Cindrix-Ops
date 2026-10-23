@@ -5,7 +5,13 @@
   import { sourceRequest } from '../lib/chat.svelte';
   import { settings } from '../lib/settings.svelte';
 
+  // The Reading Corner (Morale) is the same shelf for books to enjoy; the Shelf (Intel) keeps the manuals. A book is in one or the other.
+  let { corner = false }: { corner?: boolean } = $props();
+  const LEISURE = 'Reading Corner';
+  const isLeisure = (c: string) => c.trim().toLowerCase() === LEISURE.toLowerCase();
+
   let books: Book[] = $state([]);
+  let everyBook: Book[] = $state([]);
   let filter = $state('All');
   let reading: Book | null = $state(null);
   let message = $state('');
@@ -26,7 +32,7 @@
   }
 
   async function refresh() {
-    try { books = await shelfList(); } catch (e) { message = String(e); }
+    try { everyBook = await shelfList(); books = everyBook.filter((b) => isLeisure(b.category) === corner); } catch (e) { message = String(e); }
   }
   let scanning = $state(false);
   /** Put the books found on the drive onto the shelf. `quiet`: say something only when books were added. */
@@ -51,7 +57,8 @@
     const want = sourceRequest.book;
     if (want) {
       sourceRequest.book = null;
-      const b = books.find((x) => x.id === want.id);
+      // a source link opens the book even when it sits on the other shelf
+      const b = everyBook.find((x) => x.id === want.id);
       if (b) reading = { ...b, last_page: want.page };
       else message = 'That book is no longer on the shelf.';
     }
@@ -69,7 +76,7 @@
     const done: string[] = [];
     const failed: string[] = [];
     for (const f of Array.from(files)) {
-      try { const b = await shelfAdd(f); done.push(b.title); }
+      try { const b = await shelfAdd(f, corner ? LEISURE : ''); done.push(b.title); }
       catch (e) { failed.push(`${f.name}: ${String(e)}`); }
     }
     await refresh();
@@ -97,6 +104,10 @@
     removing = null;
     await refresh();
   }
+  async function moveBook(b: Book) {
+    try { await shelfUpdate(b.id, b.title, b.author, corner ? 'Moved from the Reading Corner' : LEISURE); message = corner ? `“${b.title}” is back on the Shelf.` : `“${b.title}” is now in the Reading Corner.`; } catch (e) { message = String(e); }
+    await refresh();
+  }
   async function closeReader() { reading = null; await refresh(); }
 </script>
 
@@ -114,8 +125,8 @@
   >
     <div class="top">
       <div>
-        <h1>Shelf</h1>
-        <p class="sub">Real books and manuals, kept on this drive. Open one to read it, search inside it, or ask the assistant about it.</p>
+        <h1>{corner ? 'Reading Corner' : 'Shelf'}</h1>
+        <p class="sub">{corner ? 'Books to enjoy, kept on this drive: stories, adventures and something to read when you need a break. Open one to read it.' : 'Real books and manuals, kept on this drive. Open one to read it, search inside it, or ask the assistant about it.'}</p>
       </div>
       <div class="row">
         <input bind:this={fileInput} id="add-book" class="sr" type="file" accept=".pdf,.md,.txt,application/pdf" multiple onchange={(e) => addFiles(e.currentTarget.files)} />
@@ -146,8 +157,9 @@
 
     {#if shown.length === 0}
       <div class="empty panel">
-        <strong>Your shelf is empty.</strong>
-        <p class="muted">Drag a PDF here, or use “Add a book”. PDF, Markdown and text files in the drive's library, books or manuals folder are put on the shelf automatically; press “Look for books on the drive” after adding some. Books you add stay on this drive and never leave it.</p>
+        <strong>{corner ? 'Your Reading Corner is empty.' : 'Your shelf is empty.'}</strong>
+        {#if corner}<p class="muted">Drag a book here, or use “Add a book”. PDF, Markdown and text files in a folder called <b>leisure</b> on the drive are put here automatically; press “Look for books on the drive” after adding some. You can also move a book here from the Shelf with “Move to Reading Corner”.</p>
+        {:else}<p class="muted">Drag a PDF here, or use “Add a book”. PDF, Markdown and text files in the drive's library, books or manuals folder are put on the shelf automatically; press “Look for books on the drive” after adding some. Books you add stay on this drive and never leave it. Books for enjoying go in a folder called <b>leisure</b> and show in the Reading Corner instead.</p>{/if}
       </div>
     {/if}
 
@@ -162,6 +174,7 @@
           <div class="meta">{b.license}</div>
           {#if b.mine}
             <div class="row small">
+              <button class="mini-btn" onclick={() => moveBook(b)}>{corner ? 'Move to the Shelf' : 'Move to Reading Corner'}</button>
               <button class="mini-btn" onclick={() => startEdit(b)}>Edit</button>
               <button class="mini-btn" onclick={() => (removing = b)}>Remove</button>
             </div>

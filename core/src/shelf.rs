@@ -17,6 +17,31 @@ use std::path::{Path, PathBuf};
 pub const HEADER: &str = "id,title,author,category,file,kind,added,license,fingerprint";
 pub const MAX_BYTES: usize = 400 * 1024 * 1024;
 
+/// The category of the books for enjoyment. They show in Morale, Reading Corner, and not on the
+/// Shelf under Intel, so the two never overlap. On the drive they live in a `leisure` folder.
+pub const LEISURE: &str = "Reading Corner";
+
+/// Is this book one for enjoyment?
+pub fn is_leisure(category: &str) -> bool {
+    category.trim().eq_ignore_ascii_case(LEISURE)
+}
+
+/// The category a book found on the drive gets, from the folder it sits in:
+/// `library/manuals/x.pdf` is "Manuals", and anything in a `leisure` (or `reading corner`) folder
+/// is in the Reading Corner. `rel` uses `/` and is relative to the drive.
+pub fn category_for(rel: &str) -> String {
+    let parts: Vec<&str> = rel.split('/').collect();
+    let dirs = &parts[..parts.len().saturating_sub(1)];
+    if dirs.iter().any(|d| {
+        let d = d.trim().to_lowercase().replace(['-', '_'], " ");
+        d == "leisure" || d == "reading corner"
+    }) {
+        return LEISURE.to_string();
+    }
+    let folder = if parts.len() >= 3 { parts[parts.len() - 2] } else if parts.len() == 2 && parts[0] != "library" { parts[0] } else { "" };
+    if folder.is_empty() { "Drive library".to_string() } else { title_from_filename(&format!("{}.x", folder)) }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Book {
     pub id: String,
@@ -139,11 +164,11 @@ fn walk_for_books(dir: &Path, depth: usize, out: &mut Vec<PathBuf>) {
 }
 
 /// PDF, Markdown and text files in the drive's book folders: `library` (and its subfolders, such
-/// as `library/manuals`), `books` and `manuals`, up to four levels deep. `.zim` archives are not
+/// as `library/manuals`), `books`, `manuals` and `leisure`, up to four levels deep. `.zim` archives are not
 /// books here (they have their own screen).
 pub fn drive_book_files(root: &Path) -> Vec<PathBuf> {
     let mut out = Vec::new();
-    for d in ["library", "books", "manuals"] {
+    for d in ["library", "books", "manuals", "leisure"] {
         walk_for_books(&root.join(d), 4, &mut out);
     }
     out
@@ -262,11 +287,7 @@ impl Shelf {
                 }
             };
             // the folder it sits in names its category: library/manuals/x.pdf -> "Manuals"
-            let category = {
-                let parts: Vec<&str> = rel.split('/').collect();
-                let folder = if parts.len() >= 3 { parts[parts.len() - 2] } else if parts.len() == 2 && parts[0] != "library" { parts[0] } else { "" };
-                if folder.is_empty() { "Drive library".to_string() } else { title_from_filename(&format!("{}.x", folder)) }
-            };
+            let category = category_for(&rel);
             match self.add_with(&name, &bytes, &category, today, "From the drive") {
                 Ok(b) => rep.added.push(b.title),
                 Err(e) if e.starts_with("That book is already on your shelf") => rep.known += 1,
@@ -464,6 +485,39 @@ mod tests {
         fs::write(root.join("books/notes.md"), b"# Notes\nsome notes").unwrap();
         fs::write(root.join("music/song.txt"), b"not scanned: music folder").unwrap();
         root
+    }
+
+    #[test]
+    fn leisure_folders_make_reading_corner_books() {
+        assert_eq!(category_for("leisure/old-man-and-the-sea.pdf"), LEISURE);
+        assert_eq!(category_for("library/Leisure/novels/x.pdf"), LEISURE);
+        assert_eq!(category_for("books/reading-corner/x.txt"), LEISURE);
+        assert_eq!(category_for("library/manuals/fm_21-76-1.pdf"), "Manuals");
+        assert_eq!(category_for("library/first aid.pdf"), "Drive library");
+        // a file named like the folder does not count: only folders do
+        assert_eq!(category_for("library/leisure.pdf"), "Drive library");
+        assert!(is_leisure("reading corner"));
+        assert!(is_leisure(" Reading Corner "));
+        assert!(!is_leisure("Manuals"));
+    }
+
+    #[test]
+    fn the_leisure_folder_is_scanned_and_kept_apart() {
+        let root = tmp("leisure");
+        fs::create_dir_all(root.join("library/manuals")).unwrap();
+        fs::create_dir_all(root.join("leisure")).unwrap();
+        fs::write(root.join("library/manuals/water.pdf"), pdf()).unwrap();
+        fs::write(root.join("leisure/story.pdf"), b"%PDF-1.4\na story").unwrap();
+        let shelf = Shelf::new(&tmp("leisure-shelf"), "u");
+        let rep = shelf.import_from_drive(&root, &drive_book_files(&root), "2026-10-23");
+        assert_eq!(rep.added.len(), 2);
+        let books = shelf.list().unwrap();
+        assert_eq!(books.iter().filter(|b| is_leisure(&b.category)).count(), 1);
+        assert_eq!(books.iter().filter(|b| !is_leisure(&b.category)).count(), 1);
+        // moving a book between the two shelves is just a category change
+        let manual = books.iter().find(|b| !is_leisure(&b.category)).unwrap();
+        shelf.update(&manual.id, "", "", LEISURE).unwrap();
+        assert_eq!(shelf.list().unwrap().iter().filter(|b| is_leisure(&b.category)).count(), 2);
     }
 
     #[test]
