@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { inShare, whatFailsNext, inventoryList, drillsList, mapPacks, modelStatus, listModels, libraryStatus, shareInfo, dashboardSuggestions, plansList, academyList, familyStatus, productInfo, type ProductInfo, type ShareInfo, type Cascade, type Suggestion, type PlanInfo, type AcademyModule } from '../lib/api';
+  import { inShare, whatFailsNext, inventoryList, drillsList, mapPacks, modelStatus, listModels, libraryStatus, shareInfo, shareSet, dashboardSuggestions, plansList, academyList, familyStatus, productInfo, type ProductInfo, type ShareInfo, type Cascade, type Suggestion, type PlanInfo, type AcademyModule } from '../lib/api';
   import { gatherFacts, planCounts, nextStep, stepStatus, KIND_NAME, type PlanFacts } from '../lib/planfacts';
   import { categories } from '../lib/categories';
   import { settings } from '../lib/settings.svelte';
@@ -16,7 +16,21 @@
   let loaded = $state(false);
   let product: ProductInfo | null = $state(null);
   let sharing: ShareInfo = $state({ on: false, auto: true, reason: '', pin: '', port: 8765, addresses: [], hotspot_up: false, signed_in: 0, trusted: 0 });
-  onMount(async () => { try { sharing = await shareInfo(); } catch { /* the panel just shows Off */ } });
+  // the Sharing panel follows the real state, so it changes by itself when a hotspot starts
+  let shareBusy = $state(false);
+  let shareError = $state('');
+  async function refreshSharing() { try { sharing = await shareInfo(); } catch { /* the panel just shows Off */ } }
+  async function toggleSharing() {
+    if (shareBusy) return;
+    shareBusy = true; shareError = '';
+    try { sharing = await shareSet(!sharing.on); } catch (e) { shareError = String(e); }
+    shareBusy = false;
+  }
+  onMount(() => {
+    void refreshSharing();
+    const timer = setInterval(refreshSharing, 4000);
+    return () => clearInterval(timer);
+  });
   // more of the picture: plans being followed, learning, supplies by kind, and whether the drive is ready
   let plans: PlanInfo[] = $state([]);
   let facts: PlanFacts = $state({ checks: {}, lessons: new Set<string>() });
@@ -169,7 +183,7 @@
 {/if}
 
 <div class="dgrid">
-  <section class="panel s8 h1" style="--c: var(--accent)">
+  <section class="panel {inShare ? 's12' : 's8'} h1" style="--c: var(--accent)">
     <div class="label">NEEDS YOUR ATTENTION</div>
     <div class="scroll">
       {#if loaded && !tips.length}<p class="muted">Nothing to suggest right now.</p>{/if}
@@ -188,6 +202,7 @@
     <p class="muted small foot">These come from what is on this device. In an emergency, call 911.</p>
   </section>
 
+  {#if !inShare}
   <section class="panel s4 h1 sharing" style="--c: var(--cat-comms)">
     <div class="label">SHARING</div>
     <div class="scroll">
@@ -196,8 +211,13 @@
       <div class="line"><div class="grow">Guests signed in</div><span>{sharing.signed_in}</span></div>
       <div class="line"><div class="grow">Family devices</div><span>{sharing.trusted}</span></div>
     </div>
-    <div class="row gap"><button class="btn" onclick={() => go('settings:Sharing')}>Open Sharing</button></div>
+    {#if shareError}<p class="warn small" role="alert">{shareError}</p>{/if}
+    <div class="row gap">
+      <button class="btn primary" disabled={shareBusy} onclick={toggleSharing} title={sharing.on ? 'Stop sharing. Other devices lose the connection.' : 'Start sharing now, if it did not start by itself'}>{sharing.on ? 'Turn sharing off' : 'Turn sharing on'}</button>
+      <button class="btn" onclick={() => go('settings:Sharing')} title="The PIN, the code to scan and family invites">PIN and codes</button>
+    </div>
   </section>
+  {/if}
 
   <section class="panel s6 h2" style="--c: var(--cat-ops)">
     <div class="label">INVENTORY</div>
@@ -359,9 +379,10 @@
   .catcell .cn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .catcell .cc { font-family: var(--mono); }
   .catcell.none { color: var(--muted); }
+  .s12 { grid-column: span 12; }
   .s4 { grid-column: span 4; } .s6 { grid-column: span 6; } .s8 { grid-column: span 8; }
   @media (max-width: 860px) {
-    .s4, .s6, .s8 { grid-column: span 12; }
+    .s4, .s6, .s8, .s12 { grid-column: span 12; }
     .dgrid { grid-template-rows: none; }
     .dgrid .panel { overflow: visible; }
     .dgrid .scroll { overflow: visible; }
