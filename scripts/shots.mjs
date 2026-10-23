@@ -121,7 +121,10 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
     await page.getByLabel('Longitude', { exact: true }).fill(lon);
     await page.getByRole('button', { name: 'Add', exact: true }).click();
   }
-  for (const n of [0, 1, 2]) await page.getByRole('button', { name: 'add to route' }).nth(n).click();
+  for (const n of [0, 1, 2]) {
+    await page.getByRole('button', { name: 'More for this pin' }).nth(n).click();
+    await page.getByRole('menuitem', { name: 'Add to the route' }).click();
+  }
   for (const [lat, lon] of [['39.43', '-80.07'], ['39.43', '-80.03'], ['39.47', '-80.03']]) {
     await page.getByLabel('Corner latitude').fill(lat);
     await page.getByLabel('Corner longitude').fill(lon);
