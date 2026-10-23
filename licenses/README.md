@@ -71,3 +71,6 @@ has permission to reuse the code. This is not legal advice.
 
 ## Seed vault guides and course
 Written for this project. Facts are paraphrased in our own words from university extension guidance (Purdue, University of Wisconsin-Madison, Oregon State, Penn State) and USDA pages. Nothing is copied. Drafts, not yet reviewed.
+
+## Agro guides and radio reference
+Written for this project (`content/guides`). Facts are paraphrased in our own words from general home-gardening and livestock practice (state Extension services), USDA, NOAA, USDA FSIS / FoodSafety.gov, EPA, the FCC (47 CFR Part 95), ITU and ICAO. US government material is public domain. Nothing is copied. Drafts, not yet reviewed. Home canning processing times are left out on purpose: see the USDA Complete Guide to Home Canning.

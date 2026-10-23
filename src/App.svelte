@@ -18,6 +18,7 @@
   import Plans from './views/Plans.svelte';
   import SeedVault from './views/SeedVault.svelte';
   import Music from './views/Music.svelte';
+  import Guides from './views/Guides.svelte';
   import MiniPlayer from './lib/MiniPlayer.svelte';
   import Splash from './lib/Splash.svelte';
   import { onMount } from 'svelte';
@@ -76,7 +77,7 @@
   $effect(() => { if (settings.loaded) void applyUiScale(settings.values.uiScale); });
 
   // Intel is the offline internet: the archives read like web pages. It goes with the library.
-  type Group = 'Dashboard' | 'Ask' | 'Library' | 'Intel' | 'Academy' | 'Maps' | 'Music' | 'Plan' | 'Inventory' | 'Settings' | 'Corner' | 'Soon';
+  type Group = 'Dashboard' | 'Ask' | 'Library' | 'Intel' | 'Academy' | 'Maps' | 'Music' | 'Plan' | 'Inventory' | 'Settings' | 'Corner' | 'Guides' | 'Soon';
   const allGroups: Group[] = ['Dashboard', 'Ask', 'Library', 'Intel', 'Academy', 'Maps', 'Music', 'Plan', 'Inventory', 'Settings', 'Corner'];
   // Each product switches parts of the program on or off (core/src/product.rs).
   const groups = $derived(
@@ -94,7 +95,7 @@
 
   let group: Group = $state('Dashboard');
   // If the current screen is switched off for this product, move to the first one that is on.
-  $effect(() => { if (groups.length && group !== 'Soon' && !groups.includes(group)) group = groups[0]; });
+  $effect(() => { if (groups.length && group !== 'Soon' && group !== 'Guides' && !groups.includes(group)) group = groups[0]; });
   let plan: (typeof planTabs)[number] = $state('Start');
   const libTabs = ['Shelf', 'Archives', 'Cards'] as const;
   let lib: (typeof libTabs)[number] = $state('Shelf');
@@ -133,6 +134,7 @@
   function goTo(tab: string) {
     // screens that are planned but not built yet, the Settings tabs, and the Academy's Training sign-off
     if (!tab.startsWith('settings:')) settingsFromComms = false;
+    if (tab.startsWith('guide:')) { guideSection = tab.slice(6); group = 'Guides'; return; }
     if (tab.startsWith('soon:')) { soonTitle = tab.slice(5); group = 'Soon'; return; }
     if (tab.startsWith('settings:')) { settingsFromComms = tab === 'settings:Sharing'; viewRequest.settingsTab = tab.slice(9); group = 'Settings'; return; }
     if (tab === 'training') { viewRequest.training = true; group = 'Academy'; return; }
@@ -148,6 +150,15 @@
 
   // ---- the top bar: groups with a menu each (mockups/Navigation.html) ----
   let soonTitle = $state('');
+  let guideSection = $state('crop-guides');
+  const guideInfo: Record<string, { title: string; intro: string }> = {
+    'crop-guides': { title: 'Crop guides', intro: 'What to grow and how: one page for each crop. Check them against your own area: planting times depend on your frost dates.' },
+    'planting-calendar': { title: 'Planting calendar', intro: 'When to plant and harvest, worked from your last and first frost dates.' },
+    'food-preservation': { title: 'Food preservation', intro: 'Keeping the harvest safe to eat. Food safety rules here come from the official guides and are not shortened.' },
+    'livestock': { title: 'Livestock', intro: 'Keeping animals for eggs, milk and meat. Nothing here gives medicine amounts: for sick animals, ask a vet.' },
+    'soil-and-water': { title: 'Soil and water', intro: 'Looking after the ground and the water your food depends on.' },
+    'radio-reference': { title: 'Radio reference', intro: 'Rules and words for family radios, in the United States. Rules differ in other countries: check yours.' },
+  };
   let settingsFromComms = $state(false);
   let openMenu: string | null = $state(null);
   let barOpen = $state(false);
@@ -170,9 +181,9 @@
       { id: 'Academy', cat: 'academy', show: true, entries: [
         { label: 'Courses', tab: 'Academy' }, { label: 'Training sign-off', tab: 'training' } ] },
       { id: 'Agro', cat: 'agro', show: plan_, entries: [
-        { label: 'Crop guides', tab: 'soon:Crop guides', note: 'new' }, { label: 'Planting calendar', tab: 'soon:Planting calendar', note: 'new' },
-        { label: 'Food preservation', tab: 'soon:Food preservation', note: 'new' }, { label: 'Livestock', tab: 'soon:Livestock', note: 'new' },
-        { label: 'Soil and water', tab: 'soon:Soil and water', note: 'new' }, { label: '', tab: '', rule: true },
+        { label: 'Crop guides', tab: 'guide:crop-guides' }, { label: 'Planting calendar', tab: 'guide:planting-calendar' },
+        { label: 'Food preservation', tab: 'guide:food-preservation' }, { label: 'Livestock', tab: 'guide:livestock' },
+        { label: 'Soil and water', tab: 'guide:soil-and-water' }, { label: '', tab: '', rule: true },
         { label: 'Seed vault', tab: 'Seed vault' } ] },
       { id: 'Maps', cat: 'maps', tab: 'Maps', show: p ? p.maps : true },
       { id: 'Morale', cat: 'morale', show: true, entries: [
@@ -180,7 +191,7 @@
         { label: 'Music', tab: 'Music', show: p ? p.music : true }, { label: '', tab: '', rule: true },
         { label: 'Journal', tab: 'soon:Journal', note: 'private' }, { label: 'Photos', tab: 'soon:Photos' } ] },
       { id: 'Comms', cat: 'comms', show: true, entries: [
-        { label: 'Comms plan', tab: 'soon:Comms plan', note: 'private' }, { label: 'Radio reference', tab: 'soon:Radio reference' },
+        { label: 'Comms plan', tab: 'soon:Comms plan', note: 'private' }, { label: 'Radio reference', tab: 'guide:radio-reference' },
         { label: 'Signals', tab: 'soon:Signals', note: 'on the map' }, { label: '', tab: '', rule: true },
         { label: 'Sharing', tab: 'settings:Sharing', note: 'hotspot' } ] },
       { id: 'System', cat: 'system', show: true, entries: [
@@ -195,6 +206,10 @@
       case 'Plan': return plan === 'Seed vault' ? 'Agro' : 'Operations';
       case 'Inventory': return 'Operations';
       case 'Settings': return settingsFromComms ? 'Comms' : 'System';
+      case 'Guides': {
+        const hit = tops.find((t) => t.entries?.some((e) => e.tab === 'guide:' + guideSection));
+        return hit ? hit.id : 'Agro';
+      }
       case 'Soon': {
         const hit = tops.find((t) => t.entries?.some((e) => e.tab === 'soon:' + soonTitle));
         return hit ? hit.id : soonTitle;
@@ -277,6 +292,8 @@
       <Maps />
     {:else if group === 'Music'}
       <Music />
+    {:else if group === 'Guides'}
+      <Guides section={guideSection} title={guideInfo[guideSection]?.title ?? 'Guides'} intro={guideInfo[guideSection]?.intro ?? ''} />
     {:else if group === 'Corner'}
       <Shelf corner />
     {:else if group === 'Plan'}

@@ -86,6 +86,12 @@
           "license": "Written for this project; facts paraphrased from university extension guidance",
           "status": "in this build",
           "note": "Drafts, not yet reviewed. Sources: Purdue Extension, University of Wisconsin-Madison Extension, Oregon State and Penn State Extension, USDA. Seed life numbers are rules of thumb; a germination test is better."
+        },
+        {
+          "name": "Agro guides (13 pages) and radio reference (6 pages)",
+          "license": "Written for this project; facts paraphrased from public guidance",
+          "status": "in this build",
+          "note": "Drafts, not yet reviewed by a qualified person. Sources named on each page: state Extension services (general gardening and livestock practice), USDA, NOAA, USDA FSIS and FoodSafety.gov, EPA, FCC (47 CFR Part 95), ITU and ICAO. US government pages are public domain; nothing is copied. Home canning times and pressures are deliberately not included: the page sends people to the USDA Complete Guide to Home Canning."
         }
       ]
     },

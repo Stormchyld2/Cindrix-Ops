@@ -398,6 +398,7 @@ fn dispatch(app: &tauri::AppHandle, cmd: &str, a: &Value) -> Result<Value, Strin
     let st = app.state::<AppState>();
     match cmd {
         "list_cards" => tv(crate::list_cards()),
+        "guides_list" => { let section: String = arg(a, "section")?; tv(crate::guides_for(&section, false)?) }
         "model_status" => tv(crate::model_status(st)),
         "library_status" => {
             // what the Archives screen needs, without the host's drive names or folders

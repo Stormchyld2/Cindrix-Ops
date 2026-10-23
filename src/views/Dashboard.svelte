@@ -122,7 +122,7 @@
       { icon: 'drills', label: 'Drills', tab: 'Drills', show: p ? p.plan : true },
       { icon: 'inventory', label: 'Inventory', tab: 'Inventory', show: p ? p.plan : true },
       { icon: 'family', label: 'Family', tab: 'Family', show: p ? p.plan : true },
-      { icon: 'agro', label: 'Agro', tab: 'soon:Agro', show: p ? p.plan : true },
+      { icon: 'agro', label: 'Agro', tab: 'guide:crop-guides', show: p ? p.plan : true },
       { icon: 'comms', label: 'Comms', tab: 'soon:Comms', show: true },
       { icon: 'seeds', label: 'Seed vault', tab: 'Seed vault', show: p ? p.plan : true },
       { icon: 'binder', label: 'Binder', tab: 'Binder', show: p ? p.plan : true },

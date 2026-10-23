@@ -79,6 +79,12 @@ function decorate(i: Item): Item {
   return { ...i, days_left: d, status };
 }
 
+/** The guides of one part of Agro or Comms (crop-guides, planting-calendar, food-preservation, livestock, soil-and-water, radio-reference). */
+export async function guidesList(section: string): Promise<Card[]> {
+  if (inTauri) return call<Card[]>('guides_list', { section });
+  return [];
+}
+
 // ---------- your own cards and plans ----------
 export type OwnFolder = { key: 'cards' | 'plans' | 'seed-guides' | 'drills' | 'academy'; title: string; help: string; path: string; files: number; problems: { place: string; message: string }[] };
 export async function ownContent(): Promise<OwnFolder[]> {

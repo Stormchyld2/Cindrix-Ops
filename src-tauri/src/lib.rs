@@ -2021,6 +2021,29 @@ fn seed_guides() -> Vec<CardDto> {
         .collect()
 }
 
+/// The guides of one section (Agro, Comms radio reference): the program's own, the drive's `guides` folder,
+/// other libraries', and the person's `user/guides` (left out for another device on the hotspot).
+pub fn guides_for(section: &str, include_user: bool) -> Result<Vec<CardDto>, String> {
+    if !cindrix_core::guides::is_section(section) {
+        return Err("That part of the guides is not known.".into());
+    }
+    let r = root();
+    let dirs: Vec<PathBuf> = cindrix_core::guides::dirs_for(section, &content_sub("guides"), &r, &libs::other_roots(&r), &r.join("user"), include_user)
+        .into_iter()
+        .filter(|d| d.is_dir())
+        .collect();
+    Ok(cards::load_dirs(&dirs)
+        .cards
+        .into_iter()
+        .map(|c| CardDto { id: c.id, title: c.title, kind: c.kind, status: c.status, reviewer: c.reviewer, reviewed: c.reviewed, body: c.body })
+        .collect())
+}
+
+#[tauri::command]
+fn guides_list(section: String) -> Result<Vec<CardDto>, String> {
+    guides_for(&section, true)
+}
+
 // ---------- how much to have ----------
 
 #[derive(Serialize)]
@@ -2431,6 +2454,7 @@ pub fn run() {
             seed_save,
             seed_delete,
             seed_guides,
+            guides_list,
             training_enrol,
             training_signoff,
             plans_list,

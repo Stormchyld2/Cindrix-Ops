@@ -16,6 +16,7 @@ use std::sync::Arc;
 /// host's own files (family page, inventory, notes, settings, saved maps, chats, progress).
 pub const GUEST_COMMANDS: &[&str] = &[
     "list_cards",
+    "guides_list",
     "model_status",
     "library_status",
     "product_info",
