@@ -16,7 +16,7 @@ Windows comes first; Android and iPhone wrap it later.
   question and the library list (`all_zim_files()` is the one place archives are listed from).
 - `src/`: Svelte 5 interface. `App.svelte` holds the top navigation; screens are in `src/views/`;
   `src/lib/api.ts` is the only place that calls Tauri commands. `src/lib/Splash.svelte` is the loading screen (logo and background are in `public/`); it shows in the real program, and in a browser only with `?splash`.
-- `core/src/routing.rs` (directions by car and on foot from the roads inside the street map), `roadtiles.rs` (reads the roads layer of a `.pmtiles` file) and `inflate.rs` (gzip): see `docs/31-directions.md`. `core/src/phonepack.rs` cuts a view of the map into one `.cmap` file for a phone: `docs/32-phone-map.md`. `core/src/profile.rs` is Settings > My details (`user/profile.txt`, host-only): `docs/33-my-details.md`.
+- `core/src/routing.rs` (directions by car and on foot from the roads inside the street map), `roadtiles.rs` (reads the roads layer of a `.pmtiles` file) and `inflate.rs` (gzip): see `docs/31-directions.md`. `core/src/phonepack.rs` cuts a view of the map into one `.cmap` file for a phone: `docs/32-phone-map.md`. `core/src/share.rs` (PIN, guest list, request rules) and `hotspot.rs` are the share server's tested parts; the listener is `src-tauri/src/share.rs`: `docs/34-share-server.md`. `core/src/profile.rs` is Settings > My details (`user/profile.txt`, host-only): `docs/33-my-details.md`.
 - `core/src/academy.rs` (course folders), `plans.rs` (plan files and progress), `cards.rs` (emergency cards from several `cards` folders), `training.rs` (per-person Academy sign-off) and `stockplan.rs` (how much to have): all read plain files, skip anything with a medicine dose, and are tested in `core/`. People's names come from the Family page.
 - `src/lib/tooltips.ts` gives every button hover text (fallback for new ones); `src/lib/planfacts.ts` works out what plan steps can tick themselves from.
 - `crypto/`: passphrase lock. `content/`: shipped sample content (cards, academy, plans). `docs/`: design docs, numbered. `licenses/`: license texts and credits; `scripts/collect-licenses.mjs` adds the libraries' own at build time.
@@ -32,7 +32,7 @@ Windows comes first; Android and iPhone wrap it later.
 - Only drives with `cindrix-drive.json` count as libraries, are remembered by the marker's `id` (the
   edition word: `vault`, `go`, `hub`; not the drive letter), and the person is asked before one is read.
   Several libraries can be on at once. (Built for archives and loose files; see doc 24.)
-- Sharing stays off at every start. Guests are read-only and get all library content (archives, Shelf,
+- Sharing stays off at every start, and switches on by itself only when a hotspot starts (owner, 2026-10-22; docs/34). Guests need a PIN and are read-only and get all library content (archives, Shelf,
   music, maps, Academy, Ask); the family page, inventory and the person's own notes stay host-only.
   Do not rely on browser features that need HTTPS.
 - The Hub assistant is on by default with the model file on the drive; memory on the phone is the limit.

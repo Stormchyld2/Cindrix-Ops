@@ -35,5 +35,6 @@ Mockups of every screen are in [`../mockups`](../mockups).
 - [31. Directions by car and on foot](31-directions.md)
 - [32. A phone copy of the map](32-phone-map.md)
 - [33. My details](33-my-details.md)
+- [34. The share server](34-share-server.md)
 - [25. Testing Ask](25-ask-test.md): a 30-question check of the small models
 - [24. Hosts, libraries and browser clients](24-hosts-libraries-browser-clients.md): Vault and Hub as hosts for one drive, asking before reading a drive, browser tabs as clients

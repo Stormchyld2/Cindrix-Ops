@@ -30,11 +30,35 @@ export type FamilyStatus = { exists: boolean; locked: boolean };
 export type Person = { name: string; conditions: string; medicines: string; allergies: string; doctor: string };
 export type Family = { people: Person[]; contacts: string; plan: string };
 
-const inTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+const tauriHost = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+/** True in a browser on another device that reached this library through the host's share server (docs/34). */
+export const inShare = typeof document !== 'undefined' && !tauriHost && !!document.querySelector('meta[name="cindrix-share"]');
+/** There is a real library behind the screens: the app itself, or a host reached over the network. */
+const inTauri = tauriHost || inShare;
+
+/** Ask the host over the network. A refusal comes back as plain words, like the app's own errors. */
+async function shareCall<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
+  let r: Response;
+  try {
+    r = await fetch('/api/' + cmd, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(args ?? {}) });
+  } catch {
+    throw 'The host could not be reached. Check that you are still on its Wi-Fi.';
+  }
+  if (r.status === 401) { location.reload(); throw 'Type the PIN first.'; }
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw (data as { error?: string }).error ?? 'Something went wrong.';
+  return data as T;
+}
 
 async function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
+  if (inShare) return shareCall<T>(cmd, args);
   const { invoke } = await import('@tauri-apps/api/core');
   return invoke<T>(cmd, args);
+}
+
+/** The address of a path on the host, each part encoded once. */
+function hostUrl(prefix: string, path: string): string {
+  return location.origin + prefix + path.split('/').map(encodeURIComponent).join('/');
 }
 
 // ---------- browser preview data ----------
@@ -88,6 +112,7 @@ type StreamEvent = { replace: boolean; text: string };
 
 /** Ask a question. onText is called as the answer arrives: replace=true means swap everything shown. */
 export async function ask(question: string, onText: (text: string, replace: boolean) => void): Promise<Reply> {
+  if (inShare) return askOverNetwork(question, onText);
   if (inTauri) {
     const { Channel } = await import('@tauri-apps/api/core');
     const ch = new Channel<StreamEvent>();
@@ -97,6 +122,40 @@ export async function ask(question: string, onText: (text: string, replace: bool
   const text = 'Browser preview only. Run the desktop app to ask the library.';
   onText(text, true);
   return { kind: 'NotFound', text, sources: [], card: null };
+}
+
+/** A question asked from another device: the words arrive as server-sent events. */
+async function askOverNetwork(question: string, onText: (text: string, replace: boolean) => void): Promise<Reply> {
+  let r: Response;
+  try {
+    r = await fetch('/api/ask_stream', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question }) });
+  } catch {
+    throw 'The host could not be reached. Check that you are still on its Wi-Fi.';
+  }
+  if (r.status === 401) { location.reload(); throw 'Type the PIN first.'; }
+  if (!r.body) throw 'The host sent no answer.';
+  const reader = r.body.getReader();
+  const dec = new TextDecoder();
+  let buf = '';
+  let result: Reply | null = null;
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    let i: number;
+    while ((i = buf.indexOf('\n\n')) >= 0) {
+      const block = buf.slice(0, i);
+      buf = buf.slice(i + 2);
+      const line = block.split('\n').find((l) => l.startsWith('data: '));
+      if (!line) continue;
+      const ev = JSON.parse(line.slice(6)) as { replace?: boolean; text?: string; done?: Reply; error?: string };
+      if (ev.error) throw ev.error;
+      if (ev.done) result = ev.done;
+      else if (typeof ev.text === 'string') onText(ev.text, !!ev.replace);
+    }
+  }
+  if (!result) throw 'The answer stopped early. Ask again.';
+  return result;
 }
 
 export async function modelStatus(): Promise<ModelStatus> {
@@ -247,6 +306,11 @@ export async function shelfAdd(file: File, category = ''): Promise<Book> {
 }
 
 export async function shelfRead(id: string): Promise<Uint8Array> {
+  if (inShare) {
+    const r = await fetch('/api/shelf_read?id=' + encodeURIComponent(id));
+    if (!r.ok) throw 'This book could not be opened.';
+    return new Uint8Array(await r.arrayBuffer());
+  }
   if (inTauri) return new Uint8Array(await call<ArrayBuffer>('shelf_read', { id }));
   const b = memBooks.find((x) => x.meta.id === id);
   if (!b) throw 'No such book.';
@@ -452,6 +516,7 @@ export async function placeSearch(query: string, near?: [number, number]): Promi
 
 /** The address the map library reads a pack from. Only the desktop app can serve it. */
 export async function tileUrl(rel: string): Promise<string> {
+  if (inShare) return hostUrl('/tiles/', rel);
   const { convertFileSrc } = await import('@tauri-apps/api/core');
   return convertFileSrc(rel, 'cindrix-tiles');
 }
@@ -488,6 +553,7 @@ export type LibraryEntry = {
 };
 
 export async function librariesList(): Promise<LibraryEntry[]> {
+  if (inShare) return []; // the host decides which drives may be read
   if (inTauri) return call<LibraryEntry[]>('libraries_list');
   return []; // browser preview: no drives
 }
@@ -828,6 +894,7 @@ export async function musicSource(rel: string): Promise<string> {
     return u;
   }
   const path = await call<string>('music_prepare', { rel });
+  if (inShare) return hostUrl('/music/', path);
   const { convertFileSrc } = await import('@tauri-apps/api/core');
   // The program hands back `t/<path in the music folder>` or `c/<name>` as plain text; convertFileSrc encodes it once.
   return convertFileSrc(path, 'cindrix-music');
@@ -835,6 +902,7 @@ export async function musicSource(rel: string): Promise<string> {
 /** The cover picture for a track (embedded or in its folder), or null in the browser preview. */
 export async function musicArtUrl(rel: string): Promise<string | null> {
   if (!inTauri) return null;
+  if (inShare) return hostUrl('/music/', 'a/' + rel);
   const { convertFileSrc } = await import('@tauri-apps/api/core');
   return convertFileSrc('a/' + rel, 'cindrix-music');
 }
@@ -896,6 +964,7 @@ export async function zimSearchAll(term: string): Promise<ZimHit[]> {
 }
 /** What to put in the reader's frame for a library path: an address (desktop app) or the page itself (browser preview). */
 export async function zimFrame(path: string): Promise<{ src?: string; srcdoc?: string; title: string }> {
+  if (inShare) return { src: location.origin + path, title: '' };
   if (inTauri) {
     const { convertFileSrc } = await import('@tauri-apps/api/core');
     // convertFileSrc encodes the slashes, so take the address of the root and add the path to it
@@ -910,6 +979,7 @@ export async function zimFrame(path: string): Promise<{ src?: string; srcdoc?: s
 /** The address the reader sits at, to turn a page address from the frame back into a library path. */
 export async function zimOrigin(): Promise<string> {
   if (!inTauri) return '';
+  if (inShare) return location.origin;
   const { convertFileSrc } = await import('@tauri-apps/api/core');
   return convertFileSrc('x', 'cindrix-zim').slice(0, -1);
 }
@@ -953,4 +1023,23 @@ export async function settingsSave(json: string): Promise<void> {
 export async function pickFolder(): Promise<string | null> {
   if (!inTauri) throw 'Choosing a folder works in the desktop app, not in the browser preview.';
   return call<string | null>('pick_folder');
+}
+
+
+// ---------- sharing with other devices (docs/34-share-server.md) ----------
+export type ShareAddress = { label: string; url: string; hotspot: boolean };
+export type ShareInfo = { on: boolean; auto: boolean; reason: string; pin: string; port: number; addresses: ShareAddress[]; hotspot_up: boolean; signed_in: number };
+const noShare: ShareInfo = { on: false, auto: true, reason: '', pin: '', port: 8765, addresses: [], hotspot_up: false, signed_in: 0 };
+export async function shareInfo(): Promise<ShareInfo> {
+  if (tauriHost) return call<ShareInfo>('share_info');
+  return noShare;
+}
+export async function shareSet(enable: boolean): Promise<ShareInfo> {
+  if (tauriHost) return call<ShareInfo>('share_set', { enable });
+  return noShare;
+}
+/** A PIN of 4 to 8 digits, or empty for a new random one. */
+export async function shareSetPin(pin: string): Promise<ShareInfo> {
+  if (tauriHost) return call<ShareInfo>('share_set_pin', { pin });
+  return noShare;
 }

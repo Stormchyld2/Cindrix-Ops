@@ -31,11 +31,13 @@ pub struct Limits {
     pub max_entries: usize,
     pub max_file_bytes: u64,
     pub budget: Duration,
+    /// Leave out the `user` folders (the person's own notes, chats and family page), for questions from guests.
+    pub hide_user: bool,
 }
 
 impl Default for Limits {
     fn default() -> Limits {
-        Limits { max_depth: 8, max_entries: 60_000, max_file_bytes: 4 * 1024 * 1024, budget: Duration::from_millis(2500) }
+        Limits { max_depth: 8, max_entries: 60_000, max_file_bytes: 4 * 1024 * 1024, budget: Duration::from_millis(2500), hide_user: false }
     }
 }
 
@@ -71,7 +73,7 @@ pub fn files_under(roots: &[PathBuf], lim: &Limits, started: Instant) -> (Vec<Pa
             let name = e.file_name().to_string_lossy().to_string();
             let p = e.path();
             if ft.is_dir() {
-                if depth > 0 && !skipped(&name) {
+                if depth > 0 && !skipped(&name) && !(lim.hide_user && name.eq_ignore_ascii_case("user")) {
                     walk(&p, depth - 1, lim, started, seen, out, stopped);
                 }
             } else if ft.is_file() && !name.starts_with('.') {
@@ -223,6 +225,19 @@ mod tests {
         let (files, _) = files_under(std::slice::from_ref(&d), &lim, Instant::now());
         let rel: Vec<String> = files.iter().map(|f| shown(&d, f)).collect();
         assert_eq!(rel, vec!["ok/readme.txt".to_string()]);
+    }
+
+    #[test]
+    fn a_guests_search_never_reads_the_users_own_folder() {
+        let d = tmp("g");
+        let words = "Boil water for one minute. Boil water. Boil water.";
+        put(&d, "user/chats/2026-q.txt", words);
+        put(&d, "user/notes.md", &format!("# Boil water\n{}", words));
+        put(&d, "ok/readme.txt", words);
+        let host = files_under(std::slice::from_ref(&d), &Limits::default(), Instant::now()).0.len();
+        let guest = files_under(std::slice::from_ref(&d), &Limits { hide_user: true, ..Limits::default() }, Instant::now()).0;
+        assert_eq!(host, 3);
+        assert_eq!(guest.iter().map(|f| shown(&d, f)).collect::<Vec<_>>(), vec!["ok/readme.txt".to_string()]);
     }
 
     #[test]

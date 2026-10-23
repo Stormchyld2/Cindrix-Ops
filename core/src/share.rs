@@ -17,6 +17,7 @@ use std::sync::Arc;
 pub const GUEST_COMMANDS: &[&str] = &[
     "list_cards",
     "model_status",
+    "library_status",
     "product_info",
     "map_packs",
     "place_search",
@@ -51,6 +52,10 @@ pub fn guest_allowed(cmd: &str) -> bool {
 pub struct Request {
     pub method: String,
     pub path: String,
+    /// The path as sent, still percent-encoded (the map, music and archive readers decode it themselves).
+    pub raw_path: String,
+    /// The part after `?`, as sent.
+    pub raw_query: String,
     pub query: Vec<(String, String)>,
     pub headers: Vec<(String, String)>,
     pub body: Vec<u8>,
@@ -137,7 +142,7 @@ pub fn read_request<R: BufRead>(r: &mut R) -> Result<Request, String> {
         if headers.len() >= MAX_HEADERS { return Err("The request had too many headers.".into()); }
         if let Some((k, v)) = l.split_once(':') { headers.push((k.trim().to_string(), v.trim().to_string())); }
     }
-    let mut req = Request { method: method.to_uppercase(), path: url_decode(path), query, headers, body: vec![] };
+    let mut req = Request { method: method.to_uppercase(), path: url_decode(path), raw_path: path.to_string(), raw_query: qs.to_string(), query, headers, body: vec![] };
     let len: usize = req.header("content-length").and_then(|v| v.parse().ok()).unwrap_or(0);
     if len > MAX_BODY { return Err("The request was too big.".into()); }
     if len > 0 {
@@ -341,6 +346,8 @@ mod tests {
         let r = req("POST /api/list_cards?a=1&b=x%20y HTTP/1.1\r\nHost: h\r\nCookie: x=1; cx=tok\r\nContent-Length: 5\r\n\r\nhello").unwrap();
         assert_eq!(r.method, "POST");
         assert_eq!(r.path, "/api/list_cards");
+        assert_eq!(r.raw_path, "/api/list_cards");
+        assert_eq!(r.raw_query, "a=1&b=x%20y");
         assert_eq!(r.query_value("b"), Some("x y"));
         assert_eq!(r.cookie("cx").as_deref(), Some("tok"));
         assert_eq!(r.body, b"hello");

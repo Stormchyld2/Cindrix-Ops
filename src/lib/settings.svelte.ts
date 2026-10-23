@@ -22,6 +22,7 @@ export type Settings = {
   searchArchives: boolean;
   searchFiles: boolean;
   searchSavedSites: boolean;
+  shareAuto: boolean;
   answerSources: number;
   answerLength: 'short' | 'normal' | 'long';
   searchSpeed: 'quick' | 'normal' | 'thorough';
@@ -55,6 +56,7 @@ export const DEFAULTS: Settings = {
   searchArchives: true,
   searchFiles: true,
   searchSavedSites: true,
+  shareAuto: true,
   answerSources: 3,
   answerLength: 'normal',
   searchSpeed: 'normal',

@@ -25,6 +25,7 @@ mod fetch;
 mod libs;
 mod music;
 mod settings;
+mod share;
 mod zimview;
 use std::time::Duration;
 use tauri::ipc::Channel;
@@ -262,6 +263,7 @@ struct AppState {
     copy: Mutex<CopyDto>,
     music: Mutex<music::MusicState>,
     music_cancel: AtomicBool,
+    share: share::Share,
 }
 
 impl AppState {
@@ -1043,6 +1045,18 @@ struct StreamEvent {
 #[tauri::command]
 async fn ask_stream(question: String, on_event: Channel<StreamEvent>, app: tauri::AppHandle) -> Result<ReplyDto, String> {
     tauri::async_runtime::spawn_blocking(move || {
+        ask_run(&app, question, false, |e| {
+            let _ = on_event.send(e);
+        })
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// Answer one question, sending the words as they come. `guest` is a question from another device: it
+/// never reads the person's own folder (notes, chats, family page).
+fn ask_run(app: &tauri::AppHandle, question: String, guest: bool, mut send: impl FnMut(StreamEvent)) -> Result<ReplyDto, String> {
+    {
         let lib = content_sub("library-sample");
         let port = *app.state::<AppState>().port.lock().unwrap();
         let kport = *app.state::<AppState>().kiwix_port.lock().unwrap();
@@ -1078,7 +1092,7 @@ async fn ask_stream(question: String, on_event: Channel<StreamEvent>, app: tauri
                 let mut roots = vec![root()];
                 roots.extend(libs::other_roots(&root()));
                 roots.extend(settings::folders("extraFolders"));
-                let lim = filesearch::Limits { budget: Duration::from_millis(budget_ms), ..filesearch::Limits::default() };
+                let lim = filesearch::Limits { budget: Duration::from_millis(budget_ms), hide_user: guest, ..filesearch::Limits::default() };
                 p.extend(filesearch::search(&root(), &roots, &question, 2, &lim).0);
             }
             p.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
@@ -1101,16 +1115,14 @@ async fn ask_stream(question: String, on_event: Channel<StreamEvent>, app: tauri
                 pipeline::Event::Text(t) => StreamEvent { replace: false, text: t },
                 pipeline::Event::Replace(t) => StreamEvent { replace: true, text: t },
             };
-            let _ = on_event.send(ev);
+            send(ev);
         };
         let r = match port {
             Some(p) => pipeline::answer_stream_with(&question, &passages, &LlamaModel { port: p, max_tokens }, &mut emit),
             None => pipeline::answer_stream_with(&question, &passages, &pipeline::NoModel, &mut emit),
         };
         Ok(reply_dto(r))
-    })
-    .await
-    .map_err(|e| e.to_string())?
+    }
 }
 
 fn reply_dto(r: pipeline::Reply) -> ReplyDto {
@@ -2310,6 +2322,12 @@ pub fn run() {
         .manage(AppState::default())
         .setup(|app| {
             let handle = app.handle().clone();
+            // sharing switches itself on when a hotspot starts (after the drive has been found, below)
+            let share_handle = handle.clone();
+            std::thread::spawn(move || {
+                std::thread::sleep(Duration::from_secs(10));
+                share::watch(share_handle);
+            });
             std::thread::spawn(move || {
                 let st = handle.state::<AppState>();
                 detect_drive(&st);
@@ -2353,6 +2371,9 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            share::share_info,
+            share::share_set,
+            share::share_set_pin,
             profile_load,
             profile_save,
             phone_estimate,

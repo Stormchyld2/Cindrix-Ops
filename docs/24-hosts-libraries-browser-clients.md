@@ -115,7 +115,7 @@ steps 3 onward wait for the real Windows test (doc 22).
    labels on Intel results, and removing an archive that lives in a non-primary library.
 2. **One transport seam.** Move command logic that is still in `lib.rs` into `core/`, and put the Tauri
    calls behind an interface in `api.ts` so a second transport can be added without touching screens.
-3. **Read-only HTTP server** over `core/`, and a browser build of the same Svelte interface using the HTTP
+3. **Read-only HTTP server** (BUILT 2026-10-23, see doc 34; the server calls the app's own actions through a table instead of moving them into `core/`) over `core/`, and a browser build of the same Svelte interface using the HTTP
    transport. Special cases: Ask streaming (a Tauri channel today) becomes server-sent events; the three
    custom schemes become ordinary HTTP paths; file upload (`shelf_add`) stays host-only.
 4. **Sharing screen:** address, QR code, PIN, who is connected.
