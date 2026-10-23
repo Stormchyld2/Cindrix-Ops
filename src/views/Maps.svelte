@@ -7,7 +7,7 @@
   import { POI_GROUPS, kindName, groupOf, distanceKm, compass } from '../lib/mapkinds';
   import { DRAW_COLORS, DRAW_WIDTHS, DEFAULT_COLOR, drawingFeatures, previewFeatures, handlesOf, labelPoint, measureOf, pathKm, areaKm2, fmtLength, fmtArea, type Drawing, type DrawKind } from '../lib/mapdraw';
 
-  type Pin = { id: number; label: string; kind: 'pin' | 'rendezvous'; lat: number; lon: number; tag?: string; color?: string };
+  type Pin = { id: number; label: string; kind: 'pin' | 'rendezvous'; lat: number; lon: number; tag?: string; color?: string; hidden?: boolean };
   type Area = { label: string; points: LatLon[] };
   type MapFile = { version: 1; name: string; pins: Pin[]; route: number[]; nogo: Area[]; drawings?: Drawing[] };
 
@@ -290,6 +290,7 @@
     }
     if (typing || !map) return;
     if (e.key === 'Enter' && (addMode === 'line' || addMode === 'shape')) { e.preventDefault(); finishBuilding(); }
+    else if (e.key === 'Enter' && addMode === 'corner' && draft.length >= 3 && !areaAsk) { e.preventDefault(); finishArea(); }
     else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); if (e.shiftKey) redo(); else undo(); }
     else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); }
     else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId !== null && addMode === 'off') { e.preventDefault(); deleteDrawing(selectedId); }
@@ -575,7 +576,7 @@
     if (!mapReady || !map || !ml) return;
     const m = map;
     const rp = routePoints;
-    setSrc(m, 'route', rp.length > 1
+    setSrc(m, 'route', rp.length > 1 && !dirRoute
       ? { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: rp.map(([la, lo]) => [lo, la]) } }
       : empty());
     setSrc(m, 'nogo', {
@@ -586,7 +587,7 @@
       ? { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: draft.map(([la, lo]) => [lo, la]) } }
       : empty());
     for (const k of markers) k.remove();
-    markers = pins.map((p) => {
+    markers = pins.filter((p) => !p.hidden).map((p) => {
       const el = document.createElement('div');
       el.className = 'pinmark';
       el.innerHTML = '<span class="pdot"></span><span class="plab"></span>';
@@ -696,10 +697,20 @@
   onMount(async () => {
     try {
       const p = await profileLoad();
-      const ok = (x: MyPlace) => x.lat !== null && x.lon !== null;
       const list: MyShown[] = [];
-      if (ok(p.home)) list.push({ key: 'home', label: p.home.name.trim() || 'Home', lat: p.home.lat as number, lon: p.home.lon as number });
-      p.bugout.forEach((b, i) => { if (ok(b)) list.push({ key: 'b' + i, label: b.name.trim() || 'Bug-out ' + (i + 1), lat: b.lat as number, lon: b.lon as number }); });
+      // a place saved with an address but no position yet is looked up now, so it still shows
+      const fill = async (x: MyPlace): Promise<MyPlace> => {
+        if (x.lat !== null && x.lon !== null) return x;
+        const q = x.address.trim();
+        if (!q) return x;
+        try { const h = (await placeSearch(q)).places[0]; return h ? { ...x, lat: h.lat, lon: h.lon } : x; } catch { return x; }
+      };
+      const home = await fill(p.home);
+      if (home.lat !== null && home.lon !== null) list.push({ key: 'home', label: home.name.trim() || 'Home', lat: home.lat, lon: home.lon });
+      for (let i = 0; i < p.bugout.length; i++) {
+        const b = await fill(p.bugout[i]);
+        if (b.lat !== null && b.lon !== null) list.push({ key: 'b' + i, label: b.name.trim() || 'Bug-out ' + (i + 1), lat: b.lat, lon: b.lon });
+      }
       myPlaces = list;
     } catch { /* no details saved: the box stays hidden */ }
   });
@@ -1011,6 +1022,67 @@
     const c = map?.getCenter();
     return (await placeSearch(text, c ? [c.lat, c.lng] : undefined)).places;
   }
+  // ---------- the whole trip: start, the pins put on the route in between, and the end ----------
+  const routePins = (): Pin[] => route.map((id) => pins.find((p) => p.id === id)).filter((p): p is Pin => !!p && !p.hidden);
+  function tripStops(): LatLon[] | null {
+    const list: LatLon[] = [];
+    if (dirA) list.push([dirA.lat, dirA.lon]);
+    for (const p of routePins()) list.push([p.lat, p.lon]);
+    if (dirB) list.push([dirB.lat, dirB.lon]);
+    return list.length >= 2 ? list : null;
+  }
+  function mergeWays(ways: { route: DirRoute | null; problem: string }[]): { route: DirRoute | null; problem: string } {
+    const bad = ways.findIndex((w) => !w.route);
+    if (bad >= 0) return { route: null, problem: (ways.length > 1 ? 'Part ' + (bad + 1) + ' of the trip: ' : '') + ways[bad].problem };
+    const rs = ways.map((w) => w.route as DirRoute);
+    const steps: DirRoute['steps'] = [];
+    for (const r of rs) for (const st of r.steps) {
+      const last = steps[steps.length - 1];
+      if (last && last.name === st.name) { last.km += st.km; last.minutes += st.minutes; } else steps.push({ ...st });
+    }
+    return {
+      problem: '',
+      route: {
+        points: rs.flatMap((r, i) => (i === 0 ? r.points : r.points.slice(1))),
+        km: rs.reduce((a, r) => a + r.km, 0),
+        minutes: rs.reduce((a, r) => a + r.minutes, 0),
+        steps,
+        note: [...new Set(rs.map((r) => r.note).filter(Boolean))].join(' '),
+      },
+    };
+  }
+  async function computeTrip(stops: LatLon[], avoid: LatLon[][]): Promise<Directions> {
+    const legs: Directions[] = [];
+    for (let i = 0; i + 1 < stops.length; i++) legs.push(await askDirections(stops[i], stops[i + 1], avoid));
+    return { car: mergeWays(legs.map((l) => l.car)), foot: mergeWays(legs.map((l) => l.foot)), zoom: Math.min(...legs.map((l) => l.zoom)) };
+  }
+  let tripTimer: ReturnType<typeof setTimeout> | undefined;
+  async function recalcTrip() {
+    const stops = tripStops();
+    if (!stops) { dirResult = null; return; }
+    dirErr = '';
+    dirBusy = true;
+    try {
+      const r = await computeTrip(stops, nogo.map((x) => x.points));
+      dirResult = r;
+      dirWay = r.car.route || !r.foot.route ? 'car' : 'foot';
+    } catch (e) { dirErr = String(e); } finally { dirBusy = false; }
+  }
+  // the trip is worked out again by itself when stops are added or taken off, a stop moves, or an area to avoid is added or removed
+  let tripKeyPrev: string | null = null;
+  $effect(() => {
+    if (!mapReady) return;
+    const key = JSON.stringify([route, pins.filter((p) => route.includes(p.id)).map((p) => [p.lat, p.lon, !!p.hidden]), nogo.map((a) => a.points)]);
+    if (tripKeyPrev === null) { tripKeyPrev = key; return; }
+    if (key === tripKeyPrev) return;
+    tripKeyPrev = key;
+    untrack(() => {
+      if (dirResult || (dirA && dirB) || route.length >= 2) {
+        clearTimeout(tripTimer);
+        tripTimer = setTimeout(() => void recalcTrip(), 350);
+      }
+    });
+  });
   async function runDirections(keepPlaces = false) {
     dirErr = '';
     if (!dirFrom.trim() || !dirTo.trim()) {
@@ -1033,7 +1105,9 @@
       const a = dirA as PlaceHit | null;
       const b = dirB as PlaceHit | null;
       if (!a || !b) return;
-      const r = await askDirections([a.lat, a.lon], [b.lat, b.lon], nogo.map((x) => x.points));
+      const stops = tripStops();
+      if (!stops) return;
+      const r = await computeTrip(stops, nogo.map((x) => x.points));
       dirResult = r;
       dirWay = r.car.route || !r.foot.route ? 'car' : 'foot';
       queueMicrotask(fitDirections);
@@ -1194,8 +1268,13 @@
     route = route.filter((r) => r !== id);
   }
   function toRoute(id: number) {
-    route = [...route, id];
+    route = route.includes(id) ? route.filter((x) => x !== id) : [...route, id];
   }
+  function togglePin(id: number) {
+    pins = pins.map((p) => (p.id === id ? { ...p, hidden: !p.hidden } : p));
+  }
+  let menuFor: string | null = $state(null);
+  const asText = (lat: number, lon: number) => lat.toFixed(5) + ', ' + lon.toFixed(5);
   function addDraftPoint() {
     error = '';
     const p = parsePoint(aLat, aLon);
@@ -1206,16 +1285,24 @@
     draft = [...draft, p];
     aLat = aLon = '';
   }
+  let areaAsk = $state(false);
   function finishArea() {
     if (draft.length < 3) {
       error = 'An area needs at least three corners.';
       return;
     }
+    // ask for a name first (the typed form further down has its own name box and goes straight in)
+    if (street) { areaAsk = true; setTimeout(() => document.getElementById('area-name')?.focus(), 30); return; }
+    saveArea();
+  }
+  function saveArea() {
+    if (draft.length < 3) { areaAsk = false; return; }
     pushUndo();
-    nogo = [...nogo, { label: draftLabel.trim() || 'No-go area ' + (nogo.length + 1), points: draft }];
+    nogo = [...nogo, { label: draftLabel.trim() || 'Area to avoid ' + (nogo.length + 1), points: draft }];
     draft = [];
     draftLabel = '';
     error = '';
+    areaAsk = false;
   }
 
   let routePoints: LatLon[] = $derived(
@@ -1348,15 +1435,33 @@
   const pinColor = (k: string) => (k === 'rendezvous' ? '#6fbf73' : '#5aa9e6');
 </script>
 
+{#snippet eyeIcon(off: boolean)}
+  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" />{#if off}<path d="M3 3l18 18" />{/if}
+  </svg>
+{/snippet}
+
 {#snippet pinList()}
   <ul class="plain">
     {#each pins as p}
-      <li>
+      <li class="pinrow">
         <span class="dot" style="background:{p.color ?? pinColor(p.kind)}"></span>
-        {p.label}{#if p.tag} <span class="muted">({p.tag})</span>{/if} <span class="muted">{p.lat.toFixed(4)}, {p.lon.toFixed(4)}</span>
-        <button class="link" title="Go to this pin on the map" onclick={() => map?.jumpTo({ center: [p.lon, p.lat], zoom: Math.max(map.getZoom(), 12) })}>go to</button>
-        <button class="link" title="Add this pin to the end of your route" onclick={() => toRoute(p.id)}>add to route</button>
-        <button class="link" title="Delete this pin" onclick={() => { pushUndo(); removePin(p.id); }}>remove</button>
+        <span class="pname" class:dim={p.hidden}>{p.label}{#if p.tag} <span class="muted">({p.tag})</span>{/if}</span>
+        {#if route.includes(p.id)}<span class="muted small">stop {route.indexOf(p.id) + 1}</span>{/if}
+        <button class="eye" title={p.hidden ? 'Show this pin on the map' : 'Hide this pin from the map'} aria-label={p.hidden ? 'Show this pin' : 'Hide this pin'} onclick={() => togglePin(p.id)}>{@render eyeIcon(!!p.hidden)}</button>
+        <span class="menuwrap">
+          <button class="eye" title="More for this pin" aria-label="More for this pin" onclick={() => (menuFor = menuFor === 'p' + p.id ? null : 'p' + p.id)}>☰</button>
+          {#if menuFor === 'p' + p.id}
+            <div class="menu" role="menu">
+              <button role="menuitem" onclick={() => { togglePin(p.id); menuFor = null; }}>{p.hidden ? 'Show on the map' : 'Hide from the map'}</button>
+              <button role="menuitem" onclick={() => { map?.jumpTo({ center: [p.lon, p.lat], zoom: Math.max(map.getZoom(), 12) }); menuFor = null; }}>Go to it</button>
+              <button role="menuitem" onclick={() => { dirFrom = asText(p.lat, p.lon); dirA = null; menuFor = null; }}>Use as the start</button>
+              <button role="menuitem" onclick={() => { dirTo = asText(p.lat, p.lon); dirB = null; menuFor = null; }}>Use as the end</button>
+              <button role="menuitem" onclick={() => { toRoute(p.id); menuFor = null; }}>{route.includes(p.id) ? 'Take off the route' : 'Add to the route'}</button>
+              <button role="menuitem" onclick={() => { pushUndo(); removePin(p.id); route = route.filter((x) => x !== p.id); menuFor = null; }}>Delete</button>
+            </div>
+          {/if}
+        </span>
       </li>
     {:else}
       <li class="muted">No pins yet. Use Pin (or Meet) on the toolbar over the map, then click the map.</li>
@@ -1364,7 +1469,7 @@
   </ul>
 {/snippet}
 
-<svelte:window onkeydown={onKey} />
+<svelte:window onkeydown={onKey} onclick={(e) => { if (!(e.target as HTMLElement).closest?.('.menuwrap')) menuFor = null; }} />
 
 <section>
   <h1>Maps</h1>
@@ -1388,6 +1493,21 @@
 
 {#if error}<div class="warn err" role="alert">{error}</div>{/if}
 {#if message}<div class="ok-note" role="status">{message}</div>{/if}
+
+{#if areaAsk}
+  <div class="scrim" role="presentation" onclick={() => (areaAsk = false)}>
+    <div class="dialog" role="dialog" aria-modal="true" aria-label="Name this area" tabindex="-1" onclick={(e) => e.stopPropagation()}
+      onkeydown={(e) => { if (e.key === 'Escape') areaAsk = false; if (e.key === 'Enter') { e.preventDefault(); saveArea(); } }}>
+      <div class="label">Name this area to avoid</div>
+      <input id="area-name" class="input" placeholder="Name, such as Flooded bottom road" aria-label="Name" title="What this area is called" bind:value={draftLabel} />
+      <p class="muted small">Directions will go around it, and the trip is worked out again.</p>
+      <div class="drow">
+        <button class="btn" title="Keep this area" onclick={saveArea}>Save</button>
+        <button class="btn" title="Go back to the corners" onclick={() => (areaAsk = false)}>Back</button>
+      </div>
+    </div>
+  </div>
+{/if}
 
 {#if pinDraft}
   <div class="scrim" role="presentation" onclick={() => (pinDraft = null)}>
@@ -1503,9 +1623,18 @@
     <div class="label">My places</div>
     {#each myPlaces as pl}
       <div class="placerow">
-        <button class="btn placebtn" class:on={myOn[pl.key]} title={(myOn[pl.key] ? 'Take off the map: ' : 'Show on the map: ') + pl.label} onclick={() => toggleMyPlace(pl)}>{myOn[pl.key] ? '✓ ' : ''}{pl.label}</button>
-        <button class="btn tiny" title="Use this place as the start of the directions" onclick={() => (dirFrom = posText(pl), dirA = null)}>Start</button>
-        <button class="btn tiny" title="Use this place as the end of the directions" onclick={() => (dirTo = posText(pl), dirB = null)}>End</button>
+        <span class="placebtn pname" class:dim={!myOn[pl.key]} title={pl.label}>{pl.label}</span>
+        <button class="eye" title={myOn[pl.key] ? 'Hide this place from the map' : 'Show this place on the map'} aria-label={myOn[pl.key] ? 'Hide ' + pl.label : 'Show ' + pl.label} onclick={() => toggleMyPlace(pl)}>{@render eyeIcon(!myOn[pl.key])}</button>
+        <span class="menuwrap">
+          <button class="eye" title="More for this place" aria-label={'More for ' + pl.label} onclick={() => (menuFor = menuFor === pl.key ? null : pl.key)}>☰</button>
+          {#if menuFor === pl.key}
+            <div class="menu" role="menu">
+              <button role="menuitem" onclick={() => { toggleMyPlace(pl); menuFor = null; }}>{myOn[pl.key] ? 'Hide from the map' : 'Show on the map'}</button>
+              <button role="menuitem" onclick={() => { dirFrom = posText(pl); dirA = null; menuFor = null; }}>Use as the start</button>
+              <button role="menuitem" onclick={() => { dirTo = posText(pl); dirB = null; menuFor = null; }}>Use as the end</button>
+            </div>
+          {/if}
+        </span>
       </div>
     {/each}
     <p class="muted small">Set these in Settings, My details. They are only on the map while shown.</p>
@@ -1840,6 +1969,15 @@
 </div>
 
 <style>
+  .pinrow { display: flex; align-items: center; gap: 6px; }
+  .pname { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pname.dim { opacity: .5; }
+  .eye { background: none; border: 1px solid transparent; color: inherit; cursor: pointer; padding: 3px 6px; border-radius: 6px; line-height: 1; }
+  .eye:hover { border-color: var(--line, #555); }
+  .menuwrap { position: relative; }
+  .menu { position: absolute; right: 0; top: 100%; z-index: 40; background: var(--panel, #1b1f24); border: 1px solid var(--line, #555); border-radius: 8px; padding: 4px; display: flex; flex-direction: column; min-width: 170px; box-shadow: 0 6px 18px #0008; }
+  .menu button { background: none; border: 0; color: inherit; text-align: left; padding: 7px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+  .menu button:hover { background: #ffffff14; }
   .tagrow { display: flex; flex-wrap: wrap; gap: 6px; }
   .tagbtn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line, #444); background: transparent; color: inherit; cursor: pointer; font-size: 13px; }
   .tagbtn.on { border-color: #6fcf8d; background: #1f2a1d; }

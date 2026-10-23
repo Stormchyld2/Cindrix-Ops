@@ -15,7 +15,19 @@
     const snap = JSON.stringify($state.snapshot(d));
     if (snap === lastSaved) return;
     const t = setTimeout(async () => {
-      try { await profileSave(JSON.parse(snap) as MyDetails); lastSaved = snap; note = 'Saved on the drive.'; err = ''; } catch (e) { err = String(e); }
+      try {
+        // an address typed without pressing Find it is looked up now, so the map can use it
+        const data = JSON.parse(snap) as MyDetails;
+        for (const pl of [data.home, ...data.bugout]) {
+          if (pl.address.trim() && (pl.lat === null || pl.lon === null)) {
+            try { const h = (await placeSearch(pl.address.trim())).places[0]; if (h) { pl.lat = h.lat; pl.lon = h.lon; } } catch { /* saved without a position */ }
+          }
+        }
+        await profileSave(data);
+        lastSaved = JSON.stringify(data);
+        if (lastSaved !== snap) { d = data; }
+        note = 'Saved on the drive.'; err = '';
+      } catch (e) { err = String(e); }
     }, 700);
     return () => clearTimeout(t);
   });
