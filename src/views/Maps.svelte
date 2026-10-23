@@ -7,7 +7,7 @@
   import { POI_GROUPS, kindName, groupOf, distanceKm, compass } from '../lib/mapkinds';
   import { DRAW_COLORS, DRAW_WIDTHS, DEFAULT_COLOR, drawingFeatures, previewFeatures, handlesOf, labelPoint, measureOf, pathKm, areaKm2, fmtLength, fmtArea, type Drawing, type DrawKind } from '../lib/mapdraw';
 
-  type Pin = { id: number; label: string; kind: 'pin' | 'rendezvous'; lat: number; lon: number };
+  type Pin = { id: number; label: string; kind: 'pin' | 'rendezvous'; lat: number; lon: number; tag?: string; color?: string };
   type Area = { label: string; points: LatLon[] };
   type MapFile = { version: 1; name: string; pins: Pin[]; route: number[]; nogo: Area[]; drawings?: Drawing[] };
 
@@ -137,7 +137,7 @@
     applyPoiVisibility();
   }
   function applyPoiVisibility() {
-    if (!map || !mapReady) return;
+    if (!mapReady || !map) return;
     for (const g of POI_GROUPS) {
       const v = poiOn[g.id] ? 'visible' : 'none';
       for (const id of poiIds(g.id)) if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', v);
@@ -229,7 +229,7 @@
   function findNearest() {
     nearNote = '';
     nearList = [];
-    if (!map || !mapReady) return;
+    if (!mapReady || !map) return;
     const g = POI_GROUPS.find((x) => x.id === nearGroup);
     if (!g) return;
     const c = map.getCenter();
@@ -529,9 +529,13 @@
     const p: LatLon = [Math.round(lat * 1e6) / 1e6, Math.round(lon * 1e6) / 1e6];
     const p5: LatLon = [Math.round(lat * 1e5) / 1e5, Math.round(lon * 1e5) / 1e5];
     if (addMode === 'pin' || addMode === 'rendezvous') {
-      pushUndo();
-      const id = pins.reduce((m, x) => Math.max(m, x.id), 0) + 1;
-      pins = [...pins, { id, label: (addMode === 'rendezvous' ? 'Rendezvous ' : 'Pin ') + id, kind: addMode, lat: p5[0], lon: p5[1] }];
+      // ask for a name, a kind and a colour before the pin is dropped
+      const tag = addMode === 'rendezvous' ? 'Meeting point' : 'Other';
+      pinDraft = { lat: p5[0], lon: p5[1], kind: addMode };
+      pinName = '';
+      pinTag = tag;
+      pinCol = PIN_TAGS.find((t) => t.name === tag)?.color ?? '#5aa9e6';
+      setTimeout(() => document.getElementById('pin-name')?.focus(), 30);
     } else if (addMode === 'corner') {
       draft = [...draft, p5];
     } else if (addMode === 'line' || addMode === 'shape') {
@@ -568,7 +572,7 @@
 
   // Keep the drawn layers and the pin markers in step with what is on screen.
   $effect(() => {
-    if (!map || !ml || !mapReady) return;
+    if (!mapReady || !map || !ml) return;
     const m = map;
     const rp = routePoints;
     setSrc(m, 'route', rp.length > 1
@@ -586,7 +590,7 @@
       const el = document.createElement('div');
       el.className = 'pinmark';
       el.innerHTML = '<span class="pdot"></span><span class="plab"></span>';
-      (el.querySelector('.pdot') as HTMLElement).style.background = pinColor(p.kind);
+      (el.querySelector('.pdot') as HTMLElement).style.background = p.color ?? pinColor(p.kind);
       (el.querySelector('.plab') as HTMLElement).textContent = p.label; // text, never markup
       el.addEventListener('click', (ev) => {
         if (addMode === 'erase') { ev.stopPropagation(); pushUndo(); removePin(p.id); }
@@ -718,6 +722,29 @@
     map.flyTo({ center: [pl.lon, pl.lat], zoom: Math.max(map.getZoom(), 12), duration: 600 });
   }
   const posText = (pl: MyShown) => pl.lat.toFixed(5) + ', ' + pl.lon.toFixed(5);
+
+
+  // ---------- naming a pin as it is dropped ----------
+  const PIN_TAGS: { name: string; color: string }[] = [
+    { name: 'Home', color: '#2fb344' }, { name: 'Water', color: '#4aa3ff' }, { name: 'Food', color: '#8bc34a' },
+    { name: 'Shelter', color: '#9334e6' }, { name: 'Fuel', color: '#f29900' }, { name: 'Medical', color: '#d93025' },
+    { name: 'Meeting point', color: '#ff9a1f' }, { name: 'Danger', color: '#b71c1c' }, { name: 'Other', color: '#9e9e9e' },
+  ];
+  let pinDraft: { lat: number; lon: number; kind: 'pin' | 'rendezvous' } | null = $state(null);
+  let pinName = $state('');
+  let pinTag = $state('Other');
+  let pinCol = $state('#5aa9e6');
+  function chooseTag(t: { name: string; color: string }) { pinTag = t.name; pinCol = t.color; }
+  function savePinDraft() {
+    const d = pinDraft;
+    if (!d) return;
+    pushUndo();
+    const id = pins.reduce((m, x) => Math.max(m, x.id), 0) + 1;
+    const label = pinName.trim() || (pinTag !== 'Other' ? pinTag : d.kind === 'rendezvous' ? 'Meeting place' : 'Pin') + ' ' + id;
+    pins = [...pins, { id, label, kind: d.kind, lat: d.lat, lon: d.lon, tag: pinTag, color: pinCol }];
+    trail('pin saved: ' + label);
+    pinDraft = null;
+  }
 
   // ---------- a copy of the map for the phone (one file) ----------
   let phoneOpen = $state(false);
@@ -901,7 +928,7 @@
 
   // what is drawn, and the names on it
   $effect(() => {
-    if (!map || !ml || !mapReady) return;
+    if (!mapReady || !map || !ml) return;
     const m = map;
     const list = drawings;
     const sid = selectedId;
@@ -925,7 +952,7 @@
   });
   // the unfinished shape and the measuring path
   $effect(() => {
-    if (!map || !mapReady) return;
+    if (!mapReady || !map) return;
     const kind: DrawKind | 'measure' | null = addMode === 'measure' ? 'measure' : addMode === 'line' || addMode === 'shape' || addMode === 'rect' || addMode === 'circle' ? addMode : null;
     const pts = addMode === 'measure' ? measurePts : building;
     setSrc(map, 'drawtmp', kind ? previewFeatures(pts, kind, hover, null) : empty());
@@ -937,7 +964,7 @@
     const tool = addMode;
     for (const h of handleMarkers) h.remove();
     handleMarkers = [];
-    if (!map || !ml || !mapReady || id === null || tool !== 'off') return;
+    if (!mapReady || !map || !ml || id === null || tool !== 'off') return;
     untrack(() => {
       const d = drawings.find((x) => x.id === id);
       if (!d) return;
@@ -954,7 +981,7 @@
   });
   // the pointer shows what a click will do
   $effect(() => {
-    if (!map) return;
+    if (!mapReady || !map) return;
     map.getCanvas().style.cursor = addMode === 'off' ? '' : addMode === 'erase' ? 'not-allowed' : 'crosshair';
     if (addMode === 'off') map.doubleClickZoom.enable();
     else map.doubleClickZoom.disable();
@@ -1043,7 +1070,7 @@
   }
   // draw the way on the map, with an A and a B at the ends
   $effect(() => {
-    if (!map || !ml || !mapReady) return;
+    if (!mapReady || !map || !ml) return;
     const m = map;
     const r = dirRoute;
     setSrc(m, 'dir', r ? { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: r.points.map(([la, lo]) => [lo, la]) } } : empty());
@@ -1325,8 +1352,8 @@
   <ul class="plain">
     {#each pins as p}
       <li>
-        <span class="dot" style="background:{pinColor(p.kind)}"></span>
-        {p.label} <span class="muted">{p.lat.toFixed(4)}, {p.lon.toFixed(4)}</span>
+        <span class="dot" style="background:{p.color ?? pinColor(p.kind)}"></span>
+        {p.label}{#if p.tag} <span class="muted">({p.tag})</span>{/if} <span class="muted">{p.lat.toFixed(4)}, {p.lon.toFixed(4)}</span>
         <button class="link" title="Go to this pin on the map" onclick={() => map?.jumpTo({ center: [p.lon, p.lat], zoom: Math.max(map.getZoom(), 12) })}>go to</button>
         <button class="link" title="Add this pin to the end of your route" onclick={() => toRoute(p.id)}>add to route</button>
         <button class="link" title="Delete this pin" onclick={() => { pushUndo(); removePin(p.id); }}>remove</button>
@@ -1361,6 +1388,32 @@
 
 {#if error}<div class="warn err" role="alert">{error}</div>{/if}
 {#if message}<div class="ok-note" role="status">{message}</div>{/if}
+
+{#if pinDraft}
+  <div class="scrim" role="presentation" onclick={() => (pinDraft = null)}>
+    <div class="dialog" role="dialog" aria-modal="true" aria-label="Name this place" tabindex="-1" onclick={(e) => e.stopPropagation()}
+      onkeydown={(e) => { if (e.key === 'Escape') pinDraft = null; if (e.key === 'Enter') { e.preventDefault(); savePinDraft(); } }}>
+      <div class="label">{pinDraft.kind === 'rendezvous' ? 'Name this meeting place' : 'Name this place'}</div>
+      <input id="pin-name" class="input" placeholder="Name, such as Spring on the trail" aria-label="Name" title="What this place is called on the map" bind:value={pinName} />
+      <div class="small muted">What kind of place is it?</div>
+      <div class="tagrow">
+        {#each PIN_TAGS as t}
+          <button class="tagbtn" class:on={pinTag === t.name} title={'Mark it as ' + t.name} onclick={() => chooseTag(t)}><span class="dot" style="background:{t.color}"></span>{t.name}</button>
+        {/each}
+      </div>
+      <div class="small muted">Colour</div>
+      <div class="tagrow">
+        {#each DRAW_COLORS as c}
+          <button class="swatch" class:on={pinCol === c.hex} style="background:{c.hex}" title={c.name} aria-label={c.name} onclick={() => (pinCol = c.hex)}></button>
+        {/each}
+      </div>
+      <div class="drow">
+        <button class="btn" title="Put the pin on the map" onclick={savePinDraft}>Save</button>
+        <button class="btn" title="Do not add a pin" onclick={() => (pinDraft = null)}>Cancel</button>
+      </div>
+    </div>
+  </div>
+{/if}
 
 {#if sendOpen}
   <div class="scrim" role="presentation" onclick={() => (sendOpen = false)}>
@@ -1449,10 +1502,10 @@
   <div class="panel sidebox">
     <div class="label">My places</div>
     {#each myPlaces as pl}
-      <div class="drow">
-        <button class="btn grow" class:on={myOn[pl.key]} title={myOn[pl.key] ? 'Take this place off the map' : 'Show this place on the map'} onclick={() => toggleMyPlace(pl)}>{myOn[pl.key] ? 'Hide' : 'Show'} {pl.label}</button>
-        <button class="btn" title="Use this place as the start of the directions" onclick={() => (dirFrom = posText(pl), dirA = null)}>Start</button>
-        <button class="btn" title="Use this place as the end of the directions" onclick={() => (dirTo = posText(pl), dirB = null)}>End</button>
+      <div class="placerow">
+        <button class="btn placebtn" class:on={myOn[pl.key]} title={(myOn[pl.key] ? 'Take off the map: ' : 'Show on the map: ') + pl.label} onclick={() => toggleMyPlace(pl)}>{myOn[pl.key] ? '✓ ' : ''}{pl.label}</button>
+        <button class="btn tiny" title="Use this place as the start of the directions" onclick={() => (dirFrom = posText(pl), dirA = null)}>Start</button>
+        <button class="btn tiny" title="Use this place as the end of the directions" onclick={() => (dirTo = posText(pl), dirB = null)}>End</button>
       </div>
     {/each}
     <p class="muted small">Set these in Settings, My details. They are only on the map while shown.</p>
@@ -1703,7 +1756,7 @@
             <polyline points={routePoints.map((p) => view.x(p[1]) + ',' + view.y(p[0])).join(' ')} fill="none" stroke="#ff9a1f" stroke-width="2.5" />
           {/if}
           {#each pins as p}
-            <circle cx={view.x(p.lon)} cy={view.y(p.lat)} r="6" fill={pinColor(p.kind)} stroke="#0f1110" stroke-width="2" />
+            <circle cx={view.x(p.lon)} cy={view.y(p.lat)} r="6" fill={p.color ?? pinColor(p.kind)} stroke="#0f1110" stroke-width="2" />
             <text x={view.x(p.lon) + 10} y={view.y(p.lat) + 4} fill="#ece7de" font-size="12">{p.label}</text>
           {/each}
           <line x1={PAD} y1={H - 14} x2={PAD + view.barPx} y2={H - 14} stroke="#b5ada0" stroke-width="2" />
@@ -1787,6 +1840,15 @@
 </div>
 
 <style>
+  .tagrow { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tagbtn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line, #444); background: transparent; color: inherit; cursor: pointer; font-size: 13px; }
+  .tagbtn.on { border-color: #6fcf8d; background: #1f2a1d; }
+  .swatch { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #0f1110; cursor: pointer; }
+  .swatch.on { outline: 3px solid #6fcf8d; }
+  .tagbtn .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .tiny { padding: 4px 10px; font-size: 12px; }
+  .placebtn { flex: 1 1 auto; min-width: 0; text-align: left; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .placerow { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; }
   .check { margin: 10px 0; }
   .check pre { white-space: pre-wrap; user-select: text; }
   .cols { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }
