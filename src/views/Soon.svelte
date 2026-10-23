@@ -4,5 +4,5 @@
 
 <section>
   <h1>{title}</h1>
-  <p class="sub">Not built yet. The plan and mockups are in the repository.</p>
+  <p class="sub">This part is not built yet. It is planned, and it will show up here when it is ready.</p>
 </section>
