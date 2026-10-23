@@ -82,7 +82,12 @@ function decorate(i: Item): Item {
 /** The guides of one part of Agro or Comms (crop-guides, planting-calendar, food-preservation, livestock, soil-and-water, radio-reference). */
 export async function guidesList(section: string): Promise<Card[]> {
   if (inTauri) return call<Card[]>('guides_list', { section });
-  return [];
+  // a browser tab outside the program shows a sample page so the screen can be looked at
+  const sample = (id: string, title: string, body: string): Card => ({ id, title, kind: 'sample', status: 'draft', reviewer: '', reviewed: '', body });
+  return [
+    sample('morse-code', 'Morse code', '**A dot is short and a dash is three times as long.**\n\n- **A** .-  **B** -...  **C** -.-.\n- **S** ...  **O** ---\n\nSource: ITU-R M.1677 (sample).'),
+    sample('sample-page', 'A sample page', 'DRAFT. Sample text.\n\nSource: sample.'),
+  ];
 }
 
 // ---------- a folder for each person: journal, photos, comms plan ----------

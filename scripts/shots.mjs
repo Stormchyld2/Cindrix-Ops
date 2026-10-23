@@ -260,6 +260,30 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   await page.getByRole('tab', { name: 'Sources and licenses' }).click();
   await shoot(page, `${label}-9e-sources`);
 
+  // the screens that came with the grouped top bar
+  await nav(page, 'Morale', 'Reading Corner');
+  await page.getByRole('heading', { name: 'Reading Corner' }).waitFor();
+  await shoot(page, `${label}-9f-reading-corner`);
+  await nav(page, 'Morale', 'Journal');
+  await page.getByRole('heading', { name: 'Journal' }).waitFor();
+  await page.getByLabel("Today's words").fill('Power out since noon. Filled the barrels.');
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByText('Saved.').first().waitFor();
+  await shoot(page, `${label}-9g-journal`);
+  await nav(page, 'Morale', 'Photos');
+  await page.getByRole('heading', { name: 'Photos' }).waitFor();
+  await shoot(page, `${label}-9h-photos`);
+  await nav(page, 'Comms', 'Comms plan');
+  await page.getByRole('heading', { name: 'Comms plan' }).waitFor();
+  await shoot(page, `${label}-9i-comms-plan`);
+  await nav(page, 'Comms', 'Radio reference');
+  await page.getByRole('heading', { name: 'Radio reference' }).waitFor();
+  await page.getByRole('button', { name: /Morse code/ }).click();
+  await shoot(page, `${label}-9j-radio-reference`);
+  await nav(page, 'Agro', 'Crop guides');
+  await page.getByRole('heading', { name: 'Crop guides' }).waitFor();
+  await shoot(page, `${label}-9k-agro`);
+
   } catch (e) {
     // GitHub shows these as annotations on the job, so a failure can be read without the full log
     const msg = String((e && e.message) || e).split('\n').filter(Boolean).slice(0, 5).join(' | ').slice(0, 700);
