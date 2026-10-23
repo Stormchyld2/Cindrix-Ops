@@ -216,6 +216,9 @@ jobs:
           [ -n "$url" ] || { echo "::error::no linux pmtiles download found"; exit 1; }
           mkdir -p "$RUNNER_TEMP/pmt" && curl -fsSL "$url" | tar xz -C "$RUNNER_TEMP/pmt"
           "$RUNNER_TEMP/pmt/pmtiles" version
+      - name: Make sure the sqlite3 program is there (the script uses it to index the packed tiles)
+        shell: bash
+        run: command -v sqlite3 || (sudo apt-get update -qq && sudo apt-get install -y -qq sqlite3)
       - name: Fetch a very small area (Fairmont WV) as aerial photos and as topo
         shell: pwsh
         run: |

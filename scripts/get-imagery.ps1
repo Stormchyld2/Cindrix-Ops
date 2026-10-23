@@ -27,6 +27,8 @@ param(
   # Allow more than 1,500,000 tiles in one run.
   [switch]$Yes,
   [switch]$Force,
+  # Use the packed tile file from an earlier run instead of packing the pictures again (the tiles must be fully fetched).
+  [switch]$UseExistingPack,
   [string]$Duckdb = '',
   [string]$DuckdbVersion = '1.5.6',
   # Test only: use this pmtiles program, and this address instead of the USGS one.
@@ -208,12 +210,57 @@ if ($lost) { Write-Host "$lost tiles were in a different picture format and were
 
 # ---- step 2: pack the files into one MBTiles file, then one PMTiles file ----
 $mb = Join-Path $work "$Name.mbtiles"
+$packedMark = Join-Path $work 'packed.ok'
+
+# The pmtiles tool looks every tile up by its zoom, column and row. Without an index on those three, each lookup reads the
+# whole file, and a country-sized map takes days instead of minutes. (The MBTiles format asks for this index.)
+function Add-TileIndex([string]$file) {
+  $sql = 'CREATE INDEX IF NOT EXISTS tile_index ON tiles (zoom_level, tile_column, tile_row);'
+  Write-Host 'Making the tile index...'
+  if ($onWindows) {
+    # Windows has SQLite built in (winsqlite3.dll); it is called directly so nothing else has to be installed.
+    if (-not ([System.Management.Automation.PSTypeName]'CxSqlite').Type) {
+      Add-Type -TypeDefinition @"
+using System;
+using System.Runtime.InteropServices;
+using System.Text;
+public static class CxSqlite {
+  const string Dll = "winsqlite3.dll";
+  [DllImport(Dll, CallingConvention = CallingConvention.Cdecl)] static extern int sqlite3_open(byte[] file, out IntPtr db);
+  [DllImport(Dll, CallingConvention = CallingConvention.Cdecl)] static extern int sqlite3_exec(IntPtr db, byte[] sql, IntPtr cb, IntPtr arg, out IntPtr err);
+  [DllImport(Dll, CallingConvention = CallingConvention.Cdecl)] static extern IntPtr sqlite3_errmsg(IntPtr db);
+  [DllImport(Dll, CallingConvention = CallingConvention.Cdecl)] static extern int sqlite3_close(IntPtr db);
+  static byte[] Z(string s) { byte[] b = Encoding.UTF8.GetBytes(s); byte[] r = new byte[b.Length + 1]; Array.Copy(b, r, b.Length); return r; }
+  public static string Exec(string file, string sql) {
+    IntPtr db;
+    if (sqlite3_open(Z(file), out db) != 0) { return "the file could not be opened"; }
+    IntPtr err;
+    int rc = sqlite3_exec(db, Z(sql), IntPtr.Zero, IntPtr.Zero, out err);
+    string msg = rc == 0 ? "" : Marshal.PtrToStringAnsi(sqlite3_errmsg(db));
+    sqlite3_close(db);
+    return rc == 0 ? "" : (msg == "" ? "error " + rc : msg);
+  }
+}
+"@
+    }
+    $e = [CxSqlite]::Exec($file, $sql)
+    if ($e) { throw "The tile index could not be made ($e)." }
+  } else {
+    $sq = Get-Command sqlite3 -ErrorAction SilentlyContinue
+    if (-not $sq) { throw 'The sqlite3 program is needed to make the tile index. Install it (sudo apt install sqlite3) and run this again.' }
+    & $sq.Source $file $sql
+    if ($LASTEXITCODE -ne 0) { throw "The tile index could not be made (sqlite3 code $LASTEXITCODE)." }
+  }
+}
+
 $fmt = $format
 if (-not $fmt) {
   $any = Get-ChildItem -Recurse -File -Path $work -Include *.jpg,*.png | Select-Object -First 1
   if ($any) { $fmt = $any.Extension.TrimStart('.') }
 }
 if (-not $fmt) { throw 'No tiles came back for this area (USGS may not have pictures there). Nothing was made.' }
+$reuse = (Test-Path $mb) -and ($UseExistingPack -or (Test-Path $packedMark))
+if ($reuse) { Write-Host 'Using the tile file that is already packed.' } else {
 Write-Host 'Packing the tiles into one file...'
 if (Test-Path $mb) { Remove-Item $mb -Force }
 $mbp = $mb.Replace('\','/')
@@ -251,6 +298,9 @@ FROM read_blob([$globs]);
   }
   Write-Host "  zoom $z packed"
 }
+Set-Content -LiteralPath $packedMark -Value (Get-Date -Format s)
+}
+Add-TileIndex $mb
 Write-Host 'Making the PMTiles file...'
 $tmp = $final + '.part'
 if (Test-Path $tmp) { Remove-Item $tmp -Force }

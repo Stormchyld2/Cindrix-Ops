@@ -23,3 +23,12 @@ zoom 13 about 15 GB, 14 about 55 GB, 15 about 220 GB, 16 (the sharpest USGS serv
 - The CI job `imagery` runs the download on a very small area; the large runs are untested.
 - Where USGS has no picture the tile is missing and the area shows dark.
 - Credit "USGS The National Map" is on the map (attribution) and in each `.SOURCE.txt`.
+
+## The last step was far too slow (found 2026-10-23, fixed)
+A real run for the whole US topo at zoom 12 (648,356 tiles, ~470,000 kept) downloaded fine, but the final "Making the PMTiles file" step
+(`pmtiles convert`, pass 2) ran at about one tile a second, an estimated 94 hours. Cause: the packed MBTiles file had no index on
+`(zoom_level, tile_column, tile_row)`, and `pmtiles convert` looks every tile up by those three, so each lookup read the file.
+The script now makes that index (`Add-TileIndex`: Windows uses the SQLite that ships with Windows, `winsqlite3.dll`; Linux uses the
+`sqlite3` program) before converting. It also writes `packed.ok` after packing, so a run that stopped later reuses the packed file,
+and `-UseExistingPack` does the same for a file packed by an older copy of the script (the tiles must be fully fetched).
+About 5,500 of the 650,000 tiles came back in a different picture format (PNG, not JPEG) and are left out; they show as small gaps.
