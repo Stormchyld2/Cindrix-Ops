@@ -36,7 +36,7 @@ Windows comes first; Android and iPhone wrap it later.
   music, maps, Academy, Ask); the family page, inventory and the person's own notes stay host-only.
   Do not rely on browser features that need HTTPS.
 - The Hub assistant is on by default with the model file on the drive; memory on the phone is the limit.
-- Windows first: the web server and Android wait for the real Windows test (doc 22).
+- Windows first: the share server is built (doc 34) and waits for its real Windows test (doc 22); Android waits for that.
 
 ## Checks (CI runs these; see `.github/workflows/ci.yml`)
 
