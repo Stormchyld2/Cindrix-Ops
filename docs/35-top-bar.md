@@ -12,8 +12,8 @@ Ten words, each with a small coloured diamond. A word with a menu opens it on a 
 | Operations | Get ready, Plans, Drills, Inventory, Family, Binder, What fails next |
 | Intel | Offline browser, Shelf, Archives, Emergency cards |
 | Academy | Courses, Training sign-off |
-| Agro | Crop guides, Planting calendar, Food preservation, Livestock, Soil and water (all "not built yet"), Seed vault |
-| Morale | Reading Corner (not built yet), Music, Journal (not built yet), Photos (not built yet) |
+| Agro | Crop guides, Planting calendar, Food preservation, Livestock, Soil and water (starter pages, `content/guides`), Seed vault |
+| Morale | Reading Corner, Music, Journal, Photos |
 | Comms | Comms plan, Radio reference, Signals (not built yet), Sharing |
 | System | Settings, My details |
 
@@ -35,6 +35,12 @@ Same blocks, tiles and panels as before, with a coloured left edge and a condens
 
 Each status tile (Water, Food, Running low, Past or near their date, Plan checks due, Drills done) opens a pop-up that lists what the number is made of, with a button to the screen where it is fixed.
 
-## Not built yet (proposals in the architecture doc)
+## Not built yet
 
-Agro (CNAR), Reading Corner, Journal, Photos, Comms plan, Radio reference, Signals. Journal and Photos will need a folder per person under `user/`; see the architecture proposal.
+Signals (a radio line-of-sight layer on the map) and everything that is only a proposal in the architecture doc: the CNAR data pack, frost-date tables and the regional layer behind Agro.
+
+On another device (a guest on the hotspot) the menus hide what is host-only: Journal, Comms plan, Sharing and My details.
+
+## Settings
+
+The tabs now run down the left side in three groups (You, The screens, The drive) with the same content as before. The Drive tab is shown as "Drives and libraries" and the Library tab as "Shelf and Archives".

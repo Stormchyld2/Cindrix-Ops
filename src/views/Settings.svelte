@@ -29,6 +29,13 @@
 
   const tabs = ['General', 'Assistant', 'My details', 'Sharing', 'Library', 'Intel', 'Music', 'Maps', 'Plan', 'Your own cards and plans', 'Drive', 'Sources and licenses', 'About'] as const;
   let tab: (typeof tabs)[number] = $state('General');
+  // the tabs, in groups, down the left side (the short names stay the same; only what is shown changes)
+  const tabGroups: { title: string; tabs: (typeof tabs)[number][] }[] = [
+    { title: 'YOU', tabs: ['General', 'My details', 'Sharing'] },
+    { title: 'THE SCREENS', tabs: ['Assistant', 'Library', 'Intel', 'Music', 'Maps', 'Plan'] },
+    { title: 'THE DRIVE', tabs: ['Drive', 'Your own cards and plans', 'Sources and licenses', 'About'] },
+  ];
+  const tabLabel: Record<string, string> = { Drive: 'Drives and libraries', Library: 'Shelf and Archives' };
   // the top bar can ask for a tab (Comms > Sharing, System > My details)
   $effect(() => {
     const want = viewRequest.settingsTab;
@@ -148,11 +155,16 @@
     <p class="sub">Change how the program looks and behaves. Changes apply straight away and are kept on the drive, so they travel with it.</p>
   </div>
 
-  <div class="tabs" role="tablist">
-    {#each tabs as t}
-      <button role="tab" aria-selected={tab === t} class:on={tab === t} onclick={() => (tab = t)}>{t}</button>
+  <div class="layout">
+  <div class="tabs" role="tablist" aria-label="Settings sections" aria-orientation="vertical">
+    {#each tabGroups as g}
+      <div class="tg">{g.title}</div>
+      {#each g.tabs as t}
+        <button role="tab" aria-selected={tab === t} class:on={tab === t} onclick={() => (tab = t)}>{tabLabel[t] ?? t}</button>
+      {/each}
     {/each}
   </div>
+  <div class="body">
   {#if error}<div class="warn">{error}</div>{/if}
   {#if settings.saveError}<div class="warn" role="alert">{settings.saveError}</div>{/if}
 
@@ -381,6 +393,8 @@
       <p class="muted fine">The program is free software (GPL-3.0-or-later). The full license texts are in the LICENSES folder.</p>
     </div>
   {/if}
+  </div>
+  </div>
 </section>
 
 <style>
@@ -388,9 +402,19 @@
   .liblist { list-style: none; padding: 0; margin: 10px 0 0; display: flex; flex-direction: column; gap: 10px; }
   .liblist li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 10px 0; border-top: 1px solid var(--line); }
   .libinfo { flex: 1; min-width: 220px; }
-  .tabs { display: flex; flex-wrap: wrap; gap: 6px; }
-  .tabs button { padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line2); background: transparent; color: var(--text); font: inherit; cursor: pointer; }
-  .tabs button.on { background: var(--panel2); border-color: var(--blue); color: var(--blue); }
+  .layout { display: grid; grid-template-columns: 230px 1fr; gap: 18px; align-items: start; }
+  .body { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  .tabs { display: flex; flex-direction: column; gap: 4px; position: sticky; top: 92px; padding: 10px; border: 1px solid var(--line); border-left: 3px solid var(--cat-system); border-radius: 10px; background: var(--panel); }
+  .tg { font-family: var(--mono); font-size: 10.5px; letter-spacing: .16em; color: var(--muted); padding: 10px 8px 4px; }
+  .tg:first-child { padding-top: 2px; }
+  .tabs button { text-align: left; padding: 8px 12px; border-radius: 6px; border: 1px solid transparent; background: transparent; color: var(--text); font: inherit; cursor: pointer; }
+  .tabs button:hover { border-color: var(--line2); }
+  .tabs button.on { background: var(--blue-soft); border-color: var(--blue-line); color: var(--blue); }
+  @media (max-width: 760px) {
+    .layout { grid-template-columns: 1fr; }
+    .tabs { position: static; flex-direction: row; flex-wrap: wrap; }
+    .tg { display: none; }
+  }
   .list { list-style: none; padding: 0; margin: 8px 0; display: flex; flex-direction: column; }
   .list li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 10px 0; border-top: 1px solid var(--line); }
   .grow { flex: 1; min-width: 220px; }
