@@ -195,7 +195,7 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   await page.getByRole('button', { name: 'Pause' }).click();
 
   await nav(page, 'Dashboard');
-  await page.getByText('WHAT TO DO NEXT').waitFor();
+  await page.getByText('NEEDS YOUR ATTENTION').waitFor();
   await shoot(page, `${label}-2d-dashboard`);
 
   await shoot(page, `${label}-3-start`);
