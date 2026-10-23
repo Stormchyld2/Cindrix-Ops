@@ -17,4 +17,15 @@ reviewed:
 
 **The official guide:** the *USDA Complete Guide to Home Canning* is free (public domain) and is kept up to date by the National Center for Home Food Preservation (nchfp.uga.edu). Put a copy in the **library\manuals** folder of your drive, so it shows up on the Shelf.
 
+The guide comes as eight files. On the Shelf they are named like this:
+
+- **INTRO**: how to use the guide.
+- **GUIDE01**: principles of home canning. Read this first, whatever you plan to can.
+- **GUIDE02**: fruit and fruit products.
+- **GUIDE03**: tomatoes and tomato products.
+- **GUIDE04**: vegetables and vegetable products.
+- **GUIDE05**: poultry, red meats and seafood. These need a pressure canner.
+- **GUIDE06**: pickled and fermented foods.
+- **GUIDE07**: jams and jellies.
+
 Source: USDA Complete Guide to Home Canning, and the National Center for Home Food Preservation (nchfp.uga.edu).
