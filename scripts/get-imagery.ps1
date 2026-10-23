@@ -306,7 +306,9 @@ $tmp = $final + '.part'
 if (Test-Path $tmp) { Remove-Item $tmp -Force }
 & $pm convert $mb $tmp
 if ($LASTEXITCODE -ne 0) { throw "pmtiles convert failed (exit $LASTEXITCODE)." }
-$head = [System.IO.File]::ReadAllBytes($tmp)[0..7]
+# only the first 8 bytes are read: a country-sized file is far too big to load whole (Windows PowerShell stops at 2 GB)
+$fs = [System.IO.File]::OpenRead($tmp)
+try { $head = New-Object byte[] 8; [void]$fs.Read($head, 0, 8) } finally { $fs.Dispose() }
 if ([System.Text.Encoding]::ASCII.GetString($head, 0, 7) -ne 'PMTiles' -or $head[7] -ne 3) { throw "$Name.pmtiles is not a PMTiles v3 file; it was not kept." }
 Move-Item -Force -LiteralPath $tmp -Destination $final
 Remove-Item -Recurse -Force $work -ErrorAction SilentlyContinue
