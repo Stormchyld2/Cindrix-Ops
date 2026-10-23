@@ -13,6 +13,7 @@
   let excerpt: { title: string; text: string } | null = $state(null);
   let scroller: HTMLDivElement | undefined = $state();
   let note = $state('');
+  let menuOpen = $state(false);
   let section: 'chat' | 'projects' | 'calendar' | 'todo' = $state('chat');
 
   // what the assistant is allowed to look in (Settings, Assistant)
@@ -31,6 +32,7 @@
       if (timer) { clearInterval(timer); timer = undefined; }
     }
   }
+  $effect(() => { section; viewing; chat.file; chat.thread.length === 0; menuOpen = false; });
   async function loadPast() {
     try { past = await chatList(); } catch { past = []; }
   }
@@ -130,7 +132,8 @@
 {/snippet}
 
 <div class="askpage">
-<nav class="side" aria-label="Chats">
+<button class="burger" aria-label="Chats and menu" aria-expanded={menuOpen} title="Chats and menu" onclick={() => (menuOpen = !menuOpen)}>☰ Chats</button>
+<nav class="side" class:open={menuOpen} aria-label="Chats">
   <button class="btn primary" title="Start a new chat. The one on screen is already saved." disabled={chat.busy} onclick={newChat}>＋ New chat</button>
   <button class="navbtn" class:on={section === 'projects'} title="Projects" onclick={() => (section = 'projects')}>Projects</button>
   <button class="navbtn" class:on={section === 'calendar'} title="Calendar" onclick={() => (section = 'calendar')}>Calendar</button>
@@ -231,7 +234,14 @@
   .x { background: none; border: 0; color: var(--muted); cursor: pointer; opacity: 0; }
   .pastlist li:hover .x, .pastlist li.on .x { opacity: 1; }
   .soon { max-width: 560px; }
-  @media (max-width: 800px) { .askpage { grid-template-columns: 1fr; height: auto; } .side { max-height: 30vh; border-right: 0; } .main { height: 70vh; } }
+  .burger { display: none; }
+  @media (max-width: 800px) {
+    .askpage { grid-template-columns: 1fr; grid-template-rows: auto 1fr; gap: 8px; }
+    .burger { display: block; justify-self: start; background: var(--panel); border: 1px solid var(--line); color: inherit; border-radius: 8px; padding: 8px 12px; cursor: pointer; }
+    .side { display: none; border-right: 0; max-height: 55vh; padding: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+    .side.open { display: flex; }
+    .askpage:has(.side.open) .main { display: none; }
+  }
   .scroller { flex: 1 1 auto; overflow-y: auto; min-height: 0; scrollbar-width: none; -ms-overflow-style: none; }
   .scroller::-webkit-scrollbar, .dialog::-webkit-scrollbar { display: none; }
   .bar { flex: none; }
