@@ -67,7 +67,6 @@
   const lessons = $derived(academy.flatMap((m) => m.lessons));
   const lessonsDone = $derived(lessons.filter((l) => l.tries > 0).length);
   const nextLesson = $derived(lessons.find((l) => l.tries === 0));
-  const emptyCats = $derived(categories.filter((c) => !cats[c]));
 
   function fmt(d: number | null | undefined): string {
     return d == null ? 'Not set' : d < 10 ? d.toFixed(1) + ' days' : Math.round(d) + ' days';
@@ -165,9 +164,9 @@
   </div>
 {/if}
 
-<div class="cols">
-  <section class="panel" style="--c: var(--accent)">
-    <div class="label">WHAT TO DO NEXT</div>
+<div class="dgrid">
+  <section class="panel s8" style="--c: var(--accent)">
+    <div class="label">NEEDS YOUR ATTENTION</div>
     {#if loaded && !tips.length}<p class="muted">Nothing to suggest right now.</p>{/if}
     {#each tips as t}
       <div class="tip">
@@ -182,33 +181,28 @@
     <p class="muted small foot">These come from what is on this device. In an emergency, call 911.</p>
   </section>
 
-  <section class="panel" style="--c: var(--cat-ops)">
-    <div class="label">RUNNING LOW</div>
+  <section class="panel s4" style="--c: var(--cat-comms)">
+    <div class="label">SHARING</div>
+    <div class="line"><div class="grow">Sharing with other devices</div><span class="chip {sharing.on ? 'good' : 'soon'}">{sharing.on ? 'On' : 'Off'}</span></div>
+    <div class="line"><div class="grow">Hotspot</div><span class="chip {sharing.hotspot_up ? 'good' : 'soon'}">{sharing.hotspot_up ? 'On' : 'Off'}</span></div>
+    <div class="line"><div class="grow">Devices signed in</div><span>{sharing.signed_in}</span></div>
+    <div class="row gap"><button class="btn" onclick={() => go('settings:Sharing')}>Open Sharing</button></div>
+  </section>
+
+  <section class="panel s6" style="--c: var(--cat-ops)">
+    <div class="label">INVENTORY</div>
     {#if data && items === 0}<p class="muted">The Inventory is empty. <button class="link" onclick={() => go('Inventory')}>Add your supplies</button>.</p>
-    {:else if data && data.runs_out.length === 0}<p class="muted">No item has a "used per day" amount yet, so nothing can be counted down.</p>
-    {:else if data && low.length === 0}<p class="muted">Nothing runs out within {settings.values.planCheckDays} days.</p>{/if}
-    {#each low as r}
-      <div class="line">
-        <div class="grow"><strong>{r.name}</strong><div class="muted small">{r.location}</div></div>
-        <div class={tone(r.days)}>{fmt(r.days)}</div>
-      </div>
+    {:else if data && data.runs_out.length === 0}<p class="muted small">No item has a "used per day" amount yet, so nothing can be counted down.</p>
+    {:else if data && low.length === 0}<p class="muted small">Nothing runs out within {settings.values.planCheckDays} days.</p>
+    {:else if data}<p class="small"><strong>{low.length} item{low.length === 1 ? '' : 's'}</strong> run low within {settings.values.planCheckDays} days. Click Running low above to see which.</p>{/if}
+    {#each categories as c}
+      <div class="line cat" class:none={!cats[c]}><div class="grow">{c}</div><span class="muted">{cats[c] ?? 0} item{(cats[c] ?? 0) === 1 ? '' : 's'}</span></div>
     {/each}
-    {#if data && data.expiring.length}
-      <div class="label gap">PAST OR NEAR THEIR DATE</div>
-      {#each data.expiring.slice(0, 5) as e}
-        <div class="line">
-          <div class="grow"><strong>{e.name}</strong></div>
-          <div class={e.months < 0 ? 'act' : 'check'}>{e.months < 0 ? 'Past its date' : e.months === 0 ? 'This month' : 'In ' + e.months + ' month' + (e.months === 1 ? '' : 's')}</div>
-        </div>
-      {/each}
-    {/if}
     <div class="row gap"><button class="btn" onclick={() => go('Inventory')}>Open Inventory</button><button class="btn" onclick={() => go('What fails')}>What fails next</button></div>
   </section>
-</div>
 
-<div class="cols more">
-  <section class="panel" style="--c: var(--cat-ops)">
-    <div class="label">YOUR PLANS</div>
+  <section class="panel s6" style="--c: var(--cat-ops)">
+    <div class="label">PLANS YOU FOLLOW</div>
     {#if followed.length === 0}
       <p class="muted">You are not following any plan yet. Plans keep going after the first walkthrough: repeating checks, learning and emergency plans.</p>
     {/if}
@@ -226,8 +220,8 @@
     <div class="row gap"><button class="btn" onclick={() => go('What next')}>{followed.length ? 'All plans' : 'Choose plans to follow'}</button><button class="btn" onclick={() => go('Start')}>The first walkthrough</button></div>
   </section>
 
-  <section class="panel" style="--c: var(--cat-academy)">
-    <div class="label">LEARNING</div>
+  <section class="panel s6" style="--c: var(--cat-academy)">
+    <div class="label">ACADEMY</div>
     {#if lessons.length === 0}<p class="muted">No lessons found.</p>
     {:else}
       <p>{lessonsDone} of {lessons.length} lessons done.</p>
@@ -237,28 +231,8 @@
     <div class="row gap"><button class="btn" onclick={() => go('Academy')}>Open the Academy</button></div>
   </section>
 
-  <section class="panel" style="--c: var(--cat-ops)">
-    <div class="label">SUPPLIES BY KIND</div>
-    {#if items === 0}<p class="muted">Nothing counted yet.</p>{/if}
-    <div class="catgrid">
-      {#each categories as c}
-        <div class="catcell" class:none={!cats[c]}><span>{c}</span><span class="muted">{cats[c] ?? 0}</span></div>
-      {/each}
-    </div>
-    {#if items > 0 && emptyCats.length}<p class="muted small">Nothing yet in: {emptyCats.slice(0, 5).join(', ')}{emptyCats.length > 5 ? ' and more' : ''}.</p>{/if}
-    <div class="row gap"><button class="btn" onclick={() => go('Inventory')}>Open Inventory</button></div>
-  </section>
-
-  <section class="panel" style="--c: var(--cat-comms)">
-    <div class="label">SHARING</div>
-    <div class="line"><div class="grow">Sharing with other devices</div><span class="chip {sharing.on ? 'good' : 'soon'}">{sharing.on ? 'On' : 'Off'}</span></div>
-    <div class="line"><div class="grow">Hotspot</div><span class="chip {sharing.hotspot_up ? 'good' : 'soon'}">{sharing.hotspot_up ? 'On' : 'Off'}</span></div>
-    <div class="line"><div class="grow">Devices signed in</div><span>{sharing.signed_in}</span></div>
-    <div class="row gap"><button class="btn" onclick={() => go('settings:Sharing')}>Open Sharing</button></div>
-  </section>
-
-  <section class="panel" style="--c: var(--cat-intel)">
-    <div class="label">IS THE DRIVE READY?</div>
+  <section class="panel s6" style="--c: var(--cat-intel)">
+    <div class="label">IS THIS DRIVE READY?</div>
     {#each ready as r}
       <div class="line">
         <span class="dotmark" class:ok={r.ok}>{r.ok ? '✓' : '!'}</span>
@@ -266,10 +240,6 @@
         {#if !r.ok}<button class="btn" onclick={() => go(r.tab)}>Fix</button>{/if}
       </div>
     {/each}
-    <div class="label gap">GO TO</div>
-    <div class="row quick">
-      {#each ['Ask', 'Library', 'Intel', 'Maps', 'Music', 'Binder'] as t}<button class="btn" aria-label={'Go to ' + t} onclick={() => go(t)}>{t}</button>{/each}
-    </div>
   </section>
 </div>
 
@@ -344,24 +314,22 @@
   .sc:hover { border-color: var(--blue-line); }
   .sc:active { transform: scale(.97); }
   @media (max-width: 600px) { .shortcuts { grid-template-columns: repeat(3, 1fr); } .sc { min-height: 84px; } }
-  .more { margin-top: 12px; }
   /* a colour stripe on the left of each panel and tile, and a condensed heading (mockups/Navigation.html) */
   .panel { border-left: 3px solid var(--c, var(--line2)); }
   .panel > .label { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-family: 'Barlow Condensed', 'Arial Narrow', var(--display); font-stretch: condensed; font-size: 19px; font-weight: 700; letter-spacing: .06em; color: var(--text); }
   .panel > .label::before { content: '\25C6'; font-size: 11px; color: var(--c, var(--muted)); }
   .meter { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
   .meter span { display: block; height: 100%; background: var(--blue); }
-  .catgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 6px 14px; }
-  .catcell { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
-  .catcell.none span:first-child { color: var(--muted); }
   .dotmark { flex: 0 0 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line2); color: var(--accent); font-size: 12px; }
   .dotmark.ok { background: #1f2a1d; border-color: #34502f; color: var(--ok); }
-  .quick { flex-wrap: wrap; gap: 8px; }
   .tiles { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
   .tile { flex: 1 1 170px; padding: 14px; text-align: left; background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--c, var(--line)); border-radius: 12px; }
   .tile:hover { border-color: var(--blue-line); }
   .big { font-size: 24px; font-weight: 600; margin-top: 2px; }
-  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 12px; align-items: start; }
+  .dgrid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; align-items: start; }
+  .s4 { grid-column: span 4; } .s6 { grid-column: span 6; } .s8 { grid-column: span 8; }
+  @media (max-width: 860px) { .s4, .s6, .s8 { grid-column: span 12; } }
+  .line.cat { padding: 7px 0; } .line.cat.none .grow { color: var(--muted); }
   .tip { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 12px 0; border-top: 1px solid var(--line); margin-top: 6px; }
   .chip { flex: 0 0 auto; min-width: 66px; text-align: center; padding: 2px 8px; border-radius: 999px; font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; border: 1px solid var(--line2); }
   .chip.urgent { color: var(--danger); border-color: #6b2a20; background: #241512; }

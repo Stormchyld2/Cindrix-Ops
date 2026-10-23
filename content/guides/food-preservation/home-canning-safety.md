@@ -15,6 +15,6 @@ reviewed:
 5. **Do not can by oven, dishwasher or open kettle.** Do not reuse flat lids.
 6. **Before eating:** throw away any jar that is bulging, leaking, spurting liquid, or smells off. Do not taste it.
 
-**The official guide:** the *USDA Complete Guide to Home Canning* is free (public domain) and is kept up to date by the National Center for Home Food Preservation (nchfp.uga.edu). Put a copy in the **library** folder of your drive, so it shows up on the Shelf.
+**The official guide:** the *USDA Complete Guide to Home Canning* is free (public domain) and is kept up to date by the National Center for Home Food Preservation (nchfp.uga.edu). Put a copy in the **library\manuals** folder of your drive, so it shows up on the Shelf.
 
 Source: USDA Complete Guide to Home Canning, and the National Center for Home Food Preservation (nchfp.uga.edu).
