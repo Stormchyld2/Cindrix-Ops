@@ -1,7 +1,7 @@
 # CindrixOps — Architecture Evolution & Proposed Features
 
 **Document status:** PROPOSAL / DISCUSSION ONLY — NOT AUTHORIZATION TO IMPLEMENT  
-**Version:** 0.7  
+**Version:** 0.8  
 **Prepared:** 2026-10-22  
 **Audience:** Project owner, Claude, ChatGPT, future maintainers  
 **Repository location:** `docs/CINDRIXOPS_ARCHITECTURE_EVOLUTION_PROPOSED_FEATURES.md`
@@ -536,6 +536,39 @@ botanical/
 ### 15.7 Open implementation decisions
 
 Confirm final UI placement, source licensing strategy, editorial/medical review standards, taxonomic authority, pack distribution/update mechanism, Hub storage budget, safety-language policy, and the first approved implementation milestone.
+
+### 15.8 Additional detail from the owner's second description (2026-10-22)
+
+Already covered above and only extended here.
+
+- **Safety wording:** the system must clearly separate supportive traditional practices from medical treatments, and must not recommend replacing essential medications or delaying emergency care. ASK may help retrieve candidate species but must never certify a plant as safe to eat or use. Every entry names its dangerous lookalikes. Each therapeutic claim carries one of four evidence classes: *established*; *promising but limited*; *traditional use without adequate clinical evidence*; *unsupported or harmful*.
+- **Interface:** side-by-side comparison, zoom, seasonal differences and an identification checklist.
+- **Entry contents:** scientific and common names, botanical classification, identification characteristics, multiple photographs, habitat, distribution, cultivation, harvesting, traditional uses, research evidence, toxicity warnings, lookalikes.
+- **Example ASK flow:** *"What medicinal plants grow in West Virginia, and how do I identify them?"* ASK searches the local botanical records using the selected region; retrieves the plant profiles and photographs; shows distinguishing characteristics and toxic lookalikes; summarises documented traditional uses beside the scientific evidence; displays contraindications and safety warnings; links to the full entries, maps and source publications. The answer comes from retrieved, cited local information, not from the model's memory alone.
+- **Wider pack layout (illustrative):**
+
+```text
+cindrix-knowledge/
+  botanical/   taxonomy/ species/ identification/ toxicology/ traditional-uses/
+               clinical-evidence/ cultivation/ geographic-distribution/
+               images/ citations/ indexes/
+  medical/     emergency-care/ wilderness-medicine/ traditional-medicine/ reference-books/
+```
+
+  Search indexes are rebuilt from the source records. A shared citation and cross-reference layer makes every module point to the same species identifiers. No internet is needed to browse or search installed packs.
+- **Planning storage estimates (not measured):**
+
+| Component | Estimated storage |
+|---|---|
+| Botanical records and indexes | 100–500 MB |
+| 500 species with images | 0.5–1.5 GB |
+| 2,000–3,000 species with images | 2–9 GB |
+| Traditional medicine manuals and books | 1–5 GB |
+| Distribution maps and regional data | 0.5–3 GB |
+| Potential complete collection | 4–18 GB |
+
+  Vault can hold the complete collection; Hub installs only the regional and subject packs it needs.
+- **Recommendation:** do not build this as an isolated feature. Make it the **first major implementation of the shared CindrixOps Knowledge Engine**, which later supports agriculture, animal husbandry, food preservation, wilderness survival, engineering and other reference domains. The goal is for CindrixOps to understand relationships between knowledge resources, not just store thousands of books.
 
 ## 16. Standalone Offline Map Viewer and `.cmap` Export Format — owner-selected format
 
