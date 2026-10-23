@@ -31,6 +31,7 @@ pub mod png;
 pub mod product;
 pub mod guides;
 pub mod hotspot;
+pub mod people;
 pub mod profile;
 pub mod share;
 pub mod sourcelink;
