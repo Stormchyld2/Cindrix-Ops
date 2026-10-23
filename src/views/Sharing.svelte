@@ -3,7 +3,7 @@
   import { shareInfo, shareSet, shareSetPin, type ShareInfo } from '../lib/api';
   import { qrMatrix } from '../lib/qr';
 
-  let info: ShareInfo | null = $state(null);
+  let info = $state<ShareInfo | null>(null);
   let error = $state('');
   let pinText = $state('');
   let busy = $state(false);
