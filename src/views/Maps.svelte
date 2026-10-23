@@ -811,6 +811,13 @@
       if (!phoneName) phoneName = current ? (saved.find((m) => m.id === current)?.name ?? 'Phone map') : 'Phone map';
     } catch (e) { phoneErr = String(e); } finally { phoneBusy = false; }
   }
+  /** Open a saved map, then start the file for the phone and the map viewer with its pins, route and drawings. */
+  async function exportSaved(id: string, mapName: string) {
+    await open(id);
+    await new Promise((r) => setTimeout(r, 80)); // let the map settle on the saved map's area
+    phoneName = mapName;
+    await phoneStart();
+  }
   const phoneBytes = (k: PhoneKind) => k.zooms.filter((z) => !z.too_big && z.zoom <= (phoneZoom[k.kind] ?? 0)).reduce((a, z) => a + z.bytes, 0);
   const phoneTotal = $derived(phoneKinds.filter((k) => phoneUse[k.kind]).reduce((a, k) => a + phoneBytes(k), 0));
 
@@ -1680,9 +1687,12 @@
     <div class="label">My saved maps</div>
     <div class="list">
       {#each saved as m}
-        <button class="item" class:on={m.id === current} onclick={() => open(m.id)}>
-          {m.name}{#if m.has_route} <span class="muted">· route</span>{/if}
-        </button>
+        <div class="savedrow">
+          <button class="item" class:on={m.id === current} onclick={() => open(m.id)}>
+            {m.name}{#if m.has_route} <span class="muted">· route</span>{/if}
+          </button>
+          <button class="btn xbtn" title="Make a file of this map for another device and its map viewer" aria-label={'Export ' + m.name} onclick={() => exportSaved(m.id, m.name)}>Export</button>
+        </div>
       {:else}
         <span class="muted">Nothing saved yet.</span>
       {/each}
@@ -1993,6 +2003,9 @@
   .side { flex: 1 1 220px; max-width: 280px; display: flex; flex-direction: column; gap: 10px; }
   .main { flex: 4 1 480px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
   .list { display: flex; flex-direction: column; gap: 4px; }
+  .savedrow { display: flex; gap: 6px; align-items: center; }
+  .savedrow .item { flex: 1 1 auto; min-width: 0; }
+  .xbtn { flex: none; padding: 5px 10px; font-size: 12px; }
   .item { text-align: left; padding: 8px 10px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: var(--text); }
   .item:hover { border-color: var(--line2); }
   .item.on { border-color: var(--blue-line); color: var(--blue); }
