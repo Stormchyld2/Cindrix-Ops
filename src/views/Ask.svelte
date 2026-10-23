@@ -13,6 +13,7 @@
   let excerpt: { title: string; text: string } | null = $state(null);
   let scroller: HTMLDivElement | undefined = $state();
   let note = $state('');
+  let section: 'chat' | 'projects' | 'calendar' | 'todo' = $state('chat');
 
   // what the assistant is allowed to look in (Settings, Assistant)
   const searching = $derived(
@@ -72,8 +73,10 @@
     if (chat.busy) return;
     resetChat();
     viewing = null;
+    section = 'chat';
   }
   async function view(name: string) {
+    section = 'chat';
     try { viewing = { name, msgs: parseChat(await chatRead(name)) }; } catch (e) { note = String(e); }
   }
   /** Put a saved chat back on screen so the talk can carry on from it. */
@@ -127,6 +130,33 @@
 {/snippet}
 
 <div class="askpage">
+<nav class="side" aria-label="Chats">
+  <button class="btn primary" title="Start a new chat. The one on screen is already saved." disabled={chat.busy} onclick={newChat}>＋ New chat</button>
+  <button class="navbtn" class:on={section === 'projects'} title="Projects" onclick={() => (section = 'projects')}>Projects</button>
+  <button class="navbtn" class:on={section === 'calendar'} title="Calendar" onclick={() => (section = 'calendar')}>Calendar</button>
+  <button class="navbtn" class:on={section === 'todo'} title="To-do list" onclick={() => (section = 'todo')}>To-do list</button>
+  <div class="sidehead">Projects</div>
+  <p class="muted small none">No projects yet.</p>
+  <div class="sidehead">Chats</div>
+  <ul class="pastlist">
+    {#each past as c (c.name)}
+      <li class:on={(viewing?.name ?? chat.file) === c.name}>
+        <button class="chatbtn" title={nice(c.name)} onclick={() => view(c.name)}>{nice(c.name)}</button>
+        <button class="x" title="Delete this chat" aria-label={'Delete ' + nice(c.name)} onclick={() => remove(c.name)}>✕</button>
+      </li>
+    {:else}
+      <li class="muted small none">Your chats will be listed here.</li>
+    {/each}
+  </ul>
+</nav>
+<div class="main">
+{#if section !== 'chat'}
+  <section class="panel soon">
+    <strong>{section === 'projects' ? 'Projects' : section === 'calendar' ? 'Calendar' : 'To-do list'}</strong>
+    <p class="muted">This part is not built yet. The place for it is ready here beside your chats.</p>
+    <button class="btn" onclick={() => (section = 'chat')}>Back to the chat</button>
+  </section>
+{:else}
 <div class="scroller" bind:this={scroller}>
 {#if status}
   <p class="muted status">
@@ -171,19 +201,9 @@
   <label class="sr" for="q">Question</label>
   <input id="q" class="input grow" bind:value={chat.question} placeholder="Ask anything. It stays on this device." autocomplete="off" />
   <button class="btn primary" type="submit" disabled={chat.busy}>Send</button>
-  <button class="btn" type="button" title="Start a new chat. The one on screen is already saved." disabled={chat.busy || chat.thread.length === 0} onclick={newChat}>New chat</button>
 </form>
-{#if past.length}
-  <details class="panel how pastbox">
-    <summary>Past chats ({past.length})</summary>
-    <p class="muted small">Saved on the drive in <code>user\chats</code> as plain text. A chat takes only a few kilobytes.</p>
-    <ul class="pastlist">
-      {#each past as c (c.name)}
-        <li><button class="link" onclick={() => view(c.name)}>{nice(c.name)}</button><button class="btn" aria-label={'Delete ' + nice(c.name)} onclick={() => remove(c.name)}>Delete</button></li>
-      {/each}
-    </ul>
-  </details>
 {/if}
+</div>
 </div>
 {#if excerpt}
   <div class="scrim" role="presentation" onclick={() => (excerpt = null)}>
@@ -196,11 +216,25 @@
 {/if}
 
 <style>
-  .askpage { display: flex; flex-direction: column; height: calc(100vh - 120px); min-height: 440px; gap: 10px; }
+  .askpage { display: grid; grid-template-columns: 250px 1fr; height: calc(100vh - 120px); min-height: 440px; gap: 14px; }
+  .main { display: flex; flex-direction: column; min-width: 0; min-height: 0; gap: 10px; }
+  .side { display: flex; flex-direction: column; gap: 6px; min-height: 0; overflow-y: auto; scrollbar-width: none; padding-right: 10px; border-right: 1px solid var(--line); }
+  .side::-webkit-scrollbar { display: none; }
+  .navbtn { text-align: left; background: none; border: 0; color: inherit; padding: 8px 10px; border-radius: 8px; cursor: pointer; }
+  .navbtn:hover, .navbtn.on { background: var(--panel); }
+  .sidehead { margin-top: 10px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 0 10px; }
+  .none { padding: 0 10px; margin: 0; }
+  .side .pastlist { margin: 0; gap: 2px; }
+  .side .pastlist li { border-radius: 8px; padding-right: 4px; }
+  .side .pastlist li.on, .side .pastlist li:hover { background: var(--panel); }
+  .chatbtn { flex: 1; min-width: 0; text-align: left; background: none; border: 0; color: inherit; padding: 7px 10px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .x { background: none; border: 0; color: var(--muted); cursor: pointer; opacity: 0; }
+  .pastlist li:hover .x, .pastlist li.on .x { opacity: 1; }
+  .soon { max-width: 560px; }
+  @media (max-width: 800px) { .askpage { grid-template-columns: 1fr; height: auto; } .side { max-height: 30vh; border-right: 0; } .main { height: 70vh; } }
   .scroller { flex: 1 1 auto; overflow-y: auto; min-height: 0; scrollbar-width: none; -ms-overflow-style: none; }
-  .scroller::-webkit-scrollbar, .pastbox::-webkit-scrollbar, .dialog::-webkit-scrollbar { display: none; }
+  .scroller::-webkit-scrollbar, .dialog::-webkit-scrollbar { display: none; }
   .bar { flex: none; }
-  .pastbox { flex: none; max-height: 34vh; overflow-y: auto; scrollbar-width: none; margin: 0; }
   .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; z-index: 50; }
   .dialog { background: var(--panel, #1b1f24); border: 1px solid var(--line, #444); border-radius: 10px; padding: 16px; width: min(640px, 92vw); max-height: 80vh; overflow-y: auto; scrollbar-width: none; display: flex; flex-direction: column; gap: 10px; }
   .chat { display: flex; flex-direction: column; gap: 14px; flex: 1; }
