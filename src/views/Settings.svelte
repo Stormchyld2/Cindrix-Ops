@@ -7,6 +7,7 @@
   } from '../lib/api';
   import MyDetails from './MyDetails.svelte';
   import Sharing from './Sharing.svelte';
+  import { viewRequest } from '../lib/chat.svelte';
   import { settings, RANGES, SCREENS, type Settings } from '../lib/settings.svelte';
 
   let { openArchives }: { openArchives: () => void } = $props();
@@ -28,6 +29,11 @@
 
   const tabs = ['General', 'Assistant', 'My details', 'Sharing', 'Library', 'Intel', 'Music', 'Maps', 'Plan', 'Your own cards and plans', 'Drive', 'Sources and licenses', 'About'] as const;
   let tab: (typeof tabs)[number] = $state('General');
+  // the top bar can ask for a tab (Comms > Sharing, System > My details)
+  $effect(() => {
+    const want = viewRequest.settingsTab;
+    if (want && (tabs as readonly string[]).includes(want)) { tab = want as (typeof tabs)[number]; viewRequest.settingsTab = ''; }
+  });
 
   type BoolKey = { [K in keyof Settings]: Settings[K] extends boolean ? K : never }[keyof Settings];
   type NumKey = { [K in keyof Settings]: Settings[K] extends number ? K : never }[keyof Settings];

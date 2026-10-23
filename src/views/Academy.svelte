@@ -1,12 +1,14 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { sourceRequest } from '../lib/chat.svelte';
+  import { sourceRequest, viewRequest } from '../lib/chat.svelte';
   import { academyList, academyLesson, academySave, academyProblems, type AcademyModule, type AcademyLesson, type CourseProblem } from '../lib/api';
   import { learner, chooseLearner, loadPeople } from '../lib/learner.svelte';
   import Training from './Training.svelte';
 
   let { go }: { go?: (tab: string) => void } = $props();
   let training = $state(false);
+  // the top bar's Academy > Training sign-off
+  $effect(() => { if (viewRequest.training) { training = true; viewRequest.training = false; } });
 
   let modules: AcademyModule[] = $state([]);
   let problems: CourseProblem[] = $state([]);

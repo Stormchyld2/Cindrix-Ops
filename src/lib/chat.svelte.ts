@@ -65,3 +65,6 @@ export const intelRequest: { path: string } = $state({ path: '' });
 
 // An Academy lesson or a Shelf book page that an Ask source asks another screen to open.
 export const sourceRequest: { lesson: string; book: { id: string; page: number } | null } = $state({ lesson: '', book: null });
+
+// The top bar's menus open a tab inside Settings, or the Training sign-off inside the Academy.
+export const viewRequest: { settingsTab: string; training: boolean } = $state({ settingsTab: '', training: false });

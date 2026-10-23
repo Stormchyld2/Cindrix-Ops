@@ -16,6 +16,9 @@
   --link: #5aa9e6;
   --danger: #e5533d;
   --ok: #6fbf73;
+  /* one colour per group in the top bar, reused for the stripes on the Dashboard */
+  --cat-home: #ece7de; --cat-ops: #e0a030; --cat-intel: #4a90d0; --cat-academy: #c47a5a; --cat-agro: #8fb866;
+  --cat-maps: #4fb3a9; --cat-morale: #d9779b; --cat-comms: #9b79c9; --cat-system: #8a9189;
   --mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
   --display: 'Arial Narrow', 'Segoe UI', system-ui, sans-serif;
 }

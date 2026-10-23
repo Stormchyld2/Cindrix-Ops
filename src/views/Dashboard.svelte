@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { whatFailsNext, inventoryList, drillsList, mapPacks, modelStatus, listModels, libraryStatus, dashboardSuggestions, plansList, academyList, familyStatus, productInfo, type ProductInfo, type Cascade, type Suggestion, type PlanInfo, type AcademyModule } from '../lib/api';
+  import { whatFailsNext, inventoryList, drillsList, mapPacks, modelStatus, listModels, libraryStatus, shareInfo, dashboardSuggestions, plansList, academyList, familyStatus, productInfo, type ProductInfo, type ShareInfo, type Cascade, type Suggestion, type PlanInfo, type AcademyModule } from '../lib/api';
   import { gatherFacts, planCounts, nextStep, stepStatus, KIND_NAME, type PlanFacts } from '../lib/planfacts';
   import { categories } from '../lib/categories';
   import { settings } from '../lib/settings.svelte';
@@ -15,6 +15,8 @@
   let error = $state('');
   let loaded = $state(false);
   let product: ProductInfo | null = $state(null);
+  let sharing: ShareInfo = $state({ on: false, auto: true, reason: '', pin: '', port: 8765, addresses: [], hotspot_up: false, signed_in: 0 });
+  onMount(async () => { try { sharing = await shareInfo(); } catch { /* the panel just shows Off */ } });
   // more of the picture: plans being followed, learning, supplies by kind, and whether the drive is ready
   let plans: PlanInfo[] = $state([]);
   let facts: PlanFacts = $state({ checks: {}, lessons: new Set<string>() });
@@ -75,6 +77,19 @@
   }
   const low = $derived.by(() => (data?.runs_out ?? []).filter((r) => r.days < settings.values.planCheckDays).slice(0, 6));
   const past = $derived.by(() => (data?.expiring ?? []).filter((e) => e.months < 0).length);
+  // the pop-up behind each status tile: what the number is made of, and where to fix it
+  type Detail = 'water' | 'food' | 'low' | 'date' | 'checks' | 'drills';
+  let detail: Detail | null = $state(null);
+  const lowAll = $derived.by(() => (data?.runs_out ?? []).filter((r) => r.days < settings.values.planCheckDays));
+  const dueSteps = $derived(followed.flatMap((p) => p.steps.filter((st) => stepStatus(st, facts) === 'due').map((st) => ({ plan: p.title, step: st.title }))));
+  const detailTitle: Record<Detail, string> = { water: 'Water', food: 'Food', low: 'Running low', date: 'Past or near their date', checks: 'Plan checks due', drills: 'Drills done' };
+  const detailGo: Record<Detail, { tab: string; text: string }> = {
+    water: { tab: 'Inventory', text: 'Open Inventory' }, food: { tab: 'Inventory', text: 'Open Inventory' },
+    low: { tab: 'Inventory', text: 'Open Inventory' }, date: { tab: 'Inventory', text: 'Open Inventory' },
+    checks: { tab: 'What next', text: 'Open Plans' }, drills: { tab: 'Drills', text: 'Open Drills' },
+  };
+  function openDetail(d: Detail) { detail = d; }
+  function goDetail() { const d = detail; detail = null; if (d) go(detailGo[d].tab); }
   const label: Record<string, string> = { urgent: 'Do now', soon: 'Soon', next: 'Next', good: 'All good' };
   // The shortcut tiles. Every one leads to a screen that exists; a tile is left out when this edition does not have that part.
   const ICONS: Record<string, string> = {
@@ -90,6 +105,8 @@
     family: 'M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM2 20c0-3 3-5 6-5s6 2 6 5M17 11a2.5 2.5 0 1 0 0-5M16 15c3 0 6 1.5 6 5',
     binder: 'M6 3h12v18H6zM9 3v18M12 8h4M12 12h4',
     seeds: 'M12 21V10M12 10c0-4 3-6 7-6 0 4-3 6-7 6zM12 14c0-3-2-5-6-5 0 3 2 5 6 5z',
+    agro: 'M12 21V9M12 9c0-4 3-6 7-6 0 4-3 6-7 6zM12 13c0-3-2-5-6-5 0 3 2 5 6 5zM5 21h14',
+    comms: 'M5 12a7 7 0 0 1 14 0M8 12a4 4 0 0 1 8 0M12 12v8M9 20h6',
     music: 'M9 18V6l11-2v12M9 18a3 3 0 1 1-3-3 3 3 0 0 1 3 3zM20 16a3 3 0 1 1-3-3 3 3 0 0 1 3 3z',
   };
   const tiles = $derived.by(() => {
@@ -105,6 +122,8 @@
       { icon: 'drills', label: 'Drills', tab: 'Drills', show: p ? p.plan : true },
       { icon: 'inventory', label: 'Inventory', tab: 'Inventory', show: p ? p.plan : true },
       { icon: 'family', label: 'Family', tab: 'Family', show: p ? p.plan : true },
+      { icon: 'agro', label: 'Agro', tab: 'soon:Agro', show: p ? p.plan : true },
+      { icon: 'comms', label: 'Comms', tab: 'soon:Comms', show: true },
       { icon: 'seeds', label: 'Seed vault', tab: 'Seed vault', show: p ? p.plan : true },
       { icon: 'binder', label: 'Binder', tab: 'Binder', show: p ? p.plan : true },
       { icon: 'music', label: 'Music', tab: 'Music', show: p ? p.music : true },
@@ -137,17 +156,17 @@
 
 {#if data}
   <div class="tiles">
-    <button class="tile" onclick={() => go('Inventory')}><div class="label">WATER</div><div class="big {data.water_days == null ? '' : tone(data.water_days)}">{fmt(data.water_days)}</div></button>
-    <button class="tile" onclick={() => go('Inventory')}><div class="label">FOOD</div><div class="big {data.food_days == null ? '' : tone(data.food_days)}">{fmt(data.food_days)}</div></button>
-    <button class="tile" onclick={() => go('Inventory')}><div class="label">RUNNING LOW</div><div class="big {low.length ? 'check' : 'ok'}">{low.length} item{low.length === 1 ? '' : 's'}</div></button>
-    <button class="tile" onclick={() => go('Inventory')}><div class="label">PAST OR NEAR THEIR DATE</div><div class="big {past ? 'act' : data.expiring.length ? 'check' : 'ok'}">{data.expiring.length} item{data.expiring.length === 1 ? '' : 's'}</div></button>
-    <button class="tile" onclick={() => go('What next')}><div class="label">PLAN CHECKS DUE</div><div class="big {checksDue ? 'check' : followed.length ? 'ok' : ''}">{followed.length ? checksDue : 'None followed'}</div></button>
-    <button class="tile" onclick={() => go('Drills')}><div class="label">DRILLS DONE</div><div class="big {drillsDone ? 'ok' : 'check'}">{drillsDone} of {drillsTotal}</div></button>
+    <button class="tile" style="--c: var(--cat-intel)" onclick={() => openDetail('water')} aria-haspopup="dialog"><div class="label">WATER</div><div class="big {data.water_days == null ? '' : tone(data.water_days)}">{fmt(data.water_days)}</div></button>
+    <button class="tile" style="--c: var(--cat-ops)" onclick={() => openDetail('food')} aria-haspopup="dialog"><div class="label">FOOD</div><div class="big {data.food_days == null ? '' : tone(data.food_days)}">{fmt(data.food_days)}</div></button>
+    <button class="tile" style="--c: var(--cat-ops)" onclick={() => openDetail('low')} aria-haspopup="dialog"><div class="label">RUNNING LOW</div><div class="big {low.length ? 'check' : 'ok'}">{low.length} item{low.length === 1 ? '' : 's'}</div></button>
+    <button class="tile" style="--c: var(--cat-ops)" onclick={() => openDetail('date')} aria-haspopup="dialog"><div class="label">PAST OR NEAR THEIR DATE</div><div class="big {past ? 'act' : data.expiring.length ? 'check' : 'ok'}">{data.expiring.length} item{data.expiring.length === 1 ? '' : 's'}</div></button>
+    <button class="tile" style="--c: var(--cat-ops)" onclick={() => openDetail('checks')} aria-haspopup="dialog"><div class="label">PLAN CHECKS DUE</div><div class="big {checksDue ? 'check' : followed.length ? 'ok' : ''}">{followed.length ? checksDue : 'None followed'}</div></button>
+    <button class="tile" style="--c: var(--cat-ops)" onclick={() => openDetail('drills')} aria-haspopup="dialog"><div class="label">DRILLS DONE</div><div class="big {drillsDone ? 'ok' : 'check'}">{drillsDone} of {drillsTotal}</div></button>
   </div>
 {/if}
 
 <div class="cols">
-  <section class="panel">
+  <section class="panel" style="--c: var(--accent)">
     <div class="label">WHAT TO DO NEXT</div>
     {#if loaded && !tips.length}<p class="muted">Nothing to suggest right now.</p>{/if}
     {#each tips as t}
@@ -163,7 +182,7 @@
     <p class="muted small foot">These come from what is on this device. In an emergency, call 911.</p>
   </section>
 
-  <section class="panel">
+  <section class="panel" style="--c: var(--cat-ops)">
     <div class="label">RUNNING LOW</div>
     {#if data && items === 0}<p class="muted">The Inventory is empty. <button class="link" onclick={() => go('Inventory')}>Add your supplies</button>.</p>
     {:else if data && data.runs_out.length === 0}<p class="muted">No item has a "used per day" amount yet, so nothing can be counted down.</p>
@@ -188,7 +207,7 @@
 </div>
 
 <div class="cols more">
-  <section class="panel">
+  <section class="panel" style="--c: var(--cat-ops)">
     <div class="label">YOUR PLANS</div>
     {#if followed.length === 0}
       <p class="muted">You are not following any plan yet. Plans keep going after the first walkthrough: repeating checks, learning and emergency plans.</p>
@@ -207,7 +226,7 @@
     <div class="row gap"><button class="btn" onclick={() => go('What next')}>{followed.length ? 'All plans' : 'Choose plans to follow'}</button><button class="btn" onclick={() => go('Start')}>The first walkthrough</button></div>
   </section>
 
-  <section class="panel">
+  <section class="panel" style="--c: var(--cat-academy)">
     <div class="label">LEARNING</div>
     {#if lessons.length === 0}<p class="muted">No lessons found.</p>
     {:else}
@@ -218,7 +237,7 @@
     <div class="row gap"><button class="btn" onclick={() => go('Academy')}>Open the Academy</button></div>
   </section>
 
-  <section class="panel">
+  <section class="panel" style="--c: var(--cat-ops)">
     <div class="label">SUPPLIES BY KIND</div>
     {#if items === 0}<p class="muted">Nothing counted yet.</p>{/if}
     <div class="catgrid">
@@ -230,7 +249,15 @@
     <div class="row gap"><button class="btn" onclick={() => go('Inventory')}>Open Inventory</button></div>
   </section>
 
-  <section class="panel">
+  <section class="panel" style="--c: var(--cat-comms)">
+    <div class="label">SHARING</div>
+    <div class="line"><div class="grow">Sharing with other devices</div><span class="chip {sharing.on ? 'good' : 'soon'}">{sharing.on ? 'On' : 'Off'}</span></div>
+    <div class="line"><div class="grow">Hotspot</div><span class="chip {sharing.hotspot_up ? 'good' : 'soon'}">{sharing.hotspot_up ? 'On' : 'Off'}</span></div>
+    <div class="line"><div class="grow">Devices signed in</div><span>{sharing.signed_in}</span></div>
+    <div class="row gap"><button class="btn" onclick={() => go('settings:Sharing')}>Open Sharing</button></div>
+  </section>
+
+  <section class="panel" style="--c: var(--cat-intel)">
     <div class="label">IS THE DRIVE READY?</div>
     {#each ready as r}
       <div class="line">
@@ -246,7 +273,67 @@
   </section>
 </div>
 
+<svelte:window onkeydown={(e) => { if (e.key === 'Escape') detail = null; }} />
+
+{#if detail}
+  <dialog open aria-label={detailTitle[detail]}>
+    <div class="dlg">
+      <h2>{detailTitle[detail]}</h2>
+      {#if detail === 'water' || detail === 'food'}
+        {@const d = detail === 'water' ? data?.water_days : data?.food_days}
+        <p class="big {d == null ? '' : tone(d)}">{fmt(d)}</p>
+        {#if d == null}
+          <p>Nothing can be counted yet. Add your {detail} to the Inventory, and how much of it you use each day, and this fills in.</p>
+        {:else}
+          <p>This is your {detail} in the Inventory divided by what you use each day, added up for everyone. It is an estimate: if more people come, or you use more, it gets shorter.</p>
+          <p class="muted small">Red means under {settings.values.planActDays} days. Amber means under {settings.values.planCheckDays} days. You can change these numbers in Settings, Plan.</p>
+        {/if}
+      {:else if detail === 'low'}
+        {#if lowAll.length === 0}
+          <p>Nothing runs out within {settings.values.planCheckDays} days. Only items with a "used per day" amount are counted.</p>
+        {:else}
+          <p>These run out within {settings.values.planCheckDays} days at the amount you use:</p>
+          {#each lowAll as r}
+            <div class="line"><div class="grow"><strong>{r.name}</strong>{#if r.location}<div class="muted small">{r.location}</div>{/if}</div><span class="chip {r.days < settings.values.planActDays ? 'urgent' : 'soon'}">{fmt(r.days)}</span></div>
+          {/each}
+        {/if}
+      {:else if detail === 'date'}
+        {#if !data || data.expiring.length === 0}
+          <p>Nothing is past its date or close to it.</p>
+        {:else}
+          <p>Items that are past their date, or will be soon:</p>
+          {#each data.expiring as e}
+            <div class="line"><div class="grow"><strong>{e.name}</strong></div><span class="chip {e.months < 0 ? 'urgent' : 'soon'}">{e.months < 0 ? Math.abs(e.months) + ' months past' : e.months + ' months left'}</span></div>
+          {/each}
+        {/if}
+      {:else if detail === 'checks'}
+        {#if followed.length === 0}
+          <p>You are not following any plan yet. Choose a plan and its repeating checks will show up here when they are due.</p>
+        {:else if dueSteps.length === 0}
+          <p>Every check in the plans you follow is up to date.</p>
+        {:else}
+          <p>These checks are due again:</p>
+          {#each dueSteps as d}
+            <div class="line"><div class="grow"><strong>{d.step}</strong><div class="muted small">{d.plan}</div></div><span class="chip soon">Due</span></div>
+          {/each}
+        {/if}
+      {:else}
+        <p class="big {drillsDone ? 'ok' : 'check'}">{drillsDone} of {drillsTotal}</p>
+        <p>A drill is a practice run, such as living without power for a day. It finds the gaps while everything still works. This counts the drills you have done at least once.</p>
+      {/if}
+      <div class="row end">
+        <button class="btn" onclick={() => (detail = null)}>Close</button>
+        <button class="btn primary" onclick={goDetail}>{detailGo[detail].text}</button>
+      </div>
+    </div>
+  </dialog>
+{/if}
+
 <style>
+  .dlg { padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+  .dlg h2 { margin: 0; }
+  .dlg p { margin: 0; }
+  .dlg .end { justify-content: flex-end; }
   .hero { padding: 14px; border: 1px solid var(--line); border-top: 2px solid var(--line2); border-radius: 12px; background: var(--panel); margin-bottom: 10px; }
   .herotop { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
   .herologo { width: 52px; height: 52px; object-fit: contain; }
@@ -258,6 +345,10 @@
   .sc:active { transform: scale(.97); }
   @media (max-width: 600px) { .shortcuts { grid-template-columns: repeat(3, 1fr); } .sc { min-height: 84px; } }
   .more { margin-top: 12px; }
+  /* a colour stripe on the left of each panel and tile, and a condensed heading (mockups/Navigation.html) */
+  .panel { border-left: 3px solid var(--c, var(--line2)); }
+  .panel > .label { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-family: 'Barlow Condensed', 'Arial Narrow', var(--display); font-stretch: condensed; font-size: 19px; font-weight: 700; letter-spacing: .06em; color: var(--text); }
+  .panel > .label::before { content: '\25C6'; font-size: 11px; color: var(--c, var(--muted)); }
   .meter { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
   .meter span { display: block; height: 100%; background: var(--blue); }
   .catgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 6px 14px; }
@@ -267,7 +358,7 @@
   .dotmark.ok { background: #1f2a1d; border-color: #34502f; color: var(--ok); }
   .quick { flex-wrap: wrap; gap: 8px; }
   .tiles { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
-  .tile { flex: 1 1 170px; padding: 14px; text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+  .tile { flex: 1 1 170px; padding: 14px; text-align: left; background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--c, var(--line)); border-radius: 12px; }
   .tile:hover { border-color: var(--blue-line); }
   .big { font-size: 24px; font-weight: 600; margin-top: 2px; }
   .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 12px; align-items: start; }

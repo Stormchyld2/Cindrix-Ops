@@ -14,7 +14,7 @@ Windows comes first; Android and iPhone wrap it later.
 - `src-tauri/src/lib.rs`: Tauri commands and app state. `zimview.rs` serves the `cindrix-zim`
   address for the archive reader. `music.rs` is the music player's side. `libs.rs` is the drive
   question and the library list (`all_zim_files()` is the one place archives are listed from).
-- `src/`: Svelte 5 interface. `App.svelte` holds the top navigation; screens are in `src/views/`;
+- `src/`: Svelte 5 interface. `App.svelte` holds the top navigation (groups with click menus, `docs/35-top-bar.md`); screens are in `src/views/`;
   `src/lib/api.ts` is the only place that calls Tauri commands. `src/lib/Splash.svelte` is the loading screen (logo and background are in `public/`); it shows in the real program, and in a browser only with `?splash`.
 - `core/src/routing.rs` (directions by car and on foot from the roads inside the street map), `roadtiles.rs` (reads the roads layer of a `.pmtiles` file) and `inflate.rs` (gzip): see `docs/31-directions.md`. `core/src/phonepack.rs` cuts a view of the map into one `.cmap` file for a phone: `docs/32-phone-map.md`. `core/src/share.rs` (PIN, guest list, request rules) and `hotspot.rs` are the share server's tested parts; the listener is `src-tauri/src/share.rs`: `docs/34-share-server.md`. `core/src/profile.rs` is Settings > My details (`user/profile.txt`, host-only): `docs/33-my-details.md`.
 - `core/src/academy.rs` (course folders), `plans.rs` (plan files and progress), `cards.rs` (emergency cards from several `cards` folders), `training.rs` (per-person Academy sign-off) and `stockplan.rs` (how much to have): all read plain files, skip anything with a medicine dose, and are tested in `core/`. People's names come from the Family page.

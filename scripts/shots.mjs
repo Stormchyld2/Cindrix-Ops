@@ -48,6 +48,14 @@ async function shoot(page, name) {
   await page.close();
 }
 
+// The top bar has menus now (and a ☰ button on a phone): open the group, then pick the item.
+async function nav(page, top, item) {
+  const burger = page.getByRole('button', { name: 'Menu', exact: true });
+  if (await burger.isVisible() && (await burger.getAttribute('aria-expanded')) !== 'true') await burger.click();
+  await page.getByRole('button', { name: top, exact: true }).click();
+  if (item) await page.getByRole('menuitem', { name: item, exact: true }).click();
+}
+
 for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone', { width: 390, height: 800 }]]) {
   const page = await browser.newPage({ viewport: size });
   const errors = [];
@@ -58,10 +66,10 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   // the program opens on the Dashboard; take the first picture of Ask
   await page.getByRole('heading', { name: 'Dashboard' }).first().waitFor();
   await shoot(page, `${label}-0-opens-on-dashboard`);
-  await page.getByRole('button', { name: 'Ask', exact: true }).click();
+  await nav(page, 'Ask');
   await shoot(page, `${label}-1-ask`);
 
-  await page.getByRole('button', { name: 'Library', exact: true }).click();
+  await nav(page, 'Intel', 'Shelf');
   await shoot(page, `${label}-1b-shelf`);
   await page.locator('#add-book').setInputFiles({
     name: 'where_there_is_no_doctor.pdf', mimeType: 'application/pdf',
@@ -79,10 +87,10 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   await page.waitForTimeout(800);
   await shoot(page, `${label}-1e-reader-search`);
   await page.getByRole('button', { name: '‹ Shelf' }).click();
-  await page.getByRole('button', { name: 'Archives', exact: true }).click();
+  await nav(page, 'Intel', 'Archives');
   await shoot(page, `${label}-1f-archives`);
   // Intel, the offline internet: the start page, the browser, bookmarks, tabs and a search across every archive.
-  await page.getByRole('button', { name: 'Intel', exact: true }).click();
+  await nav(page, 'Intel', 'Offline browser');
   await page.getByRole('button', { name: /Sample library \(preview\)/ }).waitFor();
   await shoot(page, `${label}-1g-intel-start`);
   await page.getByRole('button', { name: /Sample library \(preview\)/ }).click();
@@ -107,12 +115,12 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   await page.locator('.marks').getByRole('button', { name: /^Water/ }).waitFor();
   await shoot(page, `${label}-1i-intel-bookmarks`);
   await page.getByRole('button', { name: /^Bookmarks/ }).click();
-  await page.getByRole('button', { name: 'Library', exact: true }).click();
-  await page.getByRole('button', { name: 'Emergency cards', exact: true }).click();
+  await nav(page, 'Intel', 'Shelf');
+  await nav(page, 'Intel', 'Emergency cards');
   await page.getByRole('button', { name: /Low blood sugar/ }).click();
   await shoot(page, `${label}-2-library`);
 
-  await page.getByRole('button', { name: 'Maps', exact: true }).click();
+  await nav(page, 'Maps');
   await shoot(page, `${label}-2b-maps-empty`);
   await page.getByLabel('Map name').fill('Home to the lake cabin');
   for (const [lab, lat, lon] of [['Home', '39.4', '-80.1'], ['Bridge', '39.45', '-80.05'], ['Cabin', '39.5', '-79.95']]) {
@@ -141,7 +149,7 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   await page.getByText(/latitude between -90 and 90/).waitFor();
 
   // Academy: open a lesson, read it, take the quiz, see the score saved.
-  await page.getByRole('button', { name: 'Academy', exact: true }).click();
+  await nav(page, 'Academy', 'Courses');
   await page.getByRole('heading', { name: 'Academy' }).waitFor();
   await shoot(page, `${label}-2c1-academy-list`);
   await page.getByRole('button', { name: /Open the course/ }).first().click();
@@ -167,7 +175,7 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   await shoot(page, `${label}-2c4-training-person`);
 
   // Music: browse, play a generated tone, watch the clock advance, use the equalizer.
-  await page.getByRole('button', { name: 'Music', exact: true }).click();
+  await nav(page, 'Morale', 'Music');
   await page.getByRole('button', { name: 'Play Dawn' }).waitFor();
   await shoot(page, `${label}-2d-music-library`);
   await page.getByRole('button', { name: 'Artists', exact: true }).click();
@@ -186,15 +194,14 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   await shoot(page, `${label}-2g-music-eq`);
   await page.getByRole('button', { name: 'Pause' }).click();
 
-  await page.getByRole('button', { name: 'Dashboard', exact: true }).click();
+  await nav(page, 'Dashboard');
   await page.getByText('WHAT TO DO NEXT').waitFor();
   await shoot(page, `${label}-2d-dashboard`);
 
-  await page.getByRole('button', { name: 'Plan', exact: true }).click();
   await shoot(page, `${label}-3-start`);
 
   // What next: plans that carry on after the walkthrough. Open one, follow it, tick a step.
-  await page.getByRole('button', { name: 'Plans', exact: true }).click();
+  await nav(page, 'Operations', 'Plans');
   await page.getByRole('heading', { name: 'Plans' }).waitFor();
   await shoot(page, `${label}-3b-plans`);
   await page.getByRole('button', { name: /Open the plan Keep it fresh/ }).click();
@@ -205,7 +212,7 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   await shoot(page, `${label}-3c-plan-followed`);
   await page.getByRole('button', { name: '← All plans' }).click();
 
-  await page.getByRole('button', { name: 'Inventory', exact: true }).click();
+  await nav(page, 'Operations', 'Inventory');
   await page.getByLabel(/Select Test strips \(Person 2\)/).check();
   await page.getByLabel(/Select Drinking water, 1 gal jugs/).first().check();
   await shoot(page, `${label}-4-inventory-selected`);
@@ -217,14 +224,13 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   await page.getByRole('button', { name: 'Cancel' }).click();
 
   // Inventory has its own link in the top bar now: go back to Plan for Family, What fails, Drills and Binder.
-  await page.getByRole('button', { name: 'Plan', exact: true }).click();
-  await page.getByRole('button', { name: 'Family', exact: true }).click();
+  await nav(page, 'Operations', 'Family');
   await shoot(page, `${label}-7-family`);
 
-  await page.getByRole('button', { name: 'What fails next', exact: true }).click();
+  await nav(page, 'Operations', 'What fails next');
   await shoot(page, `${label}-8-what-fails`);
 
-  await page.getByRole('button', { name: 'Drills', exact: true }).click();
+  await nav(page, 'Operations', 'Drills');
   await shoot(page, `${label}-9a-drills`);
   await page.getByRole('button', { name: 'Do it again' }).first().click();
   await page.locator('.steps input').nth(0).check();
@@ -233,19 +239,19 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   await shoot(page, `${label}-9b-drill-running`);
   await page.getByRole('button', { name: 'End drill without saving' }).click();
 
-  await page.getByRole('button', { name: 'Binder', exact: true }).click();
+  await nav(page, 'Operations', 'Binder');
   await shoot(page, `${label}-9c-binder`);
 
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await nav(page, 'System', 'Settings');
   await shoot(page, `${label}-9d-settings`);
   await page.getByRole('tab', { name: 'Assistant' }).click();
   await shoot(page, `${label}-9d2-settings-assistant`);
   // a setting changes what the program does: with file search off, Ask no longer says it looks in files and folders
   await page.getByLabel(/Files and folders on the drive/).uncheck();
-  await page.getByRole('button', { name: 'Ask', exact: true }).click();
+  await nav(page, 'Ask');
   await page.getByText(/It looks in the emergency cards/).waitFor();
   if ((await page.locator('main').innerText()).includes('files and folders')) throw new Error('turning off file search did not change what Ask says');
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await nav(page, 'System', 'Settings');
   await page.getByRole('tab', { name: 'Plan', exact: true }).click();
   await shoot(page, `${label}-9d3-settings-plan`);
   await page.getByRole('tab', { name: 'Your own cards and plans' }).click();

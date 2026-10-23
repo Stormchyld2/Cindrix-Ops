@@ -21,7 +21,7 @@
   import MiniPlayer from './lib/MiniPlayer.svelte';
   import Splash from './lib/Splash.svelte';
   import { onMount } from 'svelte';
-  import { intelRequest, sourceRequest } from './lib/chat.svelte';
+  import { intelRequest, sourceRequest, viewRequest } from './lib/chat.svelte';
   import { modelStatus, libraryStatus, productInfo, librariesList, libraryAnswer, type ModelStatus, type ProductInfo, type LibraryEntry } from './lib/api';
   import { settings, applyUiScale } from './lib/settings.svelte';
   import { installTooltips, removeTooltips } from './lib/tooltips';
@@ -76,7 +76,7 @@
   $effect(() => { if (settings.loaded) void applyUiScale(settings.values.uiScale); });
 
   // Intel is the offline internet: the archives read like web pages. It goes with the library.
-  type Group = 'Dashboard' | 'Ask' | 'Library' | 'Intel' | 'Academy' | 'Maps' | 'Music' | 'Plan' | 'Inventory' | 'Settings';
+  type Group = 'Dashboard' | 'Ask' | 'Library' | 'Intel' | 'Academy' | 'Maps' | 'Music' | 'Plan' | 'Inventory' | 'Settings' | 'Soon';
   const allGroups: Group[] = ['Dashboard', 'Ask', 'Library', 'Intel', 'Academy', 'Maps', 'Music', 'Plan', 'Inventory', 'Settings'];
   // Each product switches parts of the program on or off (core/src/product.rs).
   const groups = $derived(
@@ -94,9 +94,7 @@
 
   let group: Group = $state('Dashboard');
   // If the current screen is switched off for this product, move to the first one that is on.
-  $effect(() => { if (groups.length && !groups.includes(group)) group = groups[0]; });
-  // plain names on the buttons; the short ids stay as they are
-  const planLabel: Record<string, string> = { 'Start': 'Get ready', 'What next': 'Plans', 'Drills': 'Drills', 'Family': 'Family', 'Binder': 'Binder', 'Seed vault': 'Seed vault', 'What fails': 'What fails next' };
+  $effect(() => { if (groups.length && group !== 'Soon' && !groups.includes(group)) group = groups[0]; });
   let plan: (typeof planTabs)[number] = $state('Start');
   const libTabs = ['Shelf', 'Archives', 'Cards'] as const;
   let lib: (typeof libTabs)[number] = $state('Shelf');
@@ -133,6 +131,11 @@
   }
   /** The Dashboard's links: a top-level screen, or a screen inside Plan, Library and so on. */
   function goTo(tab: string) {
+    // screens that are planned but not built yet, the Settings tabs, and the Academy's Training sign-off
+    if (!tab.startsWith('settings:')) settingsFromComms = false;
+    if (tab.startsWith('soon:')) { soonTitle = tab.slice(5); group = 'Soon'; return; }
+    if (tab.startsWith('settings:')) { settingsFromComms = tab === 'settings:Sharing'; viewRequest.settingsTab = tab.slice(9); group = 'Settings'; return; }
+    if (tab === 'training') { viewRequest.training = true; group = 'Academy'; return; }
     if ((allGroups as string[]).includes(tab)) { group = tab as Group; return; }
     if (tab === 'Shelf' || tab === 'Archives' || tab === 'Cards') { lib = tab as (typeof libTabs)[number]; group = 'Library'; return; }
     goPlan(tab);
@@ -142,7 +145,75 @@
     group = 'Plan';
     if ((planTabs as readonly string[]).includes(tab)) plan = tab as (typeof planTabs)[number];
   }
+
+  // ---- the top bar: groups with a menu each (mockups/Navigation.html) ----
+  let soonTitle = $state('');
+  let settingsFromComms = $state(false);
+  let openMenu: string | null = $state(null);
+  let barOpen = $state(false);
+  type Entry = { label: string; tab: string; note?: string; show?: boolean; rule?: boolean };
+  type Top = { id: string; cat: string; tab?: string; entries?: Entry[]; show: boolean };
+  const tops: Top[] = $derived.by(() => {
+    const p = product;
+    const plan_ = p ? p.plan : true;
+    const lib_ = p ? p.library : true;
+    return [
+      { id: 'Dashboard', cat: 'home', tab: 'Dashboard', show: true },
+      { id: 'Ask', cat: 'home', tab: 'Ask', show: p ? p.assistant : true },
+      { id: 'Operations', cat: 'ops', show: plan_, entries: [
+        { label: 'Get ready', tab: 'Start' }, { label: 'Plans', tab: 'What next' }, { label: 'Drills', tab: 'Drills' },
+        { label: 'Inventory', tab: 'Inventory' }, { label: 'Family', tab: 'Family' }, { label: 'Binder', tab: 'Binder' },
+        { label: 'What fails next', tab: 'What fails' } ] },
+      { id: 'Intel', cat: 'intel', show: lib_, entries: [
+        { label: 'Offline browser', tab: 'Intel', note: 'archives' }, { label: 'Shelf', tab: 'Shelf', note: 'manuals' },
+        { label: 'Archives', tab: 'Archives' }, { label: 'Emergency cards', tab: 'Cards' } ] },
+      { id: 'Academy', cat: 'academy', show: true, entries: [
+        { label: 'Courses', tab: 'Academy' }, { label: 'Training sign-off', tab: 'training' } ] },
+      { id: 'Agro', cat: 'agro', show: plan_, entries: [
+        { label: 'Crop guides', tab: 'soon:Crop guides', note: 'new' }, { label: 'Planting calendar', tab: 'soon:Planting calendar', note: 'new' },
+        { label: 'Food preservation', tab: 'soon:Food preservation', note: 'new' }, { label: 'Livestock', tab: 'soon:Livestock', note: 'new' },
+        { label: 'Soil and water', tab: 'soon:Soil and water', note: 'new' }, { label: '', tab: '', rule: true },
+        { label: 'Seed vault', tab: 'Seed vault' } ] },
+      { id: 'Maps', cat: 'maps', tab: 'Maps', show: p ? p.maps : true },
+      { id: 'Morale', cat: 'morale', show: true, entries: [
+        { label: 'Reading Corner', tab: 'soon:Reading Corner', note: 'enjoyment books' },
+        { label: 'Music', tab: 'Music', show: p ? p.music : true }, { label: '', tab: '', rule: true },
+        { label: 'Journal', tab: 'soon:Journal', note: 'private' }, { label: 'Photos', tab: 'soon:Photos' } ] },
+      { id: 'Comms', cat: 'comms', show: true, entries: [
+        { label: 'Comms plan', tab: 'soon:Comms plan', note: 'private' }, { label: 'Radio reference', tab: 'soon:Radio reference' },
+        { label: 'Signals', tab: 'soon:Signals', note: 'on the map' }, { label: '', tab: '', rule: true },
+        { label: 'Sharing', tab: 'settings:Sharing', note: 'hotspot' } ] },
+      { id: 'System', cat: 'system', show: true, entries: [
+        { label: 'Settings', tab: 'settings:General' }, { label: 'My details', tab: 'settings:My details' } ] },
+    ];
+  });
+  /** Which word in the top bar the current screen belongs under. */
+  const activeTop = $derived.by(() => {
+    switch (group) {
+      case 'Library': case 'Intel': return 'Intel';
+      case 'Music': return 'Morale';
+      case 'Plan': return plan === 'Seed vault' ? 'Agro' : 'Operations';
+      case 'Inventory': return 'Operations';
+      case 'Settings': return settingsFromComms ? 'Comms' : 'System';
+      case 'Soon': {
+        const hit = tops.find((t) => t.entries?.some((e) => e.tab === 'soon:' + soonTitle));
+        return hit ? hit.id : soonTitle;
+      }
+      default: return group;
+    }
+  });
+  function pick(tab: string) {
+    openMenu = null;
+    barOpen = false;
+    goTo(tab);
+  }
+  function topClick(t: Top) {
+    if (t.entries) openMenu = openMenu === t.id ? null : t.id;
+    else if (t.tab) pick(t.tab);
+  }
 </script>
+
+<svelte:window onclick={() => (openMenu = null)} onkeydown={(e) => { if (e.key === 'Escape') openMenu = null; }} />
 
 {#if showSplash}<Splash ready={polled && settings.loaded} />{/if}
 
@@ -159,25 +230,26 @@
         <div class="tag">Carry the library. Keep the fire.</div>
       </div>
     </div>
-    <nav aria-label="Sections">
-      {#each groups as g}
-        <button class:on={group === g} onclick={() => (group = g)} aria-current={group === g ? 'page' : undefined}>{g}</button>
+    <button class="burger" aria-label="Menu" aria-expanded={barOpen} onclick={(e) => { e.stopPropagation(); barOpen = !barOpen; }}>&#9776;</button>
+    <nav aria-label="Sections" class:show={barOpen}>
+      {#each tops as t (t.id)}
+        {#if t.show}
+          <div class="item" class:on={activeTop === t.id} class:open={openMenu === t.id} style={`--c: var(--cat-${t.cat})`}>
+            <button aria-label={t.id} onclick={(e) => { e.stopPropagation(); topClick(t); }} aria-current={activeTop === t.id ? 'page' : undefined} aria-haspopup={t.entries ? 'menu' : undefined} aria-expanded={t.entries ? openMenu === t.id : undefined}>{t.id}{#if t.entries}<span class="caret">&#9660;</span>{/if}</button>
+            {#if t.entries && openMenu === t.id}
+              <div class="menu" role="menu">
+                {#each t.entries as e}
+                  {#if e.rule}<hr />
+                  {:else if e.show !== false}
+                    <button role="menuitem" aria-label={e.label} onclick={(ev) => { ev.stopPropagation(); pick(e.tab); }}>{e.label}{#if e.note}<small>{e.note}</small>{/if}</button>
+                  {/if}
+                {/each}
+              </div>
+            {/if}
+          </div>
+        {/if}
       {/each}
     </nav>
-    {#if group === 'Library'}
-      <div class="subnav">
-        {#each libTabs as t}
-          <button class:on={lib === t} onclick={() => (lib = t)}>{t === 'Cards' ? 'Emergency cards' : t}</button>
-        {/each}
-      </div>
-    {/if}
-    {#if group === 'Plan'}
-      <div class="subnav">
-        {#each planTabs as t}
-          <button class:on={plan === t} onclick={() => (plan = t)}>{planLabel[t] ?? t}</button>
-        {/each}
-      </div>
-    {/if}
   </header>
 
   {#if libNote}
@@ -226,7 +298,7 @@
     {:else if group === 'Settings'}
       <Settings {openArchives} />
     {:else}
-      <Soon title={group} />
+      <Soon title={group === 'Soon' ? soonTitle : group} />
     {/if}
   </main>
 
@@ -278,12 +350,26 @@
   .name span { color: var(--accent); }
   .name small { font-size: 12px; letter-spacing: .2em; color: var(--muted); }
   .tag { font-family: var(--mono); text-transform: uppercase; letter-spacing: .14em; font-size: 10px; color: var(--muted); margin-top: 4px; }
-  nav { display: flex; flex-wrap: wrap; gap: 6px; }
-  nav button { padding: 8px 14px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: #aab3ad; font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: .12em; font-weight: 500; }
-  nav button.on { background: var(--blue-soft); color: var(--blue); border-color: var(--blue-line); font-weight: 600; }
-  .subnav { flex: 1 1 100%; display: flex; flex-wrap: wrap; gap: 4px; padding-top: 6px; border-top: 1px solid var(--line); }
-  .subnav button { padding: 6px 10px; background: transparent; border: 0; border-bottom: 2px solid transparent; color: var(--muted); font-family: var(--mono); text-transform: uppercase; letter-spacing: .1em; font-size: 12px; }
-  .subnav button.on { color: var(--blue); border-bottom-color: var(--blue); font-weight: 600; }
+  nav { display: flex; flex-wrap: wrap; gap: 4px; }
+  .item { position: relative; }
+  .item > button { display: flex; gap: 6px; align-items: center; padding: 8px 10px; border-radius: 6px; border: 1px solid transparent; background: transparent; color: #aab3ad; font-family: var(--mono); font-size: 11.5px; text-transform: uppercase; letter-spacing: .1em; font-weight: 500; }
+  .item > button::before { content: '\25C6'; font-size: 9px; color: var(--c, var(--muted)); }
+  .item > button:hover { color: var(--text); }
+  .item.on > button { background: var(--blue-soft); color: var(--blue); border-color: var(--blue-line); font-weight: 600; }
+  .item.on > button, .item.open > button { box-shadow: inset 0 -2px 0 var(--c, var(--blue)); }
+  .caret { font-size: 9px; opacity: .7; }
+  .menu { position: absolute; top: calc(100% + 6px); left: 0; min-width: 210px; z-index: 60; background: #1b1f1d; border: 1px solid var(--line); border-top: 2px solid var(--c, var(--blue)); border-radius: 0 0 6px 6px; padding: 6px; box-shadow: 0 10px 24px #000a; }
+  .menu button { display: flex; width: 100%; justify-content: space-between; gap: 14px; padding: 9px 10px; border: 0; border-radius: 4px; background: transparent; color: var(--text); font-family: var(--display); font-size: 15px; text-align: left; }
+  .menu button:hover { background: var(--blue-soft); }
+  .menu small { color: var(--muted); font-family: var(--mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; align-self: center; }
+  .menu hr { border: 0; border-top: 1px solid var(--line); margin: 6px 0; }
+  .burger { display: none; margin-left: auto; padding: 7px 11px; font-size: 16px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--text); }
+  @media (max-width: 900px) {
+    .burger { display: block; }
+    nav { display: none; flex: 1 1 100%; flex-direction: column; }
+    nav.show { display: flex; }
+    .menu { position: static; box-shadow: none; margin: 4px 0 4px 12px; }
+  }
   main { flex: 1; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; max-width: 1040px; width: 100%; margin: 0 auto; }
   /* the offline browser gets the whole window, so pages have room */
   main.wide { max-width: none; padding: 14px 16px; }
