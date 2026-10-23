@@ -74,6 +74,9 @@
   function tone(d: number): string {
     return d < settings.values.planActDays ? 'act' : d < settings.values.planCheckDays ? 'check' : 'ok';
   }
+  // the Inventory panel shows the five kinds with the most items, not every kind
+  const topCats = $derived([...categories].filter((c) => cats[c]).sort((a, b) => (cats[b] ?? 0) - (cats[a] ?? 0)).slice(0, 5));
+  const otherKinds = $derived(categories.length - topCats.length);
   const low = $derived.by(() => (data?.runs_out ?? []).filter((r) => r.days < settings.values.planCheckDays).slice(0, 6));
   const past = $derived.by(() => (data?.expiring ?? []).filter((e) => e.months < 0).length);
   // the pop-up behind each status tile: what the number is made of, and where to fix it
@@ -158,8 +161,8 @@
     <button class="tile" style="--c: var(--cat-intel)" onclick={() => openDetail('water')} aria-haspopup="dialog"><div class="label">WATER</div><div class="big {data.water_days == null ? '' : tone(data.water_days)}">{fmt(data.water_days)}</div></button>
     <button class="tile" style="--c: var(--cat-ops)" onclick={() => openDetail('food')} aria-haspopup="dialog"><div class="label">FOOD</div><div class="big {data.food_days == null ? '' : tone(data.food_days)}">{fmt(data.food_days)}</div></button>
     <button class="tile" style="--c: var(--cat-ops)" onclick={() => openDetail('low')} aria-haspopup="dialog"><div class="label">RUNNING LOW</div><div class="big {low.length ? 'check' : 'ok'}">{low.length} item{low.length === 1 ? '' : 's'}</div></button>
-    <button class="tile" style="--c: var(--cat-ops)" onclick={() => openDetail('date')} aria-haspopup="dialog"><div class="label">PAST OR NEAR THEIR DATE</div><div class="big {past ? 'act' : data.expiring.length ? 'check' : 'ok'}">{data.expiring.length} item{data.expiring.length === 1 ? '' : 's'}</div></button>
-    <button class="tile" style="--c: var(--cat-ops)" onclick={() => openDetail('checks')} aria-haspopup="dialog"><div class="label">PLAN CHECKS DUE</div><div class="big {checksDue ? 'check' : followed.length ? 'ok' : ''}">{followed.length ? checksDue : 'None followed'}</div></button>
+    <button class="tile" style="--c: var(--cat-ops)" onclick={() => openDetail('date')} aria-haspopup="dialog"><div class="label">PAST OR NEAR DATE</div><div class="big {past ? 'act' : data.expiring.length ? 'check' : 'ok'}">{data.expiring.length} item{data.expiring.length === 1 ? '' : 's'}</div></button>
+    <button class="tile" style="--c: var(--cat-ops)" onclick={() => openDetail('checks')} aria-haspopup="dialog"><div class="label">PLAN CHECKS DUE</div><div class="big {checksDue ? 'check' : followed.length ? 'ok' : ''}">{followed.length ? checksDue : 'None'}</div></button>
     <button class="tile" style="--c: var(--cat-ops)" onclick={() => openDetail('drills')} aria-haspopup="dialog"><div class="label">DRILLS DONE</div><div class="big {drillsDone ? 'ok' : 'check'}">{drillsDone} of {drillsTotal}</div></button>
   </div>
 {/if}
@@ -196,9 +199,10 @@
     {:else if data && data.runs_out.length === 0}<p class="muted small">No item has a "used per day" amount yet, so nothing can be counted down.</p>
     {:else if data && low.length === 0}<p class="muted small">Nothing runs out within {settings.values.planCheckDays} days.</p>
     {:else if data}<p class="small"><strong>{low.length} item{low.length === 1 ? '' : 's'}</strong> run low within {settings.values.planCheckDays} days. Click Running low above to see which.</p>{/if}
-    {#each categories as c}
-      <div class="line cat" class:none={!cats[c]}><div class="grow">{c}</div><span class="muted">{cats[c] ?? 0} item{(cats[c] ?? 0) === 1 ? '' : 's'}</span></div>
+    {#each topCats as c}
+      <div class="line cat"><div class="grow">{c}</div><span class="muted">{cats[c]} item{cats[c] === 1 ? '' : 's'}</span></div>
     {/each}
+    {#if data && items > 0}<p class="muted small">{otherKinds} other kind{otherKinds === 1 ? '' : 's'} {otherKinds === 1 ? 'is' : 'are'} empty or smaller. Open the Inventory to see them all.</p>{/if}
     <div class="row gap"><button class="btn" onclick={() => go('Inventory')}>Open Inventory</button><button class="btn" onclick={() => go('What fails')}>What fails next</button></div>
   </section>
 
@@ -323,14 +327,16 @@
   .meter span { display: block; height: 100%; background: var(--blue); }
   .dotmark { flex: 0 0 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line2); color: var(--accent); font-size: 12px; }
   .dotmark.ok { background: #1f2a1d; border-color: #34502f; color: var(--ok); }
-  .tiles { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
-  .tile { flex: 1 1 170px; padding: 14px; text-align: left; background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--c, var(--line)); border-radius: 12px; }
+  .tiles { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 12px; }
+  @media (max-width: 1100px) { .tiles { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 560px) { .tiles { grid-template-columns: repeat(2, 1fr); } }
+  .tile { display: flex; flex-direction: column; justify-content: space-between; gap: 8px; min-height: 84px; padding: 14px; text-align: left; background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--c, var(--line)); border-radius: 12px; }
   .tile:hover { border-color: var(--blue-line); }
   .big { font-size: 24px; font-weight: 600; margin-top: 2px; }
-  .dgrid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; align-items: start; }
+  .dgrid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; align-items: stretch; }
   .s4 { grid-column: span 4; } .s6 { grid-column: span 6; } .s8 { grid-column: span 8; }
   @media (max-width: 860px) { .s4, .s6, .s8 { grid-column: span 12; } }
-  .line.cat { padding: 7px 0; } .line.cat.none .grow { color: var(--muted); }
+  .line.cat { padding: 8px 0; }
   .tip { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 12px 0; border-top: 1px solid var(--line); margin-top: 6px; }
   .chip { flex: 0 0 auto; min-width: 66px; text-align: center; padding: 2px 8px; border-radius: 999px; font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; border: 1px solid var(--line2); }
   .chip.urgent { color: var(--danger); border-color: #6b2a20; background: #241512; }
