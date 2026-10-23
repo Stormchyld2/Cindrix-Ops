@@ -30,7 +30,7 @@
     if (urls[p.name]) return;
     try {
       const b = await photoRead(scope, who.name, p.name);
-      urls[p.name] = URL.createObjectURL(new Blob([b], { type: mime(p.name) }));
+      urls[p.name] = URL.createObjectURL(new Blob([b as unknown as BlobPart], { type: mime(p.name) }));
     } catch { /* the thumbnail stays empty */ }
   }
   /** Load a picture only when it scrolls into view, so a big album does not fill memory at once. */
