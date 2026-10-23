@@ -162,7 +162,8 @@ pub fn start(app: &tauri::AppHandle, reason: &str) -> Result<(), String> {
 
 pub fn stop(app: &tauri::AppHandle) {
     let st = app.state::<AppState>();
-    if let Some(r) = st.share.running.lock().unwrap().take() {
+    let taken = st.share.running.lock().unwrap().take();
+    if let Some(r) = taken {
         r.stop.store(true, Ordering::SeqCst);
     }
 }
