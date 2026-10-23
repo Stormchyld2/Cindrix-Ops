@@ -30,6 +30,7 @@ pub mod pipeline;
 pub mod png;
 pub mod product;
 pub mod profile;
+pub mod sourcelink;
 pub mod prompt;
 pub mod retrieval;
 pub mod roadtiles;

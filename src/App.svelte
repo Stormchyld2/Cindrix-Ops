@@ -21,7 +21,7 @@
   import MiniPlayer from './lib/MiniPlayer.svelte';
   import Splash from './lib/Splash.svelte';
   import { onMount } from 'svelte';
-  import { intelRequest } from './lib/chat.svelte';
+  import { intelRequest, sourceRequest } from './lib/chat.svelte';
   import { modelStatus, libraryStatus, productInfo, librariesList, libraryAnswer, type ModelStatus, type ProductInfo, type LibraryEntry } from './lib/api';
   import { settings, applyUiScale } from './lib/settings.svelte';
   import { installTooltips, removeTooltips } from './lib/tooltips';
@@ -114,7 +114,19 @@
   /** An Ask source: an emergency card, or a page in an archive (opened in Intel). */
   function openSource(link: string) {
     if (link.startsWith('card:')) { openCard(link.slice(5)); return; }
-    if (link.startsWith('/content/')) { intelRequest.path = link; group = 'Intel'; }
+    if (link.startsWith('/content/')) { intelRequest.path = link; group = 'Intel'; return; }
+    if (link.startsWith('academy:')) { sourceRequest.lesson = link.slice(8); group = 'Academy'; return; }
+    if (link.startsWith('plan:')) {
+      try { sessionStorage.setItem('cindrix.openPlan', link.slice(5)); } catch { /* the plan list opens instead */ }
+      goPlan('What next');
+      return;
+    }
+    if (link.startsWith('book:')) {
+      const [id, page] = [link.slice(5, link.lastIndexOf(':')), Number(link.slice(link.lastIndexOf(':') + 1)) || 1];
+      sourceRequest.book = { id, page };
+      lib = 'Shelf';
+      group = 'Library';
+    }
   }
   function openIntel() {
     group = 'Intel';

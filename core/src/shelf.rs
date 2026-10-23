@@ -344,6 +344,7 @@ impl Shelf {
             .into_iter()
             .map(|mut p| {
                 if let Some((_, t)) = titles.iter().find(|(id, _)| *id == p.source) {
+                    p.link = crate::sourcelink::book_page(&p.source, &p.heading);
                     p.source = t.clone();
                 }
                 p
@@ -623,6 +624,7 @@ mod tests {
         assert_eq!(r.len(), 1);
         assert_eq!(r[0].source, "Where There Is No Doctor");
         assert_eq!(r[0].heading, "page 2");
+        assert_eq!(r[0].link, "book:u1:2");
         // page text starting with '#' stays inside its own page
         let r2 = s.search("heading something entirely", 3);
         assert!(r2.iter().all(|p| p.heading == "page 3"));

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { sourceRequest } from '../lib/chat.svelte';
   import { academyList, academyLesson, academySave, academyProblems, type AcademyModule, type AcademyLesson, type CourseProblem } from '../lib/api';
   import { learner, chooseLearner, loadPeople } from '../lib/learner.svelte';
   import Training from './Training.svelte';
@@ -32,6 +33,7 @@
   onMount(async () => {
     if (!learner.loaded) await loadPeople();
     await load();
+    if (sourceRequest.lesson) { const want = sourceRequest.lesson; sourceRequest.lesson = ''; await open(want); }
   });
   async function pickLearner(n: string) {
     chooseLearner(n);

@@ -10,7 +10,7 @@
   let timer: ReturnType<typeof setInterval> | undefined;
   let past: ChatInfo[] = $state([]);
   let viewing: { name: string; msgs: Msg[] } | null = $state(null);
-  let excerpt: { title: string; text: string } | null = $state(null);
+  let excerpt: { title: string; text: string; link: string } | null = $state(null);
   let scroller: HTMLDivElement | undefined = $state();
   let note = $state('');
   let menuOpen = $state(false);
@@ -88,12 +88,17 @@
     chat.file = viewing.name;
     viewing = null;
   }
-  /** A source with a page opens it; one without shows the words it gave. */
+  /** A source shows the words it gave, and offers to open the page itself when it has one. */
   function openChip(m: Msg, k: number) {
-    const link = m.reply?.links?.[k];
-    if (link) { openSource(link); return; }
+    const link = m.reply?.links?.[k] ?? '';
     const text = m.reply?.excerpts?.[k];
-    excerpt = { title: m.reply?.sources[k] ?? 'Source', text: text || 'This source has no page to open and no saved words to show.' };
+    excerpt = { title: m.reply?.sources[k] ?? 'Source', text: text || 'No saved words for this source.', link };
+  }
+  function goToSource() {
+    if (!excerpt?.link) return;
+    const link = excerpt.link;
+    excerpt = null;
+    openSource(link);
   }
   // keep the newest words in view as an answer arrives
   $effect(() => {
@@ -121,7 +126,7 @@
       {/if}
       {#if settings.values.showSourceChips && m.reply?.sources.length}
         <div class="sources">Sources: {#each m.reply.sources as s, k}
-          <button class="chip open" title={m.reply?.links?.[k] ? 'Open this page' : 'Show the words this source gave'} onclick={() => openChip(m, k)}>{s} ↗</button>
+          <button class="chip open" title="Show the words this source gave" onclick={() => openChip(m, k)}>{s} ↗</button>
         {/each}</div>
       {/if}
       {#if m.reply?.card}
@@ -213,7 +218,11 @@
     <div class="dialog" role="dialog" aria-modal="true" aria-label="Source" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => { if (e.key === 'Escape') excerpt = null; }}>
       <strong>{excerpt.title}</strong>
       <pre class="transcript">{excerpt.text}</pre>
-      <button class="btn" onclick={() => (excerpt = null)}>Close</button>
+      {#if !excerpt.link}<p class="muted small">This source is a loose file or a saved page, so there is no page here to open. The words above are what the answer used.</p>{/if}
+      <div class="row">
+        {#if excerpt.link}<button class="btn primary" title="Go to the page this came from" onclick={goToSource}>Open the source</button>{/if}
+        <button class="btn" onclick={() => (excerpt = null)}>Close</button>
+      </div>
     </div>
   </div>
 {/if}

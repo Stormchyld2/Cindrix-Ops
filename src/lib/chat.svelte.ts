@@ -62,3 +62,6 @@ export function resetChat() {
 
 // Intel opens a page when another screen asks it to (an Ask source, for example).
 export const intelRequest: { path: string } = $state({ path: '' });
+
+// An Academy lesson or a Shelf book page that an Ask source asks another screen to open.
+export const sourceRequest: { lesson: string; book: { id: string; page: number } | null } = $state({ lesson: '', book: null });
