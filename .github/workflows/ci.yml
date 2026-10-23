@@ -440,8 +440,8 @@ jobs:
         shell: bash
         run: |
           mkdir -p pack
-          cp -r content/cards content/plans content/seed-guides content/drills content/academy pack/
-          printf 'Copy these folders (cards, plans, seed-guides, drills, academy) onto the top of your Cindrix drive and choose Merge.\r\nThe program reads them from the drive. Your own additions go in user\\cards, user\\plans, user\\seed-guides, user\\drills and user\\academy (Settings, Your own cards and plans, opens each one).\r\n' > pack/README.txt
+          cp -r content/cards content/plans content/seed-guides content/drills content/academy content/guides pack/
+          printf 'Copy these folders (cards, plans, seed-guides, drills, academy, guides) onto the top of your Cindrix drive and choose Merge.\r\nThe program reads them from the drive. Your own additions go in user\\cards, user\\plans, user\\seed-guides, user\\drills, user\\academy and user\\guides (Settings, Your own cards and plans, opens each one).\r\n' > pack/README.txt
       - uses: actions/upload-artifact@v4
         with:
           name: Cindrix-content-pack

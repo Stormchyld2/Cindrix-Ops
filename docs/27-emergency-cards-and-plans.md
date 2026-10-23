@@ -73,7 +73,7 @@ a 911 line (the test checks that only for medical, disaster and home cards).
 
 ## The program stays small (2026-10-22)
 The Windows build no longer carries cards, plans, drills, courses or seed guides. They live on the drive, in top-level folders
-`cards`, `plans`, `seed-guides`, `drills` and `academy` (the `Cindrix-content-pack` artifact is exactly those folders plus a
+`cards`, `plans`, `seed-guides`, `drills`, `academy` and `guides` (the Agro and radio pages, `guides\<section>`; added to the pack 2026-10-23, before that the Windows build had none) (the `Cindrix-content-pack` artifact is exactly those folders plus a
 README). Only the credits list (`content/sources.json`) and the tiny sample library stay beside the program. The program reads
 these folders from the drive root (and `user\...` for the person's own additions). The "Open the folder" button copies templates
 from the drive's own folder when the shipped content is not there.
