@@ -1,9 +1,8 @@
-# Puts USGS topo maps or aerial photos on a Cindrix drive, for the Maps screen's Topo and Aerial buttons (no internet needed afterwards).
+# Puts USGS aerial photos on a Cindrix drive, for the Maps screen's Satellite button (no internet needed afterwards).
 # They are the free, public-domain USGS "The National Map" picture tiles (aerial photos mostly from the NAIP program).
 #
 # Usage:
 #   powershell -File scripts\get-imagery.ps1 -Target D:\ -Layer aerial               (the whole US at a wide view, zoom 0 to 13)
-#   powershell -File scripts\get-imagery.ps1 -Target D:\ -Layer topo
 #   powershell -File scripts\get-imagery.ps1 -Target D:\ -Layer aerial -Bbox:"-80.30,39.40,-80.00,39.60" -Name fairmont -MaxZoom 16
 # A SMALL area in full sharpness is how you get house-level detail: -Bbox is "west,south,east,north" like get-maps.ps1.
 # Every file is used together in Maps: the wide one underneath, the sharp one over it.
@@ -14,11 +13,11 @@
 # The tiles come from USGS one at a time over the internet (a few thousand a minute), so a big area takes hours or days.
 # If it stops, run it again: tiles already fetched are kept.
 #
-# Output: aerial -> <Target>\maps\satellite\us\<Name>.pmtiles    topo -> <Target>\maps\us\topo\<Name>.pmtiles
+# Output: <Target>\maps\satellite\us\<Name>.pmtiles
 # Needs internet. Uses DuckDB and pmtiles (free; fetched once to <Target>\engines).
 param(
   [Parameter(Mandatory=$true)][string]$Target,
-  [Parameter(Mandatory=$true)][ValidateSet('aerial','topo')][string]$Layer,
+  [Parameter(Mandatory=$true)][ValidateSet('aerial')][string]$Layer,
   [string]$Bbox = '',
   [ValidatePattern('^[A-Za-z0-9_-]{1,40}$')][string]$Name = '',
   [ValidateRange(0,17)][int]$MinZoom = 0,
@@ -50,7 +49,7 @@ try {
 
 if ($MaxZoom -lt $MinZoom) { throw '-MaxZoom must not be below -MinZoom.' }
 if (-not $Name) { $Name = if ($Bbox) { 'my-area' } else { 'us-wide' } }
-$service = if ($Layer -eq 'aerial') { 'USGSImageryOnly' } else { 'USGSTopo' }
+$service = 'USGSImageryOnly'  # the topo map (USGSTopo) was tried and taken out: see docs/29
 if (-not $TileBase) { $TileBase = "https://basemap.nationalmap.gov/arcgis/rest/services/$service/MapServer/tile" }
 $onWindows = ($PSVersionTable.PSVersion.Major -lt 6) -or $IsWindows
 
@@ -84,7 +83,7 @@ if ($total -gt 1500000 -and -not $Yes) {
   throw "That is more than 1,500,000 tiles. For the whole country use -MaxZoom 13; for sharper detail use -Bbox for just your area. (Add -Yes to do it anyway.)"
 }
 
-$outDir = if ($Layer -eq 'aerial') { Join-Path $Target 'maps/satellite/us' } else { Join-Path $Target 'maps/us/topo' }
+$outDir = Join-Path $Target 'maps/satellite/us'
 $final = Join-Path $outDir "$Name.pmtiles"
 if ((Test-Path $final) -and -not $Force) { Write-Host "Already have $Name.pmtiles (use -Force to make it again)."; return }
 $work = Join-Path $Target "maps/_imagery-work/$Layer-$Name"
@@ -318,4 +317,4 @@ $Layer pictures from USGS The National Map ($service), https://www.usgs.gov/prog
 Public domain (US government work). Made by scripts/get-imagery.ps1 on $(Get-Date -Format yyyy-MM-dd). Zoom $MinZoom to $MaxZoom.
 Aerial photos come mostly from the NAIP program (about 1 meter); Alaska has coarser pictures.
 "@
-Write-Host ("Done: {0} ({1:N1} MB). Open Maps and press {2}." -f $final, ($sz / 1MB), $(if ($Layer -eq 'aerial') { 'Aerial' } else { 'Topo' }))
+Write-Host ("Done: {0} ({1:N1} MB). Open Maps and press {2}." -f $final, ($sz / 1MB), 'Satellite')

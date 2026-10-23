@@ -1,4 +1,4 @@
-# 29. Topo and aerial maps
+# 29. Aerial maps (the topo map was taken out)
 
 Maps has three buttons: **Street**, **Topo**, **Aerial**. Topo and Aerial are greyed out (with hover text saying why) until picture files are on the drive.
 
@@ -32,3 +32,14 @@ The script now makes that index (`Add-TileIndex`: Windows uses the SQLite that s
 `sqlite3` program) before converting. It also writes `packed.ok` after packing, so a run that stopped later reuses the packed file,
 and `-UseExistingPack` does the same for a file packed by an older copy of the script (the tiles must be fully fetched).
 About 5,500 of the 650,000 tiles came back in a different picture format (PNG, not JPEG) and are left out; they show as small gaps.
+
+## The topo map was taken out (owner, 2026-10-23)
+The USGS topo download worked (zoom 0 to 12, US wide, after the index fix) but the map looked like blurred colour swirls at every
+zoom the owner tried, and flat colour close up, so it was removed rather than kept half working. Gone: the Topo button in Maps,
+`-Layer topo` in `get-imagery.ps1`, the topo step in `Get-Imagery.bat`, the CI topo test, the `us-topo` line in `manifest/content.json`.
+The code that recognises a `maps/us/topo` folder (`core/src/maps.rs`) and the phone-pack topo kind stay, unused, and a topo file left
+on a drive is simply ignored. Cause not found: the geography was in the right place, so it was not scrambled tiles. The leading
+suspects were USGS's own generalised small-scale tiles, or tiles from zoom 10 up not being read. If topo is wanted again, build contour
+lines from elevation data (the original plan in docs/05) instead of using USGS's pictures.
+The `.part` / index / header fixes above still apply to the aerial layer.
+

@@ -42,9 +42,8 @@
   let packs: Pack[] = $state([]);
   let streetPacks: Pack[] = $derived(packs.filter((p) => p.kind === 'street'));
   let street: Pack | undefined = $derived(streetPacks[0]);
-  // pictures: USGS topo maps (maps/us/topo) and aerial photos (maps/satellite); more than one file can be on the drive,
+  // pictures: aerial photos (maps/satellite); more than one file can be on the drive,
   // for example the whole country at a wide view and one county sharp
-  let topoPacks: Pack[] = $derived(packs.filter((p) => p.kind === 'topo'));
   let aerialPacks: Pack[] = $derived(packs.filter((p) => p.kind === 'satellite'));
   // the colours of the street map: light (the default), dark or black; the choice is remembered on this computer
   type Look = 'light' | 'dark' | 'black';
@@ -59,16 +58,15 @@
     // the map is drawn once when it opens, so it is opened again with the new colours
     location.reload();
   }
-  type MapKind = 'street' | 'topo' | 'aerial';
+  type MapKind = 'street' | 'aerial';
   let mapKind: MapKind = $state('street');
-  let rasterIds: Record<'topo' | 'aerial', string[]> = { topo: [], aerial: [] };
+  let rasterIds: Record<'aerial', string[]> = { aerial: [] };
   let vecLayers: { id: string; type: string }[] = [];
   function applyKind() {
     if (!map || !mapReady) return;
     const show = (ids: string[], on: boolean) => { for (const id of ids) if (map!.getLayer(id)) map!.setLayoutProperty(id, 'visibility', on ? 'visible' : 'none'); };
-    show(rasterIds.topo, mapKind === 'topo');
     show(rasterIds.aerial, mapKind === 'aerial');
-    // topo maps carry their own names and roads; over aerial photos only the roads, borders and names are kept
+    // over aerial photos only the roads, borders and names are kept
     for (const l of vecLayers) {
       const on = mapKind === 'street' || (mapKind === 'aerial' && (l.type === 'line' || l.type === 'symbol'));
       if (map.getLayer(l.id)) map.setLayoutProperty(l.id, 'visibility', on ? 'visible' : 'none');
@@ -382,9 +380,9 @@
         l.type !== 'symbol' || (labelsOn && l['source-layer'] !== 'pois' && !(l.layout && 'icon-image' in l.layout));
       // raster pictures: one source per file, drawn under the street lines
       const imgSources: Record<string, unknown> = {};
-      const imgLayers: Record<'topo' | 'aerial', unknown[]> = { topo: [], aerial: [] };
-      rasterIds = { topo: [], aerial: [] };
-      for (const [kind, list] of [['topo', topoPacks], ['aerial', aerialPacks]] as const) {
+      const imgLayers: Record<'aerial', unknown[]> = { aerial: [] };
+      rasterIds = { aerial: [] };
+      for (const [kind, list] of [['aerial', aerialPacks]] as const) {
         // widest file first so a sharper file for one area is drawn over it
         const sorted = [...list].sort((a, b) => b.mb - a.mb);
         let i = 0;
@@ -393,7 +391,7 @@
             const u = await tileUrl(pk.rel);
             protocol.add(new PMTiles(u));
             const sid = `${kind}-src-${i}`, lid = `${kind}-img-${i}`;
-            imgSources[sid] = { type: 'raster', url: 'pmtiles://' + u, tileSize: 256, attribution: kind === 'aerial' ? 'Imagery: USGS The National Map (NAIP)' : 'Topo: USGS The National Map' };
+            imgSources[sid] = { type: 'raster', url: 'pmtiles://' + u, tileSize: 256, attribution: 'Imagery: USGS The National Map (NAIP)' };
             imgLayers[kind].push({ id: lid, type: 'raster', source: sid, layout: { visibility: 'none' } });
             rasterIds[kind].push(lid);
             i++;
@@ -414,7 +412,7 @@
           vecLayers = vec.map((l) => ({ id: l.id, type: l.type }));
           // the background first, then the pictures, then everything else
           const [bg, ...rest] = vec;
-          return [bg, ...imgLayers.topo, ...imgLayers.aerial, ...rest];
+          return [bg, ...imgLayers.aerial, ...rest];
         })(),
       } as unknown as StyleSpecification;
       const m = new maplibregl.Map({
@@ -786,7 +784,7 @@
     const f = await pickFolder();
     if (f) await sendTo(f);
   }
-  const KIND_WORDS: Record<string, string> = { street: 'Street map', topo: 'Topo (hills, contours)', aerial: 'Aerial photos' };
+  const KIND_WORDS: Record<string, string> = { street: 'Street map', aerial: 'Aerial photos' };
   const fmtBytes = (b: number) => (b >= 1073741824 ? (b / 1073741824).toFixed(1) + ' GB' : b >= 1048576 ? Math.round(b / 1048576) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB');
 
   async function phoneStart() {
@@ -1493,7 +1491,7 @@
   <p class="muted small mapinfo" title="Which map files are being used">Street map: {streetPacks.map((p) => p.name).join(', ')} ({streetPacks.reduce((a, p) => a + p.mb, 0)} MB){#if packInfo} &middot; {packInfo.replace(/^.*?: covers /, 'covers ')}{/if}</p>
 {:else}
   <div class="warn">
-    <strong>No map tiles on this drive yet.</strong> Street and topo maps come from map packs (see doc 7), so for now this is a plan view of the points you enter, drawn to scale with nothing underneath. Positions are typed in by hand and are approximate. The route you build from your own pins is straight lines between them. Directions along roads need a street map on the drive.
+    <strong>No map tiles on this drive yet.</strong> Street maps come from map packs (see doc 7), so for now this is a plan view of the points you enter, drawn to scale with nothing underneath. Positions are typed in by hand and are approximate. The route you build from your own pins is straight lines between them. Directions along roads need a street map on the drive.
   </div>
 {/if}
 {#if tileError}<div class="warn err" role="alert">{tileError}</div>{/if}
@@ -1761,9 +1759,6 @@
           <div class="ov ov-bl" role="group" aria-label="Kind of map">
             <button class="gl" class:on={mapKind === 'street'} title="The street map: roads, towns, water, buildings" onclick={() => (mapKind = 'street')}>
               <span class="gsw sw-map"></span><span>Map</span></button>
-            <button class="gl" class:on={mapKind === 'topo'} disabled={!topoPacks.length}
-              title={topoPacks.length ? 'USGS topographic map: contour lines, hills, trails' : 'No topo map on this drive yet. Double-click scripts\\Get-Imagery.bat to put one on it.'}
-              onclick={() => (mapKind = 'topo')}><span class="gsw sw-topo"></span><span>Topo</span></button>
             <button class="gl" class:on={mapKind === 'aerial'} disabled={!aerialPacks.length}
               title={aerialPacks.length ? 'Aerial photos from above, with roads and names drawn on top' : 'No aerial photos on this drive yet. Double-click scripts\\Get-Imagery.bat to put them on it.'}
               onclick={() => (mapKind = 'aerial')}><span class="gsw sw-air"></span><span>Satellite</span></button>
@@ -2101,7 +2096,6 @@
   .gl:disabled { opacity: .55; cursor: not-allowed; }
   .gsw { width: 100%; height: 34px; border-radius: 5px; display: block; }
   .sw-map { background: linear-gradient(135deg, #e8eaed 0 45%, #aadaff 45% 62%, #c8e6c9 62%); }
-  .sw-topo { background: repeating-linear-gradient(160deg, #d9c9a3 0 5px, #c4b184 5px 6px), #d9c9a3; }
   .sw-air { background: linear-gradient(135deg, #3d5a3a, #6b7f4a 55%, #2f4a5a); }
   .stage.full .ov-sel { right: 310px; }
   .gtitle { font-weight: 700; font-size: 14px; }

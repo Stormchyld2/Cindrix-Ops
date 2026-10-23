@@ -30,7 +30,7 @@ Mockups of every screen are in [`../mockups`](../mockups).
 - [26. Plans that carry on](26-plans.md): repeating checks, learning plans, emergency plans, several at once
 - [27. Emergency cards, walkthroughs, inventory questions, training sign-off](27-emergency-cards-and-plans.md)
 - [28. Street address search](28-street-addresses.md)
-- [29. Topo and aerial maps](29-topo-and-aerial.md)
+- [29. Aerial maps; the topo map was taken out](29-topo-and-aerial.md)
 - [30. Drawing on the map](30-map-drawing.md)
 - [31. Directions by car and on foot](31-directions.md)
 - [32. A phone copy of the map](32-phone-map.md)

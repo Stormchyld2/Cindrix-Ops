@@ -253,25 +253,6 @@
       }
     },
     {
-      "id": "us-topo",
-      "name": "US topo: contours and shading from elevation data",
-      "category": "maps",
-      "license": "Public domain (US government elevation data)",
-      "size_estimate_gb": 10,
-      "required": true,
-      "tier": "all",
-      "source_url": null,
-      "sha256": null,
-      "editions": [
-        "go",
-        "vault"
-      ],
-      "source": {
-        "kind": "script",
-        "how": "not automated yet (topo layer is not built)"
-      }
-    },
-    {
       "id": "cindrix-cards",
       "name": "Emergency cards (ours)",
       "category": "cards",

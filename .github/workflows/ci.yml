@@ -201,7 +201,7 @@ jobs:
         run: cd core && cargo test --test address_pack -- --nocapture
 
   imagery:
-    name: Topo and aerial download makes picture files the Maps screen can read
+    name: Aerial download makes picture files the Maps screen can read
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
@@ -219,10 +219,10 @@ jobs:
       - name: Make sure the sqlite3 program is there (the script uses it to index the packed tiles)
         shell: bash
         run: command -v sqlite3 || (sudo apt-get update -qq && sudo apt-get install -y -qq sqlite3)
-      - name: Fetch a very small area (Fairmont WV) as aerial photos and as topo
+      - name: Fetch a very small area (Fairmont WV) as aerial photos
         shell: pwsh
         run: |
-          foreach ($layer in 'aerial','topo') {
+          foreach ($layer in 'aerial') {
             try { ./scripts/get-imagery.ps1 -Target "$env:RUNNER_TEMP/drive" -Layer $layer -Bbox:"-80.16,39.46,-80.12,39.50" -Name test -MaxZoom 13 -Pmtiles "$env:RUNNER_TEMP/pmt/pmtiles" }
             catch { $m = ($_ | Out-String) -replace "`r?`n", ' | '; Write-Host "::error::$layer $m"; exit 1 }
           }
@@ -230,7 +230,7 @@ jobs:
         shell: bash
         run: |
           set -e
-          for f in "$RUNNER_TEMP/drive/maps/satellite/us/test.pmtiles" "$RUNNER_TEMP/drive/maps/us/topo/test.pmtiles"; do
+          for f in "$RUNNER_TEMP/drive/maps/satellite/us/test.pmtiles"; do
             ls -l "$f"
             "$RUNNER_TEMP/pmt/pmtiles" show "$f" | head -20
           done
