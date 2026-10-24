@@ -12,7 +12,7 @@ Ten words, each with a small coloured diamond. A word with a menu opens it on a 
 | Operations | Get ready, Plans, Drills, Inventory, Family, Binder, What fails next |
 | Intel | Offline browser, Shelf, Archives, Emergency cards |
 | Academy | Courses, Training sign-off |
-| Agro | Crop guides, Planting calendar, Food preservation, Livestock, Soil and water (starter pages, `content/guides`), Seed vault |
+| Agro | Crop guides, Planting calendar, Food preservation, Livestock, Soil and water (52 pages, `content/guides`; widened 2026-10-23 from 13 starter pages), Seed vault |
 | Morale | Reading Corner, Music, Journal, Photos |
 | Comms | Comms plan, Radio reference, Signals (not built yet), Sharing |
 | System | Settings, My details |
