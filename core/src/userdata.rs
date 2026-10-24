@@ -3,6 +3,7 @@
 
 use crate::fsio;
 use crate::inventory::{self, Item};
+use crate::ops::{self, Event, Project, Task};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -90,6 +91,47 @@ impl UserDir {
     pub fn save_inventory(&self, items: &[Item]) -> Result<(), String> {
         let csv = inventory::serialize(items);
         fsio::backup_then_write(&self.inventory_path(), &self.backups(), csv.as_bytes()).map_err(|e| e.to_string())
+    }
+
+    // ---------- tasks, calendar events, projects and the change log (core/src/ops.rs) ----------
+
+    fn read_text(&self, name: &str) -> Result<String, String> {
+        match fs::read_to_string(self.root.join(name)) {
+            Ok(t) => Ok(t),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(String::new()),
+            Err(e) => Err(format!("{} could not be read: {}", name, e)),
+        }
+    }
+    fn write_text(&self, name: &str, text: &str) -> Result<(), String> {
+        fsio::backup_then_write(&self.root.join(name), &self.backups(), text.as_bytes()).map_err(|e| format!("{} could not be saved: {}", name, e))
+    }
+    pub fn load_tasks(&self) -> Result<Vec<Task>, String> {
+        Ok(ops::parse_tasks(&self.read_text("tasks.txt")?))
+    }
+    pub fn save_tasks(&self, v: &[Task]) -> Result<(), String> {
+        self.write_text("tasks.txt", &ops::serialize_tasks(v))
+    }
+    pub fn load_events(&self) -> Result<Vec<Event>, String> {
+        Ok(ops::parse_events(&self.read_text("events.txt")?))
+    }
+    pub fn save_events(&self, v: &[Event]) -> Result<(), String> {
+        self.write_text("events.txt", &ops::serialize_events(v))
+    }
+    pub fn load_projects(&self) -> Result<Vec<Project>, String> {
+        Ok(ops::parse_projects(&self.read_text("projects.txt")?))
+    }
+    pub fn save_projects(&self, v: &[Project]) -> Result<(), String> {
+        self.write_text("projects.txt", &ops::serialize_projects(v))
+    }
+    /// Add one line to the change log (best effort: a failure here never stops the change itself).
+    pub fn note_change(&self, now_secs: u64, kind: &str, id: &str, action: &str) {
+        let mut text = self.read_text("changes.log").unwrap_or_default();
+        text.push_str(&ops::change_line(now_secs, kind, id, action));
+        text.push('\n');
+        let _ = fsio::write_atomic(&self.root.join("changes.log"), ops::trim_log(&text, 300).as_bytes());
+    }
+    pub fn changes(&self, n: usize) -> Vec<(u64, String, String, String)> {
+        ops::recent_changes(&self.read_text("changes.log").unwrap_or_default(), n)
     }
 
     pub fn read_family(&self) -> Result<Option<String>, String> {
@@ -198,5 +240,26 @@ mod tests {
         assert_eq!(u.list_chats().len(), 1);
         assert!(u.delete_chat("a/b.txt").is_err());
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn tasks_events_and_projects_survive_a_save_and_a_second_save_keeps_a_backup() {
+        let dir = std::env::temp_dir().join(format!("cx-ops-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        let u = UserDir::new(&dir);
+        assert!(u.load_tasks().unwrap().is_empty());
+        let t = Task { id: "t1".into(), title: "Check water".into(), due: "2026-11-01".into(), ..Default::default() };
+        u.save_tasks(&[t.clone()]).unwrap();
+        u.save_tasks(&[t.clone(), Task { id: "t2".into(), title: "Two".into(), ..Default::default() }]).unwrap();
+        assert_eq!(u.load_tasks().unwrap().len(), 2);
+        assert!(fs::read_dir(u.backups()).unwrap().count() >= 1);
+        u.save_events(&[Event { id: "e1".into(), title: "Call".into(), date: "2026-11-02".into(), ..Default::default() }]).unwrap();
+        assert_eq!(u.load_events().unwrap()[0].title, "Call");
+        u.save_projects(&[Project { id: "p1".into(), name: "Winter".into(), status: "open".into(), ..Default::default() }]).unwrap();
+        assert_eq!(u.load_projects().unwrap()[0].name, "Winter");
+        u.note_change(10, "task", "t1", "added");
+        u.note_change(11, "task", "t2", "added");
+        assert_eq!(u.changes(5)[0].2, "t2");
+        let _ = fs::remove_dir_all(&dir);
     }
 }

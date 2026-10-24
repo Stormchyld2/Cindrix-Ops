@@ -9,12 +9,12 @@ Ten words, each with a small coloured diamond. A word with a menu opens it on a 
 | Word | Opens |
 |---|---|
 | Dashboard, Ask, Maps | the screen itself |
-| Operations | Get ready, Plans, Drills, Inventory, Family, Binder, What fails next |
+| Operations | Get ready, Plans, Drills, Inventory, Family, Binder, What fails next, Calendar, To-do list, Projects (doc 37) |
 | Intel | Offline browser, Shelf, Archives, Emergency cards |
 | Academy | Courses, Training sign-off |
 | Agro | Crop guides, Planting calendar, Food preservation, Livestock, Soil and water (62 pages, `content/guides`; widened 2026-10-23 from 13 starter pages, now with farm safety, sanitation, flood and contaminated ground, land suitability, breeding, pollinators, wheat-to-flour and a growing-enough-to-eat page), Seed vault |
 | Morale | Reading Corner, Music, Journal, Photos |
-| Comms | Comms plan, Radio reference, Signals (not built yet), Sharing |
+| Comms | Comms plan, Radio reference, Sharing |
 | System | Settings, My details |
 
 Screens that are not built show the "Not built yet" page (`Soon.svelte`). Nothing in a menu is hidden to look finished.
@@ -37,7 +37,7 @@ Each status tile (Water, Food, Running low, Past or near their date, Plan checks
 
 ## Not built yet
 
-Signals (a radio line-of-sight layer on the map) and everything that is only a proposal in the architecture doc: the CNAR data pack, frost-date tables and the regional layer behind Agro.
+Everything that is only a proposal in the architecture doc: the CNAR data pack, frost-date tables and the regional layer behind Agro.
 
 On another device (a guest on the hotspot) the menus hide what is host-only: Journal, Comms plan, Sharing and My details.
 

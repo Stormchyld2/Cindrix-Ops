@@ -533,7 +533,9 @@ mod tests {
         for c in ["list_cards", "guides_list", "photos_list", "photo_read", "shelf_read", "ask_stream", "zim_search_all", "academy_lesson"] { assert!(guest_allowed(c), "{}", c); }
         for c in ["family_save", "inventory_save_item", "settings_save", "profile_load", "profile_save", "archive_remove", "shelf_add",
                   "chat_read", "chat_save", "library_share", "pick_folder", "phone_send", "map_save", "academy_save", "plan_tick", "crawl_start",
-                  "journal_list", "journal_save", "comms_plan_load", "comms_plan_save", "photo_add", "photo_delete"] {
+                  "journal_list", "journal_save", "comms_plan_load", "comms_plan_save", "photo_add", "photo_delete",
+                  "ops_load", "task_save", "task_delete", "task_done", "event_save", "event_delete", "project_save", "project_delete", "project_file_chat",
+                  "agenda_get", "connect_search", "connect_resolve", "connect_related", "changes_recent"] {
             assert!(!guest_allowed(c), "{}", c);
         }
     }

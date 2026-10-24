@@ -4,6 +4,7 @@
   import { journalList, journalSave, type JournalEntry } from '../lib/api';
   import { who } from '../lib/person.svelte';
   import PersonPick from '../lib/PersonPick.svelte';
+  import MonthGrid from '../lib/MonthGrid.svelte';
 
   function today(): string {
     const d = new Date();
@@ -45,6 +46,7 @@
   }
   onMount(load);
   const first = (t: string) => (t.trim().split('\n')[0] ?? '').slice(0, 70);
+  const marks = $derived(Object.fromEntries(entries.filter((e) => e.text.trim()).map((e) => [e.date, 1])));
   const nice = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
 </script>
 
@@ -56,6 +58,7 @@
 
   <div class="wrap">
     <nav class="days" aria-label="Days">
+      <MonthGrid compact selected={day} {marks} onpick={leave} />
       <button class="btn" onclick={() => leave(today())}>Today</button>
       {#each entries as e (e.date)}
         <button class="day" class:on={e.date === day} onclick={() => leave(e.date)}>
@@ -78,7 +81,7 @@
 
 <style>
   .wrap { display: grid; grid-template-columns: 260px 1fr; gap: 14px; margin-top: 12px; align-items: start; }
-  .days { display: flex; flex-direction: column; gap: 6px; max-height: 70vh; overflow-y: auto; scrollbar-width: none; }
+  .days { display: flex; flex-direction: column; gap: 6px; max-height: 78vh; overflow-y: auto; scrollbar-width: none; }
   .days::-webkit-scrollbar { display: none; }
   .day { text-align: left; padding: 9px 10px; border: 1px solid var(--line); border-left: 3px solid var(--cat-morale); border-radius: 8px; background: var(--panel); display: flex; flex-direction: column; gap: 2px; }
   .day.on { border-color: var(--blue-line); background: var(--blue-soft); }

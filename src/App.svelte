@@ -7,6 +7,10 @@
   import Family from './views/Family.svelte';
   import Cascade from './views/Cascade.svelte';
   import Soon from './views/Soon.svelte';
+  import Todo from './views/Todo.svelte';
+  import Calendar from './views/Calendar.svelte';
+  import Projects from './views/Projects.svelte';
+  import { nav } from './lib/nav.svelte';
   import Maps from './views/Maps.svelte';
   import Shelf from './views/Shelf.svelte';
   import Archives from './views/Archives.svelte';
@@ -80,8 +84,8 @@
   $effect(() => { if (settings.loaded) void applyUiScale(settings.values.uiScale); });
 
   // Intel is the offline internet: the archives read like web pages. It goes with the library.
-  type Group = 'Dashboard' | 'Ask' | 'Library' | 'Intel' | 'Academy' | 'Maps' | 'Music' | 'Plan' | 'Inventory' | 'Settings' | 'Corner' | 'Guides' | 'Journal' | 'Photos' | 'CommsPlan' | 'Soon';
-  const allGroups: Group[] = ['Dashboard', 'Ask', 'Library', 'Intel', 'Academy', 'Maps', 'Music', 'Plan', 'Inventory', 'Settings', 'Corner', 'Journal', 'Photos', 'CommsPlan'];
+  type Group = 'Dashboard' | 'Ask' | 'Library' | 'Intel' | 'Academy' | 'Maps' | 'Music' | 'Plan' | 'Inventory' | 'Settings' | 'Corner' | 'Guides' | 'Journal' | 'Photos' | 'CommsPlan' | 'Todo' | 'Calendar' | 'Projects' | 'Soon';
+  const allGroups: Group[] = ['Dashboard', 'Ask', 'Library', 'Intel', 'Academy', 'Maps', 'Music', 'Plan', 'Inventory', 'Settings', 'Corner', 'Journal', 'Photos', 'CommsPlan', 'Todo', 'Calendar', 'Projects'];
   // Each product switches parts of the program on or off (core/src/product.rs).
   const groups = $derived(
     allGroups.filter((g) => {
@@ -91,6 +95,7 @@
       if (g === 'Maps') return product.maps;
       if (g === 'Music') return product.music;
       if (g === 'Plan' || g === 'Inventory') return product.plan;
+      if (g === 'Todo' || g === 'Calendar' || g === 'Projects') return !inShare;
       return true;
     })
   );
@@ -130,6 +135,25 @@
       group = 'Library';
     }
   }
+  /** A link from a task, event or search hit: open the screen that owns the thing it points at. */
+  function openLinkTarget(kind: string, id: string) {
+    switch (kind) {
+      case 'item': group = 'Inventory'; break;
+      case 'plan': openSource('plan:' + id); break;
+      case 'card': openCard(id); break;
+      case 'guide': guideSection = id.split('/')[0]; group = 'Guides'; break;
+      case 'task': group = 'Todo'; break;
+      case 'event': group = 'Calendar'; break;
+      case 'project': group = 'Projects'; break;
+      case 'course': sourceRequest.lesson = id; group = 'Academy'; break;
+      case 'drill': group = 'Plan'; plan = 'Drills'; break;
+      case 'chat': try { sessionStorage.setItem('cindrix.openChat', id); } catch { /* Ask opens on its own */ } group = 'Ask'; break;
+    }
+  }
+  $effect(() => {
+    const o = nav.open;
+    if (o) { openLinkTarget(o.kind, o.id); setTimeout(() => { if (nav.open === o) nav.open = null; }, 1500); }
+  });
   function openIntel() {
     group = 'Intel';
   }
@@ -177,7 +201,9 @@
       { id: 'Operations', cat: 'ops', show: plan_, entries: [
         { label: 'Get ready', tab: 'Start' }, { label: 'Plans', tab: 'What next' }, { label: 'Drills', tab: 'Drills' },
         { label: 'Inventory', tab: 'Inventory' }, { label: 'Family', tab: 'Family' }, { label: 'Binder', tab: 'Binder' },
-        { label: 'What fails next', tab: 'What fails' } ] },
+        { label: 'What fails next', tab: 'What fails' }, { label: '', tab: '', rule: true, show: !inShare },
+        { label: 'Calendar', tab: 'Calendar', show: !inShare }, { label: 'To-do list', tab: 'Todo', show: !inShare },
+        { label: 'Projects', tab: 'Projects', show: !inShare } ] },
       { id: 'Intel', cat: 'intel', show: lib_, entries: [
         { label: 'Offline browser', tab: 'Intel', note: 'archives' }, { label: 'Shelf', tab: 'Shelf', note: 'manuals' },
         { label: 'Archives', tab: 'Archives' }, { label: 'Emergency cards', tab: 'Cards' } ] },
@@ -195,7 +221,7 @@
         { label: 'Journal', tab: 'Journal', note: 'private', show: !inShare }, { label: 'Photos', tab: 'Photos' } ] },
       { id: 'Comms', cat: 'comms', show: true, entries: [
         { label: 'Comms plan', tab: 'CommsPlan', note: 'private', show: !inShare }, { label: 'Radio reference', tab: 'guide:radio-reference' },
-        { label: 'Signals', tab: 'soon:Signals', note: 'on the map' }, { label: '', tab: '', rule: true, show: !inShare },
+        { label: '', tab: '', rule: true, show: !inShare },
         { label: 'Sharing', tab: 'settings:Sharing', note: 'hotspot', show: !inShare } ] },
       { id: 'System', cat: 'system', show: true, entries: [
         { label: 'Settings', tab: 'settings:General' }, { label: 'My details', tab: 'settings:My details', show: !inShare } ] },
@@ -208,7 +234,7 @@
       case 'Music': case 'Corner': case 'Journal': case 'Photos': return 'Morale';
       case 'CommsPlan': return 'Comms';
       case 'Plan': return plan === 'Seed vault' ? 'Agro' : 'Operations';
-      case 'Inventory': return 'Operations';
+      case 'Inventory': case 'Todo': case 'Calendar': case 'Projects': return 'Operations';
       case 'Settings': return settingsFromComms ? 'Comms' : 'System';
       case 'Guides': {
         const hit = tops.find((t) => t.entries?.some((e) => e.tab === 'guide:' + guideSection));
@@ -304,6 +330,12 @@
       <Photos />
     {:else if group === 'CommsPlan'}
       <CommsPlan />
+    {:else if group === 'Todo'}
+      <Todo />
+    {:else if group === 'Calendar'}
+      <Calendar />
+    {:else if group === 'Projects'}
+      <Projects openChat={(n) => openLinkTarget('chat', n)} />
     {:else if group === 'Corner'}
       <Shelf corner />
     {:else if group === 'Plan'}

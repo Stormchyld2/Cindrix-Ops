@@ -1132,3 +1132,86 @@ export async function shareRevoke(id: string): Promise<TrustedDevice[]> {
   if (tauriHost) return call<TrustedDevice[]>('share_revoke', { id });
   return [];
 }
+
+// ---------- the connecting layer: to-do list, calendar, projects, one search (core/src/ops.rs) ----------
+// These are the person's own notes, so they work only in the app itself (not for a guest on the hotspot).
+export type Link = { kind: string; id: string };
+export type TaskRec = { id: string; title: string; due: string; done: string; project: string; every_days: number; notes: string; links: Link[] };
+export type EventRec = { id: string; title: string; date: string; time: string; repeat: string; project: string; notes: string; links: Link[] };
+export type ProjectRec = { id: string; name: string; status: string; notes: string; chats: string[] };
+export type OpsData = { tasks: TaskRec[]; events: EventRec[]; projects: ProjectRec[]; today: string };
+export type AgendaItem = { date: string; kind: string; id: string; title: string; time: string; overdue: boolean; project: string };
+export type Hit = { kind: string; id: string; title: string; snippet: string };
+export type Ref = { kind: string; id: string; title: string };
+export type Change = { when: number; kind: string; id: string; action: string };
+
+const memOps: OpsData = { tasks: [], events: [], projects: [], today: new Date().toISOString().slice(0, 10) };
+const nextMem = (p: string, ids: string[]) => p + (Math.max(0, ...ids.map((i) => Number(i.slice(1)) || 0)) + 1);
+
+export async function opsLoad(): Promise<OpsData> {
+  if (tauriHost) return call<OpsData>('ops_load');
+  return structuredClone(memOps);
+}
+export async function taskSave(task: TaskRec): Promise<TaskRec[]> {
+  if (tauriHost) return call<TaskRec[]>('task_save', { task });
+  if (!task.id) memOps.tasks.push({ ...task, id: nextMem('t', memOps.tasks.map((t) => t.id)) });
+  else memOps.tasks = memOps.tasks.map((t) => (t.id === task.id ? task : t));
+  return structuredClone(memOps.tasks);
+}
+export async function taskDelete(id: string): Promise<TaskRec[]> {
+  if (tauriHost) return call<TaskRec[]>('task_delete', { id });
+  memOps.tasks = memOps.tasks.filter((t) => t.id !== id);
+  return structuredClone(memOps.tasks);
+}
+export async function taskDone(id: string, done: boolean): Promise<TaskRec[]> {
+  if (tauriHost) return call<TaskRec[]>('task_done', { id, done });
+  memOps.tasks = memOps.tasks.map((t) => (t.id === id ? { ...t, done: done ? memOps.today : '' } : t));
+  return structuredClone(memOps.tasks);
+}
+export async function eventSave(event: EventRec): Promise<EventRec[]> {
+  if (tauriHost) return call<EventRec[]>('event_save', { event });
+  if (!event.id) memOps.events.push({ ...event, id: nextMem('e', memOps.events.map((e) => e.id)) });
+  else memOps.events = memOps.events.map((e) => (e.id === event.id ? event : e));
+  return structuredClone(memOps.events);
+}
+export async function eventDelete(id: string): Promise<EventRec[]> {
+  if (tauriHost) return call<EventRec[]>('event_delete', { id });
+  memOps.events = memOps.events.filter((e) => e.id !== id);
+  return structuredClone(memOps.events);
+}
+export async function projectSave(project: ProjectRec): Promise<ProjectRec[]> {
+  if (tauriHost) return call<ProjectRec[]>('project_save', { project });
+  if (!project.id) memOps.projects.push({ ...project, id: nextMem('p', memOps.projects.map((p) => p.id)) });
+  else memOps.projects = memOps.projects.map((p) => (p.id === project.id ? project : p));
+  return structuredClone(memOps.projects);
+}
+export async function projectDelete(id: string): Promise<ProjectRec[]> {
+  if (tauriHost) return call<ProjectRec[]>('project_delete', { id });
+  memOps.projects = memOps.projects.filter((p) => p.id !== id);
+  return structuredClone(memOps.projects);
+}
+export async function projectFileChat(project: string, chat: string): Promise<ProjectRec[]> {
+  if (tauriHost) return call<ProjectRec[]>('project_file_chat', { project, chat });
+  memOps.projects = memOps.projects.map((p) => ({ ...p, chats: p.id === project ? [...p.chats.filter((c) => c !== chat), chat] : p.chats.filter((c) => c !== chat) }));
+  return structuredClone(memOps.projects);
+}
+export async function agendaGet(from = '', to = ''): Promise<AgendaItem[]> {
+  if (tauriHost) return call<AgendaItem[]>('agenda_get', { from, to });
+  return memOps.tasks.filter((t) => t.due && !t.done).map((t) => ({ date: t.due, kind: 'task', id: t.id, title: t.title, time: '', overdue: false, project: t.project }));
+}
+export async function connectSearch(query: string): Promise<Hit[]> {
+  if (tauriHost) return call<Hit[]>('connect_search', { query });
+  return [];
+}
+export async function connectResolve(links: Link[]): Promise<Ref[]> {
+  if (tauriHost) return call<Ref[]>('connect_resolve', { links });
+  return links.map((l) => ({ ...l, title: l.id }));
+}
+export async function connectRelated(kind: string, id: string): Promise<Ref[]> {
+  if (tauriHost) return call<Ref[]>('connect_related', { kind, id });
+  return [];
+}
+export async function changesRecent(n = 8): Promise<Change[]> {
+  if (tauriHost) return call<Change[]>('changes_recent', { n });
+  return [];
+}

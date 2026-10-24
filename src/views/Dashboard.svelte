@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { inShare, whatFailsNext, inventoryList, drillsList, mapPacks, modelStatus, listModels, libraryStatus, shareInfo, shareSet, dashboardSuggestions, plansList, academyList, familyStatus, productInfo, type ProductInfo, type ShareInfo, type Cascade, type Suggestion, type PlanInfo, type AcademyModule } from '../lib/api';
+  import { inShare, whatFailsNext, inventoryList, drillsList, mapPacks, modelStatus, listModels, libraryStatus, shareInfo, shareSet, dashboardSuggestions, agendaGet, changesRecent, type AgendaItem, type Change, plansList, academyList, familyStatus, productInfo, type ProductInfo, type ShareInfo, type Cascade, type Suggestion, type PlanInfo, type AcademyModule } from '../lib/api';
   import { gatherFacts, planCounts, nextStep, stepStatus, KIND_NAME, type PlanFacts } from '../lib/planfacts';
   import { categories } from '../lib/categories';
   import { settings } from '../lib/settings.svelte';
@@ -26,7 +26,19 @@
     try { sharing = await shareSet(!sharing.on); } catch (e) { shareError = String(e); }
     shareBusy = false;
   }
+  // the to-do list, the calendar and what changed lately (the connecting layer, docs/37)
+  let coming: AgendaItem[] = $state([]);
+  let changes: Change[] = $state([]);
+  async function loadComing() {
+    if (inShare) return;
+    try { coming = await agendaGet('', ''); changes = await changesRecent(8); } catch { /* the panels just stay empty */ }
+  }
+  const KIND_LABEL: Record<string, string> = { task: 'To-do', event: 'Calendar', item: 'Inventory', plan: 'Plan', project: 'Project' };
+  const niceDate = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  const niceWhen = (t: number) => new Date(t * 1000).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  function goKind(k: string) { go(k === 'task' ? 'Todo' : k === 'event' ? 'Calendar' : k === 'item' ? 'Inventory' : k === 'plan' ? 'What next' : k === 'project' ? 'Projects' : 'Dashboard'); }
   onMount(() => {
+    void loadComing();
     void refreshSharing();
     const timer = setInterval(refreshSharing, 4000);
     return () => clearInterval(timer);
@@ -290,6 +302,32 @@
       {/each}
     </div>
   </section>
+
+  {#if !inShare}
+  <section class="panel s6 h4" style="--c: var(--cat-ops)">
+    <div class="label">COMING UP</div>
+    <div class="scroll">
+      {#if coming.length === 0}<p class="muted">Nothing is due in the next 60 days. Add tasks and events and they appear here, with things that expire and plan checks.</p>{/if}
+      {#each coming.slice(0, 30) as a (a.kind + a.id + a.date)}
+        <div class="line">
+          <div class="grow"><button class="link" onclick={() => goKind(a.kind)}>{a.title}</button> <span class="muted small">{KIND_LABEL[a.kind] ?? a.kind}</span></div>
+          {#if a.overdue}<span class="chip urgent">late</span>{:else}<span class="muted small">{niceDate(a.date)}{a.time ? ' ' + a.time : ''}</span>{/if}
+        </div>
+      {/each}
+    </div>
+    <div class="row gap"><button class="btn" onclick={() => go('Todo')}>To-do list</button><button class="btn" onclick={() => go('Calendar')}>Calendar</button><button class="btn" onclick={() => go('Projects')}>Projects</button></div>
+  </section>
+
+  <section class="panel s6 h4" style="--c: var(--cat-system)">
+    <div class="label">WHAT CHANGED LATELY</div>
+    <div class="scroll">
+      {#if changes.length === 0}<p class="muted">Changes to tasks, events and projects are listed here.</p>{/if}
+      {#each changes as c (c.when + c.kind + c.id + c.action)}
+        <div class="line"><div class="grow">{KIND_LABEL[c.kind] ?? c.kind} {c.id} {c.action}</div><span class="muted small">{niceWhen(c.when)}</span></div>
+      {/each}
+    </div>
+  </section>
+  {/if}
 </div>
 
 <svelte:window onkeydown={(e) => { if (e.key === 'Escape') detail = null; }} />
@@ -378,7 +416,7 @@
   .tile:hover { border-color: var(--blue-line); }
   .big { font-size: 24px; font-weight: 600; margin-top: 2px; }
   /* every block has one set size, and shows only the most important lines; the rest scrolls inside it */
-  .dgrid { display: grid; grid-template-columns: repeat(12, 1fr); grid-template-rows: 330px 440px 300px; gap: 12px; align-items: stretch; }
+  .dgrid { display: grid; grid-template-columns: repeat(12, 1fr); grid-template-rows: 330px 440px 300px; grid-auto-rows: 300px; gap: 12px; align-items: stretch; }
   .dgrid .panel { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
   /* no scroll bars: the mouse wheel (or a finger) moves the list inside the block, and a soft fade at the bottom shows there is more */
   .dgrid .scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; -ms-overflow-style: none; padding-bottom: 22px; -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 22px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 22px), transparent); }

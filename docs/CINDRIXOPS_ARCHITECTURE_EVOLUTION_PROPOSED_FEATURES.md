@@ -659,7 +659,7 @@ Inspect existing Maps code and export pipeline; confirm the canonical `.cmap` v1
 | Security, backups, resilience hardening | Proposed for audit | Existing implementations must be inspected |
 | UI refinements | Built (2026-10-23) | Owner approved `mockups/Navigation.html`: grouped top bar with click menus, Dashboard stripes, status-tile pop-ups, Settings tab list. See `docs/35-top-bar.md` |
 | Morale: Reading Corner, Journal, Photos | Built (starter) | Owner-directed 2026-10-23. Leisure books by `leisure` folder; per-person folders under `user/people`; shared photo album for guests. See `docs/36-people-and-morale.md` |
-| Comms: Comms plan, Radio reference | Built (starter) | Radio reference is 6 draft pages; Signals (map layer) not built |
+| Comms: Comms plan, Radio reference | Built (starter) | Radio reference is 6 draft pages; the Signals map layer was dropped from the build (owner, 2026-10-24) |
 | Agro: crop guides, planting calendar, food preservation, livestock, soil and water | Built (starter pages only) | 62 draft Agro pages (plus 6 radio) in `content/guides`, widened 2026-10-23. The national CNAR data pack, frost-date tables and regional layer are still proposals |
 | Health & Holistic Medicine / Illustrated Materia Medica | Concept approved; implementation not authorized | Offline verified botanical photographs, safety/evidence profiles, shared knowledge corpus |
 | Standalone Map Viewer / `.cmap` | Windows-first stack and delivery sequence selected; implementation requested, not yet completed | Tauri 2 + Svelte/TypeScript/Rust; Android after Windows validation; protection model pending |

@@ -24,6 +24,7 @@ use tauri_plugin_dialog::DialogExt;
 mod fetch;
 mod libs;
 mod music;
+mod ops;
 mod settings;
 mod share;
 mod zimview;
@@ -2468,6 +2469,20 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            ops::ops_load,
+            ops::task_save,
+            ops::task_delete,
+            ops::task_done,
+            ops::event_save,
+            ops::event_delete,
+            ops::project_save,
+            ops::project_delete,
+            ops::project_file_chat,
+            ops::agenda_get,
+            ops::connect_search,
+            ops::connect_resolve,
+            ops::connect_related,
+            ops::changes_recent,
             share::share_info,
             share::share_set,
             share::share_set_pin,
