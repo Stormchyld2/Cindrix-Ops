@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { learner, loadPeople } from '../lib/learner.svelte';
   import { plansList, plansProblems, planFollow, planTick, type PlanInfo, type PlanStep, type CourseProblem } from '../lib/api';
   import { gatherFacts, stepStatus, planCounts, nextStep, autoDone, KIND_NAME, type PlanFacts } from '../lib/planfacts';
 
@@ -11,10 +12,12 @@
   let loaded = $state(false);
   let error = $state('');
   let openId: string | null = $state(null);
+  // '' is the whole household; a name keeps that person's own ticks and plans
+  let forWho = $state('');
 
   async function load() {
     try {
-      plans = await plansList();
+      plans = await plansList(forWho);
       problems = await plansProblems();
       facts = await gatherFacts();
       error = '';
@@ -24,6 +27,7 @@
     loaded = true;
   }
   onMount(async () => {
+    void loadPeople();
     await load();
     try {
       const want = sessionStorage.getItem('cindrix.openPlan');
@@ -57,10 +61,10 @@
   const followedCount = $derived(plans.filter((p) => p.followed).length);
 
   async function follow(p: PlanInfo, on: boolean) {
-    try { await planFollow(p.id, on); await load(); } catch (e) { error = String(e); }
+    try { await planFollow(p.id, on, forWho); await load(); } catch (e) { error = String(e); }
   }
   async function tick(p: PlanInfo, s: PlanStep, done: boolean) {
-    try { await planTick(p.id, s.id, done); await load(); } catch (e) { error = String(e); }
+    try { await planTick(p.id, s.id, done, forWho); await load(); } catch (e) { error = String(e); }
   }
   function dueText(s: PlanStep): string {
     if (s.every_days == null) return '';
@@ -72,12 +76,25 @@
   }
 </script>
 
+{#snippet whoPick()}
+  {#if learner.people.length}
+    <label class="forwho">Plans for:
+      <select class="input" bind:value={forWho} onchange={load} aria-label="Whose plans">
+        <option value="">Our household</option>
+        {#each learner.people as n}<option value={n}>{n}</option>{/each}
+      </select>
+    </label>
+    {#if forWho}<p class="muted small">Following and ticking here is only for {forWho}. The household's own plans and the Dashboard are not changed.</p>{/if}
+  {/if}
+{/snippet}
+
 {#if !open}
   <section>
     <h1>Plans</h1>
     <p class="sub">The first walkthrough gets you ready. These plans keep going after that: checks that come back on a schedule, things to learn, a plan for each kind of emergency, a guide to keep each thing from failing, and a guide to how much to have. Follow as many as you like at the same time. Choose a plan to go inside it.</p>
   </section>
   {#if error}<div class="warn err" role="alert">{error}</div>{/if}
+  {@render whoPick()}
 
   <div class="cards">
     <button class="card base" onclick={() => go('Start')} aria-label="Open the first walkthrough, Get ready">
@@ -114,6 +131,7 @@
 {:else}
   {@const c = planCounts(open, facts)}
   {@const nxt = nextStep(open, facts)}
+  {@render whoPick()}
   <div class="row between">
     <button class="btn" onclick={() => (openId = null)}>← All plans</button>
     <button class="btn" title="Open the Binder with this plan ticked, ready to print" onclick={() => { try { sessionStorage.setItem('cindrix.binderPlan', open.id); } catch { /* fine */ } go('Binder'); }}>Print in Binder</button>
@@ -163,6 +181,7 @@
 {/if}
 
 <style>
+  .forwho { display: inline-flex; gap: 8px; align-items: center; margin: 4px 0; }
   .gh { margin-top: 18px; }
   .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-top: 12px; }
   .card { display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 16px; background: var(--panel); border: 1px solid var(--line); border-top: 2px solid var(--line2); border-radius: 12px; }

@@ -252,13 +252,19 @@ pub fn load_all(dirs: &[PathBuf]) -> Loaded {
 
 // ---------- progress ----------
 
-const HEADER: &str = "kind,plan,step,date";
+const HEADER: &str = "kind,plan,step,date,person";
+/// The first version of the file had no person column; it still loads.
+const OLD_HEADER: &str = "kind,plan,step,date";
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct State {
     pub followed: Vec<String>,
     /// (plan id, step id, date done)
     pub done: Vec<(String, String, String)>,
+    /// (plan id, person) for plans followed for one named person of the household
+    pub person_followed: Vec<(String, String)>,
+    /// (plan id, step id, person, date done)
+    pub person_done: Vec<(String, String, String, String)>,
 }
 
 pub struct Store {
@@ -279,7 +285,7 @@ impl Store {
         };
         let mut lines = text.lines();
         match lines.next() {
-            Some(h) if h.trim() == HEADER => {}
+            Some(h) if h.trim() == HEADER || h.trim() == OLD_HEADER => {}
             None => return Ok(State::default()),
             _ => return Err("plans.csv has an unexpected header".into()),
         }
@@ -289,16 +295,22 @@ impl Store {
                 continue;
             }
             let f = split_record(l);
-            if f.len() != 4 {
+            if f.len() != 4 && f.len() != 5 {
                 return Err(format!("plans.csv line {} is damaged", i + 2));
             }
+            let who = f.get(4).cloned().unwrap_or_default();
             match f[0].as_str() {
-                "follow" => st.followed.push(f[1].clone()),
+                "follow" if who.is_empty() => st.followed.push(f[1].clone()),
+                "follow" => st.person_followed.push((f[1].clone(), who)),
                 "done" => {
                     if calendar::parse_date(&f[3]).is_none() {
                         return Err(format!("plans.csv line {}: not a date: {}", i + 2, f[3]));
                     }
-                    st.done.push((f[1].clone(), f[2].clone(), f[3].clone()));
+                    if who.is_empty() {
+                        st.done.push((f[1].clone(), f[2].clone(), f[3].clone()));
+                    } else {
+                        st.person_done.push((f[1].clone(), f[2].clone(), who, f[3].clone()));
+                    }
                 }
                 other => return Err(format!("plans.csv line {}: unknown kind {}", i + 2, other)),
             }
@@ -310,10 +322,16 @@ impl Store {
         let mut csv = String::from(HEADER);
         csv.push('\n');
         for p in &st.followed {
-            csv.push_str(&format!("follow,{},,\n", quote(p)));
+            csv.push_str(&format!("follow,{},,,\n", quote(p)));
         }
         for (p, s, d) in &st.done {
-            csv.push_str(&format!("done,{},{},{}\n", quote(p), quote(s), quote(d)));
+            csv.push_str(&format!("done,{},{},{},\n", quote(p), quote(s), quote(d)));
+        }
+        for (p, w) in &st.person_followed {
+            csv.push_str(&format!("follow,{},,,{}\n", quote(p), quote(w)));
+        }
+        for (p, s, w, d) in &st.person_done {
+            csv.push_str(&format!("done,{},{},{},{}\n", quote(p), quote(s), quote(d), quote(w)));
         }
         fsio::write_atomic(&self.path, csv.as_bytes()).map_err(|e| e.to_string())
     }
@@ -326,6 +344,38 @@ impl Store {
         st.followed.retain(|p| p != plan);
         if on {
             st.followed.push(plan.to_string());
+        }
+        self.save(&st)
+    }
+
+    /// Follow a plan for one named person of the household (or stop). The household's own
+    /// following is separate and is not touched.
+    pub fn follow_for(&self, plan: &str, person: &str, on: bool) -> Result<(), String> {
+        if !valid_id(plan) {
+            return Err("There is no such plan.".into());
+        }
+        let person = clean_person(person)?;
+        let mut st = self.load()?;
+        st.person_followed.retain(|(p, w)| !(p == plan && *w == person));
+        if on {
+            st.person_followed.push((plan.to_string(), person));
+        }
+        self.save(&st)
+    }
+
+    /// Mark a step done for one person on `date`, or clear it.
+    pub fn tick_for(&self, plan: &str, step: &str, person: &str, done: bool, date: &str) -> Result<(), String> {
+        if !valid_id(plan) || step.is_empty() || step.len() > 80 {
+            return Err("There is no such step.".into());
+        }
+        if calendar::parse_date(date).is_none() {
+            return Err("That is not a date.".into());
+        }
+        let person = clean_person(person)?;
+        let mut st = self.load()?;
+        st.person_done.retain(|(p, s, w, _)| !(p == plan && s == step && *w == person));
+        if done {
+            st.person_done.push((plan.to_string(), step.to_string(), person, date.to_string()));
         }
         self.save(&st)
     }
@@ -344,6 +394,34 @@ impl Store {
             st.done.push((plan.to_string(), step.to_string(), date.to_string()));
         }
         self.save(&st)
+    }
+}
+
+fn clean_person(person: &str) -> Result<String, String> {
+    let p = person.trim();
+    if p.is_empty() || p.chars().count() > 60 || p.chars().any(|c| c.is_control()) {
+        return Err("Choose a person.".into());
+    }
+    Ok(p.to_string())
+}
+
+impl State {
+    /// Whether the plan is followed: by the household when `person` is empty, otherwise for that person.
+    pub fn is_followed(&self, plan: &str, person: &str) -> bool {
+        if person.is_empty() {
+            self.followed.iter().any(|p| p == plan)
+        } else {
+            self.person_followed.iter().any(|(p, w)| p == plan && w == person)
+        }
+    }
+
+    /// The date a step was last done by the household (`person` empty) or by one person.
+    pub fn last_done(&self, plan: &str, step: &str, person: &str) -> Option<String> {
+        if person.is_empty() {
+            self.done.iter().find(|(p, s, _)| p == plan && s == step).map(|(_, _, d)| d.clone())
+        } else {
+            self.person_done.iter().find(|(p, s, w, _)| p == plan && s == step && w == person).map(|(_, _, _, d)| d.clone())
+        }
     }
 }
 
@@ -455,6 +533,35 @@ mod tests {
         fs::write(&s.path, "garbage\n").unwrap();
         assert!(s.follow("a", true).is_err());
         assert_eq!(fs::read_to_string(&s.path).unwrap(), "garbage\n");
+    }
+
+    #[test]
+    fn plans_can_be_followed_and_ticked_for_one_person_without_touching_the_household() {
+        let d = tmp("people");
+        let s = Store::new(&d);
+        // a file from before the person column still loads
+        fs::write(&s.path, "kind,plan,step,date\nfollow,keep-it-fresh,,\ndone,keep-it-fresh,a,2026-01-05\n").unwrap();
+        let st = s.load().unwrap();
+        assert!(st.is_followed("keep-it-fresh", "") && st.last_done("keep-it-fresh", "a", "").as_deref() == Some("2026-01-05"));
+        s.follow_for("keep-it-fresh", "Sam", true).unwrap();
+        s.follow_for("keep-it-fresh", "Sam", true).unwrap();
+        s.tick_for("keep-it-fresh", "a", "Sam", true, "2026-03-01").unwrap();
+        s.tick_for("keep-it-fresh", "a", "Alex, Jr.", true, "2026-03-02").unwrap();
+        let st = s.load().unwrap();
+        assert!(st.is_followed("keep-it-fresh", "Sam") && !st.is_followed("keep-it-fresh", "Alex, Jr."));
+        assert!(st.is_followed("keep-it-fresh", "")); // the household's own is untouched
+        assert_eq!(st.last_done("keep-it-fresh", "a", "Sam").as_deref(), Some("2026-03-01"));
+        assert_eq!(st.last_done("keep-it-fresh", "a", "Alex, Jr.").as_deref(), Some("2026-03-02"));
+        assert_eq!(st.last_done("keep-it-fresh", "a", "").as_deref(), Some("2026-01-05"));
+        s.tick_for("keep-it-fresh", "a", "Sam", false, "2026-03-03").unwrap();
+        assert_eq!(s.load().unwrap().last_done("keep-it-fresh", "a", "Sam"), None);
+        s.follow_for("keep-it-fresh", "Sam", false).unwrap();
+        assert!(!s.load().unwrap().is_followed("keep-it-fresh", "Sam"));
+        assert!(s.follow_for("keep-it-fresh", "  ", true).is_err());
+        assert!(s.tick_for("keep-it-fresh", "a", "Sam", true, "soon").is_err());
+        // the household's own ticks still work and keep the people's
+        s.tick("keep-it-fresh", "a", true, "2026-04-01").unwrap();
+        assert_eq!(s.load().unwrap().last_done("keep-it-fresh", "a", "Alex, Jr.").as_deref(), Some("2026-03-02"));
     }
 
     #[test]

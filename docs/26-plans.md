@@ -24,8 +24,12 @@ Keep it fresh (11 repeating checks), Learn the basics (10 steps from the Academy
 Plans never give medicine doses; a plan that does is left out and listed on the screen (the same check as Academy courses). Code: `core/src/plans.rs`; tests in that file and `core/tests/shipped_plans.rs` (every shipped plan loads, and its screens, checks and lessons exist).
 
 ## Not built yet
-Pop-up notifications (there are none; checks that come due appear under Coming up on the Dashboard and in the Calendar, doc 37), plans for a household member, a plan pack file.
+Pop-up notifications (there are none; checks that come due appear under Coming up on the Dashboard and in the Calendar, doc 37), a plan pack file.
 
 ## The Binder
 
 The Binder (Plan > Binder) is the paper copy. Besides family details, contacts, supplies, emergency cards and drill checklists it now holds: a contents list, the plans you pick (followed ones start ticked; each step has a box, how often it repeats and when it was last done), the next 60 days of the calendar, the open to-do list, projects with their tasks, any guide pages (Agro and radio reference, picked page by page or a whole section), and blank lined note pages. A plan's own screen has **Print in Binder**, which opens the Binder with that plan ticked. The choices are remembered in the browser part of the program (not in `user/`). Anything marked DRAFT prints with a warning. It is all on-screen layout and printing; no new logic lives in `core/`.
+
+## Plans for a household member
+
+When the Family page has names, the Plans screen has **Plans for:** (Our household, or a name). A name keeps its own following and its own ticks, so each person's plan checks come due on their own dates. The household's following and the Dashboard are not changed. It is stored in the same `user/plans.csv` (a fifth column, `person`; an older file without it still loads). Code: `Store::follow_for`, `tick_for`, `State::is_followed`, `last_done` in `core/src/plans.rs` (tested).

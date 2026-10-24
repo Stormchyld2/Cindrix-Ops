@@ -556,7 +556,7 @@ fn dispatch(app: &tauri::AppHandle, cmd: &str, a: &Value, role: &Role) -> Result
         "music_prepare" => tv(tauri::async_runtime::block_on(crate::music::music_prepare(st, arg(a, "rel")?))?),
         "academy_list" => tv(crate::academy_list(arg(a, "person")?)?),
         "academy_lesson" => tv(crate::academy_lesson(arg(a, "id")?)?),
-        "plans_list" => tv(crate::plans_list()?),
+        "plans_list" => tv(crate::plans_list(None)?),
         "drills_list" => tv(crate::drills_list()?),
         "shelf_list" => tv(crate::shelf_list()?),
         "sources_list" => tv(crate::sources_list()),

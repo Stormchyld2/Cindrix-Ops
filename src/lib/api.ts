@@ -760,21 +760,22 @@ const memPlans: PlanInfo[] = [
     { id: 'keep-a-radio', title: 'Keep a radio that does not need the wall', every_days: null, check: '', go: '', button: '', body: ['Battery or hand-crank.'], state: 'todo', last_done: '', due_in: null },
   ] },
 ];
-export async function plansList(): Promise<PlanInfo[]> {
-  if (inTauri) return call<PlanInfo[]>('plans_list');
+/** `person` empty: the household's own progress. A name: that person's. */
+export async function plansList(person = ''): Promise<PlanInfo[]> {
+  if (inTauri) return call<PlanInfo[]>('plans_list', { person: person || null });
   return JSON.parse(JSON.stringify(memPlans));
 }
 export async function plansProblems(): Promise<CourseProblem[]> {
   if (inTauri) return call<CourseProblem[]>('plans_problems');
   return [];
 }
-export async function planFollow(id: string, on: boolean): Promise<void> {
-  if (inTauri) return call<void>('plan_follow', { id, on });
+export async function planFollow(id: string, on: boolean, person = ''): Promise<void> {
+  if (inTauri) return call<void>('plan_follow', { id, on, person: person || null });
   const p = memPlans.find((x) => x.id === id);
   if (p) p.followed = on;
 }
-export async function planTick(plan: string, step: string, done: boolean): Promise<void> {
-  if (inTauri) return call<void>('plan_tick', { plan, step, done });
+export async function planTick(plan: string, step: string, done: boolean, person = ''): Promise<void> {
+  if (inTauri) return call<void>('plan_tick', { plan, step, done, person: person || null });
   const s = memPlans.find((x) => x.id === plan)?.steps.find((x) => x.id === step);
   if (s) { s.state = done ? 'done' : 'todo'; s.last_done = done ? 'today' : ''; s.due_in = done && s.every_days ? s.every_days : null; }
 }

@@ -284,7 +284,7 @@ fn extra_dates() -> Vec<Dated> {
             out.push(Dated { kind: "item".into(), id: it.id.clone(), title: format!("{} runs out or expires", it.name), day });
         }
     }
-    if let Ok(plans) = crate::plans_list() {
+    if let Ok(plans) = crate::plans_list(None) {
         for p in plans.iter().filter(|p| p.followed) {
             for s in &p.steps {
                 if let Some(due_in) = s.due_in {
@@ -318,7 +318,7 @@ fn all_entries() -> Vec<Entry> {
             v.push(Entry { kind: "item".into(), id: i.id, title: i.name, text: format!("{} {} {} {}", i.category, i.location, i.notes, i.brand) });
         }
     }
-    if let Ok(plans) = crate::plans_list() {
+    if let Ok(plans) = crate::plans_list(None) {
         for p in plans {
             let text = format!("{} {}", p.summary, p.steps.iter().map(|s| s.title.clone()).collect::<Vec<_>>().join(" "));
             v.push(Entry { kind: "plan".into(), id: p.id, title: p.title, text });

@@ -2286,7 +2286,8 @@ struct PlanDto {
 }
 
 #[tauri::command]
-fn plans_list() -> Result<Vec<PlanDto>, String> {
+fn plans_list(person: Option<String>) -> Result<Vec<PlanDto>, String> {
+    let who = person.unwrap_or_default();
     let loaded = plans::load_all(&plan_dirs());
     let st = plans::Store::new(&root().join("user")).load()?;
     let today = calendar::today_days();
@@ -2294,12 +2295,12 @@ fn plans_list() -> Result<Vec<PlanDto>, String> {
         .plans
         .into_iter()
         .map(|p| {
-            let followed = st.followed.contains(&p.id);
+            let followed = st.is_followed(&p.id, &who);
             let steps = p
                 .steps
                 .iter()
                 .map(|s| {
-                    let last = st.done.iter().find(|(pl, sid, _)| *pl == p.id && *sid == s.id).map(|(_, _, d)| d.clone());
+                    let last = st.last_done(&p.id, &s.id, &who);
                     let (state, due_in) = plans::step_state(s, last.as_deref(), today);
                     PlanStepDto {
                         id: s.id.clone(),
@@ -2331,20 +2332,28 @@ fn plans_problems() -> Vec<CourseProblemDto> {
 }
 
 #[tauri::command]
-fn plan_follow(id: String, on: bool) -> Result<(), String> {
+fn plan_follow(id: String, on: bool, person: Option<String>) -> Result<(), String> {
     if on && !plans::load_all(&plan_dirs()).plans.iter().any(|p| p.id == id) {
         return Err("There is no such plan.".into());
     }
-    plans::Store::new(&root().join("user")).follow(&id, on)
+    let store = plans::Store::new(&root().join("user"));
+    match person.filter(|p| !p.trim().is_empty()) {
+        Some(w) => store.follow_for(&id, &w, on),
+        None => store.follow(&id, on),
+    }
 }
 
 #[tauri::command]
-fn plan_tick(plan: String, step: String, done: bool) -> Result<(), String> {
+fn plan_tick(plan: String, step: String, done: bool, person: Option<String>) -> Result<(), String> {
     let known = plans::load_all(&plan_dirs()).plans.iter().any(|p| p.id == plan && p.steps.iter().any(|s| s.id == step));
     if !known {
         return Err("There is no such step.".into());
     }
-    plans::Store::new(&root().join("user")).tick(&plan, &step, done, &calendar::today_string())
+    let store = plans::Store::new(&root().join("user"));
+    match person.filter(|p| !p.trim().is_empty()) {
+        Some(w) => store.tick_for(&plan, &step, &w, done, &calendar::today_string()),
+        None => store.tick(&plan, &step, done, &calendar::today_string()),
+    }
 }
 
 // ---------- drills ----------
