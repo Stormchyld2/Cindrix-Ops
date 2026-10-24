@@ -116,6 +116,7 @@
   {@const nxt = nextStep(open, facts)}
   <div class="row between">
     <button class="btn" onclick={() => (openId = null)}>← All plans</button>
+    <button class="btn" title="Open the Binder with this plan ticked, ready to print" onclick={() => { try { sessionStorage.setItem('cindrix.binderPlan', open.id); } catch { /* fine */ } go('Binder'); }}>Print in Binder</button>
     {#if open.followed}
       <button class="btn" title="Stop following this plan (your ticks are kept)" onclick={() => follow(open, false)}>Following ✓ · stop</button>
     {:else}
