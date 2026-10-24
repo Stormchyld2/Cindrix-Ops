@@ -24,7 +24,7 @@ Keep it fresh (11 repeating checks), Learn the basics (10 steps from the Academy
 Plans never give medicine doses; a plan that does is left out and listed on the screen (the same check as Academy courses). Code: `core/src/plans.rs`; tests in that file and `core/tests/shipped_plans.rs` (every shipped plan loads, and its screens, checks and lessons exist).
 
 ## Not built yet
-Reminders when a check is due (there are no notifications yet), plans for a household member, a plan pack file.
+Pop-up notifications (there are none; checks that come due appear under Coming up on the Dashboard and in the Calendar, doc 37), plans for a household member, a plan pack file.
 
 ## The Binder
 
