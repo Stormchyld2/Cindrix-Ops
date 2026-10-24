@@ -107,7 +107,8 @@ pub fn pack(entries: &[Entry]) -> String {
     s
 }
 
-fn unbase64(text: &str) -> Option<Vec<u8>> {
+/// Plain base64 text back into bytes (None when it is not valid base64).
+pub fn unbase64(text: &str) -> Option<Vec<u8>> {
     let val = |c: u8| -> Option<u32> {
         match c {
             b'A'..=b'Z' => Some((c - b'A') as u32),

@@ -222,6 +222,19 @@ impl MapStore {
         fsio::write_atomic(&d.join("picture.png"), png).map_err(|e| e.to_string())
     }
 
+    /// The saved picture of a map, when it has one.
+    pub fn load_picture(&self, id: &str) -> Result<Option<Vec<u8>>, String> {
+        let p = self.dir(id)?.join("picture.png");
+        if !p.is_file() {
+            return Ok(None);
+        }
+        match fs::metadata(&p) {
+            Ok(m) if m.len() > 30_000_000 => return Err("The picture is too big to open.".into()),
+            _ => {}
+        }
+        fs::read(&p).map(Some).map_err(|e| e.to_string())
+    }
+
     /// Write `route.gpx` for a saved map from its route points.
     pub fn export_gpx(&self, id: &str, name: &str, points: &[(f64, f64)]) -> Result<PathBuf, String> {
         let d = self.dir(id)?;
@@ -579,7 +592,10 @@ mod tests {
         assert!(s.save_picture("nope", &png).is_err());
         let id = s.save(None, "M", MAP, "").unwrap();
         assert!(s.save_picture(&id, b"GIF89a....").is_err());
+        assert_eq!(s.load_picture(&id).unwrap(), None);
         s.save_picture(&id, &png).unwrap();
+        assert_eq!(s.load_picture(&id).unwrap(), Some(png.to_vec()));
+        assert!(s.load_picture("../x").is_err());
         assert!(s.export_gpx(&id, "M", &[(1.0, 1.0)]).is_err());
         let p = s.export_gpx(&id, "M", &[(39.0, -80.0), (39.1, -80.1)]).unwrap();
         assert!(p.ends_with("route.gpx"));

@@ -535,7 +535,7 @@ mod tests {
                   "chat_read", "chat_save", "library_share", "pick_folder", "phone_send", "map_save", "academy_save", "plan_tick", "crawl_start",
                   "journal_list", "journal_save", "comms_plan_load", "comms_plan_save", "photo_add", "photo_delete",
                   "ops_load", "task_save", "task_delete", "task_done", "event_save", "event_delete", "project_save", "project_delete", "project_file_chat",
-                  "agenda_get", "connect_search", "connect_resolve", "connect_related", "changes_recent", "plans_export", "academy_pack_export", "academy_pack_install"] {
+                  "agenda_get", "connect_search", "connect_resolve", "connect_related", "changes_recent", "plans_export", "academy_pack_export", "academy_pack_install", "map_save_picture", "map_picture"] {
             assert!(!guest_allowed(c), "{}", c);
         }
     }

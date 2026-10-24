@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { familyStatus, familyLoad, inventoryList, listCards, drillsList, plansList, guidesList, opsLoad, agendaGet, type Family, type Item, type Card, type Drill, type PlanInfo, type OpsData, type AgendaItem } from '../lib/api';
+  import { familyStatus, familyLoad, inventoryList, listCards, drillsList, plansList, guidesList, mapsList, mapPicture, type MapMeta, opsLoad, agendaGet, type Family, type Item, type Card, type Drill, type PlanInfo, type OpsData, type AgendaItem } from '../lib/api';
 
   let family = $state<Family | null>(null);
   let locked = $state(false);
@@ -34,11 +34,14 @@
   let sectionGuides: Card[] = $state([]);
   let pickedGuides: Record<string, Card> = $state({});
   let notePages = $state(0);
+  let maps: MapMeta[] = $state([]);
+  let pickedMaps: Record<string, boolean> = $state({});
+  let mapPics: Record<string, string> = $state({});
   const SAVE = 'cindrix.binder';
 
   function remember() {
     try {
-      localStorage.setItem(SAVE, JSON.stringify({ incFamily, incContacts, incSupplies, incAgenda, incTasks, incProjects, notePages, pickedCards, pickedDrills, pickedPlans, guides: Object.keys(pickedGuides) }));
+      localStorage.setItem(SAVE, JSON.stringify({ incFamily, incContacts, incSupplies, incAgenda, incTasks, incProjects, notePages, pickedCards, pickedDrills, pickedPlans, pickedMaps, guides: Object.keys(pickedGuides) }));
     } catch { /* the page still works without it */ }
   }
   function recall(): any {
@@ -88,6 +91,8 @@
         const want = sessionStorage.getItem('cindrix.binderPlan');
         if (want) { sessionStorage.removeItem('cindrix.binderPlan'); if (plans.some((p) => p.id === want)) pickedPlans[want] = true; }
       } catch { /* fine */ }
+      maps = (await mapsList()).filter((m) => m.has_picture);
+      for (const m of maps) pickedMaps[m.id] = !!saved?.pickedMaps?.[m.id];
       ops = await opsLoad();
       agenda = await agendaGet(today, addDays(today, 60));
       await loadSection();
@@ -113,6 +118,10 @@
 
   let chosenCards = $derived(cards.filter((c) => pickedCards[c.id]));
   let chosenDrills = $derived(drills.filter((d) => pickedDrills[d.id]));
+  let chosenMaps = $derived(maps.filter((m) => pickedMaps[m.id]));
+  $effect(() => {
+    for (const m of chosenMaps) if (!(m.id in mapPics)) { mapPics[m.id] = ''; void mapPicture(m.id).then((u) => { mapPics[m.id] = u ?? ''; }).catch(() => {}); }
+  });
   let chosenPlans = $derived(plans.filter((p) => pickedPlans[p.id]));
   let chosenGuides = $derived(Object.entries(pickedGuides).map(([k, c]) => ({ k, c })));
   let openTasks = $derived((ops?.tasks ?? []).filter((t) => !t.done).sort((a, b) => (a.due || '9999').localeCompare(b.due || '9999')));
@@ -121,7 +130,7 @@
     incFamily && 'Family information', incContacts && 'Contacts and meeting points', incSupplies && 'Supply list',
     incAgenda && 'Coming up (next 60 days)', incTasks && 'To-do list', incProjects && 'Projects',
     ...chosenPlans.map((p) => 'Plan: ' + p.title), ...chosenCards.map((c) => c.title), ...chosenDrills.map((d) => 'Checklist: ' + d.title),
-    ...chosenGuides.map((g) => 'Guide: ' + g.c.title), notePages > 0 && `Notes (${notePages} page${notePages === 1 ? '' : 's'})`,
+    ...chosenMaps.map((m) => 'Map: ' + m.name), ...chosenGuides.map((g) => 'Guide: ' + g.c.title), notePages > 0 && `Notes (${notePages} page${notePages === 1 ? '' : 's'})`,
   ].filter(Boolean) as string[]);
   let anyDraft = $derived(chosenCards.some((c) => c.status !== 'reviewed') || chosenDrills.some((d) => d.status !== 'reviewed') || chosenPlans.some((p) => p.status !== 'reviewed') || chosenGuides.some((g) => g.c.status !== 'reviewed'));
   let people = $derived((family?.people ?? []).filter((p) => p.name.trim() || p.conditions.trim() || p.medicines.trim() || p.allergies.trim() || p.doctor.trim()));
@@ -148,7 +157,11 @@
       <label class="opt"><input type="checkbox" bind:checked={incAgenda} onchange={remember} /> Coming up: calendar and dates, next 60 days ({agenda.length})</label>
       <label class="opt"><input type="checkbox" bind:checked={incTasks} onchange={remember} /> To-do list ({openTasks.length} open)</label>
       <label class="opt"><input type="checkbox" bind:checked={incProjects} onchange={remember} /> Projects ({liveProjects.length})</label>
-      <label class="opt off"><input type="checkbox" disabled /> Saved maps <span class="muted">(print them from Maps)</span></label>
+      <div class="label sp">SAVED MAPS</div>
+      {#each maps as m (m.id)}
+        <label class="opt"><input type="checkbox" bind:checked={pickedMaps[m.id]} onchange={remember} /> {m.name}</label>
+      {/each}
+      {#if !maps.length}<p class="muted fine">No saved map has a picture yet. On the Maps screen, save a map and press “Save a picture”.</p>{/if}
 
       {#if locked}
         <div class="lock">
@@ -331,6 +344,13 @@
         </section>
       {/each}
 
+      {#each chosenMaps as m (m.id)}
+        <section class="card">
+          <h2>Map: {m.name}</h2>
+          {#if mapPics[m.id]}<img class="mapimg" src={mapPics[m.id]} alt={`Map: ${m.name}`} />{:else}<p class="muted">Loading the picture…</p>{/if}
+        </section>
+      {/each}
+
       {#each chosenGuides as g (g.k)}
         <section class="card">
           <h2>{g.c.title}{g.c.status !== 'reviewed' ? ' (DRAFT)' : ''}</h2>
@@ -387,6 +407,7 @@
   .stept { display: flex; gap: 8px; align-items: flex-start; }
   .indent { padding-left: 24px; }
   .box.ticked { background: #111; }
+  .mapimg { max-width: 100%; border: 1px solid #111; }
   .ruled { border-bottom: 1px solid #888; height: 28px; }
   .card { break-before: page; }
 </style>

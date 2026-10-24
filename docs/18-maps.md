@@ -15,7 +15,7 @@ Status: the saved-map features are built and tested. The tile viewer is **writte
 - No place names on the map: the style leaves out text layers because no font files ship yet. Pin labels are drawn by the app.
 - No topo (contours, shading), no satellite layer, no GPS, no "line of sight", no layer toggles (hospitals, water and so on). The mockup shows all of these; none is built.
 - Positions are placed by hand and are approximate.
-- "Print or export a picture" is not built (`picture.png` is accepted by the store but nothing makes one yet).
+- **Save a picture** (next to Export route) keeps what the map shows now as `picture.png` in the saved map's folder; the Binder can print saved maps that have one. A picture needs a saved map. Code: `MapStore::save_picture`, `load_picture` (tested); the screen is grabbed as the map draws.
 
 ## How the pieces fit
 | Piece | Where | Job |
@@ -57,7 +57,7 @@ The map "did not load correctly" with the small test pack. Likely cause: the vie
 3. Speed on the 8 GB laptop at zoom 12 to 15 (doc 6, risk 5).
 
 ## Still to do
-Topo layer (contours and shading from elevation data), satellite packs per county, fonts for place names, layer toggles, a warning when a route crosses a no-go area, picture export, GPS where hardware has it.
+Topo layer (contours and shading from elevation data), satellite packs per county, fonts for place names, layer toggles, a warning when a route crosses a no-go area, GPS where hardware has it.
 
 
 ## Finding a place (2026-10-21)

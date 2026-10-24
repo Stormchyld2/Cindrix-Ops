@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy, untrack } from 'svelte';
   import { toDms, toMgrs } from '../lib/coords';
-  import { mapsList, mapLoad, mapSave, mapDelete, mapExportGpx, routeStats, mapPacks, tileUrl, placeSearch, profileLoad, type MyPlace, phoneEstimate, phoneExport, phoneDevices, phoneSend, pickFolder, type Device, directions as askDirections, type PhoneKind, type Directions, type DirRoute, type PlaceHit, type MapMeta, type LatLon, type RouteStats, type Pack } from '../lib/api';
+  import { mapsList, mapLoad, mapSave, mapDelete, mapExportGpx, mapSavePicture, routeStats, mapPacks, tileUrl, placeSearch, profileLoad, type MyPlace, phoneEstimate, phoneExport, phoneDevices, phoneSend, pickFolder, type Device, directions as askDirections, type PhoneKind, type Directions, type DirRoute, type PlaceHit, type MapMeta, type LatLon, type RouteStats, type Pack } from '../lib/api';
   import type { Map as MLMap, Marker, StyleSpecification, GeoJSONSource } from 'maplibre-gl';
   import { settings } from '../lib/settings.svelte';
   import { POI_GROUPS, kindName, groupOf, distanceKm, compass } from '../lib/mapkinds';
@@ -1377,6 +1377,28 @@
     }
   }
 
+  // Keep a picture of what the map shows now with the saved map; the Binder can print it.
+  async function savePicture() {
+    error = message = '';
+    if (!current) { error = 'Save the map first, then keep a picture of it.'; return; }
+    if (!map) { error = 'The map is not ready yet.'; return; }
+    const m = map;
+    try {
+      const url = await new Promise<string>((resolve, reject) => {
+        // the picture must be taken right as the map draws, or the screen buffer is already cleared
+        m.once('render', () => {
+          try { resolve(m.getCanvas().toDataURL('image/png')); } catch (e) { reject(e); }
+        });
+        m.triggerRepaint();
+      });
+      await mapSavePicture(current, url);
+      message = 'A picture of the map as it looks now was saved with this map. Add it to the Binder from the Binder screen.';
+      await refresh();
+    } catch (e) {
+      error = 'The picture could not be saved: ' + String(e);
+    }
+  }
+
   async function exportGpx() {
     error = message = '';
     if (!current) {
@@ -1704,6 +1726,7 @@
       <input class="input grow" placeholder="Map name (for example: Home to the lake cabin)" bind:value={name} aria-label="Map name" />
       <button class="btn primary" onclick={save}>Save</button>
       <button class="btn" onclick={exportGpx} disabled={routePoints.length < 2}>Export route (GPX)</button>
+      <button class="btn" onclick={savePicture} disabled={!current} title="Keep a picture of the map as it looks now with this saved map, to print in the Binder">Save a picture</button>
       {#if current}<button class="btn danger" onclick={remove}>{confirmDelete ? 'Really delete?' : 'Delete'}</button>{/if}
     </div>
 

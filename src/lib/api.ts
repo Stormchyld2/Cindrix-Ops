@@ -490,6 +490,15 @@ export async function mapExportGpx(id: string, name: string, points: LatLon[]): 
   if (inTauri) return call<string>('map_export_gpx', { id, name, points });
   return 'user/saved-maps/' + id + '/route.gpx';
 }
+/** Keeps a picture of the map (a PNG data address) with the saved map. */
+export async function mapSavePicture(id: string, dataUrl: string): Promise<void> {
+  if (inTauri) return call<void>('map_save_picture', { id, data: dataUrl.replace(/^data:image\/png;base64,/, '') });
+}
+/** The saved picture of a map as a data address, or null. */
+export async function mapPicture(id: string): Promise<string | null> {
+  if (inTauri) return call<string | null>('map_picture', { id });
+  return null;
+}
 export async function routeStats(points: LatLon[]): Promise<RouteStats> {
   if (inTauri) return call<RouteStats>('route_stats', { points });
   let km = 0;

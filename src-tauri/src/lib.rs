@@ -887,6 +887,19 @@ fn map_export_gpx(id: String, name: String, points: Vec<(f64, f64)>) -> Result<S
     map_store().export_gpx(&id, &name, &points).map(|p| p.to_string_lossy().to_string())
 }
 
+/// Keep a picture of the map screen with the saved map (`picture.png`). `data` is the PNG as base64 text.
+#[tauri::command]
+fn map_save_picture(id: String, data: String) -> Result<(), String> {
+    let png = cindrix_core::coursepack::unbase64(&data).ok_or("The picture could not be read.")?;
+    map_store().save_picture(&id, &png)
+}
+
+/// The saved picture of a map as a `data:` address, or nothing when it has none.
+#[tauri::command]
+fn map_picture(id: String) -> Result<Option<String>, String> {
+    Ok(map_store().load_picture(&id)?.map(|b| format!("data:image/png;base64,{}", cindrix_core::academy::base64(&b))))
+}
+
 /// Straight-line length of a route through the points (this app does not plan roads).
 #[tauri::command]
 fn route_stats(points: Vec<(f64, f64)>) -> RouteStats {
@@ -2614,6 +2627,8 @@ pub fn run() {
             map_save,
             map_delete,
             map_export_gpx,
+            map_save_picture,
+            map_picture,
             route_stats,
             map_packs,
             dashboard_suggestions,
