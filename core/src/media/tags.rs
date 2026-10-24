@@ -19,11 +19,13 @@ pub struct Tags {
     pub year: u32,
     /// The genre named in the file ("Rock"), empty when none.
     pub genre: String,
+    /// ReplayGain track gain in tenths of a decibel (-65 is -6.5 dB); 0 when the file has none.
+    pub gain: i32,
 }
 
 impl Tags {
     pub fn is_empty(&self) -> bool {
-        self.title.is_empty() && self.artist.is_empty() && self.album.is_empty() && self.track == 0 && self.year == 0 && self.genre.is_empty()
+        self.title.is_empty() && self.artist.is_empty() && self.album.is_empty() && self.track == 0 && self.year == 0 && self.genre.is_empty() && self.gain == 0
     }
 
     /// Fill the fields that are still empty from `o`.
@@ -45,6 +47,9 @@ impl Tags {
         }
         if self.genre.is_empty() {
             self.genre = o.genre;
+        }
+        if self.gain == 0 {
+            self.gain = o.gain;
         }
     }
 }
@@ -71,6 +76,15 @@ const ID3_GENRES: [&str; 80] = [
     "Eurodance", "Dream", "Southern Rock", "Comedy", "Cult", "Gangsta", "Top 40", "Christian Rap", "Pop/Funk", "Jungle", "Native American", "Cabaret",
     "New Wave", "Psychedelic", "Rave", "Showtunes", "Trailer", "Lo-Fi", "Tribal", "Acid Punk", "Acid Jazz", "Polka", "Retro", "Musical", "Rock & Roll", "Hard Rock",
 ];
+
+/// "-6.50 dB", "+3 dB" or "-6.5" as tenths of a decibel. Nothing outside +/-30 dB is believed.
+pub fn gain_tenths(text: &str) -> i32 {
+    let t = text.trim().trim_end_matches(|c: char| c.is_alphabetic() || c.is_whitespace());
+    match t.trim().parse::<f64>() {
+        Ok(v) if v.is_finite() && v.abs() <= 30.0 => (v * 10.0).round() as i32,
+        _ => 0,
+    }
+}
 
 fn genre_by_number(n: usize) -> String {
     ID3_GENRES.get(n).map(|g| g.to_string()).unwrap_or_default()
@@ -181,6 +195,18 @@ fn id3_text(data: &[u8]) -> String {
     clean(s.split('\0').next().unwrap_or(""))
 }
 
+/// Every string in a text frame that holds several (a free-form field is its description and its value).
+fn id3_text_parts(data: &[u8]) -> Vec<String> {
+    let Some((&enc, rest)) = data.split_first() else { return vec![] };
+    let s = match enc {
+        0 => rest.iter().map(|&b| b as char).collect::<String>(),
+        1 => utf16_bom(rest),
+        2 => utf16(rest, false),
+        _ => String::from_utf8_lossy(rest).to_string(),
+    };
+    s.split('\0').map(|x| x.trim_matches(|c: char| c.is_whitespace() || c == '\u{feff}').to_string()).collect()
+}
+
 fn id3_picture(d: &[u8], v22: bool) -> Option<Art> {
     let enc = *d.first()?;
     let mut i = 1usize;
@@ -271,7 +297,7 @@ fn id3v2<R: Read + Seek>(r: &mut R, want_art: bool) -> Option<(Tags, Option<Art>
             _ => (false, false, false),
         };
         unsync |= ver == 3 && flags & 0x80 != 0;
-        let is_text = id.starts_with('T') && id != "TXXX" && id != "TXX";
+        let is_text = id.starts_with('T');
         let is_pic = id == "APIC" || id == "PIC";
         if !skip && ((is_text && size <= MAX_TEXT) || (want_art && art.is_none() && is_pic && size as usize <= MAX_ART + 4096)) {
             if let Some(mut d) = read_at(r, body, size as usize) {
@@ -284,6 +310,17 @@ fn id3v2<R: Read + Seek>(r: &mut R, want_art: bool) -> Option<(Tags, Option<Art>
                 if is_pic {
                     art = id3_picture(&d, ver == 2);
                 } else {
+                    if id == "TXXX" || id == "TXX" {
+                        // a free-form field: description, then value (we read the ReplayGain track gain)
+                        let mut parts = id3_text_parts(&d).into_iter();
+                        if let (Some(k), Some(v)) = (parts.next(), parts.next()) {
+                            if k.eq_ignore_ascii_case("replaygain_track_gain") && tags.gain == 0 {
+                                tags.gain = gain_tenths(&v);
+                            }
+                        }
+                        pos = body + size;
+                        continue;
+                    }
                     let t = id3_text(&d);
                     match id.as_str() {
                         "TIT2" | "TT2" => tags.title = t,
@@ -331,6 +368,7 @@ fn id3v1<R: Read + Seek>(r: &mut R) -> Option<Tags> {
         year: year_of(&latin1_field(&b[93..97])),
         track,
         genre: genre_by_number(b[127] as usize),
+        gain: 0,
     })
 }
 
@@ -367,6 +405,7 @@ fn vorbis_comments(b: &[u8]) -> Tags {
             }
             "ALBUMARTIST" => album_artist = v,
             "ALBUM" => t.album = v,
+            "REPLAYGAIN_TRACK_GAIN" => t.gain = gain_tenths(&v),
             "GENRE" => {
                 if t.genre.is_empty() {
                     t.genre = genre_text(&v)
@@ -843,11 +882,36 @@ mod tests {
             let (t, _) = parse(b, false);
             assert_eq!(
                 t,
-                Tags { title: "Boil Water".into(), artist: "The Ready Band".into(), album: "Prepared".into(), track: 3, year: 2004, genre: String::new() },
+                Tags { title: "Boil Water".into(), artist: "The Ready Band".into(), album: "Prepared".into(), track: 3, year: 2004, genre: String::new(), gain: 0 },
                 "encoding {}",
                 enc
             );
         }
+    }
+
+    #[test]
+    fn replaygain_gain_is_read_from_id3_free_text_and_vorbis_comments() {
+        assert_eq!(gain_tenths("-6.50 dB"), -65);
+        assert_eq!(gain_tenths("+3 dB"), 30);
+        assert_eq!(gain_tenths(" 0.04 db "), 0);
+        assert_eq!(gain_tenths("-6.5"), -65);
+        assert_eq!(gain_tenths("loud"), 0);
+        assert_eq!(gain_tenths("-99 dB"), 0); // not believed
+        for enc in [0u8, 1, 2, 3] {
+            let mut body = text(enc, "REPLAYGAIN_TRACK_GAIN");
+            // a free-form field is the description, a zero, then the value
+            let mut zero = vec![0u8];
+            if enc == 1 || enc == 2 { zero.push(0); }
+            body.extend(zero);
+            let v = text(enc, "-7.20 dB");
+            body.extend(&v[1..]);
+            let f = vec![id3_frame(3, "TIT2", &text(enc, "Quiet Song")), id3_frame(3, "TXXX", &body)];
+            let (t, _) = parse(id3_tag(3, &f, 16), false);
+            assert_eq!((t.title.as_str(), t.gain), ("Quiet Song", -72), "encoding {}", enc);
+        }
+        let c = comment(&["title=Loud One", "REPLAYGAIN_TRACK_GAIN=-9.10 dB"]);
+        let t = vorbis_comments(&c);
+        assert_eq!((t.title.as_str(), t.gain), ("Loud One", -91));
     }
 
     #[test]
@@ -967,7 +1031,7 @@ mod tests {
         f.extend([(pic.len() >> 16) as u8, (pic.len() >> 8) as u8, pic.len() as u8]);
         f.extend(&pic);
         let (t, art) = flac(&mut Cursor::new(f), true).unwrap();
-        assert_eq!(t, Tags { title: "Stay Warm".into(), artist: "Camp Fire".into(), album: "Winter".into(), track: 4, year: 2011, genre: String::new() });
+        assert_eq!(t, Tags { title: "Stay Warm".into(), artist: "Camp Fire".into(), album: "Winter".into(), track: 4, year: 2011, genre: String::new(), gain: 0 });
         assert_eq!(art.unwrap().data, JPEG);
     }
 
@@ -1006,7 +1070,7 @@ mod tests {
         f.extend((info.len() as u32).to_le_bytes());
         f.extend(&info);
         let t = wav(&mut Cursor::new(f), false).unwrap().0;
-        assert_eq!(t, Tags { title: "Siren Test".into(), artist: "Alarm Co".into(), album: "Signals".into(), track: 2, year: 2020, genre: String::new() });
+        assert_eq!(t, Tags { title: "Siren Test".into(), artist: "Alarm Co".into(), album: "Signals".into(), track: 2, year: 2020, genre: String::new(), gain: 0 });
     }
 
     #[test]
@@ -1100,7 +1164,7 @@ mod tests {
         f.extend(atom(b"mdat", &vec![7u8; 5000]));
         f.extend(moov);
         let (t, art) = mp4(&mut Cursor::new(f), true).unwrap();
-        assert_eq!(t, Tags { title: "Radio Check".into(), artist: "Ham Band".into(), album: "Frequencies".into(), track: 5, year: 2015, genre: String::new() });
+        assert_eq!(t, Tags { title: "Radio Check".into(), artist: "Ham Band".into(), album: "Frequencies".into(), track: 5, year: 2015, genre: String::new(), gain: 0 });
         assert_eq!(art.unwrap().mime, "image/jpeg");
     }
 
@@ -1147,7 +1211,7 @@ mod tests {
         f.extend([1, 2]);
         f.extend(&objs);
         let tags = asf(&mut Cursor::new(f)).unwrap();
-        assert_eq!(tags, Tags { title: "Windows Song".into(), artist: "WMA Band".into(), album: "Media Player".into(), track: 6, year: 2007, genre: String::new() });
+        assert_eq!(tags, Tags { title: "Windows Song".into(), artist: "WMA Band".into(), album: "Media Player".into(), track: 6, year: 2007, genre: String::new(), gain: 0 });
     }
 
     #[test]

@@ -294,6 +294,7 @@
 {:else}
   <section class="panel">
     <div class="row">
+      <label class="row" title="Songs whose file says they are loud (ReplayGain) are turned down, so the volume stays about the same from song to song"><input type="checkbox" checked={player.level} onchange={(e) => player.setLevel(e.currentTarget.checked)} /> Match loudness between songs</label>
       <label class="row"><input type="checkbox" checked={player.eqOn} onchange={(e) => player.setEqOn(e.currentTarget.checked)} /> Equalizer on</label>
       <select class="input" aria-label="Preset" value={player.eqPreset} onchange={(e) => player.setPreset(e.currentTarget.value)}>
         {#each Object.keys(EQ_PRESETS) as n}<option>{n}</option>{/each}

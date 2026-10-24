@@ -38,6 +38,8 @@ export type Settings = {
   // Music
   showMiniPlayer: boolean;
   scanMusicOnStart: boolean;
+  /** Empty, or one folder to use instead of the drive's music folder. */
+  musicFolder: string[];
   // Maps
   mapUnits: 'imperial' | 'metric';
   // Plan
@@ -69,6 +71,7 @@ export const DEFAULTS: Settings = {
   intelRestoreTabs: false,
   showMiniPlayer: true,
   scanMusicOnStart: true,
+  musicFolder: [],
   mapUnits: 'imperial',
   planActDays: 7,
   planCheckDays: 14,
@@ -108,7 +111,7 @@ export function sanitize(raw: unknown): Settings {
     const d = (DEFAULTS as Record<string, unknown>)[key];
     const v = r[key];
     if (Array.isArray(d)) {
-      out[key] = Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string').map((x) => x.trim()).filter((x) => x !== '').slice(0, 30) : [];
+      out[key] = Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string').map((x) => x.trim()).filter((x) => x !== '').slice(0, key === 'musicFolder' ? 1 : 30) : [];
     } else if (typeof d === 'boolean') {
       out[key] = typeof v === 'boolean' ? v : d;
     } else if (typeof d === 'number') {

@@ -29,8 +29,12 @@ pub struct MusicState {
 /// One conversion at a time: they are heavy, and two for the same file would clash.
 static CONVERT_LOCK: Mutex<()> = Mutex::new(());
 
+/// The music folder: the one chosen in Settings > Music when it exists, otherwise `music` on the drive.
 fn music_dir() -> PathBuf {
-    drive_or_program("music")
+    match crate::settings::folders("musicFolder").into_iter().next() {
+        Some(f) => f,
+        None => drive_or_program("music"),
+    }
 }
 fn cache_dir() -> PathBuf {
     root().join("user").join("cache").join("music")
@@ -207,12 +211,14 @@ pub struct TrackDto {
     track: u32,
     year: u32,
     genre: String,
+    /// ReplayGain track gain in decibels (0 when the file has none)
+    gain_db: f64,
     ext: String,
     convert: bool,
 }
 
 fn dto(t: &Track) -> TrackDto {
-    TrackDto { rel: t.rel.clone(), title: t.title.clone(), artist: t.artist.clone(), album: t.album.clone(), track: t.track, year: t.year, genre: t.genre(), ext: t.ext.clone(), convert: t.class == Class::Convert }
+    TrackDto { rel: t.rel.clone(), title: t.title.clone(), artist: t.artist.clone(), album: t.album.clone(), track: t.track, year: t.year, genre: t.genre(), gain_db: t.gain as f64 / 10.0, ext: t.ext.clone(), convert: t.class == Class::Convert }
 }
 
 #[derive(Serialize)]

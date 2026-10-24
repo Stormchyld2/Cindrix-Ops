@@ -96,6 +96,8 @@ pub struct Track {
     pub year: u32,
     /// The genre named in the file; empty when it names none (then the top folder is used, see `genre()`).
     pub tag_genre: String,
+    /// ReplayGain track gain in tenths of a decibel (0 when the file has none).
+    pub gain: i32,
     pub size: u64,
     pub mtime: u64,
     pub ext: String,
@@ -112,7 +114,7 @@ impl Track {
         let genre = genre_of(&rel, &t.genre);
         let hay = format!("{} {} {} {} {}", t.title, t.artist, t.album, genre, rel).to_lowercase();
         let (hay_title, hay_artist, hay_genre) = (t.title.to_lowercase(), t.artist.to_lowercase(), genre.to_lowercase());
-        Track { rel, title: t.title, artist: t.artist, album: t.album, track: t.track, year: t.year, tag_genre: t.genre, size, mtime, ext, class, hay, hay_title, hay_artist, hay_genre }
+        Track { rel, title: t.title, artist: t.artist, album: t.album, track: t.track, year: t.year, tag_genre: t.genre, gain: t.gain, size, mtime, ext, class, hay, hay_title, hay_artist, hay_genre }
     }
 
     /// The genre: what the file's tag says, otherwise the top folder it sits in (`music/Rock/Band/song.mp3` is "Rock"), otherwise "".
@@ -193,7 +195,7 @@ pub fn guess(rel: &str, raw: &Tags) -> Tags {
 
 // ---------- the index cache (a CSV in user/cache) ----------
 
-const CACHE_HEADER: &str = "rel,size,mtime,title,artist,album,track,year,genre";
+const CACHE_HEADER: &str = "rel,size,mtime,title,artist,album,track,year,genre,gain";
 
 struct CacheRow {
     size: u64,
@@ -210,11 +212,11 @@ fn load_cache(path: &Path) -> HashMap<String, CacheRow> {
     }
     for line in lines {
         let f = split_record(line);
-        if f.len() != 9 {
+        if f.len() != 10 {
             continue;
         }
         let (Ok(size), Ok(mtime), Ok(track), Ok(year)) = (f[1].parse(), f[2].parse(), f[6].parse(), f[7].parse()) else { continue };
-        m.insert(f[0].clone(), CacheRow { size, mtime, tags: Tags { title: f[3].clone(), artist: f[4].clone(), album: f[5].clone(), track, year, genre: f[8].clone() } });
+        m.insert(f[0].clone(), CacheRow { size, mtime, tags: Tags { title: f[3].clone(), artist: f[4].clone(), album: f[5].clone(), track, year, genre: f[8].clone(), gain: f[9].parse().unwrap_or(0) } });
     }
     m
 }
@@ -227,7 +229,7 @@ fn write_cache(path: &Path, rows: &[(String, u64, u64, Tags)]) -> std::io::Resul
     let mut out = String::from(CACHE_HEADER);
     out.push('\n');
     for (rel, size, mtime, t) in rows {
-        out.push_str(&format!("{},{},{},{},{},{},{},{},{}\n", flat(rel), size, mtime, flat(&t.title), flat(&t.artist), flat(&t.album), t.track, t.year, flat(&t.genre)));
+        out.push_str(&format!("{},{},{},{},{},{},{},{},{},{}\n", flat(rel), size, mtime, flat(&t.title), flat(&t.artist), flat(&t.album), t.track, t.year, flat(&t.genre), t.gain));
     }
     fsio::write_atomic(path, out.as_bytes())
 }
@@ -539,7 +541,7 @@ mod tests {
         let g = guess("Some Band - Some Song.mp3", &Tags::default());
         assert_eq!((g.title.as_str(), g.artist.as_str(), g.album.as_str()), ("Some Song", "Some Band", ""));
         // tags win; only blanks are filled
-        let raw = Tags { title: "Real Title".into(), artist: String::new(), album: "Real Album".into(), track: 0, year: 2001, genre: String::new() };
+        let raw = Tags { title: "Real Title".into(), artist: String::new(), album: "Real Album".into(), track: 0, year: 2001, genre: String::new(), gain: 0 };
         let g = guess("A/B/09 - Other.mp3", &raw);
         assert_eq!((g.title.as_str(), g.artist.as_str(), g.album.as_str(), g.track, g.year), ("Real Title", "A", "Real Album", 9, 2001));
     }
@@ -616,7 +618,7 @@ mod tests {
 
     fn library() -> Vec<Track> {
         let t = |rel: &str, title: &str, artist: &str, album: &str, n: u32| {
-            Track::new(rel.to_string(), 1, 1, "mp3".into(), Class::Native, Tags { title: title.into(), artist: artist.into(), album: album.into(), track: n, year: 0, genre: String::new() })
+            Track::new(rel.to_string(), 1, 1, "mp3".into(), Class::Native, Tags { title: title.into(), artist: artist.into(), album: album.into(), track: n, year: 0, genre: String::new(), gain: 0 })
         };
         vec![
             t("Rock/Amp/Loud/01.mp3", "Feedback", "Amp", "Loud", 1),
@@ -642,7 +644,7 @@ mod tests {
     #[test]
     fn genre_comes_from_the_tag_else_the_top_folder() {
         let mk = |rel: &str, title: &str, artist: &str, genre: &str| {
-            Track::new(rel.to_string(), 1, 1, "mp3".into(), Class::Native, Tags { title: title.into(), artist: artist.into(), album: String::new(), track: 0, year: 0, genre: genre.into() })
+            Track::new(rel.to_string(), 1, 1, "mp3".into(), Class::Native, Tags { title: title.into(), artist: artist.into(), album: String::new(), track: 0, year: 0, genre: genre.into(), gain: 0 })
         };
         let lib = vec![
             mk("Rock/Amp/a.mp3", "Feedback", "Amp", ""),

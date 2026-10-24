@@ -112,6 +112,15 @@
       error = String(e);
     }
   }
+  async function chooseMusicFolder() {
+    error = '';
+    try {
+      const p = await pickFolder();
+      if (p) settings.set('musicFolder', [p]);
+    } catch (e) {
+      error = String(e);
+    }
+  }
   function removeFolder(p: string) {
     settings.set('extraFolders', settings.values.extraFolders.filter((x) => x !== p));
   }
@@ -274,7 +283,16 @@
       {@render toggle('scanMusicOnStart', 'Look through the music folder when the program starts', 'Keeps the list up to date. Turn off if the music folder is huge and you would rather scan it yourself with Look again.')}
       <p class="muted fine">Volume, equalizer and playback order are kept by the player itself.</p>
     </div>
-    {@render reset(['showMiniPlayer', 'scanMusicOnStart'])}
+    <div class="panel">
+      <div class="label">MUSIC FOLDER</div>
+      <p class="muted fine">Music is read from the <b>music</b> folder on the drive. Choose another folder, for example one on this computer, to play from there instead. Nothing is copied or changed. After changing it, open Music and press Look again.</p>
+      <div class="row">
+        <div class="grow path">{settings.values.musicFolder[0] ?? 'The music folder on the drive'}</div>
+        <button class="btn" onclick={chooseMusicFolder}>Choose a folder…</button>
+        {#if settings.values.musicFolder.length}<button class="btn" onclick={() => settings.set('musicFolder', [])}>Use the drive's folder</button>{/if}
+      </div>
+    </div>
+    {@render reset(['showMiniPlayer', 'scanMusicOnStart', 'musicFolder'])}
   {:else if tab === 'Maps'}
     <div class="panel">
       <div class="label">MAPS</div>

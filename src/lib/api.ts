@@ -906,7 +906,7 @@ export async function sourcesList(): Promise<Sources> {
 
 
 // ---------- music ----------
-export type MusicTrack = { rel: string; title: string; artist: string; album: string; track: number; year: number; genre: string; ext: string; convert: boolean };
+export type MusicTrack = { rel: string; title: string; artist: string; album: string; track: number; year: number; genre: string; gain_db: number; ext: string; convert: boolean };
 export type MusicStatus = {
   folder_exists: boolean; scanning: boolean; scanned_once: boolean; seen: number; count: number; read: number; reused: number; skipped: number;
   converter: 'opus' | 'flac' | 'none' | 'unknown'; needs_converter: boolean; cache_bytes: number;
@@ -918,12 +918,12 @@ export type PlaylistMeta = { name: string; count: number };
 
 // A tiny made-up library for the browser preview and the screenshots: each track is a generated tone.
 const sampleTracks: MusicTrack[] = [
-  { rel: 'Sample Artist/First Light/01 - Dawn.mp3', title: 'Dawn', artist: 'Sample Artist', album: 'First Light', track: 1, year: 2020, genre: 'Folk', ext: 'mp3', convert: false },
-  { rel: 'Sample Artist/First Light/02 - Noon.flac', title: 'Noon', artist: 'Sample Artist', album: 'First Light', track: 2, year: 2020, genre: 'Folk', ext: 'flac', convert: false },
-  { rel: 'Sample Artist/First Light/03 - Dusk.wma', title: 'Dusk', artist: 'Sample Artist', album: 'First Light', track: 3, year: 2020, genre: 'Folk', ext: 'wma', convert: true },
-  { rel: 'Other Band/Night Shift/01 - Lamp.ogg', title: 'Lamp', artist: 'Other Band', album: 'Night Shift', track: 1, year: 2018, genre: 'Rock', ext: 'ogg', convert: false },
-  { rel: 'Other Band/Night Shift/02 - Moth.wav', title: 'Moth', artist: 'Other Band', album: 'Night Shift', track: 2, year: 2018, genre: 'Rock', ext: 'wav', convert: false },
-  { rel: 'Loose song.m4a', title: 'Loose song', artist: '', album: '', track: 0, year: 0, genre: '', ext: 'm4a', convert: false },
+  { rel: 'Sample Artist/First Light/01 - Dawn.mp3', title: 'Dawn', artist: 'Sample Artist', album: 'First Light', track: 1, year: 2020, genre: 'Folk', gain_db: 0, ext: 'mp3', convert: false },
+  { rel: 'Sample Artist/First Light/02 - Noon.flac', title: 'Noon', artist: 'Sample Artist', album: 'First Light', track: 2, year: 2020, genre: 'Folk', gain_db: 0, ext: 'flac', convert: false },
+  { rel: 'Sample Artist/First Light/03 - Dusk.wma', title: 'Dusk', artist: 'Sample Artist', album: 'First Light', track: 3, year: 2020, genre: 'Folk', gain_db: 0, ext: 'wma', convert: true },
+  { rel: 'Other Band/Night Shift/01 - Lamp.ogg', title: 'Lamp', artist: 'Other Band', album: 'Night Shift', track: 1, year: 2018, genre: 'Rock', gain_db: 0, ext: 'ogg', convert: false },
+  { rel: 'Other Band/Night Shift/02 - Moth.wav', title: 'Moth', artist: 'Other Band', album: 'Night Shift', track: 2, year: 2018, genre: 'Rock', gain_db: 0, ext: 'wav', convert: false },
+  { rel: 'Loose song.m4a', title: 'Loose song', artist: '', album: '', track: 0, year: 0, genre: '', gain_db: 0, ext: 'm4a', convert: false },
 ];
 const memPlaylists: Record<string, MusicEntry[]> = {};
 let memMusicState = '{}';

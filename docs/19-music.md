@@ -82,8 +82,9 @@ equalizer's access to the sound), a very large library, ffmpeg on the real Windo
 ## Open
 
 - Go gets the player too (it costs nothing in size); say if you want it off there.
-- Gapless playback, replay-gain loudness matching and lyrics are not built.
-- A music-folder picker (to point at a folder other than `music/`) is not built.
+- **Match loudness between songs** (player, on by default): a file's ReplayGain track gain (ID3 `TXXX` `REPLAYGAIN_TRACK_GAIN`, Vorbis/FLAC/Opus `REPLAYGAIN_TRACK_GAIN`) turns a loud song down; quiet songs are never turned up. Files without the tag play as they are; the program does not measure loudness itself. MP4/M4A gain is not read.
+- **Music folder:** Settings > Music > Choose a folder plays from any folder instead of `music/` on the drive (setting `musicFolder`). Press Look again after changing it.
+- Gapless playback and lyrics are not built. The built-in player starts each song when the last one ends, so there is a short gap that cannot be removed this way.
 
 ## When the built-in player refuses a file (2026-10-20)
 The web view decodes most WAV, M4A and AAC files itself, but not every variant (24-bit or 32-bit integer, floating point, 8-bit, mu-law and some extensible WAVs have been refused). First real test: a WAV would not play. Now, when the player gets an error on a file it was playing directly, it asks once for a converted copy (the same ffmpeg path WMA uses, cached in `user/cache/music/`) and plays that. If ffmpeg is not in `engines`, the message says so and suggests converting to 16-bit WAV, FLAC or MP3. `core/tests/media_ffmpeg.rs` converts six awkward WAV variants with a real ffmpeg. **TO TEST** on the user's own files.

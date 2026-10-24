@@ -36,6 +36,8 @@ class Player {
   eq: number[] = $state(EQ_PRESETS.Flat.slice());
   eqPreset = $state('Flat');
   eqOn = $state(true);
+  /** Quieter songs are left alone; songs whose file says they are loud (ReplayGain) are turned down to match. */
+  level = $state(true);
   art: string | null = $state(null);
   sleepLeft = $state(0); // seconds; 0 = off
 
@@ -86,6 +88,7 @@ class Player {
       if (typeof s.shuffle === 'boolean') this.shuffle = s.shuffle;
       if (s.repeat === 'off' || s.repeat === 'all' || s.repeat === 'one') this.repeat = s.repeat;
       if (typeof s.eqOn === 'boolean') this.eqOn = s.eqOn;
+      if (typeof s.level === 'boolean') this.level = s.level;
       if (typeof s.eqPreset === 'string') this.eqPreset = s.eqPreset;
       if (Array.isArray(s.eq) && s.eq.length === EQ_BANDS.length && s.eq.every((n) => typeof n === 'number')) this.eq = (s.eq as number[]).map((n) => Math.min(12, Math.max(-12, n)));
       if (Array.isArray(s.queue) && s.queue.every((r) => typeof r === 'string')) {
@@ -114,7 +117,7 @@ class Player {
     this.lastSave = Date.now();
     const state = {
       version: 1, volume: this.volume, rate: this.rate, shuffle: this.shuffle, repeat: this.repeat,
-      eqOn: this.eqOn, eqPreset: this.eqPreset, eq: this.eq,
+      eqOn: this.eqOn, level: this.level, eqPreset: this.eqPreset, eq: this.eq,
       queue: this.queue.slice(0, 5000).map((t) => t.rel), current: this.current?.rel ?? '', time: Math.floor(this.time),
     };
     musicStateSave(JSON.stringify(state)).catch(() => {});
@@ -217,6 +220,7 @@ class Player {
       if (mine !== this.token) return;
       a.src = src;
       a.playbackRate = this.rate;
+      this.applyVolume();
       if (this.resumeAt > 0) {
         const at = this.resumeAt;
         this.resumeAt = 0;
@@ -297,7 +301,13 @@ class Player {
   }
 
   // ----- sound -----
-  private applyVolume() { if (this.el) this.el.volume = this.volume * this.volume; }
+  /** 1 for no change; below 1 for a song whose file asks to be turned down. Never louder than the file. */
+  private levelFactor(): number {
+    const g = this.current?.gain_db ?? 0;
+    return this.level && g < 0 ? Math.pow(10, Math.max(g, -24) / 20) : 1;
+  }
+  private applyVolume() { if (this.el) this.el.volume = this.volume * this.volume * this.levelFactor(); }
+  setLevel(on: boolean) { this.level = on; this.applyVolume(); this.scheduleSave(true); }
   setVolume(v: number) { this.volume = Math.min(1, Math.max(0, v)); this.applyVolume(); this.scheduleSave(true); }
   setRate(r: number) { this.rate = Math.min(2, Math.max(0.5, r)); if (this.el) this.el.playbackRate = this.rate; this.scheduleSave(true); }
   setShuffle(on: boolean) { this.shuffle = on; this.rebuildOrder(this.index); this.scheduleSave(true); }
