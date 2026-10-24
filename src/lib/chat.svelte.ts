@@ -4,7 +4,7 @@ import type { Reply } from './api';
 
 export type Msg = { who: 'you' | 'app'; text: string; reply?: Reply };
 
-export const chat: { thread: Msg[]; file: string; busy: boolean; question: string } = $state({ thread: [], file: '', busy: false, question: '' });
+export const chat: { thread: Msg[]; file: string; busy: boolean; question: string; project: string } = $state({ thread: [], file: '', busy: false, question: '', project: '' });
 
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'chat';
 

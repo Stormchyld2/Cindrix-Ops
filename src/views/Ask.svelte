@@ -1,6 +1,9 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { ask, modelStatus, chatSave, chatList, chatRead, chatDelete, type ModelStatus, type ChatInfo } from '../lib/api';
+  import { ask, modelStatus, chatSave, chatList, chatRead, chatDelete, opsLoad, projectSave, projectFileChat, inShare, type ModelStatus, type ChatInfo, type ProjectRec } from '../lib/api';
+  import Todo from './Todo.svelte';
+  import Calendar from './Calendar.svelte';
+  import Projects from './Projects.svelte';
   import { settings } from '../lib/settings.svelte';
   import { chat, chatText, newChatFile, resetChat, parseChat, type Msg } from '../lib/chat.svelte';
 
@@ -15,6 +18,34 @@
   let note = $state('');
   let menuOpen = $state(false);
   let section: 'chat' | 'projects' | 'calendar' | 'todo' = $state('chat');
+  // projects group chats, notes, tasks and dates (docs/37). They are the person's own, so a guest on the hotspot has none.
+  let projects: ProjectRec[] = $state([]);
+  let adding = $state(false);
+  let newProject = $state('');
+  let opened: Record<string, boolean> = $state({});
+  const openProjects = $derived(projects.filter((p) => p.status !== 'done'));
+  const active = $derived(projects.find((p) => p.id === chat.project) ?? null);
+  const filed = $derived(new Set(projects.flatMap((p) => p.chats)));
+  const unfiled = $derived(past.filter((c) => !filed.has(c.name)));
+  const projectOf = (name: string) => projects.find((p) => p.chats.includes(name))?.id ?? '';
+  async function loadProjects() {
+    if (inShare) return;
+    try { projects = (await opsLoad()).projects; if (chat.project && !projects.some((p) => p.id === chat.project)) chat.project = ''; } catch { projects = []; }
+  }
+  async function makeProject() {
+    const name = newProject.trim();
+    if (!name) { adding = false; return; }
+    try { projects = await projectSave({ id: '', name, status: 'open', notes: '', chats: [] }); const p = projects[projects.length - 1]; chat.project = p.id; opened[p.id] = true; newProject = ''; adding = false; } catch (e) { note = String(e); }
+  }
+  /** Click a project: new chats are filed in it, and its chats show underneath. Click again to leave it. */
+  function enter(id: string) {
+    opened[id] = !opened[id] || chat.project !== id;
+    chat.project = chat.project === id ? '' : id;
+    section = 'chat';
+  }
+  async function moveChat(name: string, to: string) {
+    try { projects = await projectFileChat(to, name); } catch (e) { note = String(e); }
+  }
 
   // what the assistant is allowed to look in (Settings, Assistant)
   const searching = $derived(
@@ -36,7 +67,11 @@
   async function loadPast() {
     try { past = await chatList(); } catch { past = []; }
   }
-  onMount(() => { refresh(); timer = setInterval(refresh, 2000); void loadPast(); });
+  onMount(() => {
+    refresh(); timer = setInterval(refresh, 2000); void loadPast(); void loadProjects();
+    // a chat opened from a link (a project, for example)
+    try { const n = sessionStorage.getItem('cindrix.openChat'); if (n) { sessionStorage.removeItem('cindrix.openChat'); void view(n); } } catch { /* nothing to open */ }
+  });
   onDestroy(() => { if (timer) clearInterval(timer); });
 
   async function send() {
@@ -64,7 +99,10 @@
   async function keep() {
     try {
       if (!chat.file) chat.file = newChatFile(chat.thread.find((m) => m.who === 'you')?.text ?? 'chat');
+      const first = !past.some((c) => c.name === chat.file);
       await chatSave(chat.file, chatText(chat.thread));
+      // a new chat started inside a project is filed there
+      if (first && chat.project) { try { projects = await projectFileChat(chat.project, chat.file); } catch { /* the chat is saved; it just stays unfiled */ } }
       await loadPast();
     } catch (e) {
       note = 'This chat could not be saved: ' + String(e);
@@ -107,6 +145,7 @@
   });
   async function remove(name: string) {
     try {
+      if (filed.has(name)) { try { projects = await projectFileChat('', name); } catch { /* the chat is deleted anyway */ } }
       await chatDelete(name);
       if (viewing?.name === name) viewing = null;
       if (chat.file === name) chat.file = '';
@@ -140,14 +179,39 @@
 <button class="burger" aria-label="Chats and menu" aria-expanded={menuOpen} title="Chats and menu" onclick={() => (menuOpen = !menuOpen)}>☰ Chats</button>
 <nav class="side" class:open={menuOpen} aria-label="Chats">
   <button class="btn primary" title="Start a new chat. The one on screen is already saved." disabled={chat.busy} onclick={newChat}>＋ New chat</button>
-  <button class="navbtn" class:on={section === 'projects'} title="Projects" onclick={() => (section = 'projects')}>Projects</button>
+  {#if !inShare}
+  <button class="navbtn" class:on={section === 'projects'} title="All projects, with their tasks, dates and chats" onclick={() => (section = 'projects')}>Projects</button>
   <button class="navbtn" class:on={section === 'calendar'} title="Calendar" onclick={() => (section = 'calendar')}>Calendar</button>
   <button class="navbtn" class:on={section === 'todo'} title="To-do list" onclick={() => (section = 'todo')}>To-do list</button>
-  <div class="sidehead">Projects</div>
-  <p class="muted small none">No projects yet.</p>
+  <div class="sidehead row between"><span>Projects</span><button class="x show" title="Start a project" aria-label="Start a project" onclick={() => (adding = !adding)}>＋</button></div>
+  {#if adding}
+    <form class="padx" onsubmit={(e) => { e.preventDefault(); makeProject(); }}>
+      <input class="input" placeholder="Project name" bind:value={newProject} aria-label="Project name" />
+    </form>
+  {/if}
+  {#each openProjects as p (p.id)}
+    <div class="proj" class:on={chat.project === p.id}>
+      <button class="chatbtn" title={chat.project === p.id ? 'New chats are filed in this project. Click to leave it.' : 'Click to work in this project: new chats are filed here'} onclick={() => enter(p.id)}>{opened[p.id] ? '▾' : '▸'} {p.name}</button>
+    </div>
+    {#if opened[p.id]}
+      <ul class="pastlist indent">
+        {#each past.filter((c) => p.chats.includes(c.name)) as c (c.name)}
+          <li class:on={(viewing?.name ?? chat.file) === c.name}>
+            <button class="chatbtn" title={nice(c.name)} onclick={() => view(c.name)}>{nice(c.name)}</button>
+            <button class="x" title="Delete this chat" aria-label={'Delete ' + nice(c.name)} onclick={() => remove(c.name)}>✕</button>
+          </li>
+        {:else}
+          <li class="muted small none">No chats yet.</li>
+        {/each}
+      </ul>
+    {/if}
+  {:else}
+    <p class="muted small none">A project keeps chats, tasks and dates for one piece of work together.</p>
+  {/each}
+  {/if}
   <div class="sidehead">Chats</div>
   <ul class="pastlist">
-    {#each past as c (c.name)}
+    {#each (inShare ? past : unfiled) as c (c.name)}
       <li class:on={(viewing?.name ?? chat.file) === c.name}>
         <button class="chatbtn" title={nice(c.name)} onclick={() => view(c.name)}>{nice(c.name)}</button>
         <button class="x" title="Delete this chat" aria-label={'Delete ' + nice(c.name)} onclick={() => remove(c.name)}>✕</button>
@@ -159,11 +223,12 @@
 </nav>
 <div class="main">
 {#if section !== 'chat'}
-  <section class="panel soon">
-    <strong>{section === 'projects' ? 'Projects' : section === 'calendar' ? 'Calendar' : 'To-do list'}</strong>
-    <p class="muted">This part is not built yet. The place for it is ready here beside your chats.</p>
-    <button class="btn" onclick={() => (section = 'chat')}>Back to the chat</button>
-  </section>
+  <div class="scroller">
+    <button class="btn" onclick={() => (section = 'chat')}>← Back to the chat</button>
+    {#if section === 'projects'}<Projects openChat={(n) => { section = 'chat'; void view(n); }} />
+    {:else if section === 'calendar'}<Calendar />
+    {:else}<Todo />{/if}
+  </div>
 {:else}
 <div class="scroller" bind:this={scroller}>
 {#if status}
@@ -190,6 +255,12 @@
     <li>It is slower on a phone than on a laptop. Wait for the answer to finish.</li>
   </ul>
 </details>
+{#if active}
+  <div class="panel inproj">
+    <div class="row between"><span><span class="label">IN PROJECT</span> <strong>{active.name}</strong></span><button class="btn" onclick={() => (chat.project = '')} title="Stop filing new chats in this project">Leave project</button></div>
+    {#if active.notes}<p class="muted small notes">{active.notes}</p>{/if}
+  </div>
+{/if}
 <section class="chat">
   {#if chat.thread.length === 0 && !viewing}
     <p class="muted">Ask a question. Answers come only from the library on this drive and show where they came from. It looks in the emergency cards{searching.length ? ', ' + searching.join(', ') : ''}. You can change that in Settings.</p>
@@ -200,6 +271,10 @@
   <section class="panel past">
     <div class="row between"><strong>{nice(viewing.name)}</strong>
       <span class="row"><button class="btn" disabled={chat.busy} title="Put this chat back on screen and carry on from it" onclick={carryOn}>Carry on this chat</button><button class="btn" onclick={() => (viewing = null)}>Close</button></span></div>
+    {#if !inShare}
+      <label class="muted small">Project <select class="input" value={projectOf(viewing.name)} onchange={(e) => moveChat(viewing!.name, (e.currentTarget as HTMLSelectElement).value)} aria-label="File this chat in a project">
+        <option value="">No project</option>{#each openProjects as p (p.id)}<option value={p.id}>{p.name}</option>{/each}</select></label>
+    {/if}
     <div class="chat">{@render messages(viewing.msgs)}</div>
   </section>
 {/if}
@@ -242,7 +317,14 @@
   .chatbtn { flex: 1; min-width: 0; text-align: left; background: none; border: 0; color: inherit; padding: 7px 10px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .x { background: none; border: 0; color: var(--muted); cursor: pointer; opacity: 0; }
   .pastlist li:hover .x, .pastlist li.on .x { opacity: 1; }
-  .soon { max-width: 560px; }
+  .padx { padding: 0 10px; }
+  .proj { border-radius: 8px; display: flex; }
+  .proj:hover, .proj.on { background: var(--panel); }
+  .proj.on .chatbtn { color: var(--accent); }
+  .indent { margin-left: 14px; }
+  .x.show { opacity: 1; font-size: 16px; }
+  .inproj { max-width: 760px; margin: 0 0 12px; padding: 10px 14px; border-left: 3px solid var(--cat-ops); }
+  .inproj .notes { white-space: pre-wrap; margin: 6px 0 0; }
   .burger { display: none; }
   @media (max-width: 800px) {
     .askpage { grid-template-columns: 1fr; grid-template-rows: auto 1fr; gap: 8px; }
