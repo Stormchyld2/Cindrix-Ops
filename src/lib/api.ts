@@ -881,32 +881,33 @@ export async function sourcesList(): Promise<Sources> {
 
 
 // ---------- music ----------
-export type MusicTrack = { rel: string; title: string; artist: string; album: string; track: number; year: number; ext: string; convert: boolean };
+export type MusicTrack = { rel: string; title: string; artist: string; album: string; track: number; year: number; genre: string; ext: string; convert: boolean };
 export type MusicStatus = {
   folder_exists: boolean; scanning: boolean; scanned_once: boolean; seen: number; count: number; read: number; reused: number; skipped: number;
   converter: 'opus' | 'flac' | 'none' | 'unknown'; needs_converter: boolean; cache_bytes: number;
 };
-export type MusicQuery = { text?: string; artist?: string | null; album?: string | null; folder?: string | null; direct?: boolean };
+export type MusicQuery = { text?: string; artist?: string | null; album?: string | null; folder?: string | null; direct?: boolean; genre?: string | null; field?: 'all' | 'title' | 'artist' | 'genre' };
 export type MusicFacet = { name: string; sub: string; folder: string; count: number };
 export type MusicEntry = { path: string; title: string; artist: string; album: string };
 export type PlaylistMeta = { name: string; count: number };
 
 // A tiny made-up library for the browser preview and the screenshots: each track is a generated tone.
 const sampleTracks: MusicTrack[] = [
-  { rel: 'Sample Artist/First Light/01 - Dawn.mp3', title: 'Dawn', artist: 'Sample Artist', album: 'First Light', track: 1, year: 2020, ext: 'mp3', convert: false },
-  { rel: 'Sample Artist/First Light/02 - Noon.flac', title: 'Noon', artist: 'Sample Artist', album: 'First Light', track: 2, year: 2020, ext: 'flac', convert: false },
-  { rel: 'Sample Artist/First Light/03 - Dusk.wma', title: 'Dusk', artist: 'Sample Artist', album: 'First Light', track: 3, year: 2020, ext: 'wma', convert: true },
-  { rel: 'Other Band/Night Shift/01 - Lamp.ogg', title: 'Lamp', artist: 'Other Band', album: 'Night Shift', track: 1, year: 2018, ext: 'ogg', convert: false },
-  { rel: 'Other Band/Night Shift/02 - Moth.wav', title: 'Moth', artist: 'Other Band', album: 'Night Shift', track: 2, year: 2018, ext: 'wav', convert: false },
-  { rel: 'Loose song.m4a', title: 'Loose song', artist: '', album: '', track: 0, year: 0, ext: 'm4a', convert: false },
+  { rel: 'Sample Artist/First Light/01 - Dawn.mp3', title: 'Dawn', artist: 'Sample Artist', album: 'First Light', track: 1, year: 2020, genre: 'Folk', ext: 'mp3', convert: false },
+  { rel: 'Sample Artist/First Light/02 - Noon.flac', title: 'Noon', artist: 'Sample Artist', album: 'First Light', track: 2, year: 2020, genre: 'Folk', ext: 'flac', convert: false },
+  { rel: 'Sample Artist/First Light/03 - Dusk.wma', title: 'Dusk', artist: 'Sample Artist', album: 'First Light', track: 3, year: 2020, genre: 'Folk', ext: 'wma', convert: true },
+  { rel: 'Other Band/Night Shift/01 - Lamp.ogg', title: 'Lamp', artist: 'Other Band', album: 'Night Shift', track: 1, year: 2018, genre: 'Rock', ext: 'ogg', convert: false },
+  { rel: 'Other Band/Night Shift/02 - Moth.wav', title: 'Moth', artist: 'Other Band', album: 'Night Shift', track: 2, year: 2018, genre: 'Rock', ext: 'wav', convert: false },
+  { rel: 'Loose song.m4a', title: 'Loose song', artist: '', album: '', track: 0, year: 0, genre: '', ext: 'm4a', convert: false },
 ];
 const memPlaylists: Record<string, MusicEntry[]> = {};
 let memMusicState = '{}';
 
 function previewMatch(t: MusicTrack, q: MusicQuery): boolean {
   const words = (q.text ?? '').toLowerCase().split(/\s+/).filter(Boolean);
-  const hay = `${t.title} ${t.artist} ${t.album} ${t.rel}`.toLowerCase();
+  const hay = (q.field === 'title' ? t.title : q.field === 'artist' ? t.artist : q.field === 'genre' ? t.genre : `${t.title} ${t.artist} ${t.album} ${t.genre} ${t.rel}`).toLowerCase();
   if (!words.every((w) => hay.includes(w))) return false;
+  if (q.genre != null && t.genre.toLowerCase() !== q.genre.toLowerCase()) return false;
   if (q.artist != null && t.artist !== q.artist) return false;
   if (q.album != null && t.album !== q.album) return false;
   if (q.folder != null) {
@@ -928,11 +929,12 @@ export async function musicQuery(q: MusicQuery, offset: number, limit: number): 
   const all = sampleTracks.filter((t) => previewMatch(t, q));
   return { total: all.length, tracks: all.slice(offset, offset + limit) };
 }
-export async function musicFacets(kind: 'artists' | 'albums' | 'folders', prefix?: string): Promise<MusicFacet[]> {
+export async function musicFacets(kind: 'artists' | 'albums' | 'genres' | 'folders', prefix?: string): Promise<MusicFacet[]> {
   if (inTauri) return call<MusicFacet[]>('music_facets', { kind, prefix: prefix ?? null });
   const out = new Map<string, MusicFacet>();
   for (const t of sampleTracks) {
     if (kind === 'artists') { const k = t.artist; const f = out.get(k) ?? { name: k, sub: '', folder: '', count: 0 }; f.count++; out.set(k, f); }
+    else if (kind === 'genres') { const k = t.genre; const f = out.get(k) ?? { name: k, sub: '', folder: '', count: 0 }; f.count++; out.set(k, f); }
     else if (kind === 'albums') { if (!t.album) continue; const k = t.artist + '|' + t.album; const f = out.get(k) ?? { name: t.album, sub: t.artist, folder: '', count: 0 }; f.count++; out.set(k, f); }
     else {
       const dir = t.rel.includes('/') ? t.rel.slice(0, t.rel.lastIndexOf('/')) : '';

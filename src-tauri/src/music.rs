@@ -206,12 +206,13 @@ pub struct TrackDto {
     album: String,
     track: u32,
     year: u32,
+    genre: String,
     ext: String,
     convert: bool,
 }
 
 fn dto(t: &Track) -> TrackDto {
-    TrackDto { rel: t.rel.clone(), title: t.title.clone(), artist: t.artist.clone(), album: t.album.clone(), track: t.track, year: t.year, ext: t.ext.clone(), convert: t.class == Class::Convert }
+    TrackDto { rel: t.rel.clone(), title: t.title.clone(), artist: t.artist.clone(), album: t.album.clone(), track: t.track, year: t.year, genre: t.genre(), ext: t.ext.clone(), convert: t.class == Class::Convert }
 }
 
 #[derive(Serialize)]
@@ -273,12 +274,14 @@ pub struct QueryArgs {
     album: Option<String>,
     folder: Option<String>,
     direct: bool,
+    genre: Option<String>,
+    field: String,
 }
 
 #[tauri::command]
 pub fn music_query(state: tauri::State<'_, AppState>, args: QueryArgs, offset: usize, limit: usize) -> Page {
     let lib = state.music.lock().unwrap().tracks.clone();
-    let q = Query { text: args.text, artist: args.artist, album: args.album, folder: args.folder, direct: args.direct };
+    let q = Query { text: args.text, artist: args.artist, album: args.album, folder: args.folder, direct: args.direct, genre: args.genre, field: args.field };
     let (total, rows) = media::query(&lib, &q, offset, limit.min(500));
     Page { total, tracks: rows.iter().map(dto).collect() }
 }
@@ -291,13 +294,14 @@ pub struct FacetDto {
     count: usize,
 }
 
-/// `kind` is "artists", "albums" or "folders" (the sub-folders under `prefix`).
+/// `kind` is "artists", "albums", "genres" or "folders" (the sub-folders under `prefix`).
 #[tauri::command]
 pub fn music_facets(state: tauri::State<'_, AppState>, kind: String, prefix: Option<String>) -> Vec<FacetDto> {
     let lib = state.music.lock().unwrap().tracks.clone();
     let f = match kind.as_str() {
         "artists" => media::artists(&lib),
         "albums" => media::albums(&lib),
+        "genres" => media::genres(&lib),
         "folders" => media::subfolders(&lib, prefix.as_deref().unwrap_or("")),
         _ => vec![],
     };

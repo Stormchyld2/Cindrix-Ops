@@ -94,18 +94,30 @@ pub struct Track {
     pub album: String,
     pub track: u32,
     pub year: u32,
+    /// The genre named in the file; empty when it names none (then the top folder is used, see `genre()`).
+    pub tag_genre: String,
     pub size: u64,
     pub mtime: u64,
     pub ext: String,
     pub class: Class,
     /// Lower-case text the search looks in.
     hay: String,
+    hay_title: String,
+    hay_artist: String,
+    hay_genre: String,
 }
 
 impl Track {
     fn new(rel: String, size: u64, mtime: u64, ext: String, class: Class, t: Tags) -> Track {
-        let hay = format!("{} {} {} {}", t.title, t.artist, t.album, rel).to_lowercase();
-        Track { rel, title: t.title, artist: t.artist, album: t.album, track: t.track, year: t.year, size, mtime, ext, class, hay }
+        let genre = genre_of(&rel, &t.genre);
+        let hay = format!("{} {} {} {} {}", t.title, t.artist, t.album, genre, rel).to_lowercase();
+        let (hay_title, hay_artist, hay_genre) = (t.title.to_lowercase(), t.artist.to_lowercase(), genre.to_lowercase());
+        Track { rel, title: t.title, artist: t.artist, album: t.album, track: t.track, year: t.year, tag_genre: t.genre, size, mtime, ext, class, hay, hay_title, hay_artist, hay_genre }
+    }
+
+    /// The genre: what the file's tag says, otherwise the top folder it sits in (`music/Rock/Band/song.mp3` is "Rock"), otherwise "".
+    pub fn genre(&self) -> String {
+        genre_of(&self.rel, &self.tag_genre)
     }
 
     /// The folder this track sits in, "" when it is directly in the music folder.
@@ -133,6 +145,18 @@ fn split_track_prefix(stem: &str) -> (u32, &str) {
         return (0, stem);
     }
     (stem[..digits].parse().unwrap_or(0), rest[seps..].trim())
+}
+
+/// The genre of a track: its tag, else its top folder (when it sits in a folder at all).
+pub fn genre_of(rel: &str, tag: &str) -> String {
+    let tag = tag.trim();
+    if !tag.is_empty() {
+        return tag.to_string();
+    }
+    match rel.split_once('/') {
+        Some((top, _)) if !top.is_empty() => top.to_string(),
+        _ => String::new(),
+    }
 }
 
 /// Fill what the tags left empty from the file and folder names: `Artist/Album/03 - Title.mp3`
@@ -169,7 +193,7 @@ pub fn guess(rel: &str, raw: &Tags) -> Tags {
 
 // ---------- the index cache (a CSV in user/cache) ----------
 
-const CACHE_HEADER: &str = "rel,size,mtime,title,artist,album,track,year";
+const CACHE_HEADER: &str = "rel,size,mtime,title,artist,album,track,year,genre";
 
 struct CacheRow {
     size: u64,
@@ -186,11 +210,11 @@ fn load_cache(path: &Path) -> HashMap<String, CacheRow> {
     }
     for line in lines {
         let f = split_record(line);
-        if f.len() != 8 {
+        if f.len() != 9 {
             continue;
         }
         let (Ok(size), Ok(mtime), Ok(track), Ok(year)) = (f[1].parse(), f[2].parse(), f[6].parse(), f[7].parse()) else { continue };
-        m.insert(f[0].clone(), CacheRow { size, mtime, tags: Tags { title: f[3].clone(), artist: f[4].clone(), album: f[5].clone(), track, year } });
+        m.insert(f[0].clone(), CacheRow { size, mtime, tags: Tags { title: f[3].clone(), artist: f[4].clone(), album: f[5].clone(), track, year, genre: f[8].clone() } });
     }
     m
 }
@@ -203,7 +227,7 @@ fn write_cache(path: &Path, rows: &[(String, u64, u64, Tags)]) -> std::io::Resul
     let mut out = String::from(CACHE_HEADER);
     out.push('\n');
     for (rel, size, mtime, t) in rows {
-        out.push_str(&format!("{},{},{},{},{},{},{},{}\n", flat(rel), size, mtime, flat(&t.title), flat(&t.artist), flat(&t.album), t.track, t.year));
+        out.push_str(&format!("{},{},{},{},{},{},{},{},{}\n", flat(rel), size, mtime, flat(&t.title), flat(&t.artist), flat(&t.album), t.track, t.year, flat(&t.genre)));
     }
     fsio::write_atomic(path, out.as_bytes())
 }
@@ -316,6 +340,10 @@ pub struct Query {
     pub folder: Option<String>,
     /// With `folder`: only tracks directly in it, not in sub-folders.
     pub direct: bool,
+    /// Exactly this genre ("" means tracks with no genre).
+    pub genre: Option<String>,
+    /// Where the words must appear: "title", "artist", "genre", or anything else (or empty) for everywhere.
+    pub field: String,
 }
 
 fn in_folder(t: &Track, folder: &str, direct: bool) -> bool {
@@ -336,12 +364,23 @@ fn matches(t: &Track, q: &Query, words: &[String]) -> bool {
             return false;
         }
     }
+    if let Some(g) = &q.genre {
+        if t.genre().to_lowercase() != g.to_lowercase() {
+            return false;
+        }
+    }
     if let Some(f) = &q.folder {
         if !in_folder(t, f, q.direct) {
             return false;
         }
     }
-    words.iter().all(|w| t.hay.contains(w.as_str()))
+    let hay = match q.field.as_str() {
+        "title" => &t.hay_title,
+        "artist" => &t.hay_artist,
+        "genre" => &t.hay_genre,
+        _ => &t.hay,
+    };
+    words.iter().all(|w| hay.contains(w.as_str()))
 }
 
 /// The tracks that match, from `offset`, at most `limit`, in library order. Also the total.
@@ -376,6 +415,19 @@ pub fn artists(lib: &[Track]) -> Vec<Facet> {
     }
     let mut v: Vec<Facet> = m.into_values().collect();
     v.sort_by_key(|f| f.name.to_lowercase());
+    v
+}
+
+/// The genres, with how many tracks each holds. Tracks with none are listed together as "Not sorted".
+pub fn genres(lib: &[Track]) -> Vec<Facet> {
+    let mut m: HashMap<String, Facet> = HashMap::new();
+    for t in lib {
+        let g = t.genre();
+        let e = m.entry(g.to_lowercase()).or_insert_with(|| Facet { name: g.clone(), sub: String::new(), folder: String::new(), count: 0 });
+        e.count += 1;
+    }
+    let mut v: Vec<Facet> = m.into_values().collect();
+    v.sort_by_key(|f| (f.name.is_empty(), f.name.to_lowercase()));
     v
 }
 
@@ -487,7 +539,7 @@ mod tests {
         let g = guess("Some Band - Some Song.mp3", &Tags::default());
         assert_eq!((g.title.as_str(), g.artist.as_str(), g.album.as_str()), ("Some Song", "Some Band", ""));
         // tags win; only blanks are filled
-        let raw = Tags { title: "Real Title".into(), artist: String::new(), album: "Real Album".into(), track: 0, year: 2001 };
+        let raw = Tags { title: "Real Title".into(), artist: String::new(), album: "Real Album".into(), track: 0, year: 2001, genre: String::new() };
         let g = guess("A/B/09 - Other.mp3", &raw);
         assert_eq!((g.title.as_str(), g.artist.as_str(), g.album.as_str(), g.track, g.year), ("Real Title", "A", "Real Album", 9, 2001));
     }
@@ -564,7 +616,7 @@ mod tests {
 
     fn library() -> Vec<Track> {
         let t = |rel: &str, title: &str, artist: &str, album: &str, n: u32| {
-            Track::new(rel.to_string(), 1, 1, "mp3".into(), Class::Native, Tags { title: title.into(), artist: artist.into(), album: album.into(), track: n, year: 0 })
+            Track::new(rel.to_string(), 1, 1, "mp3".into(), Class::Native, Tags { title: title.into(), artist: artist.into(), album: album.into(), track: n, year: 0, genre: String::new() })
         };
         vec![
             t("Rock/Amp/Loud/01.mp3", "Feedback", "Amp", "Loud", 1),
@@ -585,6 +637,33 @@ mod tests {
         assert_eq!(query(&lib, &Query { text: "camp lantern".into(), ..Default::default() }, 0, 10).0, 0);
         assert_eq!(query(&lib, &Query { text: "  ".into(), ..Default::default() }, 0, 100).0, 6);
         assert_eq!(query(&lib, &Query { text: "mix".into(), ..Default::default() }, 0, 10).0, 2); // the path counts
+    }
+
+    #[test]
+    fn genre_comes_from_the_tag_else_the_top_folder() {
+        let mk = |rel: &str, title: &str, artist: &str, genre: &str| {
+            Track::new(rel.to_string(), 1, 1, "mp3".into(), Class::Native, Tags { title: title.into(), artist: artist.into(), album: String::new(), track: 0, year: 0, genre: genre.into() })
+        };
+        let lib = vec![
+            mk("Rock/Amp/a.mp3", "Feedback", "Amp", ""),
+            mk("Rock/Amp/b.mp3", "Static", "Amp", "Blues"),
+            mk("Jazz/c.mp3", "Smoke", "Horn", ""),
+            mk("loose.mp3", "Single", "Solo", ""),
+        ];
+        assert_eq!(lib[0].genre(), "Rock");
+        assert_eq!(lib[1].genre(), "Blues"); // the tag wins over the folder
+        assert_eq!(lib[3].genre(), "");
+        let g = genres(&lib);
+        let names: Vec<&str> = g.iter().map(|f| f.name.as_str()).collect();
+        assert_eq!(names, vec!["Blues", "Jazz", "Rock", ""]); // unsorted last
+        assert_eq!(query(&lib, &Query { genre: Some("rock".into()), ..Default::default() }, 0, 9).0, 1);
+        assert_eq!(query(&lib, &Query { genre: Some(String::new()), ..Default::default() }, 0, 9).0, 1);
+        // search only in one field
+        assert_eq!(query(&lib, &Query { text: "amp".into(), field: "artist".into(), ..Default::default() }, 0, 9).0, 2);
+        assert_eq!(query(&lib, &Query { text: "amp".into(), field: "title".into(), ..Default::default() }, 0, 9).0, 0);
+        assert_eq!(query(&lib, &Query { text: "blues".into(), field: "genre".into(), ..Default::default() }, 0, 9).0, 1);
+        assert_eq!(query(&lib, &Query { text: "jazz".into(), field: "title".into(), ..Default::default() }, 0, 9).0, 0);
+        assert_eq!(query(&lib, &Query { text: "jazz".into(), ..Default::default() }, 0, 9).0, 1);
     }
 
     #[test]

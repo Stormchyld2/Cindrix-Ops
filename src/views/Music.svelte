@@ -13,8 +13,11 @@
   let note = $state('');
 
   // browsing
-  type Mode = 'All' | 'Artists' | 'Albums' | 'Folders';
-  const modes: Mode[] = ['All', 'Artists', 'Albums', 'Folders'];
+  type Mode = 'All' | 'Artists' | 'Albums' | 'Genres' | 'Folders';
+  const modes: Mode[] = ['All', 'Artists', 'Albums', 'Genres', 'Folders'];
+  type Field = 'all' | 'title' | 'artist' | 'genre';
+  let field = $state<Field>('all');
+  let genre: string | null = $state(null);
   let mode = $state<Mode>('All');
   let text = $state('');
   let artist: string | null = $state(null);
@@ -48,15 +51,15 @@
     } catch (e) { error = String(e); }
   }
 
-  const showFacets = $derived(!text && ((mode === 'Artists' && artist === null) || (mode === 'Albums' && album === null) || mode === 'Folders'));
-  const showTracks = $derived(mode === 'All' || !!text || (mode === 'Artists' && artist !== null) || (mode === 'Albums' && album !== null) || mode === 'Folders');
+  const showFacets = $derived(!text && ((mode === 'Artists' && artist === null) || (mode === 'Albums' && album === null) || (mode === 'Genres' && genre === null) || mode === 'Folders'));
+  const showTracks = $derived(mode === 'All' || !!text || (mode === 'Artists' && artist !== null) || (mode === 'Albums' && album !== null) || (mode === 'Genres' && genre !== null) || mode === 'Folders');
 
   async function reload() {
     const mine = ++seq;
     busy = true;
     try {
       if (showFacets) {
-        const f = mode === 'Artists' ? await musicFacets('artists') : mode === 'Albums' ? await musicFacets('albums') : await musicFacets('folders', folder ?? '');
+        const f = mode === 'Artists' ? await musicFacets('artists') : mode === 'Albums' ? await musicFacets('albums') : mode === 'Genres' ? await musicFacets('genres') : await musicFacets('folders', folder ?? '');
         if (mine !== seq) return;
         facets = f;
       } else facets = [];
@@ -70,9 +73,10 @@
     finally { if (mine === seq) busy = false; }
   }
   function queryArgs() {
-    if (text) return { text };
+    if (text) return { text, field };
     if (mode === 'Artists') return { artist };
     if (mode === 'Albums') return { artist, album };
+    if (mode === 'Genres') return { genre };
     if (mode === 'Folders') return { folder: folder ?? '', direct: true };
     return {};
   }
@@ -81,22 +85,23 @@
     tracks = [...tracks, ...r.tracks];
   }
   function onSearch() { clearTimeout(debounce); debounce = setTimeout(reload, 200); }
-  function setMode(m: Mode) { mode = m; artist = null; album = null; folder = null; text = ''; void reload(); }
+  function setMode(m: Mode) { mode = m; artist = null; album = null; genre = null; folder = null; text = ''; void reload(); }
   function openFacet(f: MusicFacet) {
     if (mode === 'Artists') artist = f.name;
     else if (mode === 'Albums') { album = f.name; artist = f.sub; }
+    else if (mode === 'Genres') genre = f.name;
     else folder = f.folder;
     void reload();
   }
   function up() {
     if (mode === 'Folders' && folder) folder = folder.includes('/') ? folder.slice(0, folder.lastIndexOf('/')) : null;
-    else { artist = null; album = null; }
+    else { artist = null; album = null; genre = null; }
     void reload();
   }
-  const crumb = $derived(mode === 'Artists' ? artist : mode === 'Albums' ? (album ? `${album}${artist ? ' · ' + artist : ''}` : null) : mode === 'Folders' ? folder : null);
+  const crumb = $derived(mode === 'Artists' ? artist : mode === 'Albums' ? (album ? `${album}${artist ? ' · ' + artist : ''}` : null) : mode === 'Genres' ? (genre === null ? null : genre || 'Not sorted') : mode === 'Folders' ? folder : null);
 
   async function everything(): Promise<MusicTrack[]> {
-    const q = text ? { text } : mode === 'Folders' ? { folder: folder ?? '' } : queryArgs();
+    const q = text ? { text, field } : mode === 'Folders' ? { folder: folder ?? '' } : queryArgs();
     const r = await musicQuery(q, 0, 500);
     let all = r.tracks;
     while (all.length < r.total && all.length < 5000) all = [...all, ...(await musicQuery(q, all.length, 500)).tracks];
@@ -168,14 +173,17 @@
   {#if status && (!status.folder_exists || (status.scanned_once && status.count === 0 && !status.scanning))}
     <section class="panel empty">
       <h2>Put your music on the drive</h2>
-      <p>Copy your music into the <b>music</b> folder on the Cindrix drive. Folders like <code>music/Artist/Album/01 - Song.mp3</code> work best; the program reads the tags inside the files and falls back to the folder and file names.</p>
+      <p>Copy your music into the <b>music</b> folder on the Cindrix drive. Folders like <code>music/Artist/Album/01 - Song.mp3</code> work best; the program reads the tags inside the files and falls back to the folder and file names. Put songs in genre folders (<code>music/Rock/Artist/Album/01 - Song.mp3</code>) and the <b>Genres</b> button groups them by that folder whenever a file has no genre of its own.</p>
       <p class="muted">Your music is not counted against the drive’s size budget, and it is never changed or uploaded. Then press Look again.</p>
       <div class="row"><button class="btn primary" onclick={rescan}>Look again</button></div>
     </section>
   {:else}
     <section class="panel">
       <div class="row">
-        <input class="input grow" type="search" placeholder="Search songs, artists, albums" aria-label="Search music" bind:value={text} oninput={onSearch} />
+        <input class="input grow" type="search" placeholder={field === 'all' ? 'Search songs, artists, genres' : `Search by ${field}`} aria-label="Search music" bind:value={text} oninput={onSearch} />
+        <select class="input" aria-label="Search in" title="Choose where the search looks" bind:value={field} onchange={onSearch}>
+          <option value="all">Everything</option><option value="title">Song title</option><option value="artist">Artist</option><option value="genre">Genre</option>
+        </select>
         <div class="modes" role="group" aria-label="Browse by">
           {#each modes as m}<button class:on={mode === m && !text} onclick={() => setMode(m)}>{m}</button>{/each}
         </div>
@@ -198,7 +206,7 @@
       {#if showFacets}
         <ul class="facets">
           {#each facets as f}
-            <li><button onclick={() => openFacet(f)}><span>{f.name || '(unknown)'}{#if f.sub}<small> · {f.sub}</small>{/if}</span><small>{f.count}</small></button></li>
+            <li><button onclick={() => openFacet(f)}><span>{f.name || (mode === 'Genres' ? 'Not sorted' : '(unknown)')}{#if f.sub}<small> · {f.sub}</small>{/if}</span><small>{f.count}</small></button></li>
           {/each}
           {#if !facets.length && !busy}<li class="muted">Nothing here.</li>{/if}
         </ul>

@@ -25,8 +25,14 @@ converted files into `music/`). Everything in the first column plays on Android 
 
 ## What it does
 
-- **Library:** search (every word must match the title, artist, album or path), browse by Artists,
-  Albums or Folders, Play all, Shuffle, Play next, Add to queue, Add to playlist.
+- **Library:** search (every word must match the title, artist, album, genre or path; a box beside it
+  limits the search to song title, artist or genre), browse by Artists, Albums, Genres or Folders,
+  Play all, Shuffle, Play next, Add to queue, Add to playlist.
+- **Genres:** read from the file's tag (ID3 TCON with the old numbers looked up, Vorbis GENRE, MP4
+  ©gen/gnre, WMA WM/Genre, WAV IGNR). A file with no genre takes the name of the top folder it sits
+  in (`music/Rock/Artist/Album/song.mp3` is "Rock"); anything else is listed as "Not sorted". The
+  Genres button is the genre folders: the files are never moved. The index cache gained a genre
+  column, so the first look after updating reads the tags again.
 - **Queue:** reorder, remove, jump, save as a playlist. Shuffle, repeat (off, all, one).
 - **Playlists:** plain CSV files in `user/playlists/` (path, title, artist, album). A song that has
   moved is skipped and the screen says how many.

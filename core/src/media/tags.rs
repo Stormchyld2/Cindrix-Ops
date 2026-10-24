@@ -17,11 +17,13 @@ pub struct Tags {
     pub track: u32,
     /// Four-digit year, 0 when unknown.
     pub year: u32,
+    /// The genre named in the file ("Rock"), empty when none.
+    pub genre: String,
 }
 
 impl Tags {
     pub fn is_empty(&self) -> bool {
-        self.title.is_empty() && self.artist.is_empty() && self.album.is_empty() && self.track == 0 && self.year == 0
+        self.title.is_empty() && self.artist.is_empty() && self.album.is_empty() && self.track == 0 && self.year == 0 && self.genre.is_empty()
     }
 
     /// Fill the fields that are still empty from `o`.
@@ -41,6 +43,9 @@ impl Tags {
         if self.year == 0 {
             self.year = o.year;
         }
+        if self.genre.is_empty() {
+            self.genre = o.genre;
+        }
     }
 }
 
@@ -56,6 +61,37 @@ const MAX_TEXT: u64 = 8192;
 pub const MAX_ART: usize = 8 * 1024 * 1024;
 
 // ---------- small helpers ----------
+
+/// The 80 genres a plain ID3 tag can name by number.
+const ID3_GENRES: [&str; 80] = [
+    "Blues", "Classic Rock", "Country", "Dance", "Disco", "Funk", "Grunge", "Hip-Hop", "Jazz", "Metal", "New Age", "Oldies", "Other", "Pop", "R&B", "Rap",
+    "Reggae", "Rock", "Techno", "Industrial", "Alternative", "Ska", "Death Metal", "Pranks", "Soundtrack", "Euro-Techno", "Ambient", "Trip-Hop", "Vocal",
+    "Jazz+Funk", "Fusion", "Trance", "Classical", "Instrumental", "Acid", "House", "Game", "Sound Clip", "Gospel", "Noise", "Alternative Rock", "Bass", "Soul",
+    "Punk", "Space", "Meditative", "Instrumental Pop", "Instrumental Rock", "Ethnic", "Gothic", "Darkwave", "Techno-Industrial", "Electronic", "Pop-Folk",
+    "Eurodance", "Dream", "Southern Rock", "Comedy", "Cult", "Gangsta", "Top 40", "Christian Rap", "Pop/Funk", "Jungle", "Native American", "Cabaret",
+    "New Wave", "Psychedelic", "Rave", "Showtunes", "Trailer", "Lo-Fi", "Tribal", "Acid Punk", "Acid Jazz", "Polka", "Retro", "Musical", "Rock & Roll", "Hard Rock",
+];
+
+fn genre_by_number(n: usize) -> String {
+    ID3_GENRES.get(n).map(|g| g.to_string()).unwrap_or_default()
+}
+
+/// A genre as ID3 writes it: "Rock", "(17)", "(17)Rock" or "17". Numbers are looked up; text is kept.
+fn genre_text(t: &str) -> String {
+    let t = t.trim();
+    if let Some(rest) = t.strip_prefix('(') {
+        if let Some((n, after)) = rest.split_once(')') {
+            if after.trim().is_empty() {
+                return n.trim().parse::<usize>().map(genre_by_number).unwrap_or_default();
+            }
+            return clean(after);
+        }
+    }
+    if !t.is_empty() && t.len() <= 3 && t.chars().all(|c| c.is_ascii_digit()) {
+        return t.parse::<usize>().map(genre_by_number).unwrap_or_default();
+    }
+    clean(t)
+}
 
 fn clean(s: &str) -> String {
     s.chars().map(|c| if c.is_control() { ' ' } else { c }).collect::<String>().trim().to_string()
@@ -253,6 +289,7 @@ fn id3v2<R: Read + Seek>(r: &mut R, want_art: bool) -> Option<(Tags, Option<Art>
                         "TIT2" | "TT2" => tags.title = t,
                         "TPE1" | "TP1" => tags.artist = t,
                         "TALB" | "TAL" => tags.album = t,
+                        "TCON" | "TCO" => tags.genre = genre_text(&t),
                         "TPE2" | "TP2" => album_artist = t,
                         "TRCK" | "TRK" => tags.track = leading_number(&t),
                         "TDRC" | "TYER" | "TYE"
@@ -293,6 +330,7 @@ fn id3v1<R: Read + Seek>(r: &mut R) -> Option<Tags> {
         album: latin1_field(&b[63..93]),
         year: year_of(&latin1_field(&b[93..97])),
         track,
+        genre: genre_by_number(b[127] as usize),
     })
 }
 
@@ -329,6 +367,11 @@ fn vorbis_comments(b: &[u8]) -> Tags {
             }
             "ALBUMARTIST" => album_artist = v,
             "ALBUM" => t.album = v,
+            "GENRE" => {
+                if t.genre.is_empty() {
+                    t.genre = genre_text(&v)
+                }
+            }
             "TRACKNUMBER" => t.track = leading_number(&v),
             "DATE" | "YEAR"
                 if t.year == 0 => {
@@ -497,6 +540,7 @@ fn wav_info(b: &[u8]) -> Tags {
             b"INAM" => t.title = text,
             b"IART" => t.artist = text,
             b"IPRD" => t.album = text,
+            b"IGNR" => t.genre = genre_text(&text),
             b"ITRK" | b"IPRT" => t.track = leading_number(&text),
             b"ICRD" => t.year = year_of(&text),
             _ => {}
@@ -569,6 +613,8 @@ fn mp4<R: Read + Seek>(r: &mut R, want_art: bool) -> Option<(Tags, Option<Art>)>
                 }
             }
             [0xA9, b'a', b'l', b'b'] => tags.album = text(),
+            [0xA9, b'g', b'e', b'n'] => tags.genre = genre_text(&text()),
+            b"gnre" if payload.len() >= 2 => tags.genre = genre_by_number((u16::from_be_bytes([payload[0], payload[1]]) as usize).saturating_sub(1)),
             [0xA9, b'd', b'a', b'y'] => tags.year = year_of(&text()),
             b"trkn" if payload.len() >= 4 => tags.track = u16::from_be_bytes([payload[2], payload[3]]) as u32,
             b"covr" => art = sniff_image(payload).map(|mime| Art { mime, data: payload.to_vec() }),
@@ -638,6 +684,7 @@ fn asf<R: Read + Seek>(r: &mut R) -> Option<Tags> {
                 };
                 match clean(&name).as_str() {
                     "WM/AlbumTitle" => tags.album = text,
+                    "WM/Genre" => tags.genre = genre_text(&text),
                     "WM/AlbumArtist" => {
                         if tags.artist.is_empty() {
                             tags.artist = text
@@ -796,7 +843,7 @@ mod tests {
             let (t, _) = parse(b, false);
             assert_eq!(
                 t,
-                Tags { title: "Boil Water".into(), artist: "The Ready Band".into(), album: "Prepared".into(), track: 3, year: 2004 },
+                Tags { title: "Boil Water".into(), artist: "The Ready Band".into(), album: "Prepared".into(), track: 3, year: 2004, genre: String::new() },
                 "encoding {}",
                 enc
             );
@@ -920,7 +967,7 @@ mod tests {
         f.extend([(pic.len() >> 16) as u8, (pic.len() >> 8) as u8, pic.len() as u8]);
         f.extend(&pic);
         let (t, art) = flac(&mut Cursor::new(f), true).unwrap();
-        assert_eq!(t, Tags { title: "Stay Warm".into(), artist: "Camp Fire".into(), album: "Winter".into(), track: 4, year: 2011 });
+        assert_eq!(t, Tags { title: "Stay Warm".into(), artist: "Camp Fire".into(), album: "Winter".into(), track: 4, year: 2011, genre: String::new() });
         assert_eq!(art.unwrap().data, JPEG);
     }
 
@@ -959,7 +1006,7 @@ mod tests {
         f.extend((info.len() as u32).to_le_bytes());
         f.extend(&info);
         let t = wav(&mut Cursor::new(f), false).unwrap().0;
-        assert_eq!(t, Tags { title: "Siren Test".into(), artist: "Alarm Co".into(), album: "Signals".into(), track: 2, year: 2020 });
+        assert_eq!(t, Tags { title: "Siren Test".into(), artist: "Alarm Co".into(), album: "Signals".into(), track: 2, year: 2020, genre: String::new() });
     }
 
     #[test]
@@ -1053,7 +1100,7 @@ mod tests {
         f.extend(atom(b"mdat", &vec![7u8; 5000]));
         f.extend(moov);
         let (t, art) = mp4(&mut Cursor::new(f), true).unwrap();
-        assert_eq!(t, Tags { title: "Radio Check".into(), artist: "Ham Band".into(), album: "Frequencies".into(), track: 5, year: 2015 });
+        assert_eq!(t, Tags { title: "Radio Check".into(), artist: "Ham Band".into(), album: "Frequencies".into(), track: 5, year: 2015, genre: String::new() });
         assert_eq!(art.unwrap().mime, "image/jpeg");
     }
 
@@ -1100,7 +1147,7 @@ mod tests {
         f.extend([1, 2]);
         f.extend(&objs);
         let tags = asf(&mut Cursor::new(f)).unwrap();
-        assert_eq!(tags, Tags { title: "Windows Song".into(), artist: "WMA Band".into(), album: "Media Player".into(), track: 6, year: 2007 });
+        assert_eq!(tags, Tags { title: "Windows Song".into(), artist: "WMA Band".into(), album: "Media Player".into(), track: 6, year: 2007, genre: String::new() });
     }
 
     #[test]
@@ -1122,5 +1169,23 @@ mod tests {
         assert_eq!(year_of("98"), 0);
         assert_eq!(leading_number(" 12/30"), 12);
         assert_eq!(leading_number("x"), 0);
+    }
+
+    #[test]
+    fn genres_are_read_from_id3_numbers_and_names() {
+        assert_eq!(genre_text("(17)"), "Rock");
+        assert_eq!(genre_text("(17)Rock"), "Rock");
+        assert_eq!(genre_text("17"), "Rock");
+        assert_eq!(genre_text("Folk Rock"), "Folk Rock");
+        assert_eq!(genre_text("(200)"), "");
+        assert_eq!(genre_text(""), "");
+        assert_eq!(genre_by_number(32), "Classical");
+        let mut t = Tags::default();
+        assert!(t.is_empty());
+        t.genre = "Jazz".into();
+        assert!(!t.is_empty());
+        let mut a = Tags::default();
+        a.fill(t);
+        assert_eq!(a.genre, "Jazz");
     }
 }
