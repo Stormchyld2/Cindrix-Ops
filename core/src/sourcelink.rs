@@ -2,7 +2,7 @@
 //! Academy lesson, a plan or a Shelf book page. Anything else gets no address (the Ask window then
 //! shows the words the source gave and nothing to open).
 //!
-//! Addresses: `card:<id>`, `academy:<lesson id>`, `plan:<id>`, `book:<book id>:<page>`.
+//! Addresses: `card:<id>`, `academy:<lesson id>`, `plan:<id>`, `guide:<section>/<page>`, `book:<book id>:<page>`.
 
 /// The address for a file shown as a path below a library or drive folder (slashes either way).
 pub fn for_file(shown: &str) -> String {
@@ -19,6 +19,13 @@ pub fn for_file(shown: &str) -> String {
     }
     if dirs.last().map(|d| d.eq_ignore_ascii_case("plans")) == Some(true) {
         return format!("plan:{}", stem);
+    }
+    // a guide page is "guides/<section>/<file>" (Agro and radio reference)
+    if let Some(i) = dirs.iter().rposition(|d| d.eq_ignore_ascii_case("guides")) {
+        let below = &dirs[i + 1..];
+        if below.len() == 1 && !below[0].starts_with('_') && !below[0].starts_with('.') {
+            return format!("guide:{}/{}", below[0], stem);
+        }
     }
     // a lesson is "module/file" in the basics, or "course/module/file" in a course folder
     if let Some(i) = dirs.iter().rposition(|d| d.eq_ignore_ascii_case("academy")) {
@@ -39,6 +46,14 @@ pub fn book_page(book_id: &str, heading: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn guide_pages_get_addresses() {
+        assert_eq!(for_file("content/guides/crop-guides/tomatoes.md"), "guide:crop-guides/tomatoes");
+        assert_eq!(for_file("D:\\guides\\radio-reference\\gmrs.md"), "guide:radio-reference/gmrs");
+        assert_eq!(for_file("content/guides/README.md"), "");
+        assert_eq!(for_file("content/guides/_notes/x.md"), "");
+    }
 
     #[test]
     fn cards_plans_and_lessons_get_addresses() {

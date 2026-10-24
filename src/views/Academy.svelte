@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { sourceRequest, viewRequest } from '../lib/chat.svelte';
-  import { academyList, academyLesson, academySave, academyProblems, type AcademyModule, type AcademyLesson, type CourseProblem } from '../lib/api';
+  import { academyList, academyLesson, academySave, academyProblems, academyPackInstall, academyPackExport, inShare, type AcademyModule, type AcademyLesson, type CourseProblem } from '../lib/api';
   import { learner, chooseLearner, loadPeople } from '../lib/learner.svelte';
   import Training from './Training.svelte';
 
@@ -23,6 +23,15 @@
   let checkedAnswers = $state(false);
   let savedNote = $state('');
 
+  let packNotes: string[] = $state([]);
+  async function installPacks() {
+    packNotes = [];
+    try { packNotes = await academyPackInstall(); await load(); } catch (e) { packNotes = [String(e)]; }
+  }
+  async function sharePack() {
+    packNotes = [];
+    try { packNotes = ['Saved: ' + (await academyPackExport()) + '. Give this file to someone: they put it in their user\\academy-packs folder and press Install course packs.']; } catch (e) { packNotes = [String(e)]; }
+  }
   async function load() {
     try {
       modules = await academyList(learner.name || undefined);
@@ -125,6 +134,13 @@
         <p class="sub">Courses you can work through at your own pace, with a short quiz after each lesson. Choose a course to go inside it. Courses are plain folders on this drive, so nothing needs the internet. Your progress stays on this drive.</p>
       </div>
       {#if error}<div class="warn">{error}</div>{/if}
+      {#if !inShare}
+        <div class="row">
+          <button class="btn" onclick={installPacks} title="Add the course packs (.ccourse files) waiting in the user\\academy-packs folder">Install course packs</button>
+          <button class="btn" onclick={sharePack} title="Put the courses you added into one file to give to another household">Share my courses as a pack</button>
+        </div>
+        {#each packNotes as n}<p class="muted small">{n}</p>{/each}
+      {/if}
       <div class="panel who row">
         {#if learner.people.length}
           <label class="row grow">Learning as
@@ -212,6 +228,11 @@
           <h2>{b.text}</h2>
         {:else if b.kind === 'para'}
           <p>{#each parts(b.text) as x}{#if x.b}<b>{x.t}</b>{:else}{x.t}{/if}{/each}</p>
+        {:else if b.kind === 'image'}
+          <figure class="pic">
+            {#if b.items[0]}<img src={b.items[0]} alt={b.text} />{:else}<div class="nopic muted">Picture not found: {b.text}</div>{/if}
+            {#if b.text}<figcaption class="muted small">{b.text}</figcaption>{/if}
+          </figure>
         {:else if b.kind === 'note'}
           <p class="note">{#each parts(b.text) as x}{#if x.b}<b>{x.t}</b>{:else}{x.t}{/if}{/each}</p>
         {:else if b.kind === 'bullets'}
@@ -263,6 +284,9 @@
 </section>
 
 <style>
+  .pic { margin: 12px 0; text-align: center; }
+  .pic img { max-width: 100%; max-height: 420px; border-radius: 6px; background: #fff; }
+  .nopic { padding: 14px; border: 1px dashed var(--line2); border-radius: 6px; }
   @media print {
     .lesson { background: #fff !important; color: #111 !important; border: 0 !important; font-family: Georgia, 'Times New Roman', serif; }
     .lesson h1, .lesson h2, .lesson p, .lesson li, .lesson b { color: #111 !important; }

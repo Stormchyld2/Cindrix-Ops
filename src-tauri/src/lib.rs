@@ -1924,10 +1924,16 @@ fn academy_lesson(id: String) -> Result<LessonBodyDto, String> {
         .flat_map(|m| m.lessons)
         .find(|l| l.id == id)
         .ok_or("There is no such lesson.")?;
+    let dirs = academy_dirs();
+    let lesson_id = l.id.clone();
     let blocks = l
         .body
         .into_iter()
         .map(|b| match b {
+            academy::Block::Image { alt, file } => {
+                let url = academy::image_file(&dirs, &lesson_id, &file).and_then(|p| academy::image_data_url(&p)).unwrap_or_default();
+                BlockDto { kind: "image", text: alt, items: vec![url] }
+            }
             academy::Block::Heading(t) => BlockDto { kind: "heading", text: t, items: vec![] },
             academy::Block::Para(t) => BlockDto { kind: "para", text: t, items: vec![] },
             academy::Block::Note(t) => BlockDto { kind: "note", text: t, items: vec![] },
@@ -1937,6 +1943,55 @@ fn academy_lesson(id: String) -> Result<LessonBodyDto, String> {
         .collect();
     let quiz = l.quiz.into_iter().map(|q| QuestionDto { text: q.text, options: q.options, correct: q.correct, explain: q.explain }).collect();
     Ok(LessonBodyDto { id: l.id, title: l.title, minutes: l.minutes, status: l.status, source: l.source, blocks, quiz })
+}
+
+/// Put the courses you added (`user/academy`) into one pack file to give to another household.
+#[tauri::command]
+fn academy_pack_export() -> Result<String, String> {
+    let entries = cindrix_core::coursepack::collect(&root().join("user").join("academy"))?;
+    if entries.is_empty() {
+        return Err("You have not added any courses of your own yet. Courses in the user\\academy folder can be shared this way.".into());
+    }
+    let out = root().join("user").join("exports");
+    std::fs::create_dir_all(&out).map_err(|e| format!("Could not make the folder for the pack: {}", e))?;
+    let file = out.join("my-courses.ccourse");
+    cindrix_core::fsio::write_atomic(&file, cindrix_core::coursepack::pack(&entries).as_bytes()).map_err(|e| format!("Could not save the pack: {}", e))?;
+    Ok(file.display().to_string())
+}
+
+/// Install every course pack (`*.ccourse`) found in `user/academy-packs`. A pack that goes in is
+/// renamed to end in `.done`; one that cannot be used is left alone and named in the answer.
+#[tauri::command]
+fn academy_pack_install() -> Result<Vec<String>, String> {
+    let dir = root().join("user").join("academy-packs");
+    std::fs::create_dir_all(&dir).map_err(|e| format!("Could not make the folder for packs: {}", e))?;
+    let target = root().join("user").join("academy");
+    let mut notes: Vec<String> = Vec::new();
+    let mut files: Vec<PathBuf> = std::fs::read_dir(&dir).map_err(|e| e.to_string())?.flatten().map(|e| e.path()).filter(|p| p.is_file()).collect();
+    files.sort();
+    for p in files {
+        let name = p.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+        if !name.to_lowercase().ends_with(".ccourse") {
+            continue;
+        }
+        let result = std::fs::metadata(&p)
+            .map_err(|e| e.to_string())
+            .and_then(|m| if m.len() > 40_000_000 { Err("the file is too big to be a course".to_string()) } else { Ok(()) })
+            .and_then(|_| std::fs::read_to_string(&p).map_err(|e| e.to_string()))
+            .and_then(|t| cindrix_core::coursepack::unpack(&t))
+            .and_then(|e| cindrix_core::coursepack::install(&e, &target));
+        match result {
+            Ok(courses) => {
+                let _ = std::fs::rename(&p, p.with_file_name(format!("{}.done", name)));
+                notes.push(format!("{}: added {}", name, courses.join(", ")));
+            }
+            Err(m) => notes.push(format!("{}: {}", name, m)),
+        }
+    }
+    if notes.is_empty() {
+        notes.push(format!("No course packs found. Put a file ending in .ccourse in {} and try again.", dir.display()));
+    }
+    Ok(notes)
 }
 
 #[tauri::command]
@@ -2610,6 +2665,8 @@ pub fn run() {
             plans_problems,
             plan_follow,
             plans_export,
+            academy_pack_export,
+            academy_pack_install,
             plan_tick,
             drills_list,
             drill_save,

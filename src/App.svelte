@@ -123,6 +123,7 @@
     if (link.startsWith('card:')) { openCard(link.slice(5)); return; }
     if (link.startsWith('/content/')) { intelRequest.path = link; group = 'Intel'; return; }
     if (link.startsWith('academy:')) { sourceRequest.lesson = link.slice(8); group = 'Academy'; return; }
+    if (link.startsWith('guide:')) { guideSection = link.slice(6).split('/')[0]; group = 'Guides'; return; }
     if (link.startsWith('plan:')) {
       try { sessionStorage.setItem('cindrix.openPlan', link.slice(5)); } catch { /* the plan list opens instead */ }
       goPlan('What next');

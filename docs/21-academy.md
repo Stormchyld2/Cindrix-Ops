@@ -50,6 +50,16 @@ Core tests check the parser, bad quizzes (no right answer, two right answers), l
 One course (Survival basics), seven modules, 21 lessons: the first 72 hours, survival mindset, shelter/fire/water, navigation and signaling, field first aid, evade/resist/escape for civilians, and weeks to months. **All are drafts**, written from public-domain US government manuals and public guidance, and need review by a qualified person (especially first aid) before the `status` is changed to `reviewed`. They are a start, not a finished SERE school: more modules can be added by adding folders.
 
 ## Not built yet
-Pictures inside lessons, a single-file course pack to drop in, linking the assistant's answers to lessons, pictures and diagrams, and a certificate or checklist view.
+Nothing is listed as missing from the first plan. (Ask already links an answer to the lesson, card, plan, book page or guide page it came from.)
+
+On Training sign-off, each followed course has **Certificate to print** (once signed off) or **Checklist to print** (lesson boxes ticked for the lessons passed, with a line to sign).
 
 A lesson has a **Print lesson** button (black on white, without the quiz); "Save as PDF" in the print window keeps a copy.
+
+## Pictures in lessons
+
+A line of its own in a lesson, `![what it shows](name.png)`, shows the picture `name.png` kept in the same folder as the lesson file (png, jpg, gif, webp or svg, up to 1.5 MB). Only plain file names count (no folders, no web addresses); anything else stays ordinary text. A missing picture shows "Picture not found" and the lesson still works. Code: `academy::image_file`, `image_data_url` (tested). The picture's words are checked for medicine doses like the rest of the lesson.
+
+## Course packs
+
+A course pack is one text file (`.ccourse`) holding a course's folders, lesson files and pictures (`core/src/coursepack.rs`, tested). **Academy > Share my courses as a pack** writes the courses in `user/academy` to `user/exports/my-courses.ccourse`. To add a pack, put the file in `user/academy-packs` and press **Install course packs**. The whole pack is checked first (plain file names only, allowed file types, size limits); a course that is already installed is never overwritten. Installed packs are renamed to end in `.done`. Both commands are host-only.

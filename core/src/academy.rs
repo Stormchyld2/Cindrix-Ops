@@ -38,6 +38,8 @@ pub enum Block {
     Bullets(Vec<String>),
     Steps(Vec<String>),
     Note(String),
+    /// A picture kept next to the lesson file: `![what it shows](name.png)` on a line of its own.
+    Image { alt: String, file: String },
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -93,6 +95,60 @@ fn numbered(line: &str) -> Option<&str> {
     rest.strip_prefix(". ").or_else(|| rest.strip_prefix(") "))
 }
 
+const IMAGE_TYPES: &[(&str, &str)] = &[("png", "image/png"), ("jpg", "image/jpeg"), ("jpeg", "image/jpeg"), ("gif", "image/gif"), ("webp", "image/webp"), ("svg", "image/svg+xml")];
+/// Biggest picture a lesson will show.
+const MAX_IMAGE: u64 = 1_500_000;
+
+/// `![alt](name.png)` as a whole line, with a plain picture file name (no folders).
+fn image_line(line: &str) -> Option<(String, String)> {
+    let rest = line.strip_prefix("![")?;
+    let (alt, tail) = rest.split_once("](")?;
+    let file = tail.strip_suffix(')')?.trim();
+    let ok = !file.is_empty()
+        && file.len() <= 100
+        && !file.starts_with('.')
+        && !file.contains(|c: char| matches!(c, '/' | '\\' | ':' | '"' | '<' | '>' | '|' | '?' | '*') || c.is_control())
+        && file.rsplit_once('.').map(|(_, e)| IMAGE_TYPES.iter().any(|(x, _)| x.eq_ignore_ascii_case(e))).unwrap_or(false);
+    if ok { Some((alt.trim().to_string(), file.to_string())) } else { None }
+}
+
+/// The picture file for a lesson: the named file in the lesson's own folder, in the first of the
+/// course folders that has it. The lesson id is "module/file" or "course/module/file".
+pub fn image_file(dirs: &[PathBuf], lesson_id: &str, file: &str) -> Option<PathBuf> {
+    image_line(&format!("![x]({})", file))?;
+    let parent = lesson_id.rsplit_once('/').map(|(p, _)| p)?;
+    if parent.split('/').any(|c| c.is_empty() || c == ".." || c == ".") {
+        return None;
+    }
+    dirs.iter().map(|d| d.join(parent).join(file)).find(|p| p.is_file())
+}
+
+/// A picture as a `data:` address the screen can show without any server. None when it is missing,
+/// too big or not a known picture type.
+pub fn image_data_url(path: &Path) -> Option<String> {
+    let ext = path.extension()?.to_string_lossy().to_lowercase();
+    let mime = IMAGE_TYPES.iter().find(|(e, _)| *e == ext)?.1;
+    let len = fs::metadata(path).ok()?.len();
+    if len > MAX_IMAGE {
+        return None;
+    }
+    let bytes = fs::read(path).ok()?;
+    Some(format!("data:{};base64,{}", mime, base64(&bytes)))
+}
+
+pub(crate) fn base64(b: &[u8]) -> String {
+    const T: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut out = String::with_capacity(b.len() / 3 * 4 + 4);
+    for c in b.chunks(3) {
+        let n = (c[0] as u32) << 16 | (*c.get(1).unwrap_or(&0) as u32) << 8 | *c.get(2).unwrap_or(&0) as u32;
+        out.push(T[(n >> 18) as usize & 63] as char);
+        out.push(T[(n >> 12) as usize & 63] as char);
+        out.push(if c.len() > 1 { T[(n >> 6) as usize & 63] as char } else { '=' });
+        out.push(if c.len() > 2 { T[n as usize & 63] as char } else { '=' });
+    }
+    out
+}
+
 pub fn parse_blocks(text: &str) -> Vec<Block> {
     let mut out: Vec<Block> = Vec::new();
     let mut para = String::new();
@@ -107,6 +163,9 @@ pub fn parse_blocks(text: &str) -> Vec<Block> {
         let line = raw.trim();
         if line.is_empty() {
             flush(&mut para, &mut out);
+        } else if let Some((alt, file)) = image_line(line) {
+            flush(&mut para, &mut out);
+            out.push(Block::Image { alt, file });
         } else if let Some(h) = line.strip_prefix("## ") {
             flush(&mut para, &mut out);
             out.push(Block::Heading(h.trim().to_string()));
@@ -236,6 +295,7 @@ fn lesson_text(l: &Lesson) -> String {
         match b {
             Block::Heading(x) | Block::Para(x) | Block::Note(x) => t.push_str(x),
             Block::Bullets(v) | Block::Steps(v) => t.push_str(&v.join(". ")),
+            Block::Image { alt, .. } => t.push_str(alt),
         }
         t.push_str(". ");
     }
@@ -607,6 +667,7 @@ mod tests {
                     match b {
                         Block::Heading(t) | Block::Para(t) | Block::Note(t) => all.push_str(&format!("{}\n", t)),
                         Block::Bullets(v) | Block::Steps(v) => v.iter().for_each(|t| all.push_str(&format!("{}\n", t))),
+                        Block::Image { alt, .. } => all.push_str(&format!("{}\n", alt)),
                     }
                 }
                 for q in &l.quiz {
@@ -722,5 +783,31 @@ mod tests {
         assert_eq!(l.courses[0].modules[0].lessons[0].id, "my-course/01-first-module/01-first-lesson");
         // as shipped (with the underscore) it is ignored
         assert!(load_dir(Path::new(env!("CARGO_MANIFEST_DIR")).join("../content/academy").as_path()).courses.iter().all(|c| c.id != "_template-course"));
+    }
+
+    #[test]
+    fn pictures_in_lessons_are_found_next_to_the_lesson_and_only_there() {
+        let b = parse_blocks("Intro\n\n![A reef knot](knot.png)\n\n![bad](../secret.png)\n![url](http://x/y.png)\n![doc](notes.txt)");
+        assert_eq!(b[1], Block::Image { alt: "A reef knot".into(), file: "knot.png".into() });
+        // anything that is not a plain picture name stays ordinary text
+        assert!(matches!(&b[2], Block::Para(t) if t.contains("../secret.png")));
+        let dir = std::env::temp_dir().join(format!("cindrix-img-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(dir.join("basics/m1")).unwrap();
+        fs::write(dir.join("basics/m1/knot.png"), [0x89, b'P', b'N', b'G', 1, 2]).unwrap();
+        fs::write(dir.join("basics/m1/big.png"), vec![0u8; 1_600_000]).unwrap();
+        let dirs = vec![dir.join("none"), dir.clone()];
+        let p = image_file(&dirs, "basics/m1/lesson-1", "knot.png").unwrap();
+        assert!(p.ends_with("knot.png"));
+        assert!(image_file(&dirs, "basics/m1/lesson-1", "missing.png").is_none());
+        assert!(image_file(&dirs, "basics/m1/lesson-1", "../knot.png").is_none());
+        assert!(image_file(&dirs, "../m1/lesson-1", "knot.png").is_none());
+        assert!(image_file(&dirs, "lesson-1", "knot.png").is_none());
+        assert_eq!(image_data_url(&p).unwrap(), "data:image/png;base64,iVBORwEC");
+        assert!(image_data_url(&dir.join("basics/m1/big.png")).is_none()); // too big
+        assert_eq!(base64(b"M"), "TQ==");
+        assert_eq!(base64(b"Ma"), "TWE=");
+        assert_eq!(base64(b"Man"), "TWFu");
+        let _ = fs::remove_dir_all(&dir);
     }
 }

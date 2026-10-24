@@ -718,7 +718,7 @@ export async function drillSave(drill: string, seconds: number, done: number, to
 export type AcademyLessonMeta = { id: string; title: string; minutes: number; status: string; source: string; questions: number; tries: number; best_score: number; total: number; last_date: string };
 export type AcademyModule = { id: string; title: string; summary: string; course: string; course_title: string; course_summary: string; course_author: string; lessons: AcademyLessonMeta[] };
 export type CourseProblem = { place: string; message: string };
-export type AcademyBlock = { kind: 'heading' | 'para' | 'note' | 'bullets' | 'steps'; text: string; items: string[] };
+export type AcademyBlock = { kind: 'heading' | 'para' | 'note' | 'bullets' | 'steps' | 'image'; text: string; items: string[] };
 export type AcademyQuestion = { text: string; options: string[]; correct: number; explain: string };
 export type AcademyLesson = { id: string; title: string; minutes: number; status: string; source: string; blocks: AcademyBlock[]; quiz: AcademyQuestion[] };
 
@@ -742,6 +742,16 @@ export async function academyList(person?: string): Promise<AcademyModule[]> {
 export async function academyProblems(): Promise<CourseProblem[]> {
   if (inTauri) return call<CourseProblem[]>('academy_problems');
   return [];
+}
+/** Writes the courses you added into one pack file; returns where it is. */
+export async function academyPackExport(): Promise<string> {
+  if (inTauri) return call<string>('academy_pack_export');
+  return 'user/exports/my-courses.ccourse (preview)';
+}
+/** Installs the course packs waiting in user/academy-packs; returns one plain sentence for each. */
+export async function academyPackInstall(): Promise<string[]> {
+  if (inTauri) return call<string[]>('academy_pack_install');
+  return ['No course packs found (preview).'];
 }
 export async function academyLesson(id: string): Promise<AcademyLesson> {
   if (inTauri) return call<AcademyLesson>('academy_lesson', { id });

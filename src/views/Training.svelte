@@ -17,6 +17,9 @@
   let wrong = $state(false);
   let signer = $state('');
   let loading = $state(true);
+  // a paper sheet for one course of one person: a certificate when signed off, a checklist when not
+  let sheet: { person: string; course: TrainCourse } | null = $state(null);
+  const todayText = new Date().toISOString().slice(0, 10);
 
   async function load() {
     try {
@@ -55,7 +58,35 @@
 </script>
 
 <section class="wrap">
-  {#if !report}
+  {#if sheet}
+    <div class="row between no-print">
+      <button class="btn" onclick={() => (sheet = null)}>← Back</button>
+      <button class="btn primary" onclick={() => window.print()} title="Print, or choose Save as PDF in the print window">Print</button>
+    </div>
+    <article class="paper" aria-label="Certificate or checklist">
+      {#if sheet.course.signed_date}
+        <p class="kicker">CERTIFICATE OF TRAINING</p>
+        <h1>{sheet.person}</h1>
+        <p class="big">completed the course</p>
+        <h2>{sheet.course.title}</h2>
+        <p>Signed off by <b>{sheet.course.signed_by}</b> on <b>{sheet.course.signed_date}</b>.</p>
+        <p class="fine">{sheet.course.passed} of {sheet.course.needed} lesson quizzes passed at 70% or better. This is a record kept by the family, not an official qualification.</p>
+      {:else}
+        <p class="kicker">TRAINING CHECKLIST · printed {todayText}</p>
+        <h1>{sheet.person}</h1>
+        <h2>{sheet.course.title}</h2>
+        <p class="fine">{sheet.course.passed} of {sheet.course.needed} lessons learned so far.</p>
+      {/if}
+      <ul class="boxes">
+        {#each sheet.course.lessons as l}
+          <li><span class="box" class:ticked={l.state === 'passed'}></span> {l.title}<span class="fine"> · {l.module}{l.last_date ? ' · ' + l.last_date : ''}</span></li>
+        {/each}
+      </ul>
+      {#if !sheet.course.signed_date}
+        <p class="sigline">Signed off by ______________________ on ____________</p>
+      {/if}
+    </article>
+  {:else if !report}
     <div class="row between">
       <button class="btn" onclick={back}>← All courses</button>
     </div>
@@ -146,6 +177,7 @@
           </div>
           {#if !c.complete}<p class="muted small">{c.needed - c.passed} lesson{c.needed - c.passed === 1 ? '' : 's'} still to pass. You may sign off anyway if you have seen them do it.</p>{/if}
         {/if}
+        <button class="btn" onclick={() => (sheet = { person: report.person, course: c })} title="Open a page to print: a certificate once signed off, otherwise a checklist of the lessons">{c.signed_date ? 'Certificate to print' : 'Checklist to print'}</button>
         <button class="link" onclick={() => enrol(c, false)}>Stop following this course (results are kept)</button>
       </section>
     {/each}
@@ -165,6 +197,18 @@
 </section>
 
 <style>
+  .paper { background: #fff; color: #111; border-radius: 6px; padding: 32px 36px; font-family: Georgia, 'Times New Roman', serif; line-height: 1.5; }
+  .paper h1, .paper h2, .paper p, .paper li { color: #111; font-family: inherit; }
+  .paper h1 { font-size: 30px; margin: 6px 0; }
+  .paper h2 { font-size: 20px; margin: 4px 0 10px; }
+  .paper .kicker { letter-spacing: .14em; font-size: 12px; margin: 0; }
+  .paper .big { font-size: 16px; margin: 0; }
+  .paper .fine { font-size: 12px; color: #444; }
+  .paper .boxes { list-style: none; padding: 0; margin: 10px 0; }
+  .paper .boxes li { display: flex; gap: 10px; align-items: baseline; margin: 5px 0; }
+  .paper .box { width: 14px; height: 14px; border: 2px solid #111; flex: none; }
+  .paper .box.ticked { background: #111; }
+  .paper .sigline { margin-top: 28px; }
   .wrap { display: flex; flex-direction: column; gap: 14px; max-width: 900px; }
   .between { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
   .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
