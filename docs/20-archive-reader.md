@@ -78,3 +78,5 @@ app. Test archives were made by our own script, so the check against Kiwix's too
 ## Speed (2026-10-24)
 
 The reader felt slow because every page, picture and style file it asked for made the program list the library folders again (three levels deep, on the drive) and the answer was marked "never keep". Now the open archives are trusted for 5 seconds before the folders are listed again, pages and pictures from an archive may be kept by the web view for 10 minutes (searches and suggestions are never kept), and the titles used by the search box are read from the archive once and then searched in memory. A new archive copied in still appears within a few seconds.
+
+Find on this page (box, ↑ ↓ or Enter) and Print page sit in the reader's toolbar; both are small messages to the script the reader puts into each page.

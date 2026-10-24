@@ -760,7 +760,7 @@ var O=location.origin;\
 function tell(){try{parent.postMessage({cx:'page',url:document.baseURI,title:document.title||''},'*')}catch(e){}}\
 document.addEventListener('click',function(e){var a=e.target&&e.target.closest?e.target.closest('a[href]'):null;if(!a)return;var h=a.href;\
 if(/^(https?|ftp|mailto|tel):/i.test(h)&&h.indexOf(O)!==0){e.preventDefault();try{parent.postMessage({cx:'external',url:h},'*')}catch(x){}}},true);\
-addEventListener('message',function(e){var d=e.data;if(d&&d.cx==='zoom'){document.documentElement.style.zoom=d.v}});\
+addEventListener('message',function(e){var d=e.data;if(!d)return;if(d.cx==='zoom'){document.documentElement.style.zoom=d.v}else if(d.cx==='find'){try{window.find(d.q,false,!!d.back,true,false,false,false)}catch(x){}}else if(d.cx==='print'){try{window.print()}catch(x){}}});\
 if(document.readyState==='complete')tell();else addEventListener('load',tell);\
 })();</script>";
 

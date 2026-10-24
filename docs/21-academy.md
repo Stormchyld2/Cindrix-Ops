@@ -50,4 +50,6 @@ Core tests check the parser, bad quizzes (no right answer, two right answers), l
 One course (Survival basics), seven modules, 21 lessons: the first 72 hours, survival mindset, shelter/fire/water, navigation and signaling, field first aid, evade/resist/escape for civilians, and weeks to months. **All are drafts**, written from public-domain US government manuals and public guidance, and need review by a qualified person (especially first aid) before the `status` is changed to `reviewed`. They are a start, not a finished SERE school: more modules can be added by adding folders.
 
 ## Not built yet
-Pictures inside lessons, a single-file course pack to drop in, Linking the assistant's answers to lessons, pictures and diagrams, printing a lesson, and a certificate or checklist view.
+Pictures inside lessons, a single-file course pack to drop in, linking the assistant's answers to lessons, pictures and diagrams, and a certificate or checklist view.
+
+A lesson has a **Print lesson** button (black on white, without the quiz); "Save as PDF" in the print window keeps a copy.

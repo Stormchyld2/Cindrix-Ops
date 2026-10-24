@@ -274,6 +274,12 @@
       scheduleSave();
     }
   }
+  let findText = $state('');
+  function findInPage(back = false) {
+    const q = findText.trim();
+    if (q) frame?.contentWindow?.postMessage({ cx: 'find', q, back }, '*');
+  }
+  function printPage() { frame?.contentWindow?.postMessage({ cx: 'print' }, '*'); }
   function sendZoom() { frame?.contentWindow?.postMessage({ cx: 'zoom', v: zoom / 100 }, '*'); }
   function setZoom(d: number) { zoom = Math.min(200, Math.max(70, zoom + d)); sendZoom(); scheduleSave(); }
 
@@ -351,6 +357,13 @@
     <button class="btn" onclick={submit} disabled={!term.trim()}>Search</button>
     {#if bookHere}
       <button class="btn" onclick={searchInside} disabled={!term.trim()} title="Search the words inside the archive that is open">Search inside {bookTitle(bookHere)}</button>
+    {/if}
+    {#if !plain && loc?.t === 'page'}
+      <input class="input find" type="search" placeholder="Find on this page" aria-label="Find on this page" bind:value={findText}
+        onkeydown={(e) => { if (e.key === 'Enter') findInPage(e.shiftKey); }} />
+      <button class="btn" onclick={() => findInPage(true)} disabled={!findText.trim()} aria-label="Previous match" title="Previous match">↑</button>
+      <button class="btn" onclick={() => findInPage(false)} disabled={!findText.trim()} aria-label="Next match" title="Next match (or press Enter)">↓</button>
+      <button class="btn" onclick={printPage} title="Print this page, or save it as a PDF">Print page</button>
     {/if}
     <button class="btn" onclick={() => setZoom(-10)} aria-label="Smaller text">A−</button>
     <button class="btn" onclick={() => setZoom(10)} aria-label="Larger text">A＋</button>
@@ -466,6 +479,7 @@
   .marks li { display: flex; gap: 4px; }
   .open { flex: 1; text-align: left; padding: 7px 4px; background: none; border: 0; color: var(--link); font: inherit; cursor: pointer; }
   .view { flex: 1; min-height: 0; padding: 0; display: flex; flex-direction: column; }
+  .find { width: 170px; }
   iframe { width: 100%; height: 100%; border: 0; background: #fff; flex: 1; }
   .scroll { padding: 18px 20px; overflow: auto; flex: 1; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-top: 16px; }

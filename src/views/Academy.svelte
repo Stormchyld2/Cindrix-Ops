@@ -197,9 +197,12 @@
       {/each}
     {/if}
   {:else}
-    <div class="row between">
+    <div class="row between no-print">
       <button class="btn" onclick={close}>← Back to the course</button>
-      <span class="muted small">{lesson.minutes} min</span>
+      <span class="row">
+        <span class="muted small">{lesson.minutes} min</span>
+        <button class="btn" title="Print this lesson, or save it as a PDF, to keep a paper copy" onclick={() => window.print()}>Print lesson</button>
+      </span>
     </div>
     <article class="panel lesson">
       <h1>{lesson.title}</h1>
@@ -221,6 +224,7 @@
     </article>
 
     {#if lesson.quiz.length}
+      <div class="no-print">
       {#if !quizOpen}
         <div><button class="btn primary" onclick={() => (quizOpen = true)}>Take the quiz</button></div>
       {:else}
@@ -252,12 +256,20 @@
           {/if}
         </div>
       {/if}
+      </div>
     {/if}
-    {#if error}<div class="warn">{error}</div>{/if}
+    {#if error}<div class="warn no-print">{error}</div>{/if}
   {/if}
 </section>
 
 <style>
+  @media print {
+    .lesson { background: #fff !important; color: #111 !important; border: 0 !important; font-family: Georgia, 'Times New Roman', serif; }
+    .lesson h1, .lesson h2, .lesson p, .lesson li, .lesson b { color: #111 !important; }
+    .lesson .note { border: 1px solid #111; padding: 6px 10px; background: #fff !important; }
+    .lesson .warn { background: #fff !important; color: #111 !important; border: 1px solid #111; }
+    .lesson .muted { color: #444 !important; }
+  }
   .who { align-items: center; gap: 10px; flex-wrap: wrap; justify-content: space-between; }
   .who label { gap: 8px; align-items: center; }
   .course { margin-top: 8px; }
