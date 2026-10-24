@@ -73,3 +73,8 @@ app. Test archives were made by our own script, so the check against Kiwix's too
 - Find-in-page and printing an article. Big videos inside an archive. (Tabs are built: see doc 23.)
 - Sharing the archives over the hotspot **without** `kiwix-serve` (a small web server of our own). That
   is the next step for the Android tablet Hub, since `kiwix-serve` does not run on Android.
+
+
+## Speed (2026-10-24)
+
+The reader felt slow because every page, picture and style file it asked for made the program list the library folders again (three levels deep, on the drive) and the answer was marked "never keep". Now the open archives are trusted for 5 seconds before the folders are listed again, pages and pictures from an archive may be kept by the web view for 10 minutes (searches and suggestions are never kept), and the titles used by the search box are read from the archive once and then searched in memory. A new archive copied in still appears within a few seconds.

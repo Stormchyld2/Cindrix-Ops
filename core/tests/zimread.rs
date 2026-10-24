@@ -77,6 +77,11 @@ fn title_search_finds_prefixes_and_words() {
 
         let hits = a.search_titles(&["purif".to_string(), "water".to_string()], 10, 100_000).unwrap();
         assert_eq!(hits.len(), 1, "{} {:?}", name, hits);
+        // the second search answers from the titles kept in memory, with the same result, and a
+        // smaller or larger scan afterwards still works
+        assert_eq!(a.search_titles(&["purif".to_string(), "water".to_string()], 10, 100_000).unwrap(), hits);
+        assert_eq!(a.search_titles(&["purif".to_string(), "water".to_string()], 10, 5).unwrap(), hits);
+        assert_eq!(a.search_titles(&["WATER".to_string()], 1, 100_000).unwrap().len(), 1);
     }
 }
 

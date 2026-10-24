@@ -73,6 +73,8 @@ pub struct Archive {
     main_page: u32,
     mimes: Vec<String>,
     len: u64,
+    /// Lower-case titles read so far for title search: (how many title slots were read, [(lower-case title, address, title)]).
+    titles: Mutex<(u32, Vec<(String, String, String)>)>,
 }
 
 fn u16_at(b: &[u8], i: usize) -> u16 {
@@ -126,6 +128,7 @@ impl Archive {
             main_page: u32_at(&h, 64),
             mimes,
             len,
+            titles: Mutex::new((0, Vec::new())),
         })
     }
 
@@ -422,14 +425,23 @@ impl Archive {
         if words.is_empty() {
             return Ok(out);
         }
-        for k in 0..self.articles.min(scan) {
+        // The titles are read from the file once (the first search pays for it) and kept in memory,
+        // so every later keystroke searches memory, not the drive.
+        let want = self.articles.min(scan);
+        let mut g = self.titles.lock().unwrap_or_else(|e| e.into_inner());
+        while g.0 < want {
+            let k = g.0;
             let e = self.title_entry(k)?;
-            if e.ns != ns {
-                continue;
+            if e.ns == ns {
+                let shown = e.display_title().to_string();
+                g.1.push((shown.to_lowercase(), self.address_of(e.ns, &e.url), shown));
             }
-            let t = e.display_title().to_lowercase();
-            if words.iter().all(|w| t.contains(w.as_str())) {
-                out.push((self.address_of(e.ns, &e.url), e.display_title().to_string()));
+            g.0 += 1;
+        }
+        // (a later call with a larger `scan` reads on from where this one stopped)
+        for (lower, addr, shown) in g.1.iter() {
+            if words.iter().all(|w| lower.contains(w.as_str())) {
+                out.push((addr.clone(), shown.clone()));
                 if out.len() >= limit {
                     break;
                 }

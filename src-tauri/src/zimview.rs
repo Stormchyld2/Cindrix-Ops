@@ -11,12 +11,19 @@ use serde::Serialize;
 use tauri::Manager;
 
 fn reply(status: u16, ctype: &str, final_path: Option<&str>, body: Vec<u8>) -> tauri::http::Response<Vec<u8>> {
+    reply_cached(status, ctype, final_path, body, false)
+}
+
+/// `keep`: the web view may reuse the answer for a while (pictures, style files and pages that
+/// come straight out of an archive, which does not change while the program runs). Searches and
+/// suggestions are always asked afresh.
+fn reply_cached(status: u16, ctype: &str, final_path: Option<&str>, body: Vec<u8>, keep: bool) -> tauri::http::Response<Vec<u8>> {
     let mut b = tauri::http::Response::builder()
         .status(status)
         .header("Access-Control-Allow-Origin", "*")
         .header("Access-Control-Allow-Methods", "GET, OPTIONS")
         .header("Access-Control-Expose-Headers", "X-Final-Path, Content-Type")
-        .header("Cache-Control", "no-store");
+        .header("Cache-Control", if keep && status == 200 { "private, max-age=600" } else { "no-store" });
     if !ctype.is_empty() {
         b = b.header("Content-Type", ctype);
     }
@@ -26,20 +33,35 @@ fn reply(status: u16, ctype: &str, final_path: Option<&str>, body: Vec<u8>) -> t
     b.body(body).unwrap_or_else(|_| tauri::http::Response::new(Vec::new()))
 }
 
-static LIB: Mutex<Option<(String, Arc<Library>)>> = Mutex::new(None);
+/// The open library, its file signature, and when the drive was last looked at.
+static LIB: Mutex<Option<(String, Arc<Library>, std::time::Instant)>> = Mutex::new(None);
+
+/// How long the open library is trusted before the folders are listed again. A page with forty
+/// pictures asks for the library forty times; listing the library folders (three levels deep, on a
+/// USB drive) each time was the main reason the reader felt slow.
+const RECHECK: std::time::Duration = std::time::Duration::from_secs(5);
 
 /// The archives on the drive, read directly. Reopened only when a file is added, removed or replaced.
 pub fn library() -> Arc<Library> {
+    {
+        let g = LIB.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some((_, l, at)) = g.as_ref() {
+            if at.elapsed() < RECHECK {
+                return l.clone();
+            }
+        }
+    }
     let files = super::libs::all_zim_files();
     let sig = library::signature(&files);
     let mut g = LIB.lock().unwrap_or_else(|e| e.into_inner());
-    if let Some((s, l)) = g.as_ref() {
+    if let Some((s, l, at)) = g.as_mut() {
         if *s == sig {
+            *at = std::time::Instant::now();
             return l.clone();
         }
     }
     let l = Arc::new(Library::open(&files));
-    *g = Some((sig, l.clone()));
+    *g = Some((sig, l.clone(), std::time::Instant::now()));
     l
 }
 
@@ -54,12 +76,12 @@ fn query_param(q: &str, key: &str) -> Option<String> {
     None
 }
 
-fn html_reply(html: String, origin: &str, base_path: Option<&str>) -> tauri::http::Response<Vec<u8>> {
+fn html_reply(html: String, origin: &str, base_path: Option<&str>, keep: bool) -> tauri::http::Response<Vec<u8>> {
     let mut page = kiwix::inject_reader_script(&html);
     if let Some(p) = base_path {
         page = kiwix::inject_head(&page, &kiwix::base_tag(&format!("{}{}", origin, p)));
     }
-    reply(200, "text/html; charset=utf-8", None, page.into_bytes())
+    reply_cached(200, "text/html; charset=utf-8", None, page.into_bytes(), keep)
 }
 
 /// Answer one request from the reader. Runs on a worker thread. Pages, pictures and suggestions
@@ -93,10 +115,10 @@ pub fn serve(app: &tauri::AppHandle, req: &tauri::http::Request<Vec<u8>>) -> tau
                         // the start page and redirected pages: make links resolve from where the page really is
                         let real = lib.book(&book).map(|b| format!("/content/{}/{}", library::encode_path(&book), library::encode_path(&b.archive.address_of(p.ns, &p.url))));
                         let base = real.filter(|r| r.as_str() != path);
-                        return html_reply(html, &origin, base.as_deref());
+                        return html_reply(html, &origin, base.as_deref(), true);
                     }
                 }
-                reply(200, &ctype, None, p.data)
+                reply_cached(200, &ctype, None, p.data, true)
             }
             Ok(None) => reply(404, "text/plain", None, b"That page is not in this archive.".to_vec()),
             Err(e) => reply(500, "text/plain", None, e.to_string().into_bytes()),
@@ -117,7 +139,7 @@ pub fn serve(app: &tauri::AppHandle, req: &tauri::http::Request<Vec<u8>>) -> tau
                     let ctype = if r.content_type.is_empty() { "text/html".to_string() } else { r.content_type.clone() };
                     if r.status == 200 && ctype.to_ascii_lowercase().starts_with("text/html") {
                         if let Ok(html) = String::from_utf8(r.body.clone()) {
-                            return html_reply(html, &origin, if fp != pq { Some(fp.as_str()) } else { None });
+                            return html_reply(html, &origin, if fp != pq { Some(fp.as_str()) } else { None }, false);
                         }
                     }
                     return reply(r.status, &ctype, None, r.body);
@@ -127,7 +149,7 @@ pub fn serve(app: &tauri::AppHandle, req: &tauri::http::Request<Vec<u8>>) -> tau
         let (Some(book), Some(term)) = (query_param(query, "content"), query_param(query, "pattern")) else {
             return reply(400, "", None, Vec::new());
         };
-        return html_reply(library().results_page(&book, &term), &origin, None);
+        return html_reply(library().results_page(&book, &term), &origin, None, false);
     }
     if path.starts_with("/skin/") {
         if let Some(port) = kport {
