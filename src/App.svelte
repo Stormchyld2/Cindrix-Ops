@@ -184,7 +184,7 @@
     'food-preservation': { title: 'Food preservation', intro: 'Keeping the harvest safe to eat. Food safety rules here come from the official guides and are not shortened.' },
     'livestock': { title: 'Livestock', intro: 'Keeping animals for eggs, milk and meat. Nothing here gives medicine amounts: for sick animals, ask a vet.' },
     'soil-and-water': { title: 'Soil and water', intro: 'Looking after the ground and the water your food depends on.' },
-    'radio-reference': { title: 'Radio reference', intro: 'Rules and words for family radios, in the United States. Rules differ in other countries: check yours.' },
+    'radio-reference': { title: 'Radio reference', intro: 'Family radios, ham radio, antennas, check-in plans, signalling, beacons and mesh radios, with the rules for the United States. Rules differ in other countries, and they change: check fcc.gov.' },
   };
   let settingsFromComms = $state(false);
   let openMenu: string | null = $state(null);

@@ -14,7 +14,7 @@ Ten words, each with a small coloured diamond. A word with a menu opens it on a 
 | Academy | Courses, Training sign-off |
 | Agro | Crop guides, Planting calendar, Food preservation, Livestock, Soil and water (62 pages, `content/guides`; widened 2026-10-23 from 13 starter pages, now with farm safety, sanitation, flood and contaminated ground, land suitability, breeding, pollinators, wheat-to-flour and a growing-enough-to-eat page), Seed vault |
 | Morale | Reading Corner, Music, Journal, Photos |
-| Comms | Comms plan, Radio reference, Sharing |
+| Comms | Comms plan, Radio reference (30 pages, 2026-10-24), Sharing |
 | System | Settings, My details |
 
 Screens that are not built show the "Not built yet" page (`Soon.svelte`). Nothing in a menu is hidden to look finished.
