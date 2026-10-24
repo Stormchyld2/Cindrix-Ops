@@ -35,7 +35,8 @@
   let plans: PlanInfo[] = $state([]);
   let facts: PlanFacts = $state({ checks: {}, lessons: new Set<string>() });
   let academy: AcademyModule[] = $state([]);
-  let cats: Record<string, number> = $state({});
+  /** For each kind of supply: how many items, and how many need a look or action by their date. */
+  let cats: Record<string, { n: number; check: number; act: number }> = $state({});
   let ready: { label: string; ok: boolean; tab: string; text: string }[] = $state([]);
 
   onMount(async () => {
@@ -58,8 +59,12 @@
     try { plans = await plansList(); facts = await gatherFacts(); } catch { /* no plans panel content */ }
     try { academy = await academyList(); } catch { /* none */ }
     try {
-      const c: Record<string, number> = {};
-      for (const i of await inventoryList()) c[i.category] = (c[i.category] ?? 0) + 1;
+      const c: Record<string, { n: number; check: number; act: number }> = {};
+      for (const i of await inventoryList()) {
+        const e = (c[i.category] ??= { n: 0, check: 0, act: 0 });
+        e.n++;
+        if (i.status === 'act') e.act++; else if (i.status === 'check') e.check++;
+      }
       cats = c;
     } catch { /* none */ }
     try {
@@ -226,11 +231,14 @@
     {:else if data && low.length === 0}<p class="muted small">Nothing runs out within {settings.values.planCheckDays} days.</p>
     {:else if data}<p class="small"><strong>{low.length} item{low.length === 1 ? '' : 's'}</strong> run low within {settings.values.planCheckDays} days. Click Running low above to see which.</p>{/if}
     <div class="scroll">
-      <div class="catgrid">
-        {#each categories as c}
-          <div class="catcell" class:none={!cats[c]} title={c}><span class="cn">{c}</span><span class="cc">{cats[c] ?? 0}</span></div>
-        {/each}
-      </div>
+      {#each categories as c}
+        {@const e = cats[c]}
+        <div class="line cat" class:none={!e}>
+          <div class="grow">{c}</div>
+          {#if e?.act}<span class="chip urgent">{e.act} act now</span>{:else if e?.check}<span class="chip soon">{e.check} to check</span>{/if}
+          <span class="count">{e?.n ?? 0} item{(e?.n ?? 0) === 1 ? '' : 's'}</span>
+        </div>
+      {/each}
     </div>
     <div class="row gap"><button class="btn" onclick={() => go('Inventory')}>Open Inventory</button><button class="btn" onclick={() => go('What fails')}>What fails next</button></div>
   </section>
@@ -372,24 +380,22 @@
   /* every block has one set size, and shows only the most important lines; the rest scrolls inside it */
   .dgrid { display: grid; grid-template-columns: repeat(12, 1fr); grid-template-rows: 330px 440px 300px; gap: 12px; align-items: stretch; }
   .dgrid .panel { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
-  .dgrid .scroll { flex: 1; min-height: 0; overflow-y: auto; }
+  /* no scroll bars: the mouse wheel (or a finger) moves the list inside the block, and a soft fade at the bottom shows there is more */
+  .dgrid .scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; -ms-overflow-style: none; padding-bottom: 22px; -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 22px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 22px), transparent); }
+  .dgrid .scroll::-webkit-scrollbar { display: none; width: 0; height: 0; }
   .dgrid .panel > .row.gap, .dgrid .panel > .foot { flex: none; }
-  .catgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; }
-  .catcell { display: flex; gap: 8px; justify-content: space-between; padding: 6px 0; border-top: 1px solid var(--line); font-size: 13.5px; }
-  .catcell .cn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .catcell .cc { font-family: var(--mono); }
-  .catcell.none { color: var(--muted); }
   .s12 { grid-column: span 12; }
   .s4 { grid-column: span 4; } .s6 { grid-column: span 6; } .s8 { grid-column: span 8; }
   @media (max-width: 860px) {
     .s4, .s6, .s8, .s12 { grid-column: span 12; }
     .dgrid { grid-template-rows: none; }
     .dgrid .panel { overflow: visible; }
-    .dgrid .scroll { overflow: visible; }
+    .dgrid .scroll { overflow: visible; padding-bottom: 0; -webkit-mask-image: none; mask-image: none; }
     .dgrid .sharing { order: -1; }
-    .catgrid { grid-template-columns: 1fr; }
   }
-  .line.cat { padding: 8px 0; }
+  .line.cat { padding: 8px 0; gap: 10px; }
+  .line.cat.none .grow, .line.cat.none .count { color: var(--muted); }
+  .line.cat .count { font-family: var(--mono); font-size: 13px; min-width: 76px; text-align: right; }
   .tip { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 12px 0; border-top: 1px solid var(--line); margin-top: 6px; }
   .chip { flex: 0 0 auto; min-width: 66px; text-align: center; padding: 2px 8px; border-radius: 999px; font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; border: 1px solid var(--line2); }
   .chip.urgent { color: var(--danger); border-color: #6b2a20; background: #241512; }
