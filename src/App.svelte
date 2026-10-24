@@ -142,6 +142,7 @@
       case 'item': group = 'Inventory'; break;
       case 'plan': openSource('plan:' + id); break;
       case 'card': openCard(id); break;
+      case 'book': openSource('book:' + id + ':1'); break;
       case 'guide': guideSection = id.split('/')[0]; group = 'Guides'; break;
       case 'task': group = 'Todo'; break;
       case 'event': group = 'Calendar'; break;

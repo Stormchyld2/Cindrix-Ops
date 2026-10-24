@@ -35,7 +35,7 @@
   async function makeProject() {
     const name = newProject.trim();
     if (!name) { adding = false; return; }
-    try { projects = await projectSave({ id: '', name, status: 'open', notes: '', chats: [] }); const p = projects[projects.length - 1]; chat.project = p.id; opened[p.id] = true; newProject = ''; adding = false; } catch (e) { note = String(e); }
+    try { projects = await projectSave({ id: '', name, status: 'open', notes: '', chats: [], instructions: '', docs: [] }); const p = projects[projects.length - 1]; chat.project = p.id; opened[p.id] = true; newProject = ''; adding = false; } catch (e) { note = String(e); }
   }
   /** Click a project: new chats are filed in it, and its chats show underneath. Click again to leave it. */
   function enter(id: string) {
@@ -86,7 +86,7 @@
     try {
       const reply = await ask(q, (t, replace) => {
         chat.thread[i].text = replace ? t : chat.thread[i].text + t;
-      });
+      }, chat.project);
       chat.thread[i] = { who: 'app', text: reply.text, reply };
     } catch (e) {
       chat.thread[i].text = 'Something went wrong: ' + String(e);

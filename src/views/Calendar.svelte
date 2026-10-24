@@ -85,7 +85,7 @@
           </div>
           <select class="input" bind:value={editing.project} aria-label="Project"><option value="">No project</option>{#each projects as p (p.id)}<option value={p.id}>{p.name}</option>{/each}</select>
           <textarea class="input" rows="3" placeholder="Notes" bind:value={editing.notes} aria-label="Notes"></textarea>
-          <Connected links={editing.links} onchange={setLinks} />
+          <Connected links={editing.links} onchange={setLinks} suggestFrom={{ text: editing.title + ' ' + editing.notes, kind: 'event', id: editing.id }} />
           <div class="row">
             <button class="btn primary" onclick={save}>Save</button>
             <button class="btn" onclick={() => (editing = null)}>Cancel</button>

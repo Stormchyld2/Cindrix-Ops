@@ -18,9 +18,28 @@ deterministic rules and one retrieval service. It does not move anything into on
   (`guide:crop-guides/potatoes`), a person, a course, a drill, a project, another task or event, or a chat. Unknown kinds and unsafe ids are dropped.
 * **The agenda**: one date-ordered list built by plain rules from tasks, events, the dates other modules supply (Inventory items that run out or
   expire, followed plan checks that fall due) and nothing else. Late things sit on the first day, longest overdue first. No guessing, no AI.
-* **One search** over cards, plans, guides, inventory, tasks, events and projects. Every word must match; a title match counts more.
+* **Project settings** (Projects > Settings tab): standing **instructions** for the assistant (up to 4000 characters) and up to **10 documents**
+  (`MAX_DOCS`). A document is either a **link** to a file where it already is (a path on this computer or the drive; never a web address) or an
+  **upload**, a copy kept in `user/projects/<id>/` (25 MB each, never overwrites, a number is added to a clashing name). Allowed: pictures
+  (png, jpg, gif, webp, bmp, heic), pdf, txt, md, csv, Word, Excel, OpenDocument, rtf; nothing that can run. Pictures show as small previews, so
+  a scan or photo from a phone can be dropped straight in. Taking a copy out deletes it; taking a link out leaves the file alone. When a chat
+  is filed in a project, Ask gives the assistant the project's instructions (they rank first) and the text of its `.txt`/`.md` documents; other
+  file types are listed by name only. Guests never get any of it. The assistant's safety rules (no doses) stay in force whatever the instructions say.
+* **One search** over cards, plans, guides, inventory, tasks, events, projects, and the **Shelf's books and manuals** (by title, author and
+  shelf; the Reading Corner, which comes from the `leisure` folders, is left out). Every word must match; a title match counts more.
+  Music, and the words inside books and loose files, are not in it.
+* **Suggested links**: while a task or event is being edited, words in its title and notes are compared with the titles of everything above.
+  A thing is offered when it shares two subject words (plural endings ignored, common words ignored), or its only subject word. The person
+  presses **Link** or **Not this one**; nothing is ever linked by itself, and a refused suggestion stays hidden until the program is closed.
 * **"What is connected"**: everything that points at a thing, and a project's own tasks, events and chats.
 * **The change log** (`user/changes.log`, newest 300 lines): what was added, changed, ticked or removed, shown on the Dashboard.
+
+## Why nothing needs an index or a number of its own
+
+Everything that can be linked already has a stable id (inventory item, plan, card, guide page, book, task, event, project). The search and the
+suggestions look at those entries when asked, so there is nothing to build, keep up to date or repair. Loose files (scans, notes, PDFs) are the
+exception: they have no id, so they are not searched or suggested; to connect one, add it to a project as a document. Searching inside every file
+would need a real index, which is a separate, larger job.
 
 ## Rules
 

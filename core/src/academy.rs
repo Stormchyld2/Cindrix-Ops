@@ -136,7 +136,7 @@ pub fn image_data_url(path: &Path) -> Option<String> {
     Some(format!("data:{};base64,{}", mime, base64(&bytes)))
 }
 
-pub(crate) fn base64(b: &[u8]) -> String {
+pub fn base64(b: &[u8]) -> String {
     const T: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     let mut out = String::with_capacity(b.len() / 3 * 4 + 4);
     for c in b.chunks(3) {

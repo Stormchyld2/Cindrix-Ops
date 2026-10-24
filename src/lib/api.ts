@@ -184,13 +184,13 @@ export type ModelChoice = { file: string; size: string; recommended: boolean };
 type StreamEvent = { replace: boolean; text: string };
 
 /** Ask a question. onText is called as the answer arrives: replace=true means swap everything shown. */
-export async function ask(question: string, onText: (text: string, replace: boolean) => void): Promise<Reply> {
+export async function ask(question: string, onText: (text: string, replace: boolean) => void, project = ''): Promise<Reply> {
   if (inShare) return askOverNetwork(question, onText);
   if (inTauri) {
     const { Channel } = await import('@tauri-apps/api/core');
     const ch = new Channel<StreamEvent>();
     ch.onmessage = (e) => onText(e.text, e.replace);
-    return call<Reply>('ask_stream', { question, onEvent: ch });
+    return call<Reply>('ask_stream', { question, project: project || null, onEvent: ch });
   }
   const text = 'Browser preview only. Run the desktop app to ask the library.';
   onText(text, true);
@@ -1165,7 +1165,8 @@ export async function shareRevoke(id: string): Promise<TrustedDevice[]> {
 export type Link = { kind: string; id: string };
 export type TaskRec = { id: string; title: string; due: string; done: string; project: string; every_days: number; notes: string; links: Link[] };
 export type EventRec = { id: string; title: string; date: string; time: string; repeat: string; project: string; notes: string; links: Link[] };
-export type ProjectRec = { id: string; name: string; status: string; notes: string; chats: string[] };
+export type ProjectDoc = { name: string; kind: 'link' | 'upload'; target: string; image: boolean; missing: boolean };
+export type ProjectRec = { id: string; name: string; status: string; notes: string; chats: string[]; instructions: string; docs: ProjectDoc[] };
 export type OpsData = { tasks: TaskRec[]; events: EventRec[]; projects: ProjectRec[]; today: string };
 export type AgendaItem = { date: string; kind: string; id: string; title: string; time: string; overdue: boolean; project: string };
 export type Hit = { kind: string; id: string; title: string; snippet: string };
@@ -1216,6 +1217,46 @@ export async function projectDelete(id: string): Promise<ProjectRec[]> {
   if (tauriHost) return call<ProjectRec[]>('project_delete', { id });
   memOps.projects = memOps.projects.filter((p) => p.id !== id);
   return structuredClone(memOps.projects);
+}
+export const MAX_PROJECT_DOCS = 10;
+export async function projectDocLink(project: string, name: string, path: string): Promise<ProjectRec[]> {
+  if (tauriHost) return call<ProjectRec[]>('project_doc_link', { project, name, path });
+  const p = memOps.projects.find((x) => x.id === project);
+  if (!p) throw new Error('That project is not known.');
+  if (p.docs.length >= MAX_PROJECT_DOCS) throw new Error('A project holds up to 10 documents. Take one out first.');
+  p.docs.push({ name: name || path, kind: 'link', target: path, image: /\.(png|jpe?g|gif|webp|bmp)$/i.test(path), missing: false });
+  return structuredClone(memOps.projects);
+}
+/** Copy a picked file into the project (sent as base64 text). */
+export async function projectDocUpload(project: string, file: File): Promise<ProjectRec[]> {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  const data = btoa(bin);
+  if (tauriHost) return call<ProjectRec[]>('project_doc_upload', { project, name: file.name, data });
+  const p = memOps.projects.find((x) => x.id === project);
+  if (!p) throw new Error('That project is not known.');
+  if (p.docs.length >= MAX_PROJECT_DOCS) throw new Error('A project holds up to 10 documents. Take one out first.');
+  p.docs.push({ name: file.name, kind: 'upload', target: file.name, image: /\.(png|jpe?g|gif|webp|bmp)$/i.test(file.name), missing: false });
+  return structuredClone(memOps.projects);
+}
+export async function projectDocRemove(project: string, index: number): Promise<ProjectRec[]> {
+  if (tauriHost) return call<ProjectRec[]>('project_doc_remove', { project, index });
+  const p = memOps.projects.find((x) => x.id === project);
+  if (p) p.docs.splice(index, 1);
+  return structuredClone(memOps.projects);
+}
+export async function projectDocOpen(project: string, index: number): Promise<void> {
+  if (tauriHost) return call<void>('project_doc_open', { project, index });
+}
+export async function projectDocImage(project: string, index: number): Promise<string | null> {
+  if (tauriHost) return call<string | null>('project_doc_image', { project, index });
+  return null;
+}
+/** Things the text seems to be about. Nothing is linked: the person decides. */
+export async function connectSuggest(text: string, kind: string, id: string, linked: Link[]): Promise<Hit[]> {
+  if (tauriHost) return call<Hit[]>('connect_suggest', { text, kind, id, linked });
+  return [];
 }
 export async function projectFileChat(project: string, chat: string): Promise<ProjectRec[]> {
   if (tauriHost) return call<ProjectRec[]>('project_file_chat', { project, chat });

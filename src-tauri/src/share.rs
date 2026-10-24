@@ -607,7 +607,7 @@ fn ask_sse(app: &tauri::AppHandle, req: &Request, stream: &mut TcpStream) {
         event(json!({ "error": "Others are asking right now. Wait a moment and ask again." }));
         return;
     };
-    let r = crate::ask_run(app, question, true, |e: StreamEvent| event(json!({ "replace": e.replace, "text": e.text })));
+    let r = crate::ask_run(app, question, true, None, |e: StreamEvent| event(json!({ "replace": e.replace, "text": e.text })));
     match r {
         Ok(dto) => event(json!({ "done": dto })),
         Err(e) => event(json!({ "error": e })),

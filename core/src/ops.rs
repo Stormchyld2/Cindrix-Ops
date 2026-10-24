@@ -250,6 +250,126 @@ pub struct Project {
     pub notes: String,
     /// Saved Ask chats that belong to this project (file names in `user/chats`).
     pub chats: Vec<String>,
+    /// Standing instructions for the assistant when a chat is about this project.
+    pub instructions: String,
+    /// Up to `MAX_DOCS` documents and pictures: linked where they are, or copied in.
+    pub docs: Vec<ProjectDoc>,
+}
+
+/// The most documents and pictures one project holds.
+pub const MAX_DOCS: usize = 10;
+
+/// One document or picture of a project.
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct ProjectDoc {
+    /// What it is called in the list.
+    pub name: String,
+    /// "link": `target` is a path to the file where it already is. "upload": `target` is the file's
+    /// name inside this project's own folder (`user/projects/<id>/`).
+    pub kind: String,
+    pub target: String,
+}
+
+/// File types a project may hold or link to: pictures (including phone photos and scans), PDFs,
+/// text and office documents. Nothing that can run.
+const DOC_TYPES: &[&str] = &["png", "jpg", "jpeg", "gif", "webp", "bmp", "heic", "pdf", "txt", "md", "csv", "doc", "docx", "xls", "xlsx", "odt", "ods", "rtf"];
+const IMAGE_TYPES: &[&str] = &["png", "jpg", "jpeg", "gif", "webp", "bmp"];
+
+fn ext_lower(name: &str) -> String {
+    name.rsplit_once('.').map(|(_, e)| e.to_lowercase()).unwrap_or_default()
+}
+pub fn doc_type_ok(name: &str) -> bool {
+    DOC_TYPES.contains(&ext_lower(name).as_str())
+}
+/// A picture the screen can show itself.
+pub fn doc_is_image(name: &str) -> bool {
+    IMAGE_TYPES.contains(&ext_lower(name).as_str())
+}
+
+/// A plain file name for something copied into a project: no folders, nothing odd, a known type.
+/// Spaces are kept; anything that cannot be in a Windows file name is replaced.
+pub fn safe_upload_name(name: &str) -> Option<String> {
+    let base = name.rsplit(['/', '\\']).next().unwrap_or("").trim();
+    let cleaned: String = base.chars().map(|c| if c.is_control() || "<>:\"|?*".contains(c) { '_' } else { c }).collect();
+    let cleaned = cleaned.trim().trim_start_matches('.').to_string();
+    if cleaned.is_empty() || cleaned.chars().count() > 90 || !doc_type_ok(&cleaned) {
+        return None;
+    }
+    Some(cleaned)
+}
+
+/// `name` if no stored file has it yet; otherwise `name (2)`, `name (3)`... before the extension.
+pub fn unique_upload_name(existing: &[String], name: &str) -> String {
+    if !existing.iter().any(|e| e.eq_ignore_ascii_case(name)) {
+        return name.to_string();
+    }
+    let (stem, ext) = name.rsplit_once('.').map(|(a, b)| (a.to_string(), format!(".{}", b))).unwrap_or((name.to_string(), String::new()));
+    (2..).map(|n| format!("{} ({}){}", stem, n, ext)).find(|c| !existing.iter().any(|e| e.eq_ignore_ascii_case(c))).unwrap_or_else(|| name.to_string())
+}
+
+/// Add a document to a project. A link is a path on this computer or the drive (never a web
+/// address: the program does not go online). Refused when the project already holds ten.
+pub fn add_doc(p: &mut Project, kind: &str, name: &str, target: &str) -> Result<(), String> {
+    if p.docs.len() >= MAX_DOCS {
+        return Err(format!("A project holds up to {} documents. Take one out first.", MAX_DOCS));
+    }
+    let target = target.trim();
+    let shown = name.trim();
+    match kind {
+        "link" => {
+            let lower = target.to_lowercase();
+            if target.is_empty() || lower.starts_with("http:") || lower.starts_with("https:") || lower.starts_with("ftp:") || lower.starts_with("file:") || lower.starts_with("\\\\") {
+                return Err("Type the path of a file on this computer or the drive, such as D:\\Scans\\deed.pdf. Web addresses are not used because the program stays offline.".into());
+            }
+            if target.contains(['\n', '\t', '|']) || !doc_type_ok(target) {
+                return Err("That kind of file cannot be added. Pictures, PDFs, text and office documents can.".into());
+            }
+            let label = if shown.is_empty() { target.rsplit(['/', '\\']).next().unwrap_or(target).to_string() } else { shown.to_string() };
+            p.docs.push(ProjectDoc { name: clean_doc_text(&label), kind: "link".into(), target: target.to_string() });
+        }
+        "upload" => {
+            let file = safe_upload_name(target).ok_or("That kind of file cannot be added. Pictures, PDFs, text and office documents can.")?;
+            if file != target {
+                return Err("That is not a plain file name.".into());
+            }
+            let label = if shown.is_empty() { file.clone() } else { shown.to_string() };
+            p.docs.push(ProjectDoc { name: clean_doc_text(&label), kind: "upload".into(), target: file });
+        }
+        _ => return Err("Choose a link or an upload.".into()),
+    }
+    Ok(())
+}
+
+fn clean_doc_text(s: &str) -> String {
+    s.chars().map(|c| if c.is_control() || c == '|' { ' ' } else { c }).collect::<String>().trim().chars().take(90).collect()
+}
+
+/// The project's standing instructions as a passage for the assistant (nothing when there are none).
+/// It ranks first. The assistant's safety rules stay in force whatever the instructions say.
+pub fn instructions_passage(p: &Project) -> Option<crate::retrieval::Passage> {
+    let text = p.instructions.trim();
+    if text.is_empty() {
+        return None;
+    }
+    let docs: Vec<&str> = p.docs.iter().map(|d| d.name.as_str()).collect();
+    let mut t = format!("Instructions from the person for the project \"{}\": {}", p.name, text);
+    if !docs.is_empty() {
+        t.push_str(&format!("\nDocuments kept with this project: {}.", docs.join(", ")));
+    }
+    Some(crate::retrieval::Passage { source: "Project".into(), heading: format!("Project instructions: {}", p.name), text: t, score: 100.0, link: String::new() })
+}
+
+/// Take a document out of the list. The caller deletes the stored copy of an upload.
+pub fn remove_doc(p: &mut Project, index: usize) -> Option<ProjectDoc> {
+    if index < p.docs.len() { Some(p.docs.remove(index)) } else { None }
+}
+
+// A document line is "kind~name~target" with % escapes for the separators, joined by "|".
+fn doc_enc(s: &str) -> String {
+    s.replace('%', "%25").replace('|', "%7C").replace('~', "%7E")
+}
+fn doc_dec(s: &str) -> String {
+    s.replace("%7E", "~").replace("%7C", "|").replace("%25", "%")
 }
 
 pub fn parse_projects(text: &str) -> Vec<Project> {
@@ -262,15 +382,24 @@ pub fn parse_projects(text: &str) -> Vec<Project> {
                 return None;
             }
             let chats = get(4).split('|').filter(|c| !c.is_empty() && c.ends_with(".txt") && !c.contains(['/', '\\', ':'])).map(|c| c.to_string()).collect();
-            Some(Project { id: f[0].to_string(), name: unesc(f[1]), status: if get(2) == "done" { "done".into() } else { "open".into() }, notes: unesc(get(3)), chats })
+            let docs = get(6)
+                .split('|')
+                .filter_map(|d| {
+                    let x: Vec<&str> = d.split('~').collect();
+                    if x.len() == 3 && (x[0] == "link" || x[0] == "upload") && !x[2].is_empty() { Some(ProjectDoc { kind: x[0].to_string(), name: doc_dec(x[1]), target: doc_dec(x[2]) }) } else { None }
+                })
+                .take(MAX_DOCS)
+                .collect();
+            Some(Project { id: f[0].to_string(), name: unesc(f[1]), status: if get(2) == "done" { "done".into() } else { "open".into() }, notes: unesc(get(3)), chats, instructions: unesc(get(5)), docs })
         })
         .collect()
 }
 
 pub fn serialize_projects(v: &[Project]) -> String {
-    let mut o = String::from("# id\tname\tstatus\tnotes\tchats\n");
+    let mut o = String::from("# id\tname\tstatus\tnotes\tchats\tinstructions\tdocs\n");
     for p in v {
-        o.push_str(&format!("{}\t{}\t{}\t{}\t{}\n", p.id, esc(&p.name), p.status, esc(&p.notes), p.chats.join("|")));
+        let docs: Vec<String> = p.docs.iter().map(|d| format!("{}~{}~{}", d.kind, doc_enc(&d.name), doc_enc(&d.target))).collect();
+        o.push_str(&format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\n", p.id, esc(&p.name), p.status, esc(&p.notes), p.chats.join("|"), esc(&p.instructions), docs.join("|")));
     }
     o
 }
@@ -436,6 +565,67 @@ pub fn search(entries: &[Entry], query: &str, limit: usize) -> Vec<Hit> {
     hits
 }
 
+/// Words too common to show that two things are about the same subject.
+const COMMON: &[&str] = &[
+    "about", "after", "again", "also", "back", "before", "buy", "call", "check", "clean", "come", "could", "does", "done", "each", "every", "find", "from",
+    "gather", "get", "give", "have", "home", "house", "into", "keep", "know", "look", "make", "more", "need", "next", "only", "other", "over", "plan",
+    "please", "prepare", "put", "ready", "remember", "review", "set", "should", "some", "start", "take", "task", "test", "that", "their", "then", "there",
+    "these", "thing", "things", "this", "time", "update", "using", "want", "week", "what", "when", "where", "which", "will", "with", "work", "would", "year", "your",
+];
+
+/// A word reduced so that "batteries"/"battery" and "radios"/"radio" compare equal.
+fn stem(w: &str) -> String {
+    let w = w.to_lowercase();
+    if let Some(x) = w.strip_suffix("ies") {
+        if x.len() >= 3 { return format!("{}y", x); }
+    }
+    if let Some(x) = w.strip_suffix("es") {
+        if (x.len() >= 3 && (x.ends_with('s') || x.ends_with('x') || x.ends_with("ch") || x.ends_with("sh"))) || (x.len() >= 4 && x.ends_with('o')) { return x.to_string(); }
+    }
+    if let Some(x) = w.strip_suffix('s') {
+        if x.len() >= 3 && !x.ends_with('s') { return x.to_string(); }
+    }
+    w
+}
+
+fn subject_words(s: &str) -> Vec<String> {
+    let mut v: Vec<String> = words(s).into_iter().filter(|w| w.chars().count() >= 4 && !COMMON.contains(&w.as_str())).map(|w| stem(&w)).collect();
+    v.sort();
+    v.dedup();
+    v
+}
+
+/// Things the words of `text` are probably about, to offer as links. Nothing is linked by this:
+/// the person decides. An entry is offered when its title shares two subject words with the text,
+/// or shares its only subject word (a title like "Generator"). Entries in `skip` (what is
+/// already linked, and the thing itself) are left out. The best come first.
+pub fn suggest_links(text: &str, entries: &[Entry], skip: &[(String, String)], limit: usize) -> Vec<Hit> {
+    let mine = subject_words(text);
+    if mine.is_empty() {
+        return Vec::new();
+    }
+    let mut hits: Vec<Hit> = Vec::new();
+    for e in entries {
+        if skip.iter().any(|(k, i)| *k == e.kind && *i == e.id) {
+            continue;
+        }
+        let theirs = subject_words(&e.title);
+        if theirs.is_empty() {
+            continue;
+        }
+        let shared = theirs.iter().filter(|w| mine.contains(w)).count();
+        if shared == 0 || (shared == 1 && theirs.len() > 1) {
+            continue;
+        }
+        // more shared words, and more of the title covered, rank higher
+        let score = (shared * 10 + shared * 10 / theirs.len()) as u32;
+        hits.push(Hit { kind: e.kind.clone(), id: e.id.clone(), title: e.title.clone(), snippet: String::new(), score });
+    }
+    hits.sort_by(|a, b| b.score.cmp(&a.score).then(a.title.to_lowercase().cmp(&b.title.to_lowercase())));
+    hits.truncate(limit);
+    hits
+}
+
 fn snippet_of(text: &str, word: &str) -> String {
     let flat: String = text.split_whitespace().collect::<Vec<_>>().join(" ");
     let low = flat.to_lowercase();
@@ -572,7 +762,7 @@ mod tests {
             Task { id: "t2".into(), title: "In project".into(), project: "p1".into(), ..Default::default() },
         ];
         let events = vec![Event { id: "e1".into(), title: "Swap".into(), date: "2026-10-30".into(), links: vec![Link { kind: "item".into(), id: "5".into() }], ..Default::default() }];
-        let projects = vec![Project { id: "p1".into(), name: "Winter".into(), status: "open".into(), notes: String::new(), chats: vec!["2026-10-01 plan.txt".into()] }];
+        let projects = vec![Project { id: "p1".into(), name: "Winter".into(), status: "open".into(), notes: String::new(), chats: vec!["2026-10-01 plan.txt".into()], ..Default::default() }];
         let r = related("item", "5", &tasks, &events, &projects);
         assert_eq!(r.iter().map(|x| x.title.as_str()).collect::<Vec<_>>(), vec!["Swap", "Buy filters"]);
         let p = related("project", "p1", &tasks, &events, &projects);
@@ -584,8 +774,8 @@ mod tests {
     #[test]
     fn projects_round_trip_and_a_chat_belongs_to_one_project() {
         let mut v = vec![
-            Project { id: "p1".into(), name: "Winter prep".into(), status: "open".into(), notes: "a\nb".into(), chats: vec![] },
-            Project { id: "p2".into(), name: "Garden".into(), status: "done".into(), notes: String::new(), chats: vec![] },
+            Project { id: "p1".into(), name: "Winter prep".into(), status: "open".into(), notes: "a\nb".into(), chats: vec![], instructions: "Answer in short steps.\nAsk before assuming.".into(), docs: vec![ProjectDoc { kind: "link".into(), name: "Deed | scan ~1".into(), target: "D:\\Scans\\deed ~1.pdf".into() }, ProjectDoc { kind: "upload".into(), name: "Photo".into(), target: "roof.jpg".into() }] },
+            Project { id: "p2".into(), name: "Garden".into(), status: "done".into(), notes: String::new(), chats: vec![], ..Default::default() },
         ];
         assert!(file_chat(&mut v, "p1", "chat one.txt"));
         assert!(file_chat(&mut v, "p2", "chat one.txt"));
@@ -635,5 +825,103 @@ mod tests {
         assert_eq!(r[0].2, "t9");
         assert_eq!(r[1].2, "t8");
         assert!(change_line(1, "a\tb", "i\nd", "x").lines().count() == 1);
+    }
+
+    #[test]
+    fn project_documents_are_limited_checked_and_saved() {
+        let mut p = Project { id: "p1".into(), name: "Roof".into(), status: "open".into(), ..Default::default() };
+        add_doc(&mut p, "link", "", "D:\\Scans\\deed.pdf").unwrap();
+        assert_eq!(p.docs[0].name, "deed.pdf");
+        add_doc(&mut p, "link", "Quote", "/home/me/quote.docx").unwrap();
+        add_doc(&mut p, "upload", "Roof photo", "roof.jpg").unwrap();
+        // not: web addresses, programs, folders in an upload name, odd link characters, an unknown kind
+        assert!(add_doc(&mut p, "link", "x", "https://example.com/a.pdf").is_err());
+        assert!(add_doc(&mut p, "link", "x", "file:///c:/a.pdf").is_err());
+        assert!(add_doc(&mut p, "link", "x", "\\\\server\\share\\a.pdf").is_err());
+        assert!(add_doc(&mut p, "link", "x", "C:\\tools\\run.exe").is_err());
+        assert!(add_doc(&mut p, "link", "x", "C:\\a|b.pdf").is_err());
+        assert!(add_doc(&mut p, "upload", "x", "../roof.jpg").is_err());
+        assert!(add_doc(&mut p, "upload", "x", "setup.bat").is_err());
+        assert!(add_doc(&mut p, "other", "x", "a.pdf").is_err());
+        // ten at most
+        for i in 0..7 {
+            add_doc(&mut p, "upload", "", &format!("scan{}.png", i)).unwrap();
+        }
+        assert_eq!(p.docs.len(), MAX_DOCS);
+        assert!(add_doc(&mut p, "upload", "", "one-too-many.png").unwrap_err().contains("up to 10"));
+        // saved and read back, awkward characters and all
+        p.instructions = "Short answers.\nAsk first.".into();
+        p.docs[0].name = "Deed | scan ~1 100%".into();
+        let back = parse_projects(&serialize_projects(&[p.clone()]));
+        assert_eq!(back, vec![p.clone()]);
+        let gone = remove_doc(&mut p, 1).unwrap();
+        assert_eq!(gone.name, "Quote");
+        assert_eq!(p.docs.len(), 9);
+        assert!(remove_doc(&mut p, 50).is_none());
+        // an older file with five columns still reads
+        let old = parse_projects("p9\tOld\topen\tn\ta.txt\n");
+        assert_eq!((old[0].instructions.as_str(), old[0].docs.len(), old[0].chats.len()), ("", 0, 1));
+    }
+
+    #[test]
+    fn project_instructions_become_a_passage_only_when_there_are_some() {
+        let mut p = Project { id: "p1".into(), name: "Cabin move".into(), ..Default::default() };
+        assert!(instructions_passage(&p).is_none());
+        p.instructions = "  We are 4 adults. Use metric.  ".into();
+        add_doc(&mut p, "link", "Deed", "D:\\Scans\\deed.pdf").unwrap();
+        let ps = instructions_passage(&p).unwrap();
+        assert!(ps.text.contains("We are 4 adults. Use metric."));
+        assert!(ps.text.contains("Deed"));
+        assert!(ps.heading.contains("Cabin move"));
+    }
+
+    #[test]
+    fn upload_names_are_plain_and_never_clash() {
+        assert_eq!(safe_upload_name("C:\\Users\\me\\Roof Photo.JPG").as_deref(), Some("Roof Photo.JPG"));
+        assert_eq!(safe_upload_name("../../etc/passwd.txt").as_deref(), Some("passwd.txt"));
+        assert_eq!(safe_upload_name("a<b>c?.pdf").as_deref(), Some("a_b_c_.pdf"));
+        assert_eq!(safe_upload_name(".hidden.pdf").as_deref(), Some("hidden.pdf"));
+        assert!(safe_upload_name("virus.exe").is_none());
+        assert!(safe_upload_name("noextension").is_none());
+        assert!(safe_upload_name("").is_none());
+        let have = vec!["scan.jpg".to_string(), "Scan (2).jpg".to_string()];
+        assert_eq!(unique_upload_name(&have, "other.jpg"), "other.jpg");
+        assert_eq!(unique_upload_name(&have, "SCAN.jpg"), "SCAN (3).jpg");
+        assert!(doc_is_image("a.PNG") && !doc_is_image("a.pdf") && doc_type_ok("a.heic"));
+    }
+
+    #[test]
+    fn links_are_suggested_from_shared_subject_words_and_never_made() {
+        let e = |kind: &str, id: &str, title: &str| Entry { kind: kind.into(), id: id.into(), title: title.into(), text: String::new() };
+        let entries = vec![
+            e("plan", "water-storage", "Water storage"),
+            e("card", "boil-water", "Boil water"),
+            e("item", "12", "Stored water barrels"),
+            e("plan", "smoke", "Check smoke alarms"),
+            e("guide", "crop-guides/tomatoes", "Tomatoes"),
+            e("plan", "generator", "Generator"),
+            e("task", "t1", "Fill water storage"),
+        ];
+        let skip = vec![("task".to_string(), "t1".to_string())];
+        let h = suggest_links("Fill the water storage containers before winter", &entries, &skip, 5);
+        let ids: Vec<&str> = h.iter().map(|x| x.id.as_str()).collect();
+        assert_eq!(ids[0], "water-storage", "{:?}", h); // two shared subject words
+        assert!(!ids.contains(&"smoke") && !ids.contains(&"t1"), "{:?}", h); // "check" is too common; the thing itself is skipped
+        assert!(!ids.contains(&"boil-water"), "{:?}", h); // one shared word of two is not enough
+        // a single-word title that matches is offered, plurals count as the same word
+        let h2 = suggest_links("Service the generators and buy tomato seeds", &entries, &[], 5);
+        let ids2: Vec<&str> = h2.iter().map(|x| x.id.as_str()).collect();
+        assert!(ids2.contains(&"generator") && ids2.contains(&"crop-guides/tomatoes"), "{:?}", h2);
+        // already linked things are not offered again; the limit is kept; nothing common gives nothing
+        let h3 = suggest_links("Fill the water storage", &entries, &[("plan".into(), "water-storage".into())], 5);
+        assert!(!h3.iter().any(|x| x.id == "water-storage"));
+        assert!(suggest_links("Check the plan", &entries, &[], 5).is_empty());
+        assert_eq!(suggest_links("water storage generator tomatoes", &entries, &[], 1).len(), 1);
+        assert_eq!(stem("batteries"), "battery");
+        assert_eq!(stem("radios"), "radio");
+        assert_eq!(stem("boxes"), "box");
+        assert_eq!(stem("glass"), "glass");
+        assert_eq!(stem("tomatoes"), "tomato");
+        assert_eq!(stem("shoes"), "shoe");
     }
 }

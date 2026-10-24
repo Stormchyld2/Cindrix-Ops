@@ -2,7 +2,7 @@
   // Projects: a named piece of work (Winter prep, The garden, Move to the cabin). It gathers its own tasks, events and
   // saved Ask chats, and links to the plans, items and guides it is about. Notes live in user/projects.txt.
   import { onMount } from 'svelte';
-  import { opsLoad, projectSave, projectDelete, taskSave, taskDone, projectFileChat, chatList, type ProjectRec, type TaskRec, type EventRec } from '../lib/api';
+  import { opsLoad, projectSave, projectDelete, taskSave, taskDone, projectFileChat, chatList, projectDocLink, projectDocUpload, projectDocRemove, projectDocOpen, projectDocImage, MAX_PROJECT_DOCS, type ProjectRec, type TaskRec, type EventRec } from '../lib/api';
   import Connected from '../lib/Connected.svelte';
   import { nav, openLink } from '../lib/nav.svelte';
 
@@ -16,6 +16,11 @@
   let newName = $state('');
   let quick = $state('');
   let draft: ProjectRec | null = $state(null);
+  let tab: 'work' | 'settings' = $state('work');
+  let linkName = $state('');
+  let linkPath = $state('');
+  let thumbs: Record<string, string> = $state({});
+  let busy = $state(false);
 
   async function load() {
     try {
@@ -30,11 +35,49 @@
   $effect(() => { const o = nav.open; if (o?.kind === 'project') want = o.id; });
   $effect(() => { if (want && projects.some((p) => p.id === want)) { choose(want); want = null; } });
 
-  function choose(id: string) { selected = id; const p = projects.find((x) => x.id === id); draft = p ? structuredClone(p) : null; }
+  function choose(id: string) { selected = id; tab = 'work'; const p = projects.find((x) => x.id === id); draft = p ? structuredClone(p) : null; }
   async function create() {
     if (!newName.trim()) { note = 'Give the project a name first.'; return; }
-    try { projects = await projectSave({ id: '', name: newName, status: 'open', notes: '', chats: [] }); newName = ''; note = ''; const p = projects[projects.length - 1]; choose(p.id); } catch (e) { note = String(e); }
+    try { projects = await projectSave({ id: '', name: newName, status: 'open', notes: '', chats: [], instructions: '', docs: [] }); newName = ''; note = ''; const p = projects[projects.length - 1]; choose(p.id); } catch (e) { note = String(e); }
   }
+  // Documents are saved by their own buttons; only the text fields go with Save.
+  function keepDocs(list: ProjectRec[]) {
+    projects = list;
+    const p = list.find((x) => x.id === selected);
+    if (p && draft) draft.docs = structuredClone(p.docs);
+    loadThumbs();
+  }
+  async function loadThumbs() {
+    const p = draft; if (!p) return;
+    for (let i = 0; i < p.docs.length; i++) {
+      const d = p.docs[i]; const key = p.id + ':' + d.kind + ':' + d.target;
+      if (d.image && !d.missing && !(key in thumbs)) { try { const u = await projectDocImage(p.id, i); if (u) thumbs[key] = u; } catch { /* no preview */ } }
+    }
+  }
+  const thumb = (d: { kind: string; target: string }) => (draft ? thumbs[draft.id + ':' + d.kind + ':' + d.target] : undefined);
+  async function addLink() {
+    if (!draft) return;
+    try { keepDocs(await projectDocLink(draft.id, linkName, linkPath)); linkName = ''; linkPath = ''; note = 'Linked.'; } catch (e) { note = String(e); }
+  }
+  async function addFiles(ev: Event) {
+    const input = ev.currentTarget as HTMLInputElement;
+    const files = Array.from(input.files ?? []);
+    input.value = '';
+    if (!draft || !files.length) return;
+    busy = true;
+    for (const f of files) {
+      try { keepDocs(await projectDocUpload(draft.id, f)); note = 'Added.'; } catch (e) { note = String(e); break; }
+    }
+    busy = false;
+  }
+  async function dropDoc(i: number) {
+    if (!draft) return;
+    const d = draft.docs[i];
+    if (!confirm(d.kind === 'upload' ? 'Take "' + d.name + '" out? The copy kept in this project is deleted.' : 'Take "' + d.name + '" out of this project? The file itself is not touched.')) return;
+    try { keepDocs(await projectDocRemove(draft.id, i)); } catch (e) { note = String(e); }
+  }
+  async function openDoc(i: number) { if (!draft) return; try { await projectDocOpen(draft.id, i); } catch (e) { note = String(e); } }
+  $effect(() => { if (tab === 'settings') loadThumbs(); });
   async function saveDraft() { if (!draft) return; try { projects = await projectSave(draft); note = 'Saved.'; } catch (e) { note = String(e); } }
   async function remove() {
     if (!draft || !confirm('Delete the project "' + draft.name + '"? Its tasks, events and chats stay; they just stop belonging to it.')) return;
@@ -88,6 +131,38 @@
         <div class="row"><input class="input grow" bind:value={draft.name} aria-label="Project name" />
           <select class="input" bind:value={draft.status} aria-label="Status"><option value="open">Open</option><option value="done">Finished</option></select>
           <button class="btn primary" onclick={saveDraft}>Save</button></div>
+        <div class="tabs" role="tablist">
+          <button role="tab" aria-selected={tab === 'work'} class:on={tab === 'work'} onclick={() => (tab = 'work')}>Work</button>
+          <button role="tab" aria-selected={tab === 'settings'} class:on={tab === 'settings'} title="Instructions for the assistant and the documents that belong to this project" onclick={() => (tab = 'settings')}>Settings ({draft.docs.length} documents)</button>
+        </div>
+        {#if tab === 'settings'}
+          <h2>Instructions</h2>
+          <p class="muted small">Standing instructions for the assistant whenever you ask about this project, such as “We are 4 adults and 2 children. Keep answers short. Use metric.” They are also used to suggest links. The assistant still never gives medicine doses.</p>
+          <textarea class="input" rows="6" maxlength="4000" placeholder="Instructions for this project" bind:value={draft.instructions} aria-label="Project instructions"></textarea>
+          <div class="row"><button class="btn primary" onclick={saveDraft}>Save instructions</button></div>
+
+          <h2>Documents and pictures ({draft.docs.length} of {MAX_PROJECT_DOCS})</h2>
+          <p class="muted small">Link a file where it already is, or add a copy to this project (for a scan or photo from a phone). Pictures, PDFs, text and office files. Copies up to 25 MB.</p>
+          <ul class="docs">
+            {#each draft.docs as d, i (d.kind + ':' + d.target)}
+              <li class:gone={d.missing}>
+                {#if thumb(d)}<button class="pic" title="Open this picture" onclick={() => openDoc(i)}><img src={thumb(d)} alt={d.name} /></button>{/if}
+                <div class="grow">
+                  <button class="lnk" title="Open with the program this computer uses for it" onclick={() => openDoc(i)}>{d.name}</button>
+                  <div class="muted small">{d.kind === 'upload' ? 'Copy kept in this project' : 'Linked: ' + d.target}{d.missing ? ' · not found. Move it back or link it again.' : ''}</div>
+                </div>
+                <button class="btn" onclick={() => dropDoc(i)}>Take out</button>
+              </li>
+            {/each}
+          </ul>
+          {#if !draft.docs.length}<p class="muted small">Nothing added yet.</p>{/if}
+          {#if draft.docs.length < MAX_PROJECT_DOCS}
+            <div class="row"><input class="input" placeholder="Name (optional)" bind:value={linkName} aria-label="Name for the linked file" /><input class="input grow" placeholder="Path, such as D:\Scans\deed.pdf" bind:value={linkPath} onkeydown={(e) => e.key === 'Enter' && addLink()} aria-label="Path of the file to link" /><button class="btn" onclick={addLink}>Link it</button></div>
+            <label class="btn filebtn" title="Choose pictures or documents to keep a copy of in this project">{busy ? 'Adding…' : 'Add a file…'}<input type="file" multiple accept=".png,.jpg,.jpeg,.gif,.webp,.bmp,.heic,.pdf,.txt,.md,.csv,.doc,.docx,.xls,.xlsx,.odt,.ods,.rtf" onchange={addFiles} /></label>
+          {:else}
+            <p class="muted small">This project holds {MAX_PROJECT_DOCS} documents. Take one out to add another.</p>
+          {/if}
+        {:else}
         <textarea class="input" rows="4" placeholder="Notes: what is this for, what must be true when it is finished?" bind:value={draft.notes} aria-label="Project notes"></textarea>
 
         <h2>Tasks</h2>
@@ -114,6 +189,7 @@
         <h2>Connected to</h2>
         <p class="muted small">Everything its tasks and events link to. Add a link from any task or event with “+ Link”.</p>
         <Connected links={deps} />
+        {/if}
         <div class="row end"><button class="btn" onclick={remove}>Delete project</button></div>
       </div>
     {:else}
@@ -138,6 +214,16 @@
   .lnk { border: 0; background: transparent; padding: 0; color: var(--link); text-align: left; }
   .x { border: 0; background: transparent; color: var(--muted); }
   .small { font-size: 13px; }
+  .tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--line); }
+  .tabs button { border: 0; background: transparent; padding: 6px 12px; border-bottom: 2px solid transparent; }
+  .tabs button.on { border-bottom-color: var(--blue); color: var(--blue); }
+  .docs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .docs li { display: flex; gap: 10px; align-items: center; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; background: var(--panel2); }
+  .docs li.gone { opacity: .7; }
+  .pic { border: 0; padding: 0; background: transparent; }
+  .pic img { width: 56px; height: 56px; object-fit: cover; border-radius: 6px; display: block; }
+  .filebtn { position: relative; align-self: flex-start; cursor: pointer; }
+  .filebtn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
   .end { justify-content: flex-end; }
   @media (max-width: 860px) { .wrap { grid-template-columns: 1fr; } }
 </style>

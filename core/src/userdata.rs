@@ -123,6 +123,54 @@ impl UserDir {
     pub fn save_projects(&self, v: &[Project]) -> Result<(), String> {
         self.write_text("projects.txt", &ops::serialize_projects(v))
     }
+    // ----- documents copied into a project (user/projects/<id>/) -----
+
+    /// The most one copied document may weigh.
+    pub const MAX_UPLOAD: usize = 25_000_000;
+
+    fn project_folder(&self, id: &str) -> Result<PathBuf, String> {
+        let ok = id.len() > 1 && id.len() < 12 && id.starts_with('p') && id[1..].chars().all(|c| c.is_ascii_digit());
+        if !ok {
+            return Err("There is no such project.".into());
+        }
+        Ok(self.root.join("projects").join(id))
+    }
+    /// The names of the files stored for a project.
+    pub fn upload_names(&self, id: &str) -> Vec<String> {
+        let Ok(d) = self.project_folder(id) else { return vec![] };
+        let mut v: Vec<String> = fs::read_dir(d).map(|rd| rd.flatten().filter(|e| e.path().is_file()).map(|e| e.file_name().to_string_lossy().to_string()).collect()).unwrap_or_default();
+        v.sort();
+        v
+    }
+    /// Copy a document into the project's folder. Returns the name it was stored under (a number is
+    /// added when that name is taken, so nothing is ever overwritten).
+    pub fn save_upload(&self, id: &str, name: &str, bytes: &[u8]) -> Result<String, String> {
+        let dir = self.project_folder(id)?;
+        let file = ops::safe_upload_name(name).ok_or("That kind of file cannot be added. Pictures, PDFs, text and office documents can.")?;
+        if bytes.is_empty() {
+            return Err("That file is empty.".into());
+        }
+        if bytes.len() > Self::MAX_UPLOAD {
+            return Err("That file is too big (the limit is 25 MB). Link to it instead.".into());
+        }
+        let stored = ops::unique_upload_name(&self.upload_names(id), &file);
+        fsio::write_atomic(&dir.join(&stored), bytes).map_err(|e| format!("Could not save the file: {}", e))?;
+        Ok(stored)
+    }
+    /// Where a stored document is, when it exists. The name must be a plain file name.
+    pub fn upload_path(&self, id: &str, stored: &str) -> Option<PathBuf> {
+        if stored.contains(['/', '\\']) || stored.starts_with('.') {
+            return None;
+        }
+        let p = self.project_folder(id).ok()?.join(stored);
+        if p.is_file() { Some(p) } else { None }
+    }
+    pub fn delete_upload(&self, id: &str, stored: &str) {
+        if let Some(p) = self.upload_path(id, stored) {
+            let _ = fs::remove_file(p);
+        }
+    }
+
     /// Add one line to the change log (best effort: a failure here never stops the change itself).
     pub fn note_change(&self, now_secs: u64, kind: &str, id: &str, action: &str) {
         let mut text = self.read_text("changes.log").unwrap_or_default();
@@ -260,6 +308,28 @@ mod tests {
         u.note_change(10, "task", "t1", "added");
         u.note_change(11, "task", "t2", "added");
         assert_eq!(u.changes(5)[0].2, "t2");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn copied_documents_stay_in_the_project_folder_and_never_overwrite() {
+        let dir = std::env::temp_dir().join(format!("cindrix-ud-up-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        let u = UserDir::new(&dir);
+        let a = u.save_upload("p1", "C:\\phone\\Roof.JPG", b"one").unwrap();
+        let b = u.save_upload("p1", "Roof.JPG", b"two").unwrap();
+        assert_eq!((a.as_str(), b.as_str()), ("Roof.JPG", "Roof (2).JPG"));
+        assert_eq!(fs::read(u.upload_path("p1", &a).unwrap()).unwrap(), b"one");
+        assert_eq!(u.upload_names("p1"), vec!["Roof (2).JPG", "Roof.JPG"]);
+        assert!(u.upload_path("p2", &a).is_none()); // another project's folder
+        assert!(u.upload_path("p1", "../tasks.txt").is_none());
+        assert!(u.save_upload("../x", "a.pdf", b"x").is_err());
+        assert!(u.save_upload("p1", "run.exe", b"x").is_err());
+        assert!(u.save_upload("p1", "empty.pdf", b"").is_err());
+        assert!(u.save_upload("p1", "big.pdf", &vec![0u8; UserDir::MAX_UPLOAD + 1]).is_err());
+        u.delete_upload("p1", &a);
+        assert!(u.upload_path("p1", &a).is_none());
+        assert!(u.upload_path("p1", &b).is_some());
         let _ = fs::remove_dir_all(&dir);
     }
 }

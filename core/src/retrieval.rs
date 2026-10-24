@@ -95,9 +95,36 @@ pub fn search(dir: &Path, question: &str, limit: usize) -> Vec<Passage> {
     found
 }
 
+/// The relevant sections of one piece of text (a document the person keeps), best first.
+pub fn search_text(source: &str, text: &str, question: &str, limit: usize) -> Vec<Passage> {
+    let q = tokens(question);
+    if q.is_empty() {
+        return Vec::new();
+    }
+    let mut found: Vec<Passage> = sections(text)
+        .into_iter()
+        .filter_map(|(head, body)| {
+            let sc = score(&q, &head, &body);
+            (sc >= MIN_SCORE).then(|| Passage { source: source.to_string(), heading: head, text: body, score: sc, link: String::new() })
+        })
+        .collect();
+    found.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+    found.truncate(limit);
+    found
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn one_text_is_searched_by_section() {
+        let t = "# Pantry\nrice rice rice beans\n# Tools\nhammer";
+        let r = search_text("list.txt", t, "how much rice beans", 3);
+        assert_eq!(r.len(), 1);
+        assert_eq!(r[0].heading, "Pantry");
+        assert!(search_text("x", t, "", 3).is_empty());
+    }
 
     #[test]
     fn splits_sections() {

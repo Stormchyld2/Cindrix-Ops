@@ -43,6 +43,21 @@ pub struct ProjectDto {
     status: String,
     notes: String,
     chats: Vec<String>,
+    #[serde(default)]
+    instructions: String,
+    /// Read-only here: documents are added and removed with their own commands.
+    #[serde(default, skip_deserializing)]
+    docs: Vec<DocDto>,
+}
+
+#[derive(Serialize, Clone)]
+pub struct DocDto {
+    name: String,
+    kind: String,
+    target: String,
+    image: bool,
+    /// A linked file that is no longer where it was.
+    missing: bool,
 }
 
 #[derive(Serialize)]
@@ -100,7 +115,19 @@ fn event_out(e: &Event) -> EventDto {
     EventDto { id: e.id.clone(), title: e.title.clone(), date: e.date.clone(), time: e.time.clone(), repeat: e.repeat.clone(), project: e.project.clone(), notes: e.notes.clone(), links: links_out(&e.links) }
 }
 fn project_out(p: &Project) -> ProjectDto {
-    ProjectDto { id: p.id.clone(), name: p.name.clone(), status: p.status.clone(), notes: p.notes.clone(), chats: p.chats.clone() }
+    let u = crate::user();
+    let docs = p
+        .docs
+        .iter()
+        .map(|d| DocDto {
+            name: d.name.clone(),
+            kind: d.kind.clone(),
+            target: d.target.clone(),
+            image: core_ops::doc_is_image(&d.target),
+            missing: if d.kind == "upload" { u.upload_path(&p.id, &d.target).is_none() } else { !std::path::Path::new(&d.target).is_file() },
+        })
+        .collect();
+    ProjectDto { id: p.id.clone(), name: p.name.clone(), status: p.status.clone(), notes: p.notes.clone(), chats: p.chats.clone(), instructions: p.instructions.clone(), docs }
 }
 
 fn now_secs() -> u64 {
@@ -216,7 +243,7 @@ pub fn project_save(project: ProjectDto) -> Result<Vec<ProjectDto>, String> {
     if project.name.trim().is_empty() {
         return Err("Give the project a name first.".into());
     }
-    let mut p = Project { id: project.id, name: project.name.trim().to_string(), status: if project.status == "done" { "done".into() } else { "open".into() }, notes: project.notes, chats: project.chats };
+    let mut p = Project { id: project.id, name: project.name.trim().to_string(), status: if project.status == "done" { "done".into() } else { "open".into() }, notes: project.notes, chats: project.chats, instructions: project.instructions.chars().take(4000).collect(), docs: Vec::new() };
     let action;
     if p.id.is_empty() {
         p.id = core_ops::next_id('p', all.iter().map(|x| x.id.clone()));
@@ -225,6 +252,7 @@ pub fn project_save(project: ProjectDto) -> Result<Vec<ProjectDto>, String> {
     } else if let Some(slot) = all.iter_mut().find(|x| x.id == p.id) {
         // the chat list is kept by file_chat, not overwritten by a form that never showed it
         p.chats = slot.chats.clone();
+        p.docs = slot.docs.clone();
         *slot = p.clone();
         action = "changed";
     } else {
@@ -234,6 +262,103 @@ pub fn project_save(project: ProjectDto) -> Result<Vec<ProjectDto>, String> {
     u.save_projects(&all)?;
     u.note_change(now_secs(), "project", &p.id, action);
     Ok(all.iter().map(project_out).collect())
+}
+
+/// Link a document where it already is (a path on this computer or the drive).
+#[tauri::command]
+pub fn project_doc_link(project: String, name: String, path: String) -> Result<Vec<ProjectDto>, String> {
+    let u = crate::user();
+    let mut all = u.load_projects()?;
+    let p = all.iter_mut().find(|p| p.id == project).ok_or("That project is not known.")?;
+    let path = path.trim().trim_matches('"').to_string();
+    core_ops::add_doc(p, "link", &name, &path)?;
+    if !std::path::Path::new(&path).is_file() {
+        return Err("There is no file at that path. Check the spelling, or use Add a file instead.".into());
+    }
+    u.save_projects(&all)?;
+    u.note_change(now_secs(), "project", &project, "document linked");
+    Ok(all.iter().map(project_out).collect())
+}
+
+/// Copy a document or picture into the project (the screen sends the file as base64 text).
+#[tauri::command]
+pub fn project_doc_upload(project: String, name: String, data: String) -> Result<Vec<ProjectDto>, String> {
+    let u = crate::user();
+    let mut all = u.load_projects()?;
+    let p = all.iter_mut().find(|p| p.id == project).ok_or("That project is not known.")?;
+    if p.docs.len() >= core_ops::MAX_DOCS {
+        return Err(format!("A project holds up to {} documents. Take one out first.", core_ops::MAX_DOCS));
+    }
+    let bytes = cindrix_core::coursepack::unbase64(&data).ok_or("That file could not be read.")?;
+    let stored = u.save_upload(&project, &name, &bytes)?;
+    if let Err(e) = core_ops::add_doc(p, "upload", &name, &stored) {
+        u.delete_upload(&project, &stored);
+        return Err(e);
+    }
+    if let Err(e) = u.save_projects(&all) {
+        u.delete_upload(&project, &stored);
+        return Err(e);
+    }
+    u.note_change(now_secs(), "project", &project, "document added");
+    Ok(all.iter().map(project_out).collect())
+}
+
+/// Take a document out of a project. A copied file is deleted from the project folder; a linked one is left alone.
+#[tauri::command]
+pub fn project_doc_remove(project: String, index: usize) -> Result<Vec<ProjectDto>, String> {
+    let u = crate::user();
+    let mut all = u.load_projects()?;
+    let p = all.iter_mut().find(|p| p.id == project).ok_or("That project is not known.")?;
+    let doc = core_ops::remove_doc(p, index).ok_or("That document is not in the list.")?;
+    u.save_projects(&all)?;
+    if doc.kind == "upload" {
+        u.delete_upload(&project, &doc.target);
+    }
+    u.note_change(now_secs(), "project", &project, "document removed");
+    Ok(all.iter().map(project_out).collect())
+}
+
+fn doc_file(project: &str, index: usize) -> Result<std::path::PathBuf, String> {
+    let u = crate::user();
+    let all = u.load_projects()?;
+    let p = all.iter().find(|p| p.id == project).ok_or("That project is not known.")?;
+    let d = p.docs.get(index).ok_or("That document is not in the list.")?;
+    let path = if d.kind == "upload" { u.upload_path(project, &d.target) } else { Some(std::path::PathBuf::from(&d.target)).filter(|p| p.is_file()) };
+    path.ok_or_else(|| "That file is not there any more. It may have been moved; link it again.".to_string())
+}
+
+/// Open a document with the program the computer uses for that kind of file.
+#[tauri::command]
+pub fn project_doc_open(project: String, index: usize) -> Result<(), String> {
+    let path = doc_file(&project, index)?;
+    if !core_ops::doc_type_ok(&path.to_string_lossy()) {
+        return Err("That kind of file is not opened from here.".into());
+    }
+    #[cfg(windows)]
+    let started = std::process::Command::new("explorer").arg(&path).spawn();
+    #[cfg(target_os = "macos")]
+    let started = std::process::Command::new("open").arg(&path).spawn();
+    #[cfg(all(unix, not(target_os = "macos")))]
+    let started = std::process::Command::new("xdg-open").arg(&path).spawn();
+    started.map(|_| ()).map_err(|e| format!("Could not open the file: {}", e))
+}
+
+/// A picture document as a `data:` address for a small preview (nothing when it is not a picture or is very large).
+#[tauri::command]
+pub fn project_doc_image(project: String, index: usize) -> Result<Option<String>, String> {
+    let path = doc_file(&project, index)?;
+    if !core_ops::doc_is_image(&path.to_string_lossy()) {
+        return Ok(None);
+    }
+    Ok(cindrix_core::academy::image_data_url(&path))
+}
+
+/// Things the given text seems to be about, offered as links. Nothing is linked by this call.
+#[tauri::command]
+pub fn connect_suggest(text: String, kind: String, id: String, linked: Vec<LinkDto>) -> Vec<HitDto> {
+    let mut skip: Vec<(String, String)> = linked.into_iter().map(|l| (l.kind, l.id)).collect();
+    skip.push((kind, id));
+    core_ops::suggest_links(&text, &all_entries(), &skip, 6).into_iter().map(|h| HitDto { kind: h.kind, id: h.id, title: h.title, snippet: h.snippet }).collect()
 }
 
 /// Delete a project. Its tasks and events stay, with no project; its chats stay as saved chats.
@@ -334,6 +459,12 @@ fn all_entries() -> Vec<Entry> {
             }
         }
     }
+    // Books and manuals (by title, author and shelf). The Reading Corner is for enjoyment and stays out.
+    if let Ok(books) = crate::shelf_list() {
+        for b in books.into_iter().filter(|b| !cindrix_core::shelf::is_leisure(&b.category)) {
+            v.push(Entry { kind: "book".into(), id: b.id, title: b.title, text: format!("{} {}", b.author, b.category) });
+        }
+    }
     if let Ok(ts) = u.load_tasks() {
         for t in ts { v.push(Entry { kind: "task".into(), id: t.id, title: t.title, text: t.notes }); }
     }
@@ -341,7 +472,7 @@ fn all_entries() -> Vec<Entry> {
         for e in es { v.push(Entry { kind: "event".into(), id: e.id, title: e.title, text: format!("{} {}", e.date, e.notes) }); }
     }
     if let Ok(ps) = u.load_projects() {
-        for p in ps { v.push(Entry { kind: "project".into(), id: p.id, title: p.name, text: p.notes }); }
+        for p in ps { v.push(Entry { kind: "project".into(), id: p.id, title: p.name, text: format!("{} {}", p.notes, p.instructions) }); }
     }
     v
 }

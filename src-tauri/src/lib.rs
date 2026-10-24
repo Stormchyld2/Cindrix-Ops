@@ -1057,9 +1057,9 @@ struct StreamEvent {
 }
 
 #[tauri::command]
-async fn ask_stream(question: String, on_event: Channel<StreamEvent>, app: tauri::AppHandle) -> Result<ReplyDto, String> {
+async fn ask_stream(question: String, project: Option<String>, on_event: Channel<StreamEvent>, app: tauri::AppHandle) -> Result<ReplyDto, String> {
     tauri::async_runtime::spawn_blocking(move || {
-        ask_run(&app, question, false, |e| {
+        ask_run(&app, question, false, project, |e| {
             let _ = on_event.send(e);
         })
     })
@@ -1069,7 +1069,7 @@ async fn ask_stream(question: String, on_event: Channel<StreamEvent>, app: tauri
 
 /// Answer one question, sending the words as they come. `guest` is a question from another device: it
 /// never reads the person's own folder (notes, chats, family page).
-fn ask_run(app: &tauri::AppHandle, question: String, guest: bool, mut send: impl FnMut(StreamEvent)) -> Result<ReplyDto, String> {
+fn ask_run(app: &tauri::AppHandle, question: String, guest: bool, project: Option<String>, mut send: impl FnMut(StreamEvent)) -> Result<ReplyDto, String> {
     {
         let lib = content_sub("library-sample");
         let port = *app.state::<AppState>().port.lock().unwrap();
@@ -1091,6 +1091,21 @@ fn ask_run(app: &tauri::AppHandle, question: String, guest: bool, mut send: impl
                 // the household's own facts, for questions about home, bug-out places and who lives here
                 if let Ok(mine) = cindrix_core::profile::load(&root().join("user")) {
                     p.extend(cindrix_core::profile::passage_for(&question, &mine));
+                }
+                // a chat inside a project: its standing instructions, and the text of its plain-text documents
+                if let Some(id) = project.as_deref().filter(|i| !i.is_empty()) {
+                    if let Ok(all) = user().load_projects() {
+                        if let Some(pr) = all.iter().find(|x| x.id == id) {
+                            p.extend(cindrix_core::ops::instructions_passage(pr));
+                            for d in pr.docs.iter().filter(|d| matches!(d.target.rsplit('.').next().map(|e| e.to_lowercase()).as_deref(), Some("txt") | Some("md"))) {
+                                let path = if d.kind == "upload" { user().upload_path(&pr.id, &d.target) } else { Some(std::path::PathBuf::from(&d.target)) };
+                                if let Some(text) = path.and_then(|f| std::fs::read_to_string(f).ok()) {
+                                    let text: String = text.chars().take(3000).collect();
+                                    p.extend(cindrix_core::retrieval::search_text(&d.name, &text, &question, 2));
+                                }
+                            }
+                        }
+                    }
                 }
             }
             if use_books {
@@ -2595,6 +2610,12 @@ pub fn run() {
             ops::project_save,
             ops::project_delete,
             ops::project_file_chat,
+            ops::project_doc_link,
+            ops::project_doc_upload,
+            ops::project_doc_remove,
+            ops::project_doc_open,
+            ops::project_doc_image,
+            ops::connect_suggest,
             ops::agenda_get,
             ops::connect_search,
             ops::connect_resolve,

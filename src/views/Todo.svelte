@@ -118,7 +118,7 @@
           <select class="input" bind:value={draft.project} aria-label="Project"><option value="">No project</option>{#each projects as p (p.id)}<option value={p.id}>{p.name}</option>{/each}</select>
         </div>
         <textarea class="input" rows="3" bind:value={draft.notes} placeholder="Notes" aria-label="Notes"></textarea>
-        <Connected links={draft.links} onchange={setLinks} />
+        <Connected links={draft.links} onchange={setLinks} suggestFrom={{ text: draft.title + ' ' + draft.notes, kind: 'task', id: draft.id }} />
         <div class="row"><button class="btn primary" onclick={saveEdit}>Save</button><button class="btn" onclick={() => { editing = null; draft = blank(); }}>Cancel</button></div>
       </div>
     {/if}
