@@ -16,5 +16,4 @@ It is host-only: the sharing server never gives it to guests.
 On the Maps screen a **My places** box appears when a home or bug-out position is saved. A place is on the
 map only while it is shown (Show / Hide); Start and End put its position into the Directions boxes.
 
-Not built yet: the stock plan using the household numbers, and the assistant using `profile::for_assistant`
-(plain sentences; phone numbers left out) when a question is about home or bug-out.
+**Used by:** the stock plan (Inventory > How much should I have? > **Use my details** fills in who lives here), and Ask: when a question is about home, bug-out places, evacuating or the household (`profile::question_is_personal`), the plain sentences from `profile::for_assistant` (phone numbers left out) go to the assistant as its first source, named "My details". Guests never get this.

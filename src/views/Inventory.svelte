@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { inventoryList, inventorySave, inventoryDelete, stockNeeds, type Item, type Need } from '../lib/api';
+  import { inventoryList, inventorySave, inventoryDelete, stockNeeds, profileLoad, type Item, type Need } from '../lib/api';
   import { onMount } from 'svelte';
   import { categories, categoryHint, categoryUnits, categoryAsk, forWhomChoices, conditionChoices } from '../lib/categories';
   import { learner, loadPeople } from '../lib/learner.svelte';
@@ -30,6 +30,18 @@
   function have(name: string): number | null {
     const m = items.filter((i) => i.name.toLowerCase() === name.toLowerCase());
     return m.length ? m.reduce((a, i) => a + i.quantity, 0) : null;
+  }
+  let fromDetails = $state('');
+  // the numbers saved in Settings > My details
+  async function useMyDetails() {
+    fromDetails = '';
+    try {
+      const d = await profileLoad();
+      if (d.adults + d.children + d.babies + d.small_pets + d.large_pets === 0) { fromDetails = 'Nobody is entered in My details yet (Settings > My details).'; return; }
+      hh.adults = d.adults; hh.children = d.children; hh.babies = d.babies; hh.small = d.small_pets; hh.large = d.large_pets;
+      fromDetails = 'Filled in from My details.';
+      await showNeeds();
+    } catch (e) { error = String(e); }
   }
   async function showNeeds() {
     applied = '';
@@ -313,6 +325,10 @@
   <div class="dform">
     <h2 id="pt">How much should I have?</h2>
     <p class="muted hint">Tell us who you are looking after and for how many days. The list below shows what to have on hand, from the Red Cross and Ready.gov where they give a number, and a plain rule of thumb where they do not (each line says which). Then set them as your goals, and the Inventory will show what is short.</p>
+    <div class="row">
+      <button class="btn" type="button" onclick={useMyDetails} title="Fill in the numbers from Settings, My details">Use my details</button>
+      {#if fromDetails}<span class="muted small">{fromDetails}</span>{/if}
+    </div>
     <div class="row">
       <label class="third">Adults<input class="input" type="number" min="0" bind:value={hh.adults} /></label>
       <label class="third">Children<input class="input" type="number" min="0" bind:value={hh.children} /></label>

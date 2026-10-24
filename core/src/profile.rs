@@ -146,6 +146,32 @@ pub fn save(user_dir: &Path, p: &Profile) -> Result<(), String> {
     fsio::backup_then_write(&path(user_dir), &user_dir.join("backups"), serialize(p).as_bytes()).map_err(|e| format!("Could not save your details: {}", e))
 }
 
+/// Whether a question is about the household's own situation (home, bug-out places, who lives
+/// here), so "My details" is worth giving to the assistant. General questions get nothing.
+pub fn question_is_personal(question: &str) -> bool {
+    let q = format!(" {} ", question.to_lowercase().replace(|c: char| !c.is_alphanumeric() && c != '-', " "));
+    const WORDS: &[&str] = &[
+        " home ", " house ", " my place ", " bug out ", " bug-out ", " bugout ", " evacuate ", " evacuation ", " retreat ",
+        " my family ", " our family ", " my household ", " our household ", " my kids ", " our kids ", " my children ", " our children ",
+        " my baby ", " our baby ", " my pets ", " our pets ", " my dog ", " our dog ", " my cat ", " our cat ", " how much do we ", " how many do we ",
+        " do we need ", " do i need ", " should we ", " for us ", " for my family ", " cabin ", " meet up ", " meeting place ", " rally point ",
+    ];
+    WORDS.iter().any(|w| q.contains(w))
+}
+
+/// The assistant's passage from "My details" for a personal question, or nothing. It ranks first
+/// when it applies. Phone numbers are left out (see `for_assistant`).
+pub fn passage_for(question: &str, p: &Profile) -> Option<crate::retrieval::Passage> {
+    if !question_is_personal(question) {
+        return None;
+    }
+    let text = for_assistant(p);
+    if text.is_empty() {
+        return None;
+    }
+    Some(crate::retrieval::Passage { source: "My details".into(), heading: "My details (the household's own facts)".into(), text, score: 100.0, link: String::new() })
+}
+
 /// A few plain sentences the assistant may use ("where is home", "how far to the bug-out place").
 /// Nothing is said about parts left empty. Contacts' phone numbers are left out.
 pub fn for_assistant(p: &Profile) -> String {
@@ -239,5 +265,20 @@ mod tests {
         assert!(t.contains("2 adults") && t.contains("1 child") && t.contains("1 small pet"), "{}", t);
         assert!(!t.contains("555"), "{}", t);
         assert_eq!(for_assistant(&Profile::default()), "");
+    }
+
+    #[test]
+    fn personal_questions_get_my_details_and_general_ones_do_not() {
+        assert!(question_is_personal("How far is the cabin from home?"));
+        assert!(question_is_personal("How many days of food do we need?"));
+        assert!(question_is_personal("What should we take if we evacuate?"));
+        assert!(question_is_personal("Where is our meeting place?"));
+        assert!(!question_is_personal("How do I purify river water?"));
+        assert!(!question_is_personal("What is the boiling point of water at altitude?"));
+        let p = passage_for("Which bug out place is closest to home?", &sample()).unwrap();
+        assert_eq!(p.source, "My details");
+        assert!(p.text.contains("Cabin") && !p.text.contains("555"));
+        assert!(passage_for("How do I purify river water?", &sample()).is_none());
+        assert!(passage_for("Where is home?", &Profile::default()).is_none());
     }
 }

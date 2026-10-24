@@ -1074,6 +1074,12 @@ fn ask_run(app: &tauri::AppHandle, question: String, guest: bool, mut send: impl
         };
         let passages = || {
             let mut p = cindrix_core::retrieval::search(&lib, &question, 3);
+            if !guest {
+                // the household's own facts, for questions about home, bug-out places and who lives here
+                if let Ok(mine) = cindrix_core::profile::load(&root().join("user")) {
+                    p.extend(cindrix_core::profile::passage_for(&question, &mine));
+                }
+            }
             if use_books {
                 p.extend(bundled_shelf().search(&question, 2));
                 p.extend(user_shelf().search(&question, 2));
