@@ -19,5 +19,5 @@ fn every_shipped_guide_page_reads_and_has_a_source() {
             total += 1;
         }
     }
-    assert!(total >= 55, "only {} pages", total);
+    assert!(total >= 65, "only {} pages", total);
 }
