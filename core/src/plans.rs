@@ -197,6 +197,65 @@ pub fn parse_plan(id: &str, text: &str) -> Result<Plan, String> {
     Ok(Plan { id: id.to_string(), title, summary: get("summary"), kind, author: get("author"), version, status, steps })
 }
 
+// ---------- plan packs ----------
+
+/// First line of a plan pack: one text file that holds several plans, to hand to another household.
+pub const PACK_HEADER: &str = "CINDRIX-PLAN-PACK 1";
+const PACK_MARK: &str = "@@@ plan ";
+
+/// Put plans (id, the plan file's text) into one pack file.
+pub fn pack(plans: &[(String, String)]) -> String {
+    let mut out = String::from(PACK_HEADER);
+    out.push('\n');
+    for (id, text) in plans {
+        out.push_str(PACK_MARK);
+        out.push_str(id);
+        out.push('\n');
+        out.push_str(text.trim_end());
+        out.push('\n');
+    }
+    out
+}
+
+/// Split a pack into (id, text) pairs. Each plan must parse (and carry no medicine dose); a pack
+/// with a bad plan is refused as a whole, with the plan's name in the message.
+pub fn unpack(text: &str) -> Result<Vec<(String, String)>, String> {
+    let mut lines = text.lines();
+    if lines.next().map(|l| l.trim_start_matches('\u{feff}').trim()) != Some(PACK_HEADER) {
+        return Err("This is not a plan pack file.".into());
+    }
+    let mut out: Vec<(String, String)> = Vec::new();
+    let mut cur: Option<(String, Vec<&str>)> = None;
+    let mut finish = |c: Option<(String, Vec<&str>)>, out: &mut Vec<(String, String)>| -> Result<(), String> {
+        if let Some((id, body)) = c {
+            let t = body.join("\n");
+            parse_plan(&id, &t).map_err(|m| format!("The plan \"{}\" in the pack cannot be used: {}", id, m))?;
+            if out.iter().any(|(i, _)| *i == id) {
+                return Err(format!("The plan \"{}\" is in the pack twice.", id));
+            }
+            out.push((id, t));
+        }
+        Ok(())
+    };
+    for l in lines {
+        if let Some(id) = l.strip_prefix(PACK_MARK) {
+            finish(cur.take(), &mut out)?;
+            let id = id.trim().to_string();
+            if !valid_id(&id) {
+                return Err(format!("\"{}\" is not a usable plan name.", id));
+            }
+            cur = Some((id, Vec::new()));
+        } else if let Some((_, body)) = cur.as_mut() {
+            body.push(l);
+        }
+    }
+    finish(cur.take(), &mut out)?;
+    if out.is_empty() {
+        return Err("The pack has no plans in it.".into());
+    }
+    Ok(out)
+}
+
 /// Every `*.md` plan in one folder. Names that start with `_` or `.` are skipped (templates, notes).
 pub fn load_dir(dir: &Path) -> Loaded {
     let mut out = Loaded::default();
@@ -205,7 +264,33 @@ pub fn load_dir(dir: &Path) -> Loaded {
     files.sort();
     for p in files {
         let name = p.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
-        if name.starts_with('_') || name.starts_with('.') || !name.to_lowercase().ends_with(".md") {
+        if name.starts_with('_') || name.starts_with('.') {
+            continue;
+        }
+        if name.to_lowercase().ends_with(".cplan") {
+            // a plan pack dropped into the folder: each plan in it counts
+            let place = format!("plans/{}", name);
+            match fs::metadata(&p) {
+                Ok(m) if m.len() <= MAX_FILE * 40 => {}
+                _ => {
+                    out.problems.push(Problem { place, message: "the pack is too big or cannot be read".into() });
+                    continue;
+                }
+            }
+            match fs::read_to_string(&p).map_err(|e| e.to_string()).and_then(|t| unpack(&t)) {
+                Ok(list) => {
+                    for (id, t) in list {
+                        match parse_plan(&id, &t) {
+                            Ok(plan) => out.plans.push(plan),
+                            Err(m) => out.problems.push(Problem { place: format!("{} ({})", place, id), message: m }),
+                        }
+                    }
+                }
+                Err(m) => out.problems.push(Problem { place, message: m }),
+            }
+            continue;
+        }
+        if !name.to_lowercase().ends_with(".md") {
             continue;
         }
         let id = name[..name.len() - 3].to_string();
@@ -562,6 +647,30 @@ mod tests {
         // the household's own ticks still work and keep the people's
         s.tick("keep-it-fresh", "a", true, "2026-04-01").unwrap();
         assert_eq!(s.load().unwrap().last_done("keep-it-fresh", "a", "Alex, Jr.").as_deref(), Some("2026-03-02"));
+    }
+
+    #[test]
+    fn a_plan_pack_round_trips_and_loads_from_a_folder() {
+        let a = parse_plan("keep-it-fresh", SAMPLE).unwrap();
+        let text = pack(&[("keep-it-fresh".to_string(), SAMPLE.to_string()), ("second".to_string(), SAMPLE.replace("Keep it fresh", "Second plan"))]);
+        let list = unpack(&text).unwrap();
+        assert_eq!(list.len(), 2);
+        assert_eq!(parse_plan(&list[0].0, &list[0].1).unwrap().steps.len(), a.steps.len());
+        assert!(parse_plan(&list[1].0, &list[1].1).unwrap().title.contains("Second plan"));
+        // dropped into a plans folder it loads like separate plan files
+        let d = tmp("pack");
+        fs::write(d.join("friends.cplan"), &text).unwrap();
+        fs::write(d.join("bad.cplan"), "not a pack").unwrap();
+        let l = load_dir(&d);
+        assert_eq!(l.plans.len(), 2);
+        assert_eq!(l.problems.len(), 1);
+        // refused: wrong header, a bad plan, a repeated plan, a bad name, an empty pack
+        assert!(unpack("hello").is_err());
+        assert!(unpack(&format!("{}\n@@@ plan x\noops", PACK_HEADER)).unwrap_err().contains("\"x\""));
+        assert!(unpack(&format!("{}\n@@@ plan ../evil\n{}", PACK_HEADER, SAMPLE)).is_err());
+        let twice = format!("{}\n@@@ plan k\n{}\n@@@ plan k\n{}", PACK_HEADER, SAMPLE, SAMPLE);
+        assert!(unpack(&twice).unwrap_err().contains("twice"));
+        assert!(unpack(PACK_HEADER).is_err());
     }
 
     #[test]

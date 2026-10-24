@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { learner, loadPeople } from '../lib/learner.svelte';
-  import { plansList, plansProblems, planFollow, planTick, type PlanInfo, type PlanStep, type CourseProblem } from '../lib/api';
+  import { plansList, plansProblems, planFollow, planTick, plansExport, type PlanInfo, type PlanStep, type CourseProblem } from '../lib/api';
   import { gatherFacts, stepStatus, planCounts, nextStep, autoDone, KIND_NAME, type PlanFacts } from '../lib/planfacts';
 
   let { go }: { go: (tab: string) => void } = $props();
@@ -60,6 +60,12 @@
   });
   const followedCount = $derived(plans.filter((p) => p.followed).length);
 
+  let packNote = $state('');
+  async function sharePack() {
+    packNote = '';
+    try { packNote = 'Saved: ' + (await plansExport()) + '. Give this file to someone: they put it in their user\\plans folder and the plans appear.'; }
+    catch (e) { packNote = String(e); }
+  }
   async function follow(p: PlanInfo, on: boolean) {
     try { await planFollow(p.id, on, forWho); await load(); } catch (e) { error = String(e); }
   }
@@ -95,6 +101,10 @@
   </section>
   {#if error}<div class="warn err" role="alert">{error}</div>{/if}
   {@render whoPick()}
+  <div class="row">
+    <button class="btn" onclick={sharePack} title="Put the plans you wrote into one file to give to another household">Share my plans as a pack</button>
+    {#if packNote}<span class="muted small">{packNote}</span>{/if}
+  </div>
 
   <div class="cards">
     <button class="card base" onclick={() => go('Start')} aria-label="Open the first walkthrough, Get ready">

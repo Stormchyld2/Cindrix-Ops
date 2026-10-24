@@ -769,6 +769,11 @@ export async function plansProblems(): Promise<CourseProblem[]> {
   if (inTauri) return call<CourseProblem[]>('plans_problems');
   return [];
 }
+/** Writes the plans you wrote yourself into one pack file; returns where it is. */
+export async function plansExport(): Promise<string> {
+  if (inTauri) return call<string>('plans_export');
+  return 'user/exports/my-plans.cplan (preview)';
+}
 export async function planFollow(id: string, on: boolean, person = ''): Promise<void> {
   if (inTauri) return call<void>('plan_follow', { id, on, person: person || null });
   const p = memPlans.find((x) => x.id === id);

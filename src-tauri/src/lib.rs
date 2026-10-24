@@ -2356,6 +2356,40 @@ fn plan_tick(plan: String, step: String, done: bool, person: Option<String>) -> 
     }
 }
 
+/// Put the plans you wrote yourself (`user/plans`) into one pack file to give to another household.
+/// Returns the file's place. The other household drops it into their `user/plans` folder.
+#[tauri::command]
+fn plans_export() -> Result<String, String> {
+    let dir = root().join("user").join("plans");
+    let mut list: Vec<(String, String)> = Vec::new();
+    if let Ok(rd) = std::fs::read_dir(&dir) {
+        let mut files: Vec<PathBuf> = rd.flatten().map(|e| e.path()).filter(|p| p.is_file()).collect();
+        files.sort();
+        for p in files {
+            let name = p.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+            if name.starts_with('_') || name.starts_with('.') || !name.to_lowercase().ends_with(".md") {
+                continue;
+            }
+            if let Ok(t) = std::fs::read_to_string(&p) {
+                list.push((name[..name.len() - 3].to_string(), t));
+            }
+        }
+    }
+    if list.is_empty() {
+        return Err("You have not written any plans of your own yet. Plans you add to the user\\plans folder can be shared this way.".into());
+    }
+    // leave out any plan that would not be accepted on the other side
+    list.retain(|(id, t)| plans::parse_plan(id, t).is_ok());
+    if list.is_empty() {
+        return Err("None of your own plans can be read, so there is nothing to share. Open Plans to see what is wrong.".into());
+    }
+    let out = root().join("user").join("exports");
+    std::fs::create_dir_all(&out).map_err(|e| format!("Could not make the folder for the pack: {}", e))?;
+    let file = out.join("my-plans.cplan");
+    cindrix_core::fsio::write_atomic(&file, plans::pack(&list).as_bytes()).map_err(|e| format!("Could not save the pack: {}", e))?;
+    Ok(file.display().to_string())
+}
+
 // ---------- drills ----------
 
 #[derive(Serialize)]
@@ -2575,6 +2609,7 @@ pub fn run() {
             plans_list,
             plans_problems,
             plan_follow,
+            plans_export,
             plan_tick,
             drills_list,
             drill_save,

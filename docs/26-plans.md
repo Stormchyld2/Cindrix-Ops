@@ -24,7 +24,7 @@ Keep it fresh (11 repeating checks), Learn the basics (10 steps from the Academy
 Plans never give medicine doses; a plan that does is left out and listed on the screen (the same check as Academy courses). Code: `core/src/plans.rs`; tests in that file and `core/tests/shipped_plans.rs` (every shipped plan loads, and its screens, checks and lessons exist).
 
 ## Not built yet
-Pop-up notifications (there are none; checks that come due appear under Coming up on the Dashboard and in the Calendar, doc 37), a plan pack file.
+Pop-up notifications (there are none; checks that come due appear under Coming up on the Dashboard and in the Calendar, doc 37).
 
 ## The Binder
 
@@ -33,3 +33,7 @@ The Binder (Plan > Binder) is the paper copy. Besides family details, contacts, 
 ## Plans for a household member
 
 When the Family page has names, the Plans screen has **Plans for:** (Our household, or a name). A name keeps its own following and its own ticks, so each person's plan checks come due on their own dates. The household's following and the Dashboard are not changed. It is stored in the same `user/plans.csv` (a fifth column, `person`; an older file without it still loads). Code: `Store::follow_for`, `tick_for`, `State::is_followed`, `last_done` in `core/src/plans.rs` (tested).
+
+## Plan packs
+
+A plan pack is one text file (`.cplan`, first line `CINDRIX-PLAN-PACK 1`, then `@@@ plan <name>` before each plan file's text). **Plans > Share my plans as a pack** writes the plans in `user/plans` to `user/exports/my-plans.cplan`. To use a pack, put the file in any `plans` folder (for example `user/plans`): its plans load like separate files, and a bad plan, a repeated name or a plan with a medicine dose is left out and listed on the Plans screen like any other problem. Code: `plans::pack`, `unpack`, and `load_dir` (tested). `plans_export` is host-only.
