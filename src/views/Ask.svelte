@@ -45,6 +45,7 @@
     chat.project = id;
     opened[id] = true;
     section = 'projects';
+    menuOpen = false; // on a phone the menu covers the page, so it closes once a project is picked
     request = { id, tab, n: ++requestN };
   }
   async function moveChat(name: string, to: string) {
