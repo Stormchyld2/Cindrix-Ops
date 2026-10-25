@@ -15,6 +15,7 @@ pub const SECTIONS: &[(&str, &str)] = &[
     ("livestock", "Livestock"),
     ("soil-and-water", "Soil and water"),
     ("radio-reference", "Radio reference"),
+    ("home-remedies", "Home remedies"),
 ];
 
 /// Only these exact names are folders; anything else (such as `../cards`) is refused.

@@ -79,7 +79,7 @@ function decorate(i: Item): Item {
   return { ...i, days_left: d, status };
 }
 
-/** The guides of one part of Agro or Comms (crop-guides, planting-calendar, food-preservation, livestock, soil-and-water, radio-reference). */
+/** The guides of one part of Agro or Comms (crop-guides, planting-calendar, food-preservation, livestock, soil-and-water, radio-reference, home-remedies). */
 export async function guidesList(section: string): Promise<Card[]> {
   if (inTauri) return call<Card[]>('guides_list', { section });
   // a browser tab outside the program shows a sample page so the screen can be looked at

@@ -31,6 +31,7 @@ their full text.
 | Noto Sans map fonts (Protomaps basemaps-assets) | Lettering on the map | SIL Open Font License 1.1 | Keep `OFL.txt` with the fonts (done by the download script) |
 | pdf.js (pdfjs-dist) | Reads PDF books | Apache-2.0 | Keep license and notice |
 | Project NOMAD (list of archives, answer-style numbers, golden-question idea) | `content/library-catalog.json` is adapted from its `collections/kiwix-categories.json`; the rest is our own code | Apache-2.0 | Say where it came from (here and in the file's note); its own creator-pack videos are NOT used (a separate license that bars copying) |
+| Home remedies pages (`content/guides/home-remedies`) | Reworded from NOMAD's `home_remedies.json` and `natural_remedies.json`, which summarize CDC, MedlinePlus and NCCIH pages | Public domain (U.S. government), NOMAD Apache-2.0 | Keep each page's `Source:` line; keep them marked draft until a qualified person has checked them |
 | ffmpeg (LGPL build) | Plays WMA by converting for a moment | LGPL-2.1-or-later | Keep license; offer the ffmpeg source (link below); we run it as a separate program |
 | Our own code in `core/` and `crypto/` | All the logic, including our own zstd and xz readers | The project's license (see "Our own license") | |
 

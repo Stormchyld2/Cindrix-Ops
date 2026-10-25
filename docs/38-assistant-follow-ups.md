@@ -39,3 +39,12 @@ program never goes to the internet. The list is adapted from Project NOMAD (Apac
 Left out on purpose: NOMAD's "FDA Drug Reference" (drug dosing) and its creator-pack videos (a separate
 license that does not allow copying). The medical archives are other people's books; the assistant's
 no-dose rule still applies to everything it says.
+
+## Home remedies
+
+`content/guides/home-remedies` holds 38 pages (20 simple home measures, 18 herbal products) reworded from
+Project NOMAD's remedy lists, which summarize CDC, MedlinePlus and NCCIH pages. Menu: Intel > Home remedies.
+Every page is marked draft with its `Source:` line; nothing here claims a medical check. Kitchen amounts
+(a teaspoon of honey, a cup of water) stay. Medicine-style amounts (mg, mcg, units, ml with a medicine) are
+refused by the same loader rule as everywhere else, so three pages (boswellia, valerian, salt-water gargle)
+were changed to "follow the product label". NOMAD's FDA drug reference is not included.

@@ -188,6 +188,7 @@
     'food-preservation': { title: 'Food preservation', intro: 'Keeping the harvest safe to eat. Food safety rules here come from the official guides and are not shortened.' },
     'livestock': { title: 'Livestock', intro: 'Keeping animals for eggs, milk and meat. Nothing here gives medicine amounts: for sick animals, ask a vet.' },
     'soil-and-water': { title: 'Soil and water', intro: 'Looking after the ground and the water your food depends on.' },
+    'home-remedies': { title: 'Home remedies', intro: 'Simple home measures and herbal products, from CDC, MedlinePlus and the U.S. National Institutes of Health. These pages are drafts until a qualified person has checked them. They give no medicine amounts: for medicines, ask a pharmacist or doctor.' },
     'radio-reference': { title: 'Radio reference', intro: 'Family radios, ham radio, antennas, check-in plans, signalling, beacons and mesh radios, with the rules for the United States. Rules differ in other countries, and they change: check fcc.gov.' },
   };
   let settingsFromComms = $state(false);
@@ -210,7 +211,8 @@
         { label: 'Projects', tab: 'Projects', show: !inShare } ] },
       { id: 'Intel', cat: 'intel', show: lib_, entries: [
         { label: 'Offline browser', tab: 'Intel', note: 'archives' }, { label: 'Shelf', tab: 'Shelf', note: 'manuals' },
-        { label: 'Archives', tab: 'Archives' }, { label: 'Emergency cards', tab: 'Cards' } ] },
+        { label: 'Archives', tab: 'Archives' }, { label: 'Emergency cards', tab: 'Cards' },
+        { label: 'Home remedies', tab: 'guide:home-remedies' } ] },
       { id: 'Academy', cat: 'academy', show: true, entries: [
         { label: 'Courses', tab: 'Academy' }, { label: 'Training sign-off', tab: 'training' } ] },
       { id: 'Agro', cat: 'agro', show: plan_, entries: [
