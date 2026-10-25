@@ -19,3 +19,11 @@ Settings > How it answers > Answer style: Exact, Steady (default) or Natural. It
 sampling numbers (`core/src/llama.rs`, `Sampler::named`): temperature 0.1 / 0.2 / 0.5 with matching
 top-k, min-p and repeat penalty. Exact sticks closest to the pages; Natural reads more like talk.
 The safety rules are not affected by the style.
+
+## Golden questions
+
+`core/tests/golden/questions.tsv` lists plain questions and the page each answer should come from.
+`core/tests/golden_questions.rs` runs the assistant's own keyword search over the shipped pages and
+fails if a page is not in the top three. To add one, add a line (question, tab, page file name).
+Writing it found two real gaps, now fixed in `core/src/retrieval.rs`: a card's `title:` now counts like
+a heading, and "burns" matches "burn". (The test idea comes from Project NOMAD's eval folder.)

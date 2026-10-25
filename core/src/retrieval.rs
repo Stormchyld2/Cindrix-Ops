@@ -23,8 +23,17 @@ pub fn tokens(s: &str) -> Vec<String> {
     s.to_lowercase()
         .split(|c: char| !c.is_alphanumeric())
         .filter(|w| w.len() > 1 && !STOP.contains(w))
-        .map(|w| w.to_string())
+        .map(fold_plural)
         .collect()
+}
+
+/// "burns" and "burn" should match: drop a plural "s" from longer words (not "ss", "us" or "is" endings).
+fn fold_plural(w: &str) -> String {
+    if w.len() > 3 && w.ends_with('s') && !w.ends_with("ss") && !w.ends_with("us") && !w.ends_with("is") {
+        w[..w.len() - 1].to_string()
+    } else {
+        w.to_string()
+    }
 }
 
 /// Split a Markdown file into (heading, text) sections.
@@ -64,6 +73,23 @@ pub fn score(query: &[String], heading: &str, text: &str) -> f64 {
     s
 }
 
+/// The `title:` of a page's front matter (cards and guide pages have one), or empty.
+pub fn front_title(md: &str) -> String {
+    let mut lines = md.lines();
+    if lines.next().map(|l| l.trim()) != Some("---") {
+        return String::new();
+    }
+    for l in lines {
+        if l.trim() == "---" {
+            break;
+        }
+        if let Some(t) = l.strip_prefix("title:") {
+            return t.trim().trim_matches('"').to_string();
+        }
+    }
+    String::new()
+}
+
 /// Minimum score for a passage to count as relevant.
 pub const MIN_SCORE: f64 = 3.0;
 
@@ -81,8 +107,9 @@ pub fn search(dir: &Path, question: &str, limit: usize) -> Vec<Passage> {
             }
             let src = p.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
             if let Ok(text) = fs::read_to_string(&p) {
+                let title = front_title(&text);
                 for (head, body) in sections(&text) {
-                    let sc = score(&q, &head, &body);
+                    let sc = score(&q, &format!("{} {}", title, head), &body);
                     if sc >= MIN_SCORE {
                         found.push(Passage { source: src.clone(), heading: head, text: body, score: sc, link: String::new() });
                     }
@@ -115,6 +142,27 @@ pub fn search_text(source: &str, text: &str, question: &str, limit: usize) -> Ve
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn plural_words_match_the_single_word() {
+        assert_eq!(tokens("burns"), tokens("burn"));
+        assert_eq!(tokens("a bus"), vec!["bus".to_string()]);
+        assert_eq!(tokens("glass"), vec!["glass".to_string()]);
+    }
+
+    #[test]
+    fn a_page_title_counts_like_a_heading() {
+        let md = "---\ntitle: Earthquake\nkind: disaster\n---\n**During: Drop, Cover, Hold On.**\nGet under a sturdy table.\n";
+        assert_eq!(front_title(md), "Earthquake");
+        assert_eq!(front_title("no front matter"), "");
+        let dir = std::env::temp_dir().join(format!("cx-title-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join("earthquake.md"), md).unwrap();
+        let found = search(&dir, "what to do in an earthquake", 3);
+        std::fs::remove_dir_all(&dir).ok();
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].source, "earthquake");
+    }
+
     use super::*;
 
     #[test]
