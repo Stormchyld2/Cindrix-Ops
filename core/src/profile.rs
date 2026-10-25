@@ -42,6 +42,17 @@ pub struct Profile {
     pub needs: String,
     pub skills: String,
     pub notes: String,
+    /// The usual last spring frost and first fall frost, as `MM-DD`. They place planting dates on the calendar.
+    pub last_frost: String,
+    pub first_frost: String,
+}
+
+/// A month and day the program accepts (`MM-DD`), or empty.
+fn clean_month_day(s: &str) -> String {
+    match crate::seasons::month_day(s) {
+        Some((m, d)) => format!("{:02}-{:02}", m, d),
+        None => String::new(),
+    }
 }
 
 fn one_line(s: &str) -> String {
@@ -78,6 +89,12 @@ pub fn serialize(p: &Profile) -> String {
             o.push_str(&format!("{}: {}\n", k, v));
         }
     }
+    for (k, v) in [("last_frost", &p.last_frost), ("first_frost", &p.first_frost)] {
+        let v = clean_month_day(v);
+        if !v.is_empty() {
+            o.push_str(&format!("{}: {}\n", k, v));
+        }
+    }
     for c in p.contacts.iter().filter(|c| !c.name.trim().is_empty() || !c.how.trim().is_empty()) {
         o.push_str(&format!("contact: {} | {} | {}\n", one_line(&c.name), one_line(&c.how), one_line(&c.notes)));
     }
@@ -107,6 +124,8 @@ pub fn parse(text: &str) -> Profile {
             "babies" => p.babies = n(),
             "small_pets" => p.small_pets = n(),
             "large_pets" => p.large_pets = n(),
+            "last_frost" => p.last_frost = clean_month_day(v),
+            "first_frost" => p.first_frost = clean_month_day(v),
             "contact" => {
                 let f: Vec<&str> = v.split('|').map(|x| x.trim()).collect();
                 p.contacts.push(Contact { name: f.first().unwrap_or(&"").to_string(), how: f.get(1).unwrap_or(&"").to_string(), notes: f.get(2).unwrap_or(&"").to_string() });
@@ -222,6 +241,8 @@ mod tests {
             needs: "walking stick\nspare glasses".into(),
             skills: "first aid".into(),
             notes: String::new(),
+            last_frost: "05-10".into(),
+            first_frost: "10-12".into(),
             ..Default::default()
         }
     }

@@ -33,10 +33,10 @@
     if (inShare) return;
     try { coming = await agendaGet('', ''); changes = await changesRecent(8); } catch { /* the panels just stay empty */ }
   }
-  const KIND_LABEL: Record<string, string> = { task: 'To-do', event: 'Calendar', item: 'Inventory', plan: 'Plan', project: 'Project' };
+  const KIND_LABEL: Record<string, string> = { task: 'To-do', event: 'Calendar', item: 'Inventory', plan: 'Plan', project: 'Project', seed: 'Planting', season: 'Frost' };
   const niceDate = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
   const niceWhen = (t: number) => new Date(t * 1000).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-  function goKind(k: string) { go(k === 'task' ? 'Todo' : k === 'event' ? 'Calendar' : k === 'item' ? 'Inventory' : k === 'plan' ? 'What next' : k === 'project' ? 'Projects' : 'Dashboard'); }
+  function goKind(k: string) { go(k === 'task' ? 'Todo' : k === 'event' ? 'Calendar' : k === 'item' ? 'Inventory' : k === 'plan' ? 'What next' : k === 'project' ? 'Projects' : k === 'seed' ? 'Seed vault' : k === 'season' ? 'Calendar' : 'Dashboard'); }
   onMount(() => {
     void loadComing();
     void refreshSharing();

@@ -21,9 +21,9 @@
   }
   onMount(load);
   // opened from a link elsewhere: show that task's editor
-  let want: string | null = null;
+  let want: string | null = $state(null);
   $effect(() => { const o = nav.open; if (o?.kind === 'task') want = o.id; });
-  $effect(() => { const t = want ? tasks.find((x) => x.id === want) : null; if (t) { editing = t.id; draft = structuredClone(t); want = null; } });
+  $effect(() => { const t = want ? tasks.find((x) => x.id === want) : null; if (t) { editing = t.id; draft = $state.snapshot(t) as TaskRec; want = null; } });
 
   async function add() {
     if (!draft.title.trim()) { note = 'Type what needs doing first.'; return; }
@@ -34,7 +34,7 @@
     if (!confirm('Take "' + t.title + '" off the list?')) return;
     try { tasks = await taskDelete(t.id); if (editing === t.id) editing = null; } catch (e) { note = String(e); }
   }
-  function edit(t: TaskRec) { editing = editing === t.id ? null : t.id; if (editing) draft = structuredClone(t); else draft = blank(); }
+  function edit(t: TaskRec) { editing = editing === t.id ? null : t.id; if (editing) draft = $state.snapshot(t) as TaskRec; else draft = blank(); }
   async function saveEdit() {
     try { tasks = await taskSave(draft); editing = null; draft = blank(); note = ''; } catch (e) { note = String(e); }
   }

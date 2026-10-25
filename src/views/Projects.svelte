@@ -6,7 +6,8 @@
   import Connected from '../lib/Connected.svelte';
   import { nav, openLink } from '../lib/nav.svelte';
 
-  let { openChat }: { openChat?: (name: string) => void } = $props();
+  // `onchange` tells the Ask side panel the project list changed; `request` asks for a project (and its tab) to be opened.
+  let { openChat, onchange, request = null }: { openChat?: (name: string) => void; onchange?: () => void; request?: { id: string; tab: 'work' | 'settings'; n: number } | null } = $props();
   let projects: ProjectRec[] = $state([]);
   let tasks: TaskRec[] = $state([]);
   let events: EventRec[] = $state([]);
@@ -31,20 +32,24 @@
     } catch (e) { note = String(e); }
   }
   onMount(load);
-  let want: string | null = null;
-  $effect(() => { const o = nav.open; if (o?.kind === 'project') want = o.id; });
-  $effect(() => { if (want && projects.some((p) => p.id === want)) { choose(want); want = null; } });
+  let want: { id: string; tab: 'work' | 'settings' } | null = $state(null);
+  $effect(() => { const o = nav.open; if (o?.kind === 'project') want = { id: o.id, tab: 'work' }; });
+  // asked for from the side panel: read the list again first, because the project may have only just been made
+  $effect(() => { const r = request; if (r?.id) void load().then(() => { want = { id: r.id, tab: r.tab }; }); });
+  $effect(() => { const w = want; if (w && projects.some((p) => p.id === w.id)) { choose(w.id); tab = w.tab; want = null; } });
 
-  function choose(id: string) { selected = id; tab = 'work'; const p = projects.find((x) => x.id === id); draft = p ? structuredClone(p) : null; }
+  function choose(id: string) { selected = id; tab = 'work'; const p = projects.find((x) => x.id === id); draft = p ? (copyOf(p) as ProjectRec) : null; }
+  // A reactive object cannot go through structuredClone (the browser refuses it), so take a plain copy first.
+  function copyOf<T>(v: T): T { return $state.snapshot(v) as T; }
   async function create() {
     if (!newName.trim()) { note = 'Give the project a name first.'; return; }
-    try { projects = await projectSave({ id: '', name: newName, status: 'open', notes: '', chats: [], instructions: '', docs: [] }); newName = ''; note = ''; const p = projects[projects.length - 1]; choose(p.id); } catch (e) { note = String(e); }
+    try { projects = await projectSave({ id: '', name: newName, status: 'open', notes: '', chats: [], instructions: '', docs: [] }); newName = ''; note = ''; const p = projects[projects.length - 1]; choose(p.id); tab = 'settings'; onchange?.(); } catch (e) { note = String(e); }
   }
   // Documents are saved by their own buttons; only the text fields go with Save.
   function keepDocs(list: ProjectRec[]) {
     projects = list;
     const p = list.find((x) => x.id === selected);
-    if (p && draft) draft.docs = structuredClone(p.docs);
+    if (p && draft) draft.docs = copyOf(p.docs);
     loadThumbs();
   }
   async function loadThumbs() {
@@ -78,10 +83,10 @@
   }
   async function openDoc(i: number) { if (!draft) return; try { await projectDocOpen(draft.id, i); } catch (e) { note = String(e); } }
   $effect(() => { if (tab === 'settings') loadThumbs(); });
-  async function saveDraft() { if (!draft) return; try { projects = await projectSave(draft); note = 'Saved.'; } catch (e) { note = String(e); } }
+  async function saveDraft() { if (!draft) return; try { projects = await projectSave(copyOf(draft)); note = 'Saved.'; onchange?.(); } catch (e) { note = String(e); } }
   async function remove() {
     if (!draft || !confirm('Delete the project "' + draft.name + '"? Its tasks, events and chats stay; they just stop belonging to it.')) return;
-    try { projects = await projectDelete(draft.id); selected = null; draft = null; await load(); } catch (e) { note = String(e); }
+    try { projects = await projectDelete(draft.id); selected = null; draft = null; await load(); onchange?.(); } catch (e) { note = String(e); }
   }
   async function addTask() {
     if (!selected || !quick.trim()) return;
@@ -90,10 +95,10 @@
   async function tick(t: TaskRec) { try { tasks = await taskDone(t.id, !t.done); } catch (e) { note = String(e); } }
   async function addChat(name: string) {
     if (!selected || !name) return;
-    try { projects = await projectFileChat(selected, name); draft = structuredClone(projects.find((p) => p.id === selected) ?? draft); } catch (e) { note = String(e); }
+    try { projects = await projectFileChat(selected, name); draft = copyOf(projects.find((p) => p.id === selected) ?? draft); onchange?.(); } catch (e) { note = String(e); }
   }
   async function dropChat(name: string) {
-    try { projects = await projectFileChat('', name); draft = structuredClone(projects.find((p) => p.id === selected) ?? draft); } catch (e) { note = String(e); }
+    try { projects = await projectFileChat('', name); draft = copyOf(projects.find((p) => p.id === selected) ?? draft); onchange?.(); } catch (e) { note = String(e); }
   }
   const mine = $derived(tasks.filter((t) => t.project === selected));
   const myEvents = $derived(events.filter((e) => e.project === selected).sort((a, b) => a.date.localeCompare(b.date)));

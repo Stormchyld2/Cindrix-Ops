@@ -146,6 +146,8 @@
       case 'guide': guideSection = id.split('/')[0]; group = 'Guides'; break;
       case 'task': group = 'Todo'; break;
       case 'event': group = 'Calendar'; break;
+      case 'seed': goPlan('Seed vault'); break;
+      case 'season': group = 'Calendar'; break;
       case 'project': group = 'Projects'; break;
       case 'course': sourceRequest.lesson = id; group = 'Academy'; break;
       case 'drill': group = 'Plan'; plan = 'Drills'; break;
@@ -303,7 +305,7 @@
     <div class="warn libnote" role="status">{libNote} <button class="btn" onclick={() => (libNote = '')}>OK</button></div>
   {/if}
 
-  <main class:wide={group === 'Intel'}>
+  <main class:wide={group === 'Intel' || group === 'Calendar' || group === 'Ask'}>
     {#if group === 'Dashboard'}
       <Dashboard go={goTo} />
     {:else if group === 'Ask'}

@@ -284,6 +284,76 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   await page.getByRole('heading', { name: 'Crop guides' }).waitFor();
   await shoot(page, `${label}-9k-agro`);
 
+  // Ask's side panel: To-do list, Projects and Calendar. A project made on its page shows in the side panel, opens from there,
+  // and its settings can be reopened. (A copy of a reactive object once broke adding a project and clicking a task.)
+  const side = async () => {
+    const b = page.getByRole('button', { name: 'Chats and menu' });
+    if (await b.isVisible() && (await b.getAttribute('aria-expanded')) !== 'true') await b.click();
+  };
+  await nav(page, 'Ask');
+  await side();
+  await page.getByRole('button', { name: 'To-do list', exact: true }).click();
+  await page.getByRole('heading', { name: 'To-do list' }).waitFor();
+  await page.getByLabel('New task').fill('Buy rice');
+  await page.getByRole('button', { name: 'Add', exact: true }).click();
+  await page.getByRole('button', { name: 'Buy rice', exact: true }).click();
+  await page.getByLabel('Task name').waitFor();
+  await shoot(page, `${label}-10a-todo-open`);
+  await page.getByRole('button', { name: 'Cancel' }).click();
+
+  await side();
+  await page.getByRole('button', { name: 'Projects', exact: true }).click();
+  await page.getByRole('heading', { name: 'Projects' }).first().waitFor();
+  await page.getByLabel('New project name').fill('Test Project');
+  await page.getByRole('button', { name: 'Add', exact: true }).click();
+  await page.getByLabel('Project instructions').waitFor();
+  if ((await page.locator('main').innerText()).includes('could not be cloned')) throw new Error('adding a project still fails with a copy error');
+  await page.getByLabel('Project instructions').fill('Use metric. Keep answers short.');
+  await page.getByRole('button', { name: 'Save instructions' }).click();
+  await page.getByText('Saved.').first().waitFor();
+  await shoot(page, `${label}-10b-project-settings`);
+  // the project is listed in the side panel, and a click there opens it again (its settings too)
+  await side();
+  await page.getByRole('button', { name: 'Settings for Test Project' }).waitFor();
+  await page.getByRole('button', { name: 'Test Project', exact: true }).click();
+  await page.getByRole('tab', { name: /^Settings/ }).waitFor();
+  await page.getByRole('tab', { name: /^Settings/ }).click();
+  if ((await page.getByLabel('Project instructions').inputValue()) !== 'Use metric. Keep answers short.') throw new Error('the project instructions were not kept');
+  await side();
+  await page.getByRole('button', { name: 'Settings for Test Project' }).click();
+  await page.getByLabel('Project instructions').waitFor();
+  await shoot(page, `${label}-10c-project-reopened`);
+
+  // Calendar: a big month, an event written in its day, the week view
+  await side();
+  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
+  await page.getByRole('heading', { name: 'Calendar' }).first().waitFor();
+  await page.getByRole('button', { name: '+ Add an event' }).first().click();
+  await page.getByLabel('Event name').fill('Test dentist');
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.locator('.chip', { hasText: 'Test dentist' }).first().waitFor();
+  await shoot(page, `${label}-10d-calendar-month`);
+  await page.getByRole('button', { name: 'Week', exact: true }).click();
+  await page.locator('.chip', { hasText: 'Test dentist' }).first().waitFor();
+  await shoot(page, `${label}-10e-calendar-week`);
+
+  // a birthday on the Family page appears on the Calendar by itself; frost dates are kept in My details
+  const t = new Date();
+  const md = String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0');
+  await nav(page, 'Operations', 'Family');
+  await page.getByLabel('Birthday').first().fill('2000-' + md);
+  await page.getByRole('button', { name: 'Save to this drive' }).click();
+  await page.getByText(/^Saved/).first().waitFor();
+  await nav(page, 'Operations', 'Calendar');
+  await page.locator('.chip.bday', { hasText: /birthday/ }).first().waitFor();
+  await shoot(page, `${label}-10f-calendar-birthday`);
+  await nav(page, 'System', 'My details');
+  await page.getByLabel('Last frost in spring, month').selectOption({ label: 'May' });
+  await page.getByLabel('Last frost in spring, day').fill('10');
+  await page.getByLabel('Last frost in spring, day').press('Tab');
+  await page.getByText('Saved on the drive.').first().waitFor();
+  await shoot(page, `${label}-10g-frost-dates`);
+
   } catch (e) {
     // GitHub shows these as annotations on the job, so a failure can be read without the full log
     const msg = String((e && e.message) || e).split('\n').filter(Boolean).slice(0, 5).join(' | ').slice(0, 700);

@@ -423,6 +423,33 @@ fn extra_dates() -> Vec<Dated> {
     out
 }
 
+/// Dates the program works out by itself: planting times from the seed vault and the person's usual frost dates, and the frost days.
+/// Only days inside the range are made, so none of them ever shows as late.
+fn seasonal_dates(from: i64, to: i64) -> Vec<Dated> {
+    let user_dir = crate::root().join("user");
+    let Ok(prof) = cindrix_core::profile::load(&user_dir) else { return Vec::new() };
+    let seeds = cindrix_core::seeds::Vault::new(&user_dir).list().unwrap_or_default();
+    cindrix_core::seasons::seasonal_dates(&seeds, &prof.last_frost, &prof.first_frost, from, to.min(from + 400))
+}
+
+#[derive(Deserialize)]
+pub struct BirthdayDto {
+    name: String,
+    birthday: String,
+}
+
+/// The Family page's birthdays, kept on the calendar as yearly events. Only events this makes itself are touched.
+#[tauri::command]
+pub fn birthdays_sync(people: Vec<BirthdayDto>) -> Result<(), String> {
+    let u = crate::user();
+    let mut all = u.load_events()?;
+    let list: Vec<(String, String)> = people.into_iter().map(|p| (p.name, p.birthday)).collect();
+    if core_ops::sync_birthdays(&mut all, &list) {
+        u.save_events(&all)?;
+    }
+    Ok(())
+}
+
 /// One list in date order: tasks, events, things that expire and plan checks, from `from` to `to` (YYYY-MM-DD; empty means today and 60 days on).
 #[tauri::command]
 pub fn agenda_get(from: String, to: String) -> Result<Vec<AgendaDto>, String> {
@@ -430,7 +457,10 @@ pub fn agenda_get(from: String, to: String) -> Result<Vec<AgendaDto>, String> {
     let today = calendar::today_days();
     let f = calendar::parse_date(&from).unwrap_or(today);
     let t = calendar::parse_date(&to).unwrap_or(f + 60);
-    let list = core_ops::agenda(&u.load_tasks()?, &u.load_events()?, &extra_dates(), f, t.max(f));
+    let (f, t) = (f, t.max(f));
+    let mut extra = extra_dates();
+    extra.extend(seasonal_dates(f, t));
+    let list = core_ops::agenda(&u.load_tasks()?, &u.load_events()?, &extra, f, t);
     Ok(list.into_iter().map(|a| AgendaDto { date: a.date, kind: a.kind, id: a.id, title: a.title, time: a.time, overdue: a.overdue, project: a.project }).collect())
 }
 

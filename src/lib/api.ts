@@ -27,7 +27,7 @@ export async function dashboardSuggestions(f: DashboardFacts): Promise<Suggestio
   ];
 }
 export type FamilyStatus = { exists: boolean; locked: boolean };
-export type Person = { name: string; conditions: string; medicines: string; allergies: string; doctor: string };
+export type Person = { name: string; conditions: string; medicines: string; allergies: string; doctor: string; /** MM-DD or YYYY-MM-DD; it is put on the Calendar as a yearly event. */ birthday?: string };
 export type Family = { people: Person[]; contacts: string; plan: string };
 
 const tauriHost = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
@@ -568,8 +568,10 @@ export type MyContact = { name: string; how: string; notes: string };
 export type MyDetails = {
   home: MyPlace; bugout: MyPlace[]; adults: number; children: number; babies: number; small_pets: number; large_pets: number;
   contacts: MyContact[]; needs: string; skills: string; notes: string;
+  /** The usual last spring frost and first fall frost as MM-DD; they place planting dates on the Calendar. */
+  last_frost: string; first_frost: string;
 };
-export const emptyDetails = (): MyDetails => ({ home: { name: '', address: '', lat: null, lon: null }, bugout: [], adults: 0, children: 0, babies: 0, small_pets: 0, large_pets: 0, contacts: [], needs: '', skills: '', notes: '' });
+export const emptyDetails = (): MyDetails => ({ home: { name: '', address: '', lat: null, lon: null }, bugout: [], adults: 0, children: 0, babies: 0, small_pets: 0, large_pets: 0, contacts: [], needs: '', skills: '', notes: '', last_frost: '', first_frost: '' });
 
 let previewDetails: MyDetails = emptyDetails();
 export async function profileLoad(): Promise<MyDetails> {
@@ -1265,7 +1267,37 @@ export async function projectFileChat(project: string, chat: string): Promise<Pr
 }
 export async function agendaGet(from = '', to = ''): Promise<AgendaItem[]> {
   if (tauriHost) return call<AgendaItem[]>('agenda_get', { from, to });
-  return memOps.tasks.filter((t) => t.due && !t.done).map((t) => ({ date: t.due, kind: 'task', id: t.id, title: t.title, time: '', overdue: false, project: t.project }));
+  // browser preview: tasks, plus each event on the days it falls (a repeat is worked out day by day)
+  const out: AgendaItem[] = memOps.tasks.filter((t) => t.due && !t.done).map((t) => ({ date: t.due, kind: 'task', id: t.id, title: t.title, time: '', overdue: false, project: t.project }));
+  const day = (s: string) => new Date(s + 'T12:00:00');
+  const iso = (d: Date) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  if (from && to) {
+    for (const e of memOps.events) {
+      const start = day(e.date);
+      for (let d = day(from), n = 0; d <= day(to) && n < 400; d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1, 12), n++) {
+        if (d < start) continue;
+        const hit = e.repeat === 'weekly' ? Math.round((d.getTime() - start.getTime()) / 864e5) % 7 === 0
+          : e.repeat === 'monthly' ? d.getDate() === start.getDate()
+          : e.repeat === 'yearly' ? d.getDate() === start.getDate() && d.getMonth() === start.getMonth()
+          : iso(d) === e.date;
+        if (hit) out.push({ date: iso(d), kind: 'event', id: e.id, title: e.title, time: e.time, overdue: false, project: e.project });
+      }
+    }
+  }
+  return out;
+}
+const AUTO_NOTE = 'Added from the Family page.';
+/** Keep a yearly "<Name>'s birthday" event for each person with a birthday on the Family page (see core/src/ops.rs). */
+export async function birthdaysSync(people: { name: string; birthday: string }[]): Promise<void> {
+  if (tauriHost) return call<void>('birthdays_sync', { people });
+  memOps.events = memOps.events.filter((e) => e.notes !== AUTO_NOTE);
+  for (const p of people) {
+    const b = p.birthday.trim(); const name = p.name.trim();
+    if (!name || !b) continue;
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(b) ? b : /^\d{1,2}-\d{1,2}$/.test(b) ? '2000-' + b.split('-').map((x) => x.padStart(2, '0')).join('-') : '';
+    if (!date) continue;
+    memOps.events.push({ id: nextMem('e', memOps.events.map((e) => e.id)), title: name + "'s birthday", date, time: '', repeat: 'yearly', project: '', notes: AUTO_NOTE, links: [{ kind: 'person', id: name }] });
+  }
 }
 export async function connectSearch(query: string): Promise<Hit[]> {
   if (tauriHost) return call<Hit[]>('connect_search', { query });

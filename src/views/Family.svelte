@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { familyStatus, familyLoad, familySave, exportText, type Family, type Person } from '../lib/api';
+  import { familyStatus, familyLoad, familySave, exportText, birthdaysSync, type Family, type Person } from '../lib/api';
   import { onMount } from 'svelte';
 
   let family: Family = $state({ people: [], contacts: '', plan: '' });
@@ -13,7 +13,7 @@
   let newPass = $state('');
   let newPass2 = $state('');
 
-  const blank = (): Person => ({ name: '', conditions: '', medicines: '', allergies: '', doctor: '' });
+  const blank = (): Person => ({ name: '', conditions: '', medicines: '', allergies: '', doctor: '', birthday: '' });
 
   onMount(refresh);
 
@@ -47,6 +47,8 @@
     error = '';
     try {
       await familySave(family, passphrase || undefined);
+      // birthdays go on the Calendar as yearly events (the Calendar is not locked, so only name and day go there)
+      try { await birthdaysSync(family.people.map((p) => ({ name: p.name, birthday: p.birthday ?? '' }))); } catch { /* the page itself is saved */ }
       status = await familyStatus();
       saved = 'Saved' + (passphrase ? ' (locked)' : '');
       setTimeout(() => (saved = ''), 3000);
@@ -123,6 +125,7 @@
         <label>Doctor and phone<input class="input" bind:value={p.doctor} /></label>
         <label>Conditions<input class="input" bind:value={p.conditions} /></label>
         <label>Allergies<input class="input" bind:value={p.allergies} /></label>
+        <label>Birthday <span class="hint">(shown on the Calendar every year)</span><input class="input" type="date" aria-label="Birthday" bind:value={p.birthday} /></label>
       </div>
       <label class="block">Medicines, exactly as your doctor's plan says
         <textarea class="input" bind:value={p.medicines}></textarea>
@@ -172,4 +175,5 @@
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 12px 0; }
   label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
   .block { margin-top: 8px; }
+  .hint { font-size: 11px; }
 </style>

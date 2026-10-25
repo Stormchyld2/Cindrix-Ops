@@ -32,8 +32,23 @@
     return () => clearTimeout(t);
   });
 
+  // The usual frost days are kept as month and day (MM-DD). The boxes keep what is picked until both are chosen.
+  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const FROST = [{ k: 'last_frost', label: 'Last frost in spring' }, { k: 'first_frost', label: 'First frost in fall' }] as const;
+  let frost: Record<'last_frost' | 'first_frost', { m: string; d: string | number | null }> = $state({ last_frost: { m: '', d: '' }, first_frost: { m: '', d: '' } });
+  function readFrost() {
+    for (const k of ['last_frost', 'first_frost'] as const) {
+      const [m = '', dd = ''] = (d[k] ?? '').split('-');
+      frost[k] = { m: m ? String(Number(m)) : '', d: dd ? String(Number(dd)) : '' };
+    }
+  }
+  function setFrost(k: 'last_frost' | 'first_frost') {
+    const m = Number(frost[k].m), dd = Number(frost[k].d);
+    d[k] = m >= 1 && m <= 12 && dd >= 1 && dd <= 31 ? String(m).padStart(2, '0') + '-' + String(dd).padStart(2, '0') : '';
+  }
+
   onMount(async () => {
-    try { d = await profileLoad(); lastSaved = JSON.stringify($state.snapshot(d)); } catch (e) { err = String(e); }
+    try { d = await profileLoad(); readFrost(); lastSaved = JSON.stringify($state.snapshot(d)); } catch (e) { err = String(e); }
     loaded = true;
   });
 
@@ -106,6 +121,23 @@
   </div>
 
   <div class="panel">
+    <div class="label">USUAL FROST DATES</div>
+    <p class="muted small">The usual last frost in spring and first frost in fall where you garden. With these, the Calendar fills in when to plant each seed in the Seed vault. They are a rule of thumb, not a forecast. Your county extension office or the Seed vault's frost-dates guide can tell you yours.</p>
+    <div class="frost">
+      {#each FROST as f (f.k)}
+        <div class="fr">
+          <span>{f.label}</span>
+          <select class="input" aria-label={f.label + ', month'} bind:value={frost[f.k].m} onchange={() => setFrost(f.k)}>
+            <option value="">Month</option>
+            {#each MONTHS as mn, i}<option value={String(i + 1)}>{mn}</option>{/each}
+          </select>
+          <input class="input num" type="number" min="1" max="31" placeholder="Day" aria-label={f.label + ', day'} bind:value={frost[f.k].d} onchange={() => setFrost(f.k)} />
+        </div>
+      {/each}
+    </div>
+  </div>
+
+  <div class="panel">
     <div class="label">PEOPLE TO REACH AND PLACES TO MEET</div>
     {#each d.contacts as c, i}
       <div class="prow">
@@ -143,4 +175,7 @@
   .nums label { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; }
   .num { width: 80px; flex: none; min-width: 0; }
   .area { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+  .frost { display: flex; flex-wrap: wrap; gap: 18px; }
+  .fr { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .fr span { min-width: 150px; font-size: 0.85rem; }
 </style>

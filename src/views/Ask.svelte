@@ -23,6 +23,9 @@
   let adding = $state(false);
   let newProject = $state('');
   let opened: Record<string, boolean> = $state({});
+  // asks the Projects screen to open one project, on its work page or its settings page
+  let request: { id: string; tab: 'work' | 'settings'; n: number } | null = $state(null);
+  let requestN = 0;
   const openProjects = $derived(projects.filter((p) => p.status !== 'done'));
   const active = $derived(projects.find((p) => p.id === chat.project) ?? null);
   const filed = $derived(new Set(projects.flatMap((p) => p.chats)));
@@ -35,13 +38,14 @@
   async function makeProject() {
     const name = newProject.trim();
     if (!name) { adding = false; return; }
-    try { projects = await projectSave({ id: '', name, status: 'open', notes: '', chats: [], instructions: '', docs: [] }); const p = projects[projects.length - 1]; chat.project = p.id; opened[p.id] = true; newProject = ''; adding = false; } catch (e) { note = String(e); }
+    try { projects = await projectSave({ id: '', name, status: 'open', notes: '', chats: [], instructions: '', docs: [] }); const p = projects[projects.length - 1]; newProject = ''; adding = false; openProject(p.id, 'settings'); } catch (e) { note = String(e); }
   }
-  /** Click a project: new chats are filed in it, and its chats show underneath. Click again to leave it. */
-  function enter(id: string) {
-    opened[id] = !opened[id] || chat.project !== id;
-    chat.project = chat.project === id ? '' : id;
-    section = 'chat';
+  /** Click a project: its page opens (work, or settings), and new chats are filed in it until you leave it. */
+  function openProject(id: string, tab: 'work' | 'settings' = 'work') {
+    chat.project = id;
+    opened[id] = true;
+    section = 'projects';
+    request = { id, tab, n: ++requestN };
   }
   async function moveChat(name: string, to: string) {
     try { projects = await projectFileChat(to, name); } catch (e) { note = String(e); }
@@ -64,6 +68,8 @@
     }
   }
   $effect(() => { section; viewing; chat.file; chat.thread.length === 0; menuOpen = false; });
+  // the project list is read again whenever the screen changes, so a project made on its own page shows here at once
+  $effect(() => { section; void loadProjects(); });
   async function loadPast() {
     try { past = await chatList(); } catch { past = []; }
   }
@@ -180,7 +186,7 @@
 <nav class="side" class:open={menuOpen} aria-label="Chats">
   <button class="btn primary" title="Start a new chat. The one on screen is already saved." disabled={chat.busy} onclick={newChat}>＋ New chat</button>
   {#if !inShare}
-  <button class="navbtn" class:on={section === 'projects'} title="All projects, with their tasks, dates and chats" onclick={() => (section = 'projects')}>Projects</button>
+  <button class="navbtn" class:on={section === 'projects'} title="All projects, with their tasks, dates and chats" onclick={() => { request = null; section = 'projects'; }}>Projects</button>
   <button class="navbtn" class:on={section === 'calendar'} title="Calendar" onclick={() => (section = 'calendar')}>Calendar</button>
   <button class="navbtn" class:on={section === 'todo'} title="To-do list" onclick={() => (section = 'todo')}>To-do list</button>
   <div class="sidehead row between"><span>Projects</span><button class="x show" title="Start a project" aria-label="Start a project" onclick={() => (adding = !adding)}>＋</button></div>
@@ -191,7 +197,9 @@
   {/if}
   {#each openProjects as p (p.id)}
     <div class="proj" class:on={chat.project === p.id}>
-      <button class="chatbtn" title={chat.project === p.id ? 'New chats are filed in this project. Click to leave it.' : 'Click to work in this project: new chats are filed here'} onclick={() => enter(p.id)}>{opened[p.id] ? '▾' : '▸'} {p.name}</button>
+      <button class="caret" title={opened[p.id] ? 'Hide this project\'s chats' : 'Show this project\'s chats'} aria-label={(opened[p.id] ? 'Hide chats of ' : 'Show chats of ') + p.name} onclick={() => (opened[p.id] = !opened[p.id])}>{opened[p.id] ? '▾' : '▸'}</button>
+      <button class="chatbtn" title="Open this project: its tasks, dates, chats and settings. New chats are filed in it." onclick={() => openProject(p.id)}>{p.name}</button>
+      <button class="x show" title="Settings for this project: instructions and documents" aria-label={'Settings for ' + p.name} onclick={() => openProject(p.id, 'settings')}>⚙</button>
     </div>
     {#if opened[p.id]}
       <ul class="pastlist indent">
@@ -225,9 +233,14 @@
 {#if section !== 'chat'}
   <div class="scroller">
     <button class="btn" onclick={() => (section = 'chat')}>← Back to the chat</button>
-    {#if section === 'projects'}<Projects openChat={(n) => { section = 'chat'; void view(n); }} />
-    {:else if section === 'calendar'}<Calendar />
-    {:else}<Todo />{/if}
+    <svelte:boundary>
+      {#if section === 'projects'}<Projects {request} onchange={loadProjects} openChat={(n) => { section = 'chat'; void view(n); }} />
+      {:else if section === 'calendar'}<Calendar />
+      {:else}<Todo />{/if}
+      {#snippet failed(error)}
+        <div class="warn" role="alert">This page could not open. {String((error as Error)?.message ?? error)}</div>
+      {/snippet}
+    </svelte:boundary>
   </div>
 {:else}
 <div class="scroller" bind:this={scroller}>
@@ -321,6 +334,7 @@
   .proj { border-radius: 8px; display: flex; }
   .proj:hover, .proj.on { background: var(--panel); }
   .proj.on .chatbtn { color: var(--accent); }
+  .caret { background: none; border: 0; color: var(--muted); cursor: pointer; padding: 7px 4px 7px 8px; }
   .indent { margin-left: 14px; }
   .x.show { opacity: 1; font-size: 16px; }
   .inproj { max-width: 760px; margin: 0 0 12px; padding: 10px 14px; border-left: 3px solid var(--cat-ops); }

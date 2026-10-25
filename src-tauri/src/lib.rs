@@ -647,6 +647,11 @@ struct MyDetailsDto {
     needs: String,
     skills: String,
     notes: String,
+    /// Usual last spring frost and first fall frost as MM-DD; they place planting dates on the calendar.
+    #[serde(default)]
+    last_frost: String,
+    #[serde(default)]
+    first_frost: String,
 }
 
 fn place_in(p: MyPlaceDto) -> cindrix_core::profile::Place {
@@ -671,6 +676,8 @@ fn profile_load() -> Result<MyDetailsDto, String> {
         needs: p.needs,
         skills: p.skills,
         notes: p.notes,
+        last_frost: p.last_frost,
+        first_frost: p.first_frost,
     })
 }
 
@@ -688,6 +695,8 @@ fn profile_save(p: MyDetailsDto) -> Result<(), String> {
         needs: p.needs,
         skills: p.skills,
         notes: p.notes,
+        last_frost: p.last_frost,
+        first_frost: p.first_frost,
     };
     cindrix_core::profile::save(&root().join("user"), &prof)
 }
@@ -1097,6 +1106,11 @@ fn ask_run(app: &tauri::AppHandle, question: String, guest: bool, project: Optio
                     if let Ok(all) = user().load_projects() {
                         if let Some(pr) = all.iter().find(|x| x.id == id) {
                             p.extend(cindrix_core::ops::instructions_passage(pr));
+                            // what the project remembers: its notes, open tasks, coming dates and the words of its earlier chats
+                            let tasks = user().load_tasks().unwrap_or_default();
+                            let events = user().load_events().unwrap_or_default();
+                            let chats: Vec<(String, String)> = pr.chats.iter().rev().take(30).filter_map(|n| user().read_chat(n).ok().map(|t| (n.clone(), t.chars().take(6000).collect::<String>()))).collect();
+                            p.extend(cindrix_core::ops::memory_passages(pr, &tasks, &events, &chats, &question, cindrix_core::calendar::today_days()));
                             for d in pr.docs.iter().filter(|d| matches!(d.target.rsplit('.').next().map(|e| e.to_lowercase()).as_deref(), Some("txt") | Some("md"))) {
                                 let path = if d.kind == "upload" { user().upload_path(&pr.id, &d.target) } else { Some(std::path::PathBuf::from(&d.target)) };
                                 if let Some(text) = path.and_then(|f| std::fs::read_to_string(f).ok()) {
@@ -1137,7 +1151,9 @@ fn ask_run(app: &tauri::AppHandle, question: String, guest: bool, project: Optio
                 let k = x.heading.to_lowercase();
                 if seen.contains(&k) { false } else { seen.push(k); true }
             });
-            p.truncate(keep);
+            // a chat inside a project gets room for what the project remembers as well
+            let extra = if !guest && project.as_deref().map_or(false, |i| !i.is_empty()) { 2 } else { 0 };
+            p.truncate(keep + extra);
             p
         };
         let max_tokens = match settings::choice("answerLength", "normal", &["short", "normal", "long"]).as_str() {
@@ -2617,6 +2633,7 @@ pub fn run() {
             ops::project_doc_image,
             ops::connect_suggest,
             ops::agenda_get,
+            ops::birthdays_sync,
             ops::connect_search,
             ops::connect_resolve,
             ops::connect_related,

@@ -239,6 +239,49 @@ pub fn occurrences(e: &Event, from: i64, to: i64) -> Vec<i64> {
     out
 }
 
+/// The note on an event the program made itself, so it can tell those from the ones the person typed.
+pub const AUTO_NOTE: &str = "Added from the Family page.";
+
+/// A birthday as a start date for a yearly event: `YYYY-MM-DD` as typed, or `MM-DD` (then the year is 2000).
+fn birthday_start(s: &str) -> Option<String> {
+    let s = s.trim();
+    if s.is_empty() { return None; }
+    if calendar::parse_date(s).is_some() { return Some(s.to_string()); }
+    let (m, d) = crate::seasons::month_day(s)?;
+    Some(format!("2000-{:02}-{:02}", m, d))
+}
+
+/// Keep one yearly "<Name>'s birthday" event for each person who has a birthday on the Family page. Events the person
+/// typed are never touched; only those carrying `AUTO_NOTE` are made, changed or removed here. True when anything changed.
+pub fn sync_birthdays(events: &mut Vec<Event>, people: &[(String, String)]) -> bool {
+    let mut changed = false;
+    let wanted: Vec<(String, String)> = people
+        .iter()
+        .filter_map(|(n, b)| {
+            let name = n.split_whitespace().collect::<Vec<_>>().join(" ");
+            if name.is_empty() || name.contains([',', '\t']) { return None; }
+            Some((name, birthday_start(b)?))
+        })
+        .collect();
+    let before = events.len();
+    events.retain(|e| e.notes != AUTO_NOTE || e.links.iter().any(|l| l.kind == "person" && wanted.iter().any(|(n, _)| *n == l.id)));
+    if events.len() != before { changed = true; }
+    for (name, start) in &wanted {
+        let title = format!("{}'s birthday", name);
+        if let Some(e) = events.iter_mut().find(|e| e.notes == AUTO_NOTE && e.links.iter().any(|l| l.kind == "person" && l.id == *name)) {
+            if e.date != *start || e.title != title || e.repeat != "yearly" {
+                e.date = start.clone(); e.title = title; e.repeat = "yearly".into();
+                changed = true;
+            }
+        } else {
+            let id = next_id('e', events.iter().map(|e| e.id.clone()));
+            events.push(Event { id, title, date: start.clone(), time: String::new(), repeat: "yearly".into(), project: String::new(), notes: AUTO_NOTE.into(), links: vec![Link { kind: "person".into(), id: name.clone() }] });
+            changed = true;
+        }
+    }
+    changed
+}
+
 // ---------- projects ----------
 
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -357,6 +400,57 @@ pub fn instructions_passage(p: &Project) -> Option<crate::retrieval::Passage> {
         t.push_str(&format!("\nDocuments kept with this project: {}.", docs.join(", ")));
     }
     Some(crate::retrieval::Passage { source: "Project".into(), heading: format!("Project instructions: {}", p.name), text: t, score: 100.0, link: String::new() })
+}
+
+/// What the project remembers, as passages for the assistant: a summary (notes, open tasks, coming dates, the
+/// chats filed under it) that always comes first, and the most relevant words from those earlier chats.
+/// `chats` is each filed chat's file name and text. The standing instructions come from `instructions_passage`.
+/// Plain facts only: nothing here makes the assistant's safety rules weaker.
+pub fn memory_passages(p: &Project, tasks: &[Task], events: &[Event], chats: &[(String, String)], question: &str, today: i64) -> Vec<crate::retrieval::Passage> {
+    use crate::retrieval::{search_text, Passage};
+    let mut out = Vec::new();
+    let mut s = format!("What this project (\"{}\", {}) holds.", p.name, if p.status == "done" { "finished" } else { "open" });
+    let notes = p.notes.trim();
+    if !notes.is_empty() {
+        s.push_str(&format!("\nNotes: {}", notes.chars().take(1200).collect::<String>()));
+    }
+    let open: Vec<&Task> = tasks.iter().filter(|t| t.project == p.id && t.done.is_empty()).collect();
+    if !open.is_empty() {
+        let list: Vec<String> = open.iter().take(15).map(|t| if t.due.is_empty() { t.title.clone() } else { format!("{} (due {})", t.title, t.due) }).collect();
+        s.push_str(&format!("\nOpen tasks: {}.", list.join("; ")));
+    }
+    let mut dates: Vec<(i64, String)> = Vec::new();
+    for e in events.iter().filter(|e| e.project == p.id) {
+        for d in occurrences(e, today, today + 90) {
+            dates.push((d, format!("{} {}{}", ymd(d), if e.time.is_empty() { String::new() } else { format!("{} ", e.time) }, e.title)));
+        }
+    }
+    dates.sort();
+    if !dates.is_empty() {
+        let list: Vec<String> = dates.into_iter().take(10).map(|(_, t)| t).collect();
+        s.push_str(&format!("\nComing dates: {}.", list.join("; ")));
+    }
+    if !p.docs.is_empty() {
+        let names: Vec<&str> = p.docs.iter().map(|d| d.name.as_str()).collect();
+        s.push_str(&format!("\nDocuments kept here: {}.", names.join(", ")));
+    }
+    if !chats.is_empty() {
+        s.push_str(&format!("\nEarlier chats about this project: {}.", chats.len()));
+    }
+    out.push(Passage { source: "Project".into(), heading: format!("Project memory: {}", p.name), text: s, score: 95.0, link: String::new() });
+    // the best-matching words from the earlier chats, newest first when they tie
+    let mut found: Vec<Passage> = Vec::new();
+    for (name, text) in chats {
+        let nice = name.trim_end_matches(".txt");
+        for mut x in search_text(&format!("Project chat {}", nice), text, question, 1) {
+            x.score += 50.0;
+            found.push(x);
+        }
+    }
+    found.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+    found.truncate(2);
+    out.extend(found);
+    out
 }
 
 /// Take a document out of the list. The caller deletes the stored copy of an upload.
@@ -672,6 +766,59 @@ mod tests {
     use super::*;
 
     fn day(s: &str) -> i64 { calendar::parse_date(s).unwrap() }
+
+    #[test]
+    fn birthdays_become_yearly_events_and_the_persons_own_events_are_left_alone() {
+        let mine = Event { id: "e1".into(), title: "Sam's birthday party".into(), date: "2026-06-01".into(), notes: "my own".into(), ..Default::default() };
+        let mut ev = vec![mine.clone()];
+        let people = vec![("Sam".to_string(), "03-14".to_string()), ("Ana Lee".to_string(), "2015-11-02".to_string()), ("Nobody".to_string(), "".to_string()), ("Bad".to_string(), "31-31".to_string())];
+        assert!(sync_birthdays(&mut ev, &people));
+        assert_eq!(ev.len(), 3);
+        assert_eq!(ev[0], mine);
+        let sam = ev.iter().find(|e| e.title == "Sam's birthday").unwrap();
+        assert_eq!((sam.date.as_str(), sam.repeat.as_str()), ("2000-03-14", "yearly"));
+        let ana = ev.iter().find(|e| e.title == "Ana Lee's birthday").unwrap();
+        assert_eq!(ana.date, "2015-11-02");
+        // it shows up on the right day in later years
+        assert_eq!(occurrences(sam, day("2027-01-01"), day("2027-12-31")), vec![day("2027-03-14")]);
+        // nothing changed: nothing to write
+        assert!(!sync_birthdays(&mut ev, &people));
+        // a changed date moves the same event, a removed person takes theirs away
+        let people2 = vec![("Sam".to_string(), "03-15".to_string())];
+        assert!(sync_birthdays(&mut ev, &people2));
+        assert_eq!(ev.len(), 2);
+        assert_eq!(ev.iter().find(|e| e.title == "Sam's birthday").unwrap().date, "2000-03-15");
+        assert!(ev.iter().any(|e| e.id == "e1"));
+    }
+
+    #[test]
+    fn project_memory_has_a_summary_and_old_chat_words() {
+        let p = Project { id: "p1".into(), name: "Winter prep".into(), status: "open".into(), notes: "Cabin goal: 3 months of food".into(), instructions: "Use metric.".into(), ..Default::default() };
+        let tasks = vec![
+            Task { id: "t1".into(), title: "Buy rice".into(), due: "2026-11-05".into(), project: "p1".into(), ..Default::default() },
+            Task { id: "t2".into(), title: "Already done".into(), done: "2026-10-01".into(), project: "p1".into(), ..Default::default() },
+            Task { id: "t3".into(), title: "Other project".into(), project: "p2".into(), ..Default::default() },
+        ];
+        let events = vec![Event { id: "e1".into(), title: "Stove check".into(), date: "2026-11-10".into(), project: "p1".into(), ..Default::default() }];
+        let chats = vec![("2026-10-20-0900-wood.txt".to_string(), "YOU: how much firewood does a cord of oak give\nCINDRIX: A cord of oak firewood heats a small cabin for about two months.".to_string())];
+        let m = memory_passages(&p, &tasks, &events, &chats, "how much firewood do we need", day("2026-10-25"));
+        assert_eq!(m[0].heading, "Project memory: Winter prep");
+        assert!(m[0].text.contains("Cabin goal"));
+        assert!(m[0].text.contains("Buy rice (due 2026-11-05)"));
+        assert!(!m[0].text.contains("Already done") && !m[0].text.contains("Other project"));
+        assert!(m[0].text.contains("2026-11-10 Stove check"));
+        assert!(m[0].text.contains("Earlier chats about this project: 1"));
+        assert!(m.iter().any(|x| x.heading.is_empty() || x.source.starts_with("Project chat")), "the old chat should be searched");
+        assert!(m.iter().skip(1).all(|x| x.score > 50.0));
+    }
+
+    #[test]
+    fn project_memory_without_anything_is_still_a_short_summary() {
+        let p = Project { id: "p1".into(), name: "Garden".into(), status: "done".into(), ..Default::default() };
+        let m = memory_passages(&p, &[], &[], &[], "anything", day("2026-10-25"));
+        assert_eq!(m.len(), 1);
+        assert!(m[0].text.contains("finished"));
+    }
 
     #[test]
     fn tasks_round_trip_with_awkward_text() {

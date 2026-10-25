@@ -41,6 +41,25 @@ suggestions look at those entries when asked, so there is nothing to build, keep
 exception: they have no id, so they are not searched or suggested; to connect one, add it to a project as a document. Searching inside every file
 would need a real index, which is a separate, larger job.
 
+## Project memory (what the assistant remembers about a project)
+
+A chat inside a project gets, besides the project's instructions and its text documents, `ops::memory_passages`: one summary passage
+(the project's notes, its open tasks with due days, its dates for the next 90 days, the documents it keeps, how many chats are filed in it)
+that always ranks first, and up to two passages from the project's earlier chats (the newest 30, first 6000 characters each) that best match the
+question. A project chat is allowed two more sources than other chats so this does not push the library out. Guests get none of it.
+The assistant's safety rules (no medicine doses) are unchanged.
+
+## Filled in by itself
+
+* **Birthdays.** The Family page has a Birthday for each person. Saving the page keeps one yearly "<Name>'s birthday" event for each (`ops::sync_birthdays`,
+  command `birthdays_sync`). Only events carrying the note "Added from the Family page." are made, changed or removed, so the person's own events are never
+  touched. The Calendar is not passphrase-locked, so a locked Family page still puts the name and day on the Calendar; the page says so.
+* **Planting times and frost days.** Settings > My details has the usual last spring frost and first fall frost (`profile.txt`: `last_frost`, `first_frost`, as `MM-DD`).
+  `seasons::seasonal_dates` turns each seed's "When to plant" words into a day (a named month, or so many days from a frost date; "start indoors before last
+  frost" is six weeks before). Words it cannot read, or a frost date that is not entered, leave that seed off rather than guessing. They are rules of thumb and
+  say "about now" in their title. Only days inside the range asked for are made, so they never show as late.
+* The Calendar shows all of it, colour-coded, as a large month or week.
+
 ## Rules
 
 * All files are plain text, tab-separated, one record per line, written with `fsio::backup_then_write` (the old copy is kept in `user/backups`).
