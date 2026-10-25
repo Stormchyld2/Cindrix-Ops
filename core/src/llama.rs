@@ -85,21 +85,51 @@ pub fn delta_content(event_json: &str) -> Option<String> {
     read_json_string(after).map(|x| x.0)
 }
 
+/// How freely the model words its answers. Three plain choices; the numbers are
+/// the usual llama.cpp sampling settings (idea from Project NOMAD's presets).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Sampler {
+    pub temperature: f32,
+    pub top_k: u32,
+    pub min_p: f32,
+    pub repeat_penalty: f32,
+}
+
+impl Sampler {
+    /// "exact": stays closest to the pages. "steady": the default. "natural": reads more like talk.
+    pub fn named(name: &str) -> Sampler {
+        match name {
+            "exact" => Sampler { temperature: 0.1, top_k: 20, min_p: 0.1, repeat_penalty: 1.0 },
+            "natural" => Sampler { temperature: 0.5, top_k: 40, min_p: 0.05, repeat_penalty: 1.1 },
+            _ => Sampler::steady(),
+        }
+    }
+    pub fn steady() -> Sampler {
+        Sampler { temperature: 0.2, top_k: 40, min_p: 0.08, repeat_penalty: 1.05 }
+    }
+}
+
+impl Default for Sampler {
+    fn default() -> Self {
+        Sampler::steady()
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct ChatRequest {
     pub system: String,
     pub user: String,
     pub max_tokens: u32,
-    pub temperature: f32,
+    pub sampler: Sampler,
 }
 
 impl ChatRequest {
     pub fn to_json(&self) -> String {
         format!(
-            "{{\"model\":\"cindrix\",\"stream\":true,\"temperature\":{},\"max_tokens\":{},\
+            "{{\"model\":\"cindrix\",\"stream\":true,\"temperature\":{},\"top_k\":{},\"min_p\":{},\"repeat_penalty\":{},\"max_tokens\":{},\
 \"chat_template_kwargs\":{{\"enable_thinking\":false}},\
 \"messages\":[{{\"role\":\"system\",\"content\":\"{}\"}},{{\"role\":\"user\",\"content\":\"{}\"}}]}}",
-            self.temperature, self.max_tokens, json_escape(&self.system), json_escape(&self.user)
+            self.sampler.temperature, self.sampler.top_k, self.sampler.min_p, self.sampler.repeat_penalty, self.max_tokens, json_escape(&self.system), json_escape(&self.user)
         )
     }
 }
@@ -259,6 +289,23 @@ pub fn chat_stream(
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn answer_styles_have_three_settings_and_unknown_means_steady() {
+        assert!(Sampler::named("exact").temperature < Sampler::named("steady").temperature);
+        assert!(Sampler::named("steady").temperature < Sampler::named("natural").temperature);
+        assert_eq!(Sampler::named("anything else"), Sampler::steady());
+        assert_eq!(Sampler::default(), Sampler::steady());
+    }
+
+    #[test]
+    fn the_request_carries_the_sampler_settings() {
+        let mut r = ChatRequest { system: "s".into(), user: "u".into(), max_tokens: 10, sampler: Sampler::named("exact") };
+        let j = r.to_json();
+        assert!(j.contains("\"temperature\":0.1,\"top_k\":20,\"min_p\":0.1,\"repeat_penalty\":1,"), "{}", j);
+        r.sampler = Sampler::named("natural");
+        assert!(r.to_json().contains("\"top_k\":40,\"min_p\":0.05,\"repeat_penalty\":1.1,"));
+    }
+
     use super::*;
     use std::cell::Cell;
     use std::io::Read;
@@ -303,7 +350,7 @@ mod tests {
     }
 
     fn req() -> ChatRequest {
-        ChatRequest { system: "s".into(), user: "How long do I boil water?".into(), max_tokens: 64, temperature: 0.2 }
+        ChatRequest { system: "s".into(), user: "How long do I boil water?".into(), max_tokens: 64, sampler: Sampler::steady() }
     }
 
     #[test]
@@ -377,11 +424,12 @@ mod tests {
 pub struct LlamaModel {
     pub port: u16,
     pub max_tokens: u32,
+    pub sampler: Sampler,
 }
 
 impl crate::pipeline::Model for LlamaModel {
     fn complete(&self, system: &str, user: &str, on_token: &mut dyn FnMut(&str) -> bool) -> Result<String, String> {
-        let req = ChatRequest { system: system.to_string(), user: user.to_string(), max_tokens: self.max_tokens, temperature: 0.2 };
+        let req = ChatRequest { system: system.to_string(), user: user.to_string(), max_tokens: self.max_tokens, sampler: self.sampler };
         let stop = std::cell::Cell::new(false);
         chat_stream(
             self.port,
@@ -446,7 +494,7 @@ mod end_to_end {
     #[test]
     fn a_real_http_stream_with_a_dose_never_reaches_the_screen() {
         let port = serve(&["Take", " 12", " units", " of", " insulin", " now", "."]);
-        let model = LlamaModel { port, max_tokens: 64 };
+        let model = LlamaModel { port, max_tokens: 64, sampler: Sampler::default() };
         let mut events = Vec::new();
         let r = answer_stream("How long do I boil water?", &lib(), &model, &mut |e| events.push(e));
         assert_eq!(r.kind, Kind::Replaced);
@@ -460,7 +508,7 @@ mod end_to_end {
     #[test]
     fn a_real_http_stream_with_a_good_answer_arrives_whole() {
         let port = serve(&["Boil", " it", " for", " 1", " minute", "."]);
-        let model = LlamaModel { port, max_tokens: 64 };
+        let model = LlamaModel { port, max_tokens: 64, sampler: Sampler::default() };
         let r = answer_stream("How long do I boil water?", &lib(), &model, &mut |_| {});
         assert_eq!(r.kind, Kind::Answered);
         assert_eq!(r.text, "Boil it for 1 minute.");

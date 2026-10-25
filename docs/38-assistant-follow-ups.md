@@ -12,3 +12,10 @@ The assistant remembers the last few questions in the same chat, so "and for chi
   the interface sends the earlier questions with each ask (`src/lib/api.ts`, `ask(..., history)`),
   and the share server accepts up to 4 in `body.history`.
 - Idea taken from Project NOMAD (Apache-2.0), written fresh for this code base.
+
+## Answer style
+
+Settings > How it answers > Answer style: Exact, Steady (default) or Natural. It changes the model's
+sampling numbers (`core/src/llama.rs`, `Sampler::named`): temperature 0.1 / 0.2 / 0.5 with matching
+top-k, min-p and repeat penalty. Exact sticks closest to the pages; Natural reads more like talk.
+The safety rules are not affected by the style.

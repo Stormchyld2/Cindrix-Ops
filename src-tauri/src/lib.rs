@@ -1164,6 +1164,7 @@ fn ask_run(app: &tauri::AppHandle, question: String, history: Vec<String>, guest
             "long" => 1400,
             _ => 700,
         };
+        let sampler = cindrix_core::llama::Sampler::named(&settings::choice("answerStyle", "steady", &["exact", "steady", "natural"]));
         let mut emit = |e: pipeline::Event| {
             let ev = match e {
                 pipeline::Event::Text(t) => StreamEvent { replace: false, text: t },
@@ -1172,7 +1173,7 @@ fn ask_run(app: &tauri::AppHandle, question: String, history: Vec<String>, guest
             send(ev);
         };
         let r = match port {
-            Some(p) => pipeline::answer_stream_with(&asked, &passages, &LlamaModel { port: p, max_tokens }, &mut emit),
+            Some(p) => pipeline::answer_stream_with(&asked, &passages, &LlamaModel { port: p, max_tokens, sampler }, &mut emit),
             None => pipeline::answer_stream_with(&asked, &passages, &pipeline::NoModel, &mut emit),
         };
         Ok(reply_dto(r))

@@ -25,6 +25,7 @@ export type Settings = {
   shareAuto: boolean;
   answerSources: number;
   answerLength: 'short' | 'normal' | 'long';
+  answerStyle: 'exact' | 'steady' | 'natural';
   searchSpeed: 'quick' | 'normal' | 'thorough';
   showSourceChips: boolean;
   extraFolders: string[];
@@ -61,6 +62,7 @@ export const DEFAULTS: Settings = {
   shareAuto: true,
   answerSources: 3,
   answerLength: 'normal',
+  answerStyle: 'steady',
   searchSpeed: 'normal',
   showSourceChips: true,
   extraFolders: [],
@@ -91,6 +93,7 @@ export const RANGES: Record<string, [number, number]> = {
 export const CHOICES: Record<string, readonly string[]> = {
   startScreen: SCREENS,
   answerLength: ['short', 'normal', 'long'],
+  answerStyle: ['exact', 'steady', 'natural'],
   searchSpeed: ['quick', 'normal', 'thorough'],
   intelStart: ['archives', 'first'],
   intelReader: ['server', 'builtin'],

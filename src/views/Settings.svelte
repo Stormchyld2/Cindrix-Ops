@@ -44,7 +44,7 @@
 
   type BoolKey = { [K in keyof Settings]: Settings[K] extends boolean ? K : never }[keyof Settings];
   type NumKey = { [K in keyof Settings]: Settings[K] extends number ? K : never }[keyof Settings];
-  type ChoiceKey = 'startScreen' | 'answerLength' | 'searchSpeed' | 'intelStart' | 'intelReader' | 'mapUnits';
+  type ChoiceKey = 'startScreen' | 'answerLength' | 'answerStyle' | 'searchSpeed' | 'intelStart' | 'intelReader' | 'mapUnits';
 
   let ms = $state<ModelStatus | null>(null);
   let models: ModelChoice[] = $state([]);
@@ -235,6 +235,7 @@
       <div class="label">HOW IT ANSWERS</div>
       {@render slider('answerSources', 'Passages it reads', '', 'How many pieces of text it reads before answering. More can help with hard questions, but it is slower and needs more memory.')}
       {@render choose('answerLength', 'Answer length', 'Short answers finish sooner. Long answers can explain more.', [['short', 'Short'], ['normal', 'Normal'], ['long', 'Long']])}
+      {@render choose('answerStyle', 'Answer style', 'Exact sticks closest to the pages. Steady is the everyday choice. Natural sounds more like talking, but may wander a little.', [['exact', 'Exact'], ['steady', 'Steady'], ['natural', 'Natural']])}
       {@render choose('searchSpeed', 'How long to look through files', 'Searching loose files is done fresh for each question. Quick stops after about a second; thorough keeps going for about eight, which a very large drive may need.', [['quick', 'Quick'], ['normal', 'Normal'], ['thorough', 'Thorough']])}
       {@render toggle('showSourceChips', 'Show where each answer came from', 'The small labels under an answer naming the page or file it used.')}
     </div>
@@ -250,7 +251,7 @@
       {/if}
       <div class="row"><button class="btn" onclick={addFolder}>Add a folder…</button></div>
     </div>
-    {@render reset(['searchBooks', 'searchArchives', 'searchFiles', 'searchSavedSites', 'answerSources', 'answerLength', 'searchSpeed', 'showSourceChips', 'extraFolders'])}
+    {@render reset(['searchBooks', 'searchArchives', 'searchFiles', 'searchSavedSites', 'answerSources', 'answerLength', 'answerStyle', 'searchSpeed', 'showSourceChips', 'extraFolders'])}
   {:else if tab === 'My details'}
     <MyDetails />
   {:else if tab === 'Sharing'}
