@@ -184,13 +184,13 @@ export type ModelChoice = { file: string; size: string; recommended: boolean };
 type StreamEvent = { replace: boolean; text: string };
 
 /** Ask a question. onText is called as the answer arrives: replace=true means swap everything shown. */
-export async function ask(question: string, onText: (text: string, replace: boolean) => void, project = ''): Promise<Reply> {
-  if (inShare) return askOverNetwork(question, onText);
+export async function ask(question: string, onText: (text: string, replace: boolean) => void, project = '', history: string[] = []): Promise<Reply> {
+  if (inShare) return askOverNetwork(question, onText, history);
   if (inTauri) {
     const { Channel } = await import('@tauri-apps/api/core');
     const ch = new Channel<StreamEvent>();
     ch.onmessage = (e) => onText(e.text, e.replace);
-    return call<Reply>('ask_stream', { question, project: project || null, onEvent: ch });
+    return call<Reply>('ask_stream', { question, history, project: project || null, onEvent: ch });
   }
   const text = 'Browser preview only. Run the desktop app to ask the library.';
   onText(text, true);
@@ -198,10 +198,10 @@ export async function ask(question: string, onText: (text: string, replace: bool
 }
 
 /** A question asked from another device: the words arrive as server-sent events. */
-async function askOverNetwork(question: string, onText: (text: string, replace: boolean) => void): Promise<Reply> {
+async function askOverNetwork(question: string, onText: (text: string, replace: boolean) => void, history: string[] = []): Promise<Reply> {
   let r: Response;
   try {
-    r = await fetch('/api/ask_stream', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question }) });
+    r = await fetch('/api/ask_stream', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question, history }) });
   } catch {
     throw 'The host could not be reached. Check that you are still on its Wi-Fi.';
   }

@@ -1066,9 +1066,9 @@ struct StreamEvent {
 }
 
 #[tauri::command]
-async fn ask_stream(question: String, project: Option<String>, on_event: Channel<StreamEvent>, app: tauri::AppHandle) -> Result<ReplyDto, String> {
+async fn ask_stream(question: String, history: Option<Vec<String>>, project: Option<String>, on_event: Channel<StreamEvent>, app: tauri::AppHandle) -> Result<ReplyDto, String> {
     tauri::async_runtime::spawn_blocking(move || {
-        ask_run(&app, question, false, project, |e| {
+        ask_run(&app, question, history.unwrap_or_default(), false, project, |e| {
             let _ = on_event.send(e);
         })
     })
@@ -1078,8 +1078,11 @@ async fn ask_stream(question: String, project: Option<String>, on_event: Channel
 
 /// Answer one question, sending the words as they come. `guest` is a question from another device: it
 /// never reads the person's own folder (notes, chats, family page).
-fn ask_run(app: &tauri::AppHandle, question: String, guest: bool, project: Option<String>, mut send: impl FnMut(StreamEvent)) -> Result<ReplyDto, String> {
+fn ask_run(app: &tauri::AppHandle, question: String, history: Vec<String>, guest: bool, project: Option<String>, mut send: impl FnMut(StreamEvent)) -> Result<ReplyDto, String> {
     {
+        // a follow-up ("how long does it last?") borrows the words of the question before it, for the search and for the model
+        let followed = cindrix_core::followup::resolve(&question, &history);
+        let (search, asked) = (followed.search, followed.asked);
         let lib = content_sub("library-sample");
         let port = *app.state::<AppState>().port.lock().unwrap();
         let kport = *app.state::<AppState>().kiwix_port.lock().unwrap();
@@ -1095,11 +1098,11 @@ fn ask_run(app: &tauri::AppHandle, question: String, guest: bool, project: Optio
             _ => 2500,
         };
         let passages = || {
-            let mut p = cindrix_core::retrieval::search(&lib, &question, 3);
+            let mut p = cindrix_core::retrieval::search(&lib, &search, 3);
             if !guest {
                 // the household's own facts, for questions about home, bug-out places and who lives here
                 if let Ok(mine) = cindrix_core::profile::load(&root().join("user")) {
-                    p.extend(cindrix_core::profile::passage_for(&question, &mine));
+                    p.extend(cindrix_core::profile::passage_for(&search, &mine));
                 }
                 // a chat inside a project: its standing instructions, and the text of its plain-text documents
                 if let Some(id) = project.as_deref().filter(|i| !i.is_empty()) {
@@ -1110,12 +1113,12 @@ fn ask_run(app: &tauri::AppHandle, question: String, guest: bool, project: Optio
                             let tasks = user().load_tasks().unwrap_or_default();
                             let events = user().load_events().unwrap_or_default();
                             let chats: Vec<(String, String)> = pr.chats.iter().rev().take(30).filter_map(|n| user().read_chat(n).ok().map(|t| (n.clone(), t.chars().take(6000).collect::<String>()))).collect();
-                            p.extend(cindrix_core::ops::memory_passages(pr, &tasks, &events, &chats, &question, cindrix_core::calendar::today_days()));
+                            p.extend(cindrix_core::ops::memory_passages(pr, &tasks, &events, &chats, &search, cindrix_core::calendar::today_days()));
                             for d in pr.docs.iter().filter(|d| matches!(d.target.rsplit('.').next().map(|e| e.to_lowercase()).as_deref(), Some("txt") | Some("md"))) {
                                 let path = if d.kind == "upload" { user().upload_path(&pr.id, &d.target) } else { Some(std::path::PathBuf::from(&d.target)) };
                                 if let Some(text) = path.and_then(|f| std::fs::read_to_string(f).ok()) {
                                     let text: String = text.chars().take(3000).collect();
-                                    p.extend(cindrix_core::retrieval::search_text(&d.name, &text, &question, 2));
+                                    p.extend(cindrix_core::retrieval::search_text(&d.name, &text, &search, 2));
                                 }
                             }
                         }
@@ -1123,18 +1126,18 @@ fn ask_run(app: &tauri::AppHandle, question: String, guest: bool, project: Optio
                 }
             }
             if use_books {
-                p.extend(bundled_shelf().search(&question, 2));
-                p.extend(user_shelf().search(&question, 2));
+                p.extend(bundled_shelf().search(&search, 2));
+                p.extend(user_shelf().search(&search, 2));
             }
             if use_sites {
-                p.extend(cindrix_core::retrieval::search(&web_text_dir(), &question, 2));
+                p.extend(cindrix_core::retrieval::search(&web_text_dir(), &search, 2));
             }
             if use_archives {
                 if let Some(k) = kport {
-                    p.extend(kiwix::search(k, &question, 2));
+                    p.extend(kiwix::search(k, &search, 2));
                 }
                 // every archive on the drive, by title (needs no Kiwix program)
-                p.extend(zimview::library().passages(&question, 2, 3));
+                p.extend(zimview::library().passages(&search, 2, 3));
             }
             if use_files {
                 // loose text, Markdown and web page files anywhere on the drive, and in the folders added in Settings
@@ -1142,7 +1145,7 @@ fn ask_run(app: &tauri::AppHandle, question: String, guest: bool, project: Optio
                 roots.extend(libs::other_roots(&root()));
                 roots.extend(settings::folders("extraFolders"));
                 let lim = filesearch::Limits { budget: Duration::from_millis(budget_ms), hide_user: guest, ..filesearch::Limits::default() };
-                p.extend(filesearch::search(&root(), &roots, &question, 2, &lim).0);
+                p.extend(filesearch::search(&root(), &roots, &search, 2, &lim).0);
             }
             p.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
             // the same article found two ways counts once
@@ -1169,8 +1172,8 @@ fn ask_run(app: &tauri::AppHandle, question: String, guest: bool, project: Optio
             send(ev);
         };
         let r = match port {
-            Some(p) => pipeline::answer_stream_with(&question, &passages, &LlamaModel { port: p, max_tokens }, &mut emit),
-            None => pipeline::answer_stream_with(&question, &passages, &pipeline::NoModel, &mut emit),
+            Some(p) => pipeline::answer_stream_with(&asked, &passages, &LlamaModel { port: p, max_tokens }, &mut emit),
+            None => pipeline::answer_stream_with(&asked, &passages, &pipeline::NoModel, &mut emit),
         };
         Ok(reply_dto(r))
     }

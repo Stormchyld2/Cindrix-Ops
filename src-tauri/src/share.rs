@@ -590,7 +590,10 @@ fn photo_add_call(req: &Request, role: &Role) -> Response {
 /// A question to the assistant. The words are sent as they come (server-sent events) and the last
 /// message carries the whole reply. Only two questions run at once; the rest are asked to wait.
 fn ask_sse(app: &tauri::AppHandle, req: &Request, stream: &mut TcpStream) {
-    let question = serde_json::from_slice::<Value>(&req.body).ok().and_then(|v| v.get("question").and_then(|q| q.as_str()).map(|s| s.to_string())).unwrap_or_default();
+    let body = serde_json::from_slice::<Value>(&req.body).ok();
+    let question = body.as_ref().and_then(|v| v.get("question").and_then(|q| q.as_str()).map(|s| s.to_string())).unwrap_or_default();
+    // the earlier questions of this chat, so a follow-up makes sense (at most a few short ones)
+    let history: Vec<String> = body.as_ref().and_then(|v| v.get("history").and_then(|h| h.as_array()).map(|a| a.iter().filter_map(|x| x.as_str().map(|s| s.to_string())).take(4).collect())).unwrap_or_default();
     let head = "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream; charset=utf-8\r\nCache-Control: no-cache\r\nConnection: close\r\nX-Accel-Buffering: no\r\n\r\n";
     let _ = stream.write_all(head.as_bytes());
     let mut out = &*stream;
@@ -607,7 +610,7 @@ fn ask_sse(app: &tauri::AppHandle, req: &Request, stream: &mut TcpStream) {
         event(json!({ "error": "Others are asking right now. Wait a moment and ask again." }));
         return;
     };
-    let r = crate::ask_run(app, question, true, None, |e: StreamEvent| event(json!({ "replace": e.replace, "text": e.text })));
+    let r = crate::ask_run(app, question, history, true, None, |e: StreamEvent| event(json!({ "replace": e.replace, "text": e.text })));
     match r {
         Ok(dto) => event(json!({ "done": dto })),
         Err(e) => event(json!({ "error": e })),

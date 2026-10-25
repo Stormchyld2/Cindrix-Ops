@@ -86,6 +86,8 @@
     if (!q || chat.busy) return;
     chat.question = '';
     viewing = null;
+    // the person's earlier questions in this chat, so a follow-up ("how long does it last?") can be understood
+    const earlier = chat.thread.filter((m) => m.who === 'you').map((m) => m.text).slice(-3);
     chat.thread.push({ who: 'you', text: q });
     chat.busy = true;
     chat.thread.push({ who: 'app', text: '' });
@@ -93,7 +95,7 @@
     try {
       const reply = await ask(q, (t, replace) => {
         chat.thread[i].text = replace ? t : chat.thread[i].text + t;
-      }, chat.project);
+      }, chat.project, earlier);
       chat.thread[i] = { who: 'app', text: reply.text, reply };
     } catch (e) {
       chat.thread[i].text = 'Something went wrong: ' + String(e);
