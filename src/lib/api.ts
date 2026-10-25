@@ -1176,6 +1176,8 @@ export type Ref = { kind: string; id: string; title: string };
 export type Change = { when: number; kind: string; id: string; action: string };
 
 const memOps: OpsData = { tasks: [], events: [], projects: [], today: new Date().toISOString().slice(0, 10) };
+// In the browser preview a screen may hand over a reactive copy of a record; a plain copy is what gets kept (and cloned).
+function plain<T>(v: T): T { return JSON.parse(JSON.stringify(v)) as T; }
 const nextMem = (p: string, ids: string[]) => p + (Math.max(0, ...ids.map((i) => Number(i.slice(1)) || 0)) + 1);
 
 export async function opsLoad(): Promise<OpsData> {
@@ -1184,8 +1186,9 @@ export async function opsLoad(): Promise<OpsData> {
 }
 export async function taskSave(task: TaskRec): Promise<TaskRec[]> {
   if (tauriHost) return call<TaskRec[]>('task_save', { task });
-  if (!task.id) memOps.tasks.push({ ...task, id: nextMem('t', memOps.tasks.map((t) => t.id)) });
-  else memOps.tasks = memOps.tasks.map((t) => (t.id === task.id ? task : t));
+  const rec = plain(task);
+  if (!rec.id) memOps.tasks.push({ ...rec, id: nextMem('t', memOps.tasks.map((t) => t.id)) });
+  else memOps.tasks = memOps.tasks.map((t) => (t.id === rec.id ? rec : t));
   return structuredClone(memOps.tasks);
 }
 export async function taskDelete(id: string): Promise<TaskRec[]> {
@@ -1200,8 +1203,9 @@ export async function taskDone(id: string, done: boolean): Promise<TaskRec[]> {
 }
 export async function eventSave(event: EventRec): Promise<EventRec[]> {
   if (tauriHost) return call<EventRec[]>('event_save', { event });
-  if (!event.id) memOps.events.push({ ...event, id: nextMem('e', memOps.events.map((e) => e.id)) });
-  else memOps.events = memOps.events.map((e) => (e.id === event.id ? event : e));
+  const rec = plain(event);
+  if (!rec.id) memOps.events.push({ ...rec, id: nextMem('e', memOps.events.map((e) => e.id)) });
+  else memOps.events = memOps.events.map((e) => (e.id === rec.id ? rec : e));
   return structuredClone(memOps.events);
 }
 export async function eventDelete(id: string): Promise<EventRec[]> {
@@ -1211,8 +1215,9 @@ export async function eventDelete(id: string): Promise<EventRec[]> {
 }
 export async function projectSave(project: ProjectRec): Promise<ProjectRec[]> {
   if (tauriHost) return call<ProjectRec[]>('project_save', { project });
-  if (!project.id) memOps.projects.push({ ...project, id: nextMem('p', memOps.projects.map((p) => p.id)) });
-  else memOps.projects = memOps.projects.map((p) => (p.id === project.id ? project : p));
+  const rec = plain(project);
+  if (!rec.id) memOps.projects.push({ ...rec, id: nextMem('p', memOps.projects.map((p) => p.id)) });
+  else memOps.projects = memOps.projects.map((p) => (p.id === rec.id ? rec : p));
   return structuredClone(memOps.projects);
 }
 export async function projectDelete(id: string): Promise<ProjectRec[]> {

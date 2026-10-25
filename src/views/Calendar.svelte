@@ -69,7 +69,7 @@
   const cls = (a: AgendaItem) => (isBirthday(a) ? 'bday' : a.kind);
   const label = (a: AgendaItem) => (isBirthday(a) ? 'Birthday' : KIND[a.kind] ?? a.kind);
   const LEGEND: [string, string][] = [['event', 'Events'], ['bday', 'Birthdays'], ['task', 'To-do'], ['item', 'Inventory'], ['plan', 'Plan checks'], ['seed', 'Planting'], ['season', 'Frost']];
-  const SHOW = $derived(view === 'week' ? 12 : 3);
+  const SHOW = $derived.by(() => (view === 'week' ? 12 : 3));
 
   function step(k: number) {
     const sel = parse(day);
