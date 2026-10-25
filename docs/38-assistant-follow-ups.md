@@ -27,3 +27,15 @@ The safety rules are not affected by the style.
 fails if a page is not in the top three. To add one, add a line (question, tab, page file name).
 Writing it found two real gaps, now fixed in `core/src/retrieval.rs`: a card's `title:` now counts like
 a heading, and "burns" matches "burn". (The test idea comes from Project NOMAD's eval folder.)
+
+## Archive list and download script
+
+`content/library-catalog.json` lists 61 Kiwix archives in six topics (medicine, survival, education, how-to,
+farming, computing), each in three tiers (essential, standard, comprehensive). `scripts/get-library.ps1`
+(double-click `Get-Library.bat`) fetches them into the drive's `library` folder: `-List` shows what there is,
+`-Category` and `-Tier` choose, the total size is shown and confirmed first, finished files are skipped, and a
+broken download leaves a `.part` file that is replaced on the next run. It runs outside the program, so the
+program never goes to the internet. The list is adapted from Project NOMAD (Apache-2.0).
+Left out on purpose: NOMAD's "FDA Drug Reference" (drug dosing) and its creator-pack videos (a separate
+license that does not allow copying). The medical archives are other people's books; the assistant's
+no-dose rule still applies to everything it says.

@@ -139,6 +139,12 @@
           "license": "Public domain (US government). Credit: USGS The National Map.",
           "status": "you add",
           "note": "Made on your computer by scripts\\get-imagery.ps1 (Get-Imagery.bat): aerial to maps\\satellite\\us. Whole US at a wide view, your own areas in full detail. Aerial photos are mostly NAIP (about 1 m); Alaska is coarser."
+        },
+        {
+          "name": "Offline archive list (library-catalog.json)",
+          "license": "Apache-2.0 (the list); each archive has its own license",
+          "status": "you add",
+          "note": "A list of Kiwix archives you can fetch with scripts/get-library.ps1. Adapted from Project NOMAD's collections/kiwix-categories.json. The archives themselves are only downloaded when you run the script."
         }
       ]
     },
