@@ -129,6 +129,32 @@ pub fn check_message(message: &str) -> Verdict {
 }
 
 /// Check the model's answer. True if it appears to contain a medication dose.
+/// Herbs, supplements and kitchen things. An amount of these is not a prescription-drug dose
+/// (decided 2026-10-26: the no-dose rule is for prescription and over-the-counter drugs only).
+const HERBAL_OR_KITCHEN: &[&str] = &[
+    "valerian", "boswellia", "aloe", "bromelain", "butterbur", "chamomile", "echinacea", "elderberry",
+    "feverfew", "ginger", "goldenseal", "chestnut", "lavender", "licorice", "passionflower", "peppermint",
+    "tea", "turmeric", "curcumin", "garlic", "herb", "herbs", "herbal", "extract", "extracts", "honey",
+    "salt", "sugar", "water", "oil", "milk", "juice", "vinegar", "broth", "oatmeal", "baking", "soda",
+    "homeopathic", "supplement", "supplements",
+];
+
+/// Generic words that say "a drug" without naming one; they do not make an amount a drug dose by themselves.
+const GENERIC_DRUG_WORDS: &[&str] = &[
+    "antibiotic", "antibiotics", "sedative", "opioid", "medication", "medications", "medicine", "medicines",
+    "meds", "pill", "pills", "tablet", "tablets", "pen", "pens", "vial", "vials", "syringe", "syringes",
+    "injection", "inject", "injecting",
+];
+
+/// Is the amount at word `i` next to a herb or kitchen word, with no named drug close by?
+fn herbal_amount(ws: &[&str], i: usize) -> bool {
+    let from = i.saturating_sub(14);
+    let to = (i + 5).min(ws.len());
+    let near = &ws[from..to];
+    let named_drug = near.iter().any(|w| MEDICINES.contains(w) && !GENERIC_DRUG_WORDS.contains(w));
+    !named_drug && near.iter().any(|w| HERBAL_OR_KITCHEN.contains(w))
+}
+
 pub fn output_contains_dose(answer: &str) -> bool {
     let norm = normalize(answer);
     let ws = words(&norm);
@@ -140,14 +166,22 @@ pub fn output_contains_dose(answer: &str) -> bool {
             continue;
         }
         match *w {
-            "units" | "unit" | "iu" | "mcg" => return true,
-            "mg" => {
-                // "70 mg/dL" is a blood sugar reading, not a dose.
-                if ws.get(i + 1) != Some(&"dl") {
+            "units" | "unit" | "iu" | "mcg" => {
+                if !herbal_amount(&ws, i) {
                     return true;
                 }
             }
-            "ml" | "cc" => return true,
+            "mg" => {
+                // "70 mg/dL" is a blood sugar reading, not a dose.
+                if ws.get(i + 1) != Some(&"dl") && !herbal_amount(&ws, i) {
+                    return true;
+                }
+            }
+            "ml" | "cc" => {
+                if !herbal_amount(&ws, i) {
+                    return true;
+                }
+            }
             _ => {}
         }
     }
@@ -173,6 +207,15 @@ pub fn filter_output(answer: String) -> String {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn herbal_and_kitchen_amounts_are_not_drug_doses_but_drug_doses_still_are() {
+        assert!(!output_contains_dose("Valerian is a supplement; studies used 300 to 600 mg daily. Avoid sedatives."));
+        assert!(!output_contains_dose("Dissolve 3 grams of salt in 240 mL of warm water, a home remedy for a sore throat medicine cabinet."));
+        assert!(output_contains_dose("Take 500 mg of ibuprofen with ginger tea."));
+        assert!(output_contains_dose("Give 5 units of insulin."));
+        assert!(output_contains_dose("The medicine dose is 20 mg."));
+    }
+
     use super::*;
 
     #[test]

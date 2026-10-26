@@ -7,7 +7,7 @@ reviewed:
 ---
 **DRAFT. Not yet reviewed by a qualified person.**
 
-**Gargling with warm salt water several times a day can ease sore throat pain and may also help relieve canker sore discomfort. A standard preparation is ½ teaspoon of salt dissolved in 1 cup of warm water.**
+**Gargling with warm salt water several times a day can ease sore throat pain and may also help relieve canker sore discomfort. A standard preparation is ½ teaspoon (3 grams) of salt dissolved in 1 cup (240 mL) of warm water.**
 
 **What people do:** Dissolve salt in a cup of warm water, take a mouthful, tilt your head back, and gargle for several seconds before spitting it out. Repeat as needed throughout the day to help ease sore throat pain.
 

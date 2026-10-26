@@ -97,7 +97,7 @@
           "name": "Home remedies (38 pages)",
           "license": "Public domain (U.S. government text) as collected by Project NOMAD (Apache-2.0)",
           "status": "in this build",
-          "note": "Simple home measures (CDC, MedlinePlus) and herbal products (NCCIH). Each page names its source. All are drafts until a qualified person has checked them. No medicine amounts."
+          "note": "Simple home measures (CDC, MedlinePlus) and herbal products (NCCIH). Each page names its source. All are drafts until a qualified person has checked them. Herbal and kitchen amounts only; no drug doses."
         }
       ]
     },

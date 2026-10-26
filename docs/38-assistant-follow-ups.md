@@ -44,7 +44,9 @@ no-dose rule still applies to everything it says.
 
 `content/guides/home-remedies` holds 38 pages (20 simple home measures, 18 herbal products) reworded from
 Project NOMAD's remedy lists, which summarize CDC, MedlinePlus and NCCIH pages. Menu: Intel > Home remedies.
-Every page is marked draft with its `Source:` line; nothing here claims a medical check. Kitchen amounts
-(a teaspoon of honey, a cup of water) stay. Medicine-style amounts (mg, mcg, units, ml with a medicine) are
-refused by the same loader rule as everywhere else, so three pages (boswellia, valerian, salt-water gargle)
-were changed to "follow the product label". NOMAD's FDA drug reference is not included.
+Every page is marked draft with its `Source:` line; nothing here claims a medical check.
+The no-dose rule is for prescription and over-the-counter drugs only (owner, 2026-10-26). Herbal,
+homeopathic, holistic and kitchen amounts (a teaspoon of honey, 300 mg of valerian, a cup of water) are
+allowed: `core/src/safety.rs` `herbal_amount` ignores an amount that sits next to a herb or kitchen word
+when no named drug is close by. A named drug (aspirin, insulin, ibuprofen) is still refused. NOMAD's FDA
+drug reference is not included.
