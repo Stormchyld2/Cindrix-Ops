@@ -43,6 +43,10 @@ if ($List) {
       foreach ($r in $t.resources) { Write-Host ("      {0} ({1:N0} MB): {2}" -f $r.title, $r.size_mb, $r.description) }
     }
   }
+  if ($cat.to_find) {
+    Write-Host ""; Write-Host "Not on the list yet (no checked address). Search these at https://browse.library.kiwix.org and use -Url:"
+    foreach ($i in $cat.to_find.items) { Write-Host ("  {0} (search: {1}): {2}" -f $i.title, $i.search, $i.why) }
+  }
   exit 0
 }
 

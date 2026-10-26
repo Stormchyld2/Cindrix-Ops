@@ -1,5 +1,5 @@
 {
-  "note": "Archives (.zim) to put in the drive's library folder with scripts/get-library.ps1. Each archive keeps its own license. List adapted from Project NOMAD's collections/kiwix-categories.json (Apache-2.0); see licenses/README.md.",
+  "note": "Archives (.zim and map files) to put on the drive with scripts/get-library.ps1. 'source': 'nomad' means the address came from Project NOMAD's collections (Apache-2.0); see licenses/README.md. Each archive keeps its own license. 'to_find' lists archives with no checked address yet.",
   "categories": [
     {
       "slug": "medicine",
@@ -15,28 +15,32 @@
               "title": "Medical Library",
               "description": "Field and emergency medicine books and guides",
               "url": "https://download.kiwix.org/zim/other/zimgit-medicine_en_2024-08.zim",
-              "size_mb": 67
+              "size_mb": 67,
+              "source": "nomad"
             },
             {
               "id": "nhs.uk_en_medicines",
               "title": "NHS Medicines A to Z",
               "description": "How medicines work, dosages, side effects, and interactions",
               "url": "https://download.kiwix.org/zim/zimit/nhs.uk_en_medicines_2025-12.zim",
-              "size_mb": 16
+              "size_mb": 16,
+              "source": "nomad"
             },
             {
               "id": "fas-military-medicine_en",
               "title": "Military Medicine",
               "description": "Tactical and field medicine manuals",
               "url": "https://download.kiwix.org/zim/zimit/fas-military-medicine_en_2025-06.zim",
-              "size_mb": 78
+              "size_mb": 78,
+              "source": "nomad"
             },
             {
               "id": "wwwnc.cdc.gov_en_all",
               "title": "CDC Health Information",
               "description": "Disease prevention, travel health, and outbreak information",
               "url": "https://download.kiwix.org/zim/zimit/wwwnc.cdc.gov_en_all_2024-11.zim",
-              "size_mb": 170
+              "size_mb": 170,
+              "source": "nomad"
             }
           ]
         },
@@ -49,7 +53,8 @@
               "title": "MedlinePlus",
               "description": "NIH's consumer health encyclopedia - diseases, conditions, drugs, supplements",
               "url": "https://download.kiwix.org/zim/zimit/medlineplus.gov_en_all_2025-01.zim",
-              "size_mb": 1800
+              "size_mb": 1800,
+              "source": "nomad"
             }
           ]
         },
@@ -62,21 +67,24 @@
               "title": "Wikipedia Medicine",
               "description": "Curated medical articles from Wikipedia with images",
               "url": "https://download.kiwix.org/zim/wikipedia/wikipedia_en_medicine_maxi_2026-01.zim",
-              "size_mb": 2000
+              "size_mb": 2000,
+              "source": "nomad"
             },
             {
               "id": "libretexts.org_en_med",
               "title": "LibreTexts Medicine",
               "description": "Open-source medical textbooks and educational content",
               "url": "https://download.kiwix.org/zim/libretexts/libretexts.org_en_med_2025-01.zim",
-              "size_mb": 1100
+              "size_mb": 1100,
+              "source": "nomad"
             },
             {
               "id": "librepathology_en_all_maxi",
               "title": "LibrePathology",
               "description": "Pathology reference for disease identification",
               "url": "https://download.kiwix.org/zim/other/librepathology_en_all_maxi_2026-09.zim",
-              "size_mb": 95
+              "size_mb": 95,
+              "source": "nomad"
             }
           ]
         }
@@ -96,35 +104,40 @@
               "title": "Water Treatment Library",
               "description": "Collecting, filtering, and purifying drinking water",
               "url": "https://download.kiwix.org/zim/other/zimgit-water_en_2024-08.zim",
-              "size_mb": 20
+              "size_mb": 20,
+              "source": "nomad"
             },
             {
               "id": "zimgit-food-preparation_en",
               "title": "Food for Preppers",
               "description": "Recipes and techniques for preparing and preserving food",
               "url": "https://download.kiwix.org/zim/other/zimgit-food-preparation_en_2025-04.zim",
-              "size_mb": 97
+              "size_mb": 97,
+              "source": "nomad"
             },
             {
               "id": "zimgit-knots_en",
               "title": "A Library of Knots",
               "description": "Illustrated guides to knots, lashings, ladders, and sutures",
               "url": "https://download.kiwix.org/zim/other/zimgit-knots_en_2024-08.zim",
-              "size_mb": 27
+              "size_mb": 27,
+              "source": "nomad"
             },
             {
               "id": "canadian-prepper_en_winterprepping",
               "title": "Canadian Prepper: Winter Prepping",
               "description": "Video guides for winter survival and cold weather emergencies",
               "url": "https://download.kiwix.org/zim/videos/canadian-prepper_en_winterprepping_2026-08.zim",
-              "size_mb": 1342
+              "size_mb": 1342,
+              "source": "nomad"
             },
             {
               "id": "canadian-prepper_en_bugoutroll",
               "title": "Canadian Prepper: Bug Out Roll",
               "description": "Essential gear selection for your bug-out bag",
               "url": "https://download.kiwix.org/zim/videos/canadian-prepper_en_bugoutroll_2026-07.zim",
-              "size_mb": 879
+              "size_mb": 879,
+              "source": "nomad"
             }
           ]
         },
@@ -137,35 +150,40 @@
               "title": "Ready.gov",
               "description": "Official US disaster planning guidance - weather, fire, evacuation plans, and emergency kits",
               "url": "https://download.kiwix.org/zim/zimit/www.ready.gov_en_2024-12.zim",
-              "size_mb": 2429
+              "size_mb": 2429,
+              "source": "nomad"
             },
             {
               "id": "outdoors.stackexchange.com_en_all",
               "title": "The Great Outdoors Q&A",
               "description": "Answered questions on hiking, camping, navigation, and wilderness skills",
               "url": "https://download.kiwix.org/zim/stack_exchange/outdoors.stackexchange.com_en_all_2026-02.zim",
-              "size_mb": 142
+              "size_mb": 142,
+              "source": "nomad"
             },
             {
               "id": "ham.stackexchange.com_en_all",
               "title": "Amateur Radio Q&A",
               "description": "Answered questions on radio equipment, antennas, licensing, and emergency communications",
               "url": "https://download.kiwix.org/zim/stack_exchange/ham.stackexchange.com_en_all_2026-02.zim",
-              "size_mb": 75
+              "size_mb": 75,
+              "source": "nomad"
             },
             {
               "id": "canadian-prepper_en_bugoutconcepts",
               "title": "Canadian Prepper: Bug Out Concepts",
               "description": "Strategies and planning for emergency evacuation",
               "url": "https://download.kiwix.org/zim/videos/canadian-prepper_en_bugoutconcepts_2026-08.zim",
-              "size_mb": 2886
+              "size_mb": 2886,
+              "source": "nomad"
             },
             {
               "id": "urban-prepper_en_all",
               "title": "Urban Prepper",
               "description": "Comprehensive urban emergency preparedness video series",
               "url": "https://download.kiwix.org/zim/videos/urban-prepper_en_all_2026-08.zim",
-              "size_mb": 2245
+              "size_mb": 2245,
+              "source": "nomad"
             }
           ]
         },
@@ -178,35 +196,40 @@
               "title": "Canadian Prepper: Prepping Food",
               "description": "Long-term food storage and survival meal preparation",
               "url": "https://download.kiwix.org/zim/videos/canadian-prepper_en_preppingfood_2026-07.zim",
-              "size_mb": 2160
+              "size_mb": 2160,
+              "source": "nomad"
             },
             {
               "id": "zimgit-post-disaster_en",
               "title": "Post Disaster Resource Library",
               "description": "Shelter, sanitation, salvage, and recovery guidance for the aftermath of a disaster",
               "url": "https://download.kiwix.org/zim/other/zimgit-post-disaster_en_2024-05.zim",
-              "size_mb": 644
+              "size_mb": 644,
+              "source": "nomad"
             },
             {
               "id": "100r.co_en_all",
               "title": "Hundred Rabbits",
               "description": "Field notes on low-tech living - solar power, water, food, and repair from a decade off-grid",
               "url": "https://download.kiwix.org/zim/zimit/100r.co_en_all_2026-06.zim",
-              "size_mb": 172
+              "size_mb": 172,
+              "source": "nomad"
             },
             {
               "id": "gutenberg_en_lcc-u",
               "title": "Project Gutenberg: Military Science",
               "description": "Classic military strategy, tactics, and field manuals",
               "url": "https://download.kiwix.org/zim/gutenberg/gutenberg_en_lcc-u_2026-03.zim",
-              "size_mb": 1200
+              "size_mb": 1200,
+              "source": "nomad"
             },
             {
               "id": "cd3wdproject.org_en_all",
               "title": "CD3WD: Appropriate Technology Library",
               "description": "Practical guides to food production, water and sanitation, construction, and village-scale manufacturing without industrial supply chains",
               "url": "https://download.kiwix.org/zim/zimit/cd3wdproject.org_en_all_2025-11.zim",
-              "size_mb": 581
+              "size_mb": 581,
+              "source": "nomad"
             }
           ]
         }
@@ -226,7 +249,8 @@
               "title": "Wikibooks",
               "description": "Open-content textbooks covering math, science, computing, and more",
               "url": "https://download.kiwix.org/zim/wikibooks/wikibooks_en_all_nopic_2026-01.zim",
-              "size_mb": 3100
+              "size_mb": 3100,
+              "source": "nomad"
             }
           ]
         },
@@ -239,42 +263,48 @@
               "title": "TED-Ed",
               "description": "Educational video lessons on science, history, literature, and more",
               "url": "https://download.kiwix.org/zim/ted/ted_mul_ted-ed_2026-09.zim",
-              "size_mb": 6381
+              "size_mb": 6381,
+              "source": "nomad"
             },
             {
               "id": "wikiversity_en_all_maxi",
               "title": "Wikiversity",
               "description": "Tutorials, courses, and learning materials for all levels",
               "url": "https://download.kiwix.org/zim/wikiversity/wikiversity_en_all_maxi_2026-02.zim",
-              "size_mb": 2370
+              "size_mb": 2370,
+              "source": "nomad"
             },
             {
               "id": "libretexts.org_en_math",
               "title": "LibreTexts Mathematics",
               "description": "Open-source math textbooks from algebra to calculus",
               "url": "https://download.kiwix.org/zim/libretexts/libretexts.org_en_math_2026-01.zim",
-              "size_mb": 792
+              "size_mb": 792,
+              "source": "nomad"
             },
             {
               "id": "libretexts.org_en_phys",
               "title": "LibreTexts Physics",
               "description": "Physics courses and textbooks",
               "url": "https://download.kiwix.org/zim/libretexts/libretexts.org_en_phys_2026-01.zim",
-              "size_mb": 534
+              "size_mb": 534,
+              "source": "nomad"
             },
             {
               "id": "libretexts.org_en_chem",
               "title": "LibreTexts Chemistry",
               "description": "Chemistry courses and textbooks",
               "url": "https://download.kiwix.org/zim/libretexts/libretexts.org_en_chem_2025-01.zim",
-              "size_mb": 2180
+              "size_mb": 2180,
+              "source": "nomad"
             },
             {
               "id": "libretexts.org_en_bio",
               "title": "LibreTexts Biology",
               "description": "Biology courses and textbooks",
               "url": "https://download.kiwix.org/zim/libretexts/libretexts.org_en_bio_2025-01.zim",
-              "size_mb": 2240
+              "size_mb": 2240,
+              "source": "nomad"
             }
           ]
         },
@@ -287,42 +317,48 @@
               "title": "Wikibooks (With Images)",
               "description": "Open textbooks with full illustrations and diagrams",
               "url": "https://download.kiwix.org/zim/wikibooks/wikibooks_en_all_maxi_2026-01.zim",
-              "size_mb": 5400
+              "size_mb": 5400,
+              "source": "nomad"
             },
             {
               "id": "ted_mul_ted-conference",
               "title": "TED Conference",
               "description": "Main TED conference talks on ideas worth spreading",
               "url": "https://download.kiwix.org/zim/ted/ted_mul_ted-conference_2026-09.zim",
-              "size_mb": 18136
+              "size_mb": 18136,
+              "source": "nomad"
             },
             {
               "id": "libretexts.org_en_human",
               "title": "LibreTexts Humanities",
               "description": "Literature, philosophy, history, and social sciences",
               "url": "https://download.kiwix.org/zim/libretexts/libretexts.org_en_human_2025-01.zim",
-              "size_mb": 3730
+              "size_mb": 3730,
+              "source": "nomad"
             },
             {
               "id": "libretexts.org_en_geo",
               "title": "LibreTexts Geosciences",
               "description": "Earth science, geology, and environmental studies",
               "url": "https://download.kiwix.org/zim/libretexts/libretexts.org_en_geo_2026-01.zim",
-              "size_mb": 1127
+              "size_mb": 1127,
+              "source": "nomad"
             },
             {
               "id": "libretexts.org_en_eng",
               "title": "LibreTexts Engineering",
               "description": "Engineering courses and technical references",
               "url": "https://download.kiwix.org/zim/libretexts/libretexts.org_en_eng_2025-01.zim",
-              "size_mb": 678
+              "size_mb": 678,
+              "source": "nomad"
             },
             {
               "id": "libretexts.org_en_biz",
               "title": "LibreTexts Business",
               "description": "Business, economics, and management textbooks",
               "url": "https://download.kiwix.org/zim/libretexts/libretexts.org_en_biz_2026-01.zim",
-              "size_mb": 801
+              "size_mb": 801,
+              "source": "nomad"
             }
           ]
         }
@@ -342,14 +378,16 @@
               "title": "Woodworking Q&A",
               "description": "Stack Exchange Q&A for carpentry, joinery, and woodcraft",
               "url": "https://download.kiwix.org/zim/stack_exchange/woodworking.stackexchange.com_en_all_2026-02.zim",
-              "size_mb": 99
+              "size_mb": 99,
+              "source": "nomad"
             },
             {
               "id": "mechanics.stackexchange.com_en_all",
               "title": "Motor Vehicle Maintenance Q&A",
               "description": "Stack Exchange Q&A for car and motorcycle repair",
               "url": "https://download.kiwix.org/zim/stack_exchange/mechanics.stackexchange.com_en_all_2026-02.zim",
-              "size_mb": 321
+              "size_mb": 321,
+              "source": "nomad"
             }
           ]
         },
@@ -362,7 +400,8 @@
               "title": "DIY & Home Improvement Q&A",
               "description": "Stack Exchange Q&A for home repairs, electrical, plumbing, and construction",
               "url": "https://download.kiwix.org/zim/stack_exchange/diy.stackexchange.com_en_all_2026-02.zim",
-              "size_mb": 1900
+              "size_mb": 1900,
+              "source": "nomad"
             }
           ]
         },
@@ -375,7 +414,8 @@
               "title": "iFixit Repair Guides",
               "description": "Step-by-step repair guides for electronics, appliances, and vehicles",
               "url": "https://download.kiwix.org/zim/ifixit/ifixit_en_all_2025-12.zim",
-              "size_mb": 3380
+              "size_mb": 3380,
+              "source": "nomad"
             }
           ]
         }
@@ -395,14 +435,16 @@
               "title": "FOSS Cooking",
               "description": "Quick and easy cooking guides and recipes",
               "url": "https://download.kiwix.org/zim/zimit/foss.cooking_en_all_2026-02.zim",
-              "size_mb": 24
+              "size_mb": 24,
+              "source": "nomad"
             },
             {
               "id": "based.cooking_en_all",
               "title": "Based.Cooking",
               "description": "Simple, practical recipes from the community",
               "url": "https://download.kiwix.org/zim/zimit/based.cooking_en_all_2026-08.zim",
-              "size_mb": 16
+              "size_mb": 16,
+              "source": "nomad"
             }
           ]
         },
@@ -415,21 +457,16 @@
               "title": "Gardening Q&A",
               "description": "Stack Exchange Q&A for growing your own food, plant care, and landscaping",
               "url": "https://download.kiwix.org/zim/stack_exchange/gardening.stackexchange.com_en_all_2026-02.zim",
-              "size_mb": 923
+              "size_mb": 923,
+              "source": "nomad"
             },
             {
               "id": "cooking.stackexchange.com_en_all",
               "title": "Cooking Q&A",
               "description": "Stack Exchange Q&A for cooking techniques, food safety, and recipes",
               "url": "https://download.kiwix.org/zim/stack_exchange/cooking.stackexchange.com_en_all_2026-02.zim",
-              "size_mb": 236
-            },
-            {
-              "id": "zimgit-food-preparation_en",
-              "title": "Food for Preppers",
-              "description": "Recipes and techniques for food preservation and long-term storage",
-              "url": "https://download.kiwix.org/zim/other/zimgit-food-preparation_en_2025-04.zim",
-              "size_mb": 98
+              "size_mb": 236,
+              "source": "nomad"
             }
           ]
         },
@@ -442,14 +479,16 @@
               "title": "Learning Self-Reliance: Homesteading",
               "description": "Beekeeping, animal husbandry, and sustainable living practices",
               "url": "https://download.kiwix.org/zim/videos/lrnselfreliance_en_all_2026-06.zim",
-              "size_mb": 3790
+              "size_mb": 3790,
+              "source": "nomad"
             },
             {
               "id": "gutenberg_en_lcc-s",
               "title": "Project Gutenberg: Agriculture",
               "description": "Classic texts on farming, animal husbandry, plant cultivation, and food preservation",
               "url": "https://download.kiwix.org/zim/gutenberg/gutenberg_en_lcc-s_2026-03.zim",
-              "size_mb": 4300
+              "size_mb": 4300,
+              "source": "nomad"
             }
           ]
         }
@@ -469,35 +508,40 @@
               "title": "freeCodeCamp",
               "description": "Interactive programming tutorials - JavaScript, algorithms, and data structures",
               "url": "https://download.kiwix.org/zim/freecodecamp/freecodecamp_en_all_2026-08.zim",
-              "size_mb": 8
+              "size_mb": 8,
+              "source": "nomad"
             },
             {
               "id": "devdocs_en_python",
               "title": "Python Documentation",
               "description": "Complete Python language reference and tutorials",
               "url": "https://download.kiwix.org/zim/devdocs/devdocs_en_python_2026-08.zim",
-              "size_mb": 4
+              "size_mb": 4,
+              "source": "nomad"
             },
             {
               "id": "devdocs_en_javascript",
               "title": "JavaScript Documentation",
               "description": "MDN JavaScript reference and guides",
               "url": "https://download.kiwix.org/zim/devdocs/devdocs_en_javascript_2026-07.zim",
-              "size_mb": 3
+              "size_mb": 3,
+              "source": "nomad"
             },
             {
               "id": "devdocs_en_html",
               "title": "HTML Documentation",
               "description": "MDN HTML elements and attributes reference",
               "url": "https://download.kiwix.org/zim/devdocs/devdocs_en_html_2026-07.zim",
-              "size_mb": 2
+              "size_mb": 2,
+              "source": "nomad"
             },
             {
               "id": "devdocs_en_css",
               "title": "CSS Documentation",
               "description": "MDN CSS properties and selectors reference",
               "url": "https://download.kiwix.org/zim/devdocs/devdocs_en_css_2026-07.zim",
-              "size_mb": 5
+              "size_mb": 5,
+              "source": "nomad"
             }
           ]
         },
@@ -510,35 +554,40 @@
               "title": "Arduino Q&A",
               "description": "Stack Exchange Q&A for Arduino microcontroller projects",
               "url": "https://download.kiwix.org/zim/stack_exchange/arduino.stackexchange.com_en_all_2026-02.zim",
-              "size_mb": 247
+              "size_mb": 247,
+              "source": "nomad"
             },
             {
               "id": "raspberrypi.stackexchange.com_en_all",
               "title": "Raspberry Pi Q&A",
               "description": "Stack Exchange Q&A for Raspberry Pi projects and troubleshooting",
               "url": "https://download.kiwix.org/zim/stack_exchange/raspberrypi.stackexchange.com_en_all_2026-02.zim",
-              "size_mb": 285
+              "size_mb": 285,
+              "source": "nomad"
             },
             {
               "id": "devdocs_en_node",
               "title": "Node.js Documentation",
               "description": "Node.js API reference and guides",
               "url": "https://download.kiwix.org/zim/devdocs/devdocs_en_node_2026-08.zim",
-              "size_mb": 1
+              "size_mb": 1,
+              "source": "nomad"
             },
             {
               "id": "devdocs_en_react",
               "title": "React Documentation",
               "description": "React library reference and tutorials",
               "url": "https://download.kiwix.org/zim/devdocs/devdocs_en_react_2026-02.zim",
-              "size_mb": 3
+              "size_mb": 3,
+              "source": "nomad"
             },
             {
               "id": "devdocs_en_git",
               "title": "Git Documentation",
               "description": "Git version control reference",
               "url": "https://download.kiwix.org/zim/devdocs/devdocs_en_git_2026-07.zim",
-              "size_mb": 2
+              "size_mb": 2,
+              "source": "nomad"
             }
           ]
         },
@@ -551,32 +600,145 @@
               "title": "Electronics Q&A",
               "description": "Stack Exchange Q&A for circuit design, components, and electrical engineering",
               "url": "https://download.kiwix.org/zim/stack_exchange/electronics.stackexchange.com_en_all_2026-02.zim",
-              "size_mb": 3800
+              "size_mb": 3800,
+              "source": "nomad"
             },
             {
               "id": "robotics.stackexchange.com_en_all",
               "title": "Robotics Q&A",
               "description": "Stack Exchange Q&A for robotics projects and automation",
               "url": "https://download.kiwix.org/zim/stack_exchange/robotics.stackexchange.com_en_all_2026-02.zim",
-              "size_mb": 233
+              "size_mb": 233,
+              "source": "nomad"
             },
             {
               "id": "devdocs_en_docker",
               "title": "Docker Documentation",
               "description": "Docker container reference and guides",
               "url": "https://download.kiwix.org/zim/devdocs/devdocs_en_docker_2026-07.zim",
-              "size_mb": 2
+              "size_mb": 2,
+              "source": "nomad"
             },
             {
               "id": "devdocs_en_bash",
               "title": "Linux Documentation",
               "description": "Linux command reference and system administration",
               "url": "https://download.kiwix.org/zim/devdocs/devdocs_en_bash_2026-01.zim",
-              "size_mb": 1
+              "size_mb": 1,
+              "source": "nomad"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "wikipedia",
+      "name": "Wikipedia",
+      "description": "English Wikipedia in sizes from a quick reference to the whole thing. Pick ONE: they overlap.",
+      "tiers": [
+        {
+          "tier": "essential",
+          "description": "One Wikipedia choice per tier. Bigger tiers replace the smaller one: delete the smaller file if you move up.",
+          "resources": [
+            {
+              "id": "wikipedia_en_top-mini",
+              "title": "Wikipedia: Quick Reference",
+              "description": "Top 100,000 articles with minimal images. Great for quick lookups.",
+              "url": "https://download.kiwix.org/zim/wikipedia/wikipedia_en_top_mini_2026-06.zim",
+              "size_mb": 331,
+              "source": "nomad"
+            }
+          ]
+        },
+        {
+          "tier": "standard",
+          "description": "One Wikipedia choice per tier. Bigger tiers replace the smaller one: delete the smaller file if you move up.",
+          "resources": [
+            {
+              "id": "wikipedia_en_top-nopic",
+              "title": "Wikipedia: Popular Articles",
+              "description": "Top articles without images. Good balance of content and size.",
+              "url": "https://download.kiwix.org/zim/wikipedia/wikipedia_en_top_nopic_2026-06.zim",
+              "size_mb": 2239,
+              "source": "nomad"
+            }
+          ]
+        },
+        {
+          "tier": "comprehensive",
+          "description": "One Wikipedia choice per tier. Bigger tiers replace the smaller one: delete the smaller file if you move up.",
+          "resources": [
+            {
+              "id": "wikipedia_en_all-nopic",
+              "title": "Wikipedia: Complete Wikipedia (No Images)",
+              "description": "All articles without images. Comprehensive offline reference.",
+              "url": "https://download.kiwix.org/zim/wikipedia/wikipedia_en_all_nopic_2026-06.zim",
+              "size_mb": 52690,
+              "source": "nomad"
             }
           ]
         }
       ]
     }
-  ]
+  ],
+  "to_find": {
+    "note": "Not from Project NOMAD. These are archives we want but have no checked download address for yet. Search the name in https://browse.library.kiwix.org, open the entry, copy the .zim address, and paste it here (or run Get-Library with -Url). Names and sizes may differ in the library.",
+    "items": [
+      {
+        "title": "Khan Academy",
+        "search": "Khan",
+        "why": "Courses in math, science and more (videos and lessons)."
+      },
+      {
+        "title": "WikEM",
+        "search": "WikEM",
+        "why": "Emergency medicine wiki, written for clinicians."
+      },
+      {
+        "title": "Appropedia",
+        "search": "Appropedia",
+        "why": "Appropriate technology, water, energy and building in low-resource settings."
+      },
+      {
+        "title": "PhET Interactive Simulations",
+        "search": "PhET",
+        "why": "Science and math simulations that work offline."
+      },
+      {
+        "title": "Project Gutenberg (English)",
+        "search": "Gutenberg",
+        "why": "Tens of thousands of free books."
+      },
+      {
+        "title": "Wiktionary (English)",
+        "search": "Wiktionary",
+        "why": "A dictionary."
+      },
+      {
+        "title": "Wikivoyage",
+        "search": "Wikivoyage",
+        "why": "Travel and region guides, useful for evacuation planning."
+      },
+      {
+        "title": "Wikisource",
+        "search": "Wikisource",
+        "why": "Original source texts and documents."
+      },
+      {
+        "title": "Medical Sciences Q&A",
+        "search": "Medical Sciences",
+        "why": "Stack Exchange medical questions and answers."
+      },
+      {
+        "title": "Pets and Animal Care Q&A",
+        "search": "Pets",
+        "why": "Stack Exchange pet-care questions and answers."
+      },
+      {
+        "title": "Stack Overflow",
+        "search": "Stack Overflow",
+        "why": "Programming answers (large)."
+      }
+    ]
+  }
 }

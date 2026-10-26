@@ -67,3 +67,10 @@ reads for themselves).
 - Search matches brand and common names first, then what a medicine is for. Host-only: the four commands
   are not in the share allowlist (a test lists them as denied).
 - Not tested here: the real FDA download and the Windows run (CI builds the code; the script needs a real try).
+
+Update 2026-10-26: the list now also has Wikipedia (NOMAD's `wikipedia.json`: Quick Reference, Popular
+Articles, Complete without images; pick one) and each entry says `"source": "nomad"`. Archives that
+are NOT from NOMAD live in `to_find`: name, a search word for https://browse.library.kiwix.org, and why. They have
+no download address yet because none could be checked from here (Khan Academy is first); paste an address
+into the list, or use `get-library.ps1 -Url`. `-List` prints that checklist. Food for Preppers was listed
+twice and now appears once.
