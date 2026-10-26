@@ -5,6 +5,7 @@
 #   powershell -File scripts\get-library.ps1 -Target D:\Cindrix -List
 #   powershell -File scripts\get-library.ps1 -Target D:\Cindrix -Category medicine,survival -Tier essential
 #   powershell -File scripts\get-library.ps1 -Target D:\Cindrix -Category all -Tier standard -Yes
+#   powershell -File scripts\get-library.ps1 -Target D:\Cindrix -Url https://download.kiwix.org/zim/.../name.zim   (any one archive by its address)
 #
 # Tiers add up: "standard" also gets "essential"; "comprehensive" gets all three. The total size is shown
 # first and you are asked before anything is downloaded (use -Yes to skip the question). Files already on
@@ -19,13 +20,18 @@ param(
   [ValidateSet('essential','standard','comprehensive')][string]$Tier = 'essential',
   [switch]$List,
   [switch]$Yes,
-  [string]$Catalog = ''
+  [string]$Catalog = '',
+  # One archive by its address (for example a Khan Academy style course archive from the Kiwix library).
+  [string]$Url = ''
 )
 $ErrorActionPreference = 'Stop'
 if (-not $Catalog) { $Catalog = Join-Path $PSScriptRoot '..\content\library-catalog.json' }
 if (-not (Test-Path $Catalog)) { $Catalog = Join-Path $Target 'content\library-catalog.json' }
 if (-not (Test-Path $Catalog)) { Write-Host "Could not find library-catalog.json. Use -Catalog <path>."; exit 1 }
 $cat = Get-Content -Raw -Encoding UTF8 $Catalog | ConvertFrom-Json
+if ($Url) {
+  $cat = [pscustomobject]@{ categories = @([pscustomobject]@{ slug='extra'; name='Extra'; description=''; tiers=@([pscustomobject]@{ tier='essential'; description=''; resources=@([pscustomobject]@{ title=[IO.Path]::GetFileName($Url); description=''; url=$Url; size_mb=0 }) }) }) }
+}
 $rank = @{ essential = 1; standard = 2; comprehensive = 3 }
 
 if ($List) {
