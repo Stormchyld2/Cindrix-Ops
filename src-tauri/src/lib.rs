@@ -21,6 +21,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use tauri_plugin_dialog::DialogExt;
 
+mod druglabels;
 mod fetch;
 mod libs;
 mod music;
@@ -2638,6 +2639,10 @@ pub fn run() {
             ops::connect_suggest,
             ops::agenda_get,
             ops::birthdays_sync,
+            druglabels::druglabels_status,
+            druglabels::druglabels_prepare,
+            druglabels::druglabels_search,
+            druglabels::druglabels_get,
             ops::connect_search,
             ops::connect_resolve,
             ops::connect_related,

@@ -46,6 +46,7 @@ pub mod stockplan;
 pub mod suggest;
 pub mod training;
 pub mod safestream;
+pub mod druglabels;
 pub mod followup;
 pub mod seasons;
 pub mod seeds;

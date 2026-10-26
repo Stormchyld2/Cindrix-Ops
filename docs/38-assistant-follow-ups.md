@@ -50,3 +50,20 @@ homeopathic, holistic and kitchen amounts (a teaspoon of honey, 300 mg of valeri
 allowed: `core/src/safety.rs` `herbal_amount` ignores an amount that sits next to a herb or kitchen word
 when no named drug is close by. A named drug (aspirin, insulin, ibuprofen) is still refused. NOMAD's FDA
 drug reference is not included.
+
+## Drug labels (reading only)
+
+Intel > Drug labels shows the FDA's own label text for medicines. It is a reference to READ: the page says
+it is not advice, and the assistant still refuses to state or change a drug dose (decided 2026-10-26: the
+no-dose rule is for prescription and over-the-counter drugs, and a published label is a source the person
+reads for themselves).
+
+- `scripts/get-druglabels.ps1` (double-click `Get-DrugLabels.bat`) reads the FDA's file list
+  (`api.fda.gov/download.json`) and saves the label files to `<drive>/drug-labels/raw`. It runs outside the
+  program, so the program never goes online.
+- The screen's "Get the labels ready" button runs `core/src/druglabels.rs` `build`: it reads each file one
+  record at a time, keeps the boxed warning, what it is for, dosage (as published), do-not-use, warnings and
+  interactions (each shortened to 8,000 characters), and writes `<drive>/drug-labels/drug-labels.txt`.
+- Search matches brand and common names first, then what a medicine is for. Host-only: the four commands
+  are not in the share allowlist (a test lists them as denied).
+- Not tested here: the real FDA download and the Windows run (CI builds the code; the script needs a real try).

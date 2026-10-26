@@ -23,6 +23,7 @@
   import SeedVault from './views/SeedVault.svelte';
   import Music from './views/Music.svelte';
   import Guides from './views/Guides.svelte';
+  import DrugLabels from './views/DrugLabels.svelte';
   import Journal from './views/Journal.svelte';
   import Photos from './views/Photos.svelte';
   import CommsPlan from './views/CommsPlan.svelte';
@@ -84,14 +85,15 @@
   $effect(() => { if (settings.loaded) void applyUiScale(settings.values.uiScale); });
 
   // Intel is the offline internet: the archives read like web pages. It goes with the library.
-  type Group = 'Dashboard' | 'Ask' | 'Library' | 'Intel' | 'Academy' | 'Maps' | 'Music' | 'Plan' | 'Inventory' | 'Settings' | 'Corner' | 'Guides' | 'Journal' | 'Photos' | 'CommsPlan' | 'Todo' | 'Calendar' | 'Projects' | 'Soon';
-  const allGroups: Group[] = ['Dashboard', 'Ask', 'Library', 'Intel', 'Academy', 'Maps', 'Music', 'Plan', 'Inventory', 'Settings', 'Corner', 'Journal', 'Photos', 'CommsPlan', 'Todo', 'Calendar', 'Projects'];
+  type Group = 'Dashboard' | 'Ask' | 'Library' | 'Intel' | 'Academy' | 'Maps' | 'Music' | 'Plan' | 'Inventory' | 'Settings' | 'Corner' | 'Guides' | 'Journal' | 'Photos' | 'CommsPlan' | 'Todo' | 'Calendar' | 'Projects' | 'DrugLabels' | 'Soon';
+  const allGroups: Group[] = ['Dashboard', 'Ask', 'Library', 'Intel', 'Academy', 'Maps', 'Music', 'Plan', 'Inventory', 'Settings', 'Corner', 'Journal', 'Photos', 'CommsPlan', 'Todo', 'Calendar', 'Projects', 'DrugLabels'];
   // Each product switches parts of the program on or off (core/src/product.rs).
   const groups = $derived(
     allGroups.filter((g) => {
       if (!product) return true;
       if (g === 'Ask') return product.assistant;
       if (g === 'Library' || g === 'Intel' || g === 'Corner') return product.library;
+      if (g === 'DrugLabels') return product.library && !inShare;
       if (g === 'Maps') return product.maps;
       if (g === 'Music') return product.music;
       if (g === 'Plan' || g === 'Inventory') return product.plan;
@@ -212,7 +214,7 @@
       { id: 'Intel', cat: 'intel', show: lib_, entries: [
         { label: 'Offline browser', tab: 'Intel', note: 'archives' }, { label: 'Shelf', tab: 'Shelf', note: 'manuals' },
         { label: 'Archives', tab: 'Archives' }, { label: 'Emergency cards', tab: 'Cards' },
-        { label: 'Home remedies', tab: 'guide:home-remedies' } ] },
+        { label: 'Home remedies', tab: 'guide:home-remedies' }, { label: 'Drug labels', tab: 'DrugLabels', note: 'FDA', show: !inShare } ] },
       { id: 'Academy', cat: 'academy', show: true, entries: [
         { label: 'Courses', tab: 'Academy' }, { label: 'Training sign-off', tab: 'training' } ] },
       { id: 'Agro', cat: 'agro', show: plan_, entries: [
@@ -236,7 +238,7 @@
   /** Which word in the top bar the current screen belongs under. */
   const activeTop = $derived.by(() => {
     switch (group) {
-      case 'Library': case 'Intel': return 'Intel';
+      case 'Library': case 'Intel': case 'DrugLabels': return 'Intel';
       case 'Music': case 'Corner': case 'Journal': case 'Photos': return 'Morale';
       case 'CommsPlan': return 'Comms';
       case 'Plan': return plan === 'Seed vault' ? 'Agro' : 'Operations';
@@ -330,6 +332,8 @@
       <Music />
     {:else if group === 'Guides'}
       <Guides section={guideSection} title={guideInfo[guideSection]?.title ?? 'Guides'} intro={guideInfo[guideSection]?.intro ?? ''} />
+    {:else if group === 'DrugLabels'}
+      <DrugLabels />
     {:else if group === 'Journal'}
       <Journal />
     {:else if group === 'Photos'}

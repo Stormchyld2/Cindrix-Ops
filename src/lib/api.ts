@@ -1320,3 +1320,29 @@ export async function changesRecent(n = 8): Promise<Change[]> {
   if (tauriHost) return call<Change[]>('changes_recent', { n });
   return [];
 }
+
+// ---------- drug labels (the FDA's label text, to read; core/src/druglabels.rs) ----------
+export type DrugStatus = { has_files: boolean; ready: boolean; count: number; preparing: boolean; message: string };
+export type DrugSummary = { id: string; brand: string; generic: string; maker: string };
+export type DrugLabel = DrugSummary & { parts: [string, string][] };
+
+export async function drugLabelsStatus(): Promise<DrugStatus> {
+  if (tauriHost) return call<DrugStatus>('druglabels_status');
+  return { has_files: false, ready: true, count: 2, preparing: false, message: '' };
+}
+export async function drugLabelsPrepare(): Promise<void> {
+  if (tauriHost) await call<void>('druglabels_prepare');
+}
+export async function drugLabelsSearch(query: string): Promise<DrugSummary[]> {
+  if (tauriHost) return call<DrugSummary[]>('druglabels_search', { query });
+  const all: DrugSummary[] = [
+    { id: 'sample-1', brand: 'Sample Tablets', generic: 'SAMPLE', maker: 'Sample Maker' },
+    { id: 'sample-2', brand: 'Example Syrup', generic: 'EXAMPLE', maker: 'Example Maker' },
+  ];
+  const q = query.trim().toLowerCase();
+  return q ? all.filter((x) => (x.brand + x.generic).toLowerCase().includes(q)) : [];
+}
+export async function drugLabelsGet(id: string): Promise<DrugLabel> {
+  if (tauriHost) return call<DrugLabel>('druglabels_get', { id });
+  return { id, brand: 'Sample Tablets', generic: 'SAMPLE', maker: 'Sample Maker', parts: [['What it is for', 'A sample so this screen can be looked at in a browser.'], ['Dosage and how to give it (as the FDA published it)', 'Sample text only.']] };
+}

@@ -151,6 +151,12 @@
           "license": "Apache-2.0 (the list); each archive has its own license",
           "status": "you add",
           "note": "A list of Kiwix archives you can fetch with scripts/get-library.ps1. Adapted from Project NOMAD's collections/kiwix-categories.json. The archives themselves are only downloaded when you run the script."
+        },
+        {
+          "name": "FDA drug labels (openFDA)",
+          "license": "U.S. government information, openFDA terms of use",
+          "status": "you add",
+          "note": "Label text as the FDA published it, fetched by scripts/get-druglabels.ps1 and shown in Intel > Drug labels, for reading only. The assistant still never gives drug doses."
         }
       ]
     },
