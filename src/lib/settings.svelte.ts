@@ -27,6 +27,7 @@ export type Settings = {
   answerLength: 'short' | 'normal' | 'long';
   answerStyle: 'exact' | 'steady' | 'natural';
   followUpMemory: number;
+  privateLockMinutes: number;
   searchSpeed: 'quick' | 'normal' | 'thorough';
   showSourceChips: boolean;
   extraFolders: string[];
@@ -73,6 +74,7 @@ export const DEFAULTS: Settings = {
   answerLength: 'normal',
   answerStyle: 'steady',
   followUpMemory: 2,
+  privateLockMinutes: 15,
   searchSpeed: 'normal',
   showSourceChips: true,
   extraFolders: [],
@@ -105,6 +107,7 @@ export const RANGES: Record<string, [number, number]> = {
   planCheckDays: [2, 120],
   planExpiryMonths: [0, 24],
   followUpMemory: [0, 4],
+  privateLockMinutes: [0, 120],
 };
 
 /** Allowed words for each choice. */

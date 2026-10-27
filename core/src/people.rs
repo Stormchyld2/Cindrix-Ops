@@ -247,7 +247,7 @@ pub fn mime_of(name: &str) -> &'static str {
 }
 
 /// A plain file name with no folder in it.
-fn plain_name(name: &str) -> bool {
+pub(crate) fn plain_name(name: &str) -> bool {
     !name.is_empty() && !name.contains(['/', '\\', ':', '\0']) && !name.starts_with('.') && name != "." && name != ".."
 }
 

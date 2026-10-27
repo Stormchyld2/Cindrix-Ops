@@ -31,7 +31,7 @@
   import Splash from './lib/Splash.svelte';
   import { onMount } from 'svelte';
   import { intelRequest, sourceRequest, viewRequest } from './lib/chat.svelte';
-  import { inShare, modelStatus, libraryStatus, productInfo, librariesList, libraryAnswer, type ModelStatus, type ProductInfo, type LibraryEntry } from './lib/api';
+  import { inShare, modelStatus, libraryStatus, productInfo, librariesList, libraryAnswer, privacySetIdle, type ModelStatus, type ProductInfo, type LibraryEntry } from './lib/api';
   import { settings, applyUiScale } from './lib/settings.svelte';
   import { installTooltips, removeTooltips } from './lib/tooltips';
   let ms: ModelStatus | null = $state(null);
@@ -83,6 +83,7 @@
   });
   // interface size (Settings, General)
   $effect(() => { if (settings.loaded) void applyUiScale(settings.values.uiScale); });
+  $effect(() => { if (settings.loaded) void privacySetIdle(settings.values.privateLockMinutes); });
 
   // Intel is the offline internet: the archives read like web pages. It goes with the library.
   type Group = 'Dashboard' | 'Ask' | 'Library' | 'Intel' | 'Academy' | 'Maps' | 'Music' | 'Plan' | 'Inventory' | 'Settings' | 'Corner' | 'Guides' | 'Journal' | 'Photos' | 'CommsPlan' | 'Todo' | 'Calendar' | 'Projects' | 'DrugLabels' | 'Soon';

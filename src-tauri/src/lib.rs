@@ -25,6 +25,7 @@ mod druglabels;
 mod fetch;
 mod libs;
 mod music;
+mod privacy;
 mod ops;
 mod settings;
 mod share;
@@ -2201,22 +2202,26 @@ struct JournalEntryDto {
 
 #[tauri::command]
 fn journal_list(person: String) -> Result<Vec<JournalEntryDto>, String> {
-    Ok(cindrix_core::people::journal_list(&root().join("user"), &person)?.into_iter().map(|e| JournalEntryDto { date: e.date, text: e.text }).collect())
+    let k = privacy::sealer_for(&person)?;
+    Ok(cindrix_core::privacy::journal_list(&root().join("user"), &person, privacy::as_dyn(&k))?.into_iter().map(|e| JournalEntryDto { date: e.date, text: e.text }).collect())
 }
 
 #[tauri::command]
 fn journal_save(person: String, date: String, text: String) -> Result<(), String> {
-    cindrix_core::people::journal_save(&root().join("user"), &person, &date, &text)
+    let k = privacy::sealer_for(&person)?;
+    cindrix_core::privacy::journal_save(&root().join("user"), &person, &date, &text, privacy::as_dyn(&k))
 }
 
 #[tauri::command]
 fn comms_plan_load(person: String) -> Result<String, String> {
-    cindrix_core::people::plan_load(&root().join("user"), &person)
+    let k = privacy::sealer_for(&person)?;
+    cindrix_core::privacy::plan_load(&root().join("user"), &person, privacy::as_dyn(&k))
 }
 
 #[tauri::command]
 fn comms_plan_save(person: String, text: String) -> Result<(), String> {
-    cindrix_core::people::plan_save(&root().join("user"), &person, &text)
+    let k = privacy::sealer_for(&person)?;
+    cindrix_core::privacy::plan_save(&root().join("user"), &person, &text, privacy::as_dyn(&k))
 }
 
 /// The plan text with the sections of the full template that it lacks added at the end (nothing is saved).
@@ -2232,15 +2237,29 @@ struct PhotoDto {
     when: u64,
 }
 
-/// The pictures of one album: `shared` (everyone) or `mine` (one person's own, host only).
+/// The pictures of one album: `shared` (everyone) or `mine` (one person's own, host only; follows their lock).
 pub fn photos_for(scope: &str, person: &str) -> Result<Vec<PhotoDto>, String> {
+    privacy::sealer_for_scope(scope, person)?;
     let dir = cindrix_core::people::photo_dir(&root().join("user"), scope, person)?;
-    Ok(cindrix_core::people::photos_list(&dir).into_iter().map(|p| PhotoDto { name: p.name, bytes: p.bytes, when: p.when }).collect())
+    Ok(cindrix_core::privacy::photos_list(&dir).into_iter().map(|p| PhotoDto { name: p.name, bytes: p.bytes, when: p.when }).collect())
 }
 
 pub fn photo_bytes(scope: &str, person: &str, name: &str) -> Result<Vec<u8>, String> {
+    let k = privacy::sealer_for_scope(scope, person)?;
     let dir = cindrix_core::people::photo_dir(&root().join("user"), scope, person)?;
-    cindrix_core::people::photo_read(&dir, name)
+    cindrix_core::privacy::photo_read(&dir, name, privacy::as_dyn(&k))
+}
+
+pub fn photo_add_for(scope: &str, person: &str, name: &str, bytes: &[u8]) -> Result<String, String> {
+    let k = privacy::sealer_for_scope(scope, person)?;
+    let dir = cindrix_core::people::photo_dir(&root().join("user"), scope, person)?;
+    cindrix_core::privacy::photo_add(&dir, name, bytes, privacy::as_dyn(&k))
+}
+
+pub fn photo_delete_for(scope: &str, person: &str, name: &str) -> Result<(), String> {
+    privacy::sealer_for_scope(scope, person)?;
+    let dir = cindrix_core::people::photo_dir(&root().join("user"), scope, person)?;
+    cindrix_core::privacy::photo_delete(&dir, name)
 }
 
 #[tauri::command]
@@ -2261,14 +2280,12 @@ fn photo_add(request: tauri::ipc::Request<'_>) -> Result<String, String> {
         _ => return Err("No picture was received.".into()),
     };
     let header = |k: &str| -> String { request.headers().get(k).and_then(|v| v.to_str().ok()).map(percent_decode).unwrap_or_default() };
-    let dir = cindrix_core::people::photo_dir(&root().join("user"), &header("x-scope"), &header("x-person"))?;
-    cindrix_core::people::photo_add(&dir, &header("x-file-name"), &bytes)
+    photo_add_for(&header("x-scope"), &header("x-person"), &header("x-file-name"), &bytes)
 }
 
 #[tauri::command]
 fn photo_delete(scope: String, person: String, name: String) -> Result<(), String> {
-    let dir = cindrix_core::people::photo_dir(&root().join("user"), &scope, &person)?;
-    cindrix_core::people::photo_delete(&dir, &name)
+    photo_delete_for(&scope, &person, &name)
 }
 
 // ---------- how much to have ----------
@@ -2759,6 +2776,13 @@ pub fn run() {
             guides_list,
             journal_list,
             journal_save,
+            privacy::person_lock_status,
+            privacy::person_lock_set,
+            privacy::person_lock_unlock,
+            privacy::person_lock_relock,
+            privacy::person_lock_change,
+            privacy::person_lock_remove,
+            privacy::privacy_set_idle,
             comms_plan_load,
             comms_plan_save,
             comms_plan_add_missing,
@@ -2818,6 +2842,7 @@ pub fn run() {
             if let Some(st) = handle.try_state::<AppState>() {
                 st.stop_all();
             }
+            privacy::lock_everyone();
         }
     });
 }

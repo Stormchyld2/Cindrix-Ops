@@ -1,7 +1,8 @@
 <script lang="ts">
   // Family pictures: a shared album that other devices on the hotspot can look at, and each person's own album (this computer only).
   import { onMount, onDestroy } from 'svelte';
-  import { photosList, photoRead, photoAdd, photoDelete, whoami, inShare, type Photo } from '../lib/api';
+  import { photosList, photoRead, photoAdd, photoDelete, whoami, inShare, isLocked, type Photo } from '../lib/api';
+  import PrivateLock from '../lib/PrivateLock.svelte';
   import { who } from '../lib/person.svelte';
   import PersonPick from '../lib/PersonPick.svelte';
 
@@ -10,6 +11,7 @@
   let photos: Photo[] = $state([]);
   let urls: Record<string, string> = $state({});
   let note = $state('');
+  let locked = $state(false);
   let busy = $state(false);
   let dragging = $state(false);
   let viewing: Photo | null = $state(null);
@@ -27,7 +29,8 @@
   async function load() {
     forget();
     note = '';
-    try { photos = await photosList(scope, who.name); } catch (e) { note = String(e); photos = []; }
+    locked = false;
+    try { photos = await photosList(scope, who.name); } catch (e) { photos = []; if (isLocked(e)) locked = true; else note = String(e); }
   }
   async function ensure(p: Photo) {
     if (urls[p.name]) return;
@@ -49,7 +52,7 @@
     const failed: string[] = [];
     let n = 0;
     for (const f of Array.from(files)) {
-      try { await photoAdd(f, scope, who.name); n++; } catch (e) { failed.push(`${f.name}: ${String(e)}`); }
+      try { await photoAdd(f, scope, who.name); n++; } catch (e) { if (isLocked(e)) { locked = true; failed.push('The album is locked.'); break; } failed.push(`${f.name}: ${String(e)}`); }
     }
     await load();
     note = [n ? `Added ${n} picture${n === 1 ? '' : 's'}.` : '', ...failed].filter(Boolean).join(' ');
@@ -58,7 +61,7 @@
   }
   async function confirmRemove() {
     if (!removing) return;
-    try { await photoDelete(scope, who.name, removing.name); } catch (e) { note = String(e); }
+    try { await photoDelete(scope, who.name, removing.name); } catch (e) { if (isLocked(e)) locked = true; else note = String(e); }
     removing = null;
     viewing = null;
     await load();
@@ -95,9 +98,11 @@
       {#if scope === 'mine' && !inShare}<PersonPick onchange={load} />{/if}
     </div>
   {/if}
+  {#if scope === 'mine' && !inShare}<PrivateLock person={who.name} needsUnlock={locked} onchange={load} what="own pictures, journal and comms plan" />{/if}
+  {#if locked && inShare}<p class="notice" role="status">This album has a passcode. Ask the owner to unlock it on the main computer.</p>{/if}
   {#if note}<p class="notice" role="status">{note}</p>{/if}
 
-  {#if photos.length === 0}
+  {#if photos.length === 0 && !locked}
     <div class="panel empty">
       <strong>No pictures here yet.</strong>
       <p class="muted">{inShare && !me ? 'Nothing has been shared yet.' : inShare ? 'Use “Add pictures” to put some here.' : 'Drag pictures here, or use “Add pictures”. JPEG, PNG, GIF and WebP pictures work. They are copied onto this drive, and never leave it.'}</p>

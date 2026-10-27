@@ -112,6 +112,77 @@ pub fn unlock(envelope: &str, passphrase: &str) -> Result<String, LockError> {
     String::from_utf8(pt).map_err(|_| LockError::WrongPassphraseOrDamaged)
 }
 
+// ---------- a key kept in memory, for files that are opened often (journal, photos) ----------
+//
+// Running Argon2 for every photo would be far too slow. Instead a random 32-byte "vault key" is made once
+// per person; the passcode only wraps that key (`wrap_key` / `unwrap_key`, which use `lock` / `unlock`). The
+// person's files are then sealed with the key itself (`seal` / `open`, XChaCha20-Poly1305). Changing the
+// passcode re-wraps the key and touches no file. A forgotten passcode cannot be recovered.
+
+const SEAL_MAGIC: &[u8; 4] = b"CXL1";
+
+/// A fresh random 32-byte key.
+pub fn new_key() -> Result<[u8; 32], LockError> {
+    let mut key = [0u8; 32];
+    getrandom::getrandom(&mut key).map_err(|e| LockError::Other(e.to_string()))?;
+    Ok(key)
+}
+
+fn to_hex(bytes: &[u8]) -> String {
+    bytes.iter().map(|b| format!("{:02x}", b)).collect()
+}
+
+fn from_hex(s: &str) -> Option<[u8; 32]> {
+    let s = s.trim();
+    if s.len() != 64 || !s.is_ascii() {
+        return None;
+    }
+    let mut out = [0u8; 32];
+    for i in 0..32 {
+        out[i] = u8::from_str_radix(&s[i * 2..i * 2 + 2], 16).ok()?;
+    }
+    Some(out)
+}
+
+/// The key, locked with a passcode (a normal locked envelope, so it can be kept in a text file).
+pub fn wrap_key(key: &[u8; 32], passcode: &str) -> Result<String, LockError> {
+    lock(&to_hex(key), passcode)
+}
+
+/// The key again, or `WrongPassphraseOrDamaged` for a wrong passcode.
+pub fn unwrap_key(envelope: &str, passcode: &str) -> Result<[u8; 32], LockError> {
+    let hex = unlock(envelope, passcode)?;
+    from_hex(&hex).ok_or(LockError::WrongPassphraseOrDamaged)
+}
+
+/// True if these bytes are a sealed file.
+pub fn is_sealed(bytes: &[u8]) -> bool {
+    bytes.len() >= 4 + 24 + 16 && &bytes[..4] == SEAL_MAGIC
+}
+
+/// Seal bytes with the key: magic, a fresh 24-byte nonce, then the ciphertext.
+pub fn seal(key: &[u8; 32], plaintext: &[u8]) -> Result<Vec<u8>, LockError> {
+    let mut nonce = [0u8; 24];
+    getrandom::getrandom(&mut nonce).map_err(|e| LockError::Other(e.to_string()))?;
+    let cipher = XChaCha20Poly1305::new(Key::from_slice(key));
+    let ct = cipher.encrypt(XNonce::from_slice(&nonce), plaintext).map_err(|_| LockError::Other("encryption failed".into()))?;
+    let mut out = Vec::with_capacity(4 + 24 + ct.len());
+    out.extend_from_slice(SEAL_MAGIC);
+    out.extend_from_slice(&nonce);
+    out.extend_from_slice(&ct);
+    Ok(out)
+}
+
+/// Open sealed bytes. A wrong key or a changed file gives `WrongPassphraseOrDamaged`.
+pub fn open(key: &[u8; 32], sealed: &[u8]) -> Result<Vec<u8>, LockError> {
+    if !is_sealed(sealed) {
+        return Err(LockError::NotLocked);
+    }
+    let nonce = &sealed[4..28];
+    let cipher = XChaCha20Poly1305::new(Key::from_slice(key));
+    cipher.decrypt(XNonce::from_slice(nonce), &sealed[28..]).map_err(|_| LockError::WrongPassphraseOrDamaged)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -152,6 +223,29 @@ mod tests {
     fn plain_text_is_not_locked() {
         assert!(!is_locked(SECRET));
         assert_eq!(unlock(SECRET, "pw"), Err(LockError::NotLocked));
+    }
+
+    #[test]
+    fn a_key_is_wrapped_by_a_passcode_and_files_are_sealed_by_the_key() {
+        let key = new_key().unwrap();
+        assert_ne!(key, new_key().unwrap());
+        let wrapped = wrap_key(&key, "a long passcode").unwrap();
+        assert!(is_locked(&wrapped));
+        assert_eq!(unwrap_key(&wrapped, "a long passcode").unwrap(), key);
+        assert_eq!(unwrap_key(&wrapped, "wrong"), Err(LockError::WrongPassphraseOrDamaged));
+        let sealed = seal(&key, b"Dear diary, secret").unwrap();
+        assert!(is_sealed(&sealed));
+        assert!(!String::from_utf8_lossy(&sealed).contains("diary"));
+        assert_eq!(open(&key, &sealed).unwrap(), b"Dear diary, secret");
+        assert_ne!(seal(&key, b"x").unwrap(), seal(&key, b"x").unwrap());
+        let other = new_key().unwrap();
+        assert_eq!(open(&other, &sealed), Err(LockError::WrongPassphraseOrDamaged));
+        let mut bad = sealed.clone();
+        let last = bad.len() - 1;
+        bad[last] ^= 1;
+        assert_eq!(open(&key, &bad), Err(LockError::WrongPassphraseOrDamaged));
+        assert_eq!(open(&key, b"plain text file"), Err(LockError::NotLocked));
+        assert!(seal(&key, b"").is_ok() && open(&key, &seal(&key, b"").unwrap()).unwrap().is_empty());
     }
 
     #[test]

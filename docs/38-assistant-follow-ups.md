@@ -148,6 +148,15 @@ Page text is still read as written. Golden question added (`wound-care`).
   digital modes, repeaters, Q-codes, antenna lengths, lightning and EMP, weather radio, satellite, phones, net script, groups, glossary).
 - **Settings**: a Calendar tab (week start, 12/24-hour time, month or week view, and which automatic items show), and "Earlier questions
   it remembers" under Assistant (0 to 4).
-- **Privacy**: journal, comms plan and personal photos are plain files in the person's folder under `user/people/<name>/`. Guests on the
-  hotspot cannot use any journal or comms plan command and see only the shared photo album. On the host computer the person picker lets
-  anyone using the program choose a name unless the Family page lock is on, so the folders separate people but are not a password.
+- **Privacy**: journal, comms plan and personal photos are files in the person's folder under `user/people/<name>/`. Guests on the
+  hotspot cannot use any journal, comms plan or passcode command and see only the shared photo album. Without a passcode the person
+  picker lets anyone using the program choose a name, so the folders separate people but are not a password.
+- **Passcode for private notes** (`core/src/privacy.rs`, `src-tauri/src/privacy.rs`, `src/lib/PrivateLock.svelte`): a person can turn
+  on a passcode (at least 6 characters) in Journal, Comms plan or their own album. A random 32-byte key is made and wrapped by the
+  passcode (Argon2id, the same envelope as the Family lock) in `lock.json`; every journal entry, the comms plan, the person's own
+  pictures and their `backups` folder are sealed with XChaCha20-Poly1305 as `<file>.sealed`. Turning it on seals each file, checks
+  it by opening it, then removes the plain one. File names (journal dates, picture names) stay readable so lists work. The key is
+  held in memory only and dropped after Settings > General > "Lock private notes after" (default 15 minutes, 0 = never), on "Lock
+  now", or when the program closes. Changing the passcode re-wraps the key and leaves the files alone; taking it off writes plain
+  files back. **A forgotten passcode cannot be recovered.** The shared album is never sealed. Tests: `core/src/privacy.rs` (with a
+  stand-in sealer) and `crypto` (`a_key_is_wrapped_by_a_passcode_and_files_are_sealed_by_the_key`).

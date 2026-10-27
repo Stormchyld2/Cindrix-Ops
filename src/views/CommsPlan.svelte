@@ -1,24 +1,27 @@
 <script lang="ts">
   // The family's radio and phone plan: free text that starts from a full template, kept in the person's own folder.
   import { onMount } from 'svelte';
-  import { commsPlanLoad, commsPlanSave, commsPlanAddMissing } from '../lib/api';
+  import { commsPlanLoad, commsPlanSave, commsPlanAddMissing, isLocked } from '../lib/api';
+  import PrivateLock from '../lib/PrivateLock.svelte';
   import { who } from '../lib/person.svelte';
   import PersonPick from '../lib/PersonPick.svelte';
 
   let text = $state('');
   let saved = $state('');
   let note = $state('');
+  let locked = $state(false);
   let ta: HTMLTextAreaElement | undefined = $state();
   const dirty = $derived(text !== saved);
   const sections = $derived(text.split('\n').map((l, i) => ({ l, i })).filter((x) => x.l.startsWith('## ')).map((x) => ({ title: x.l.slice(3).trim(), line: x.i })));
 
   async function load() {
     note = '';
-    try { text = await commsPlanLoad(who.name); saved = text; } catch (e) { note = String(e); }
+    locked = false;
+    try { text = await commsPlanLoad(who.name); saved = text; } catch (e) { if (isLocked(e)) { locked = true; text = ''; saved = ''; } else note = String(e); }
   }
   async function save() {
     note = '';
-    try { await commsPlanSave(who.name, text); saved = text; note = 'Saved.'; } catch (e) { note = String(e); }
+    try { await commsPlanSave(who.name, text); saved = text; note = 'Saved.'; } catch (e) { if (isLocked(e)) locked = true; else note = String(e); }
   }
   async function addMissing() {
     note = '';
@@ -43,9 +46,11 @@
 
 <section>
   <h1>Comms plan</h1>
-  <p class="sub">A complete plan for when phones and the internet are down: who does what, the order of ways to reach each other (PACE), channels, check-in times, meeting places, what to say, and what to do when the radios fail. Fill in every blank, save it, and print a copy for everyone. Other devices on your hotspot cannot see it. For the rules and the words to use, see Radio reference in the Comms menu.</p>
+  <p class="sub">A complete plan for when phones and the internet are down: who does what, the order of ways to reach each other (PACE), channels, check-in times, meeting places, what to say, and what to do when the radios fail. Fill in every blank, save it, and print a copy for everyone. Other devices on your hotspot cannot see it, and you can add a passcode so only you can read it. For the rules and the words to use, see Radio reference in the Comms menu.</p>
   <div class="row"><PersonPick onchange={load} /></div>
+  <PrivateLock person={who.name} needsUnlock={locked} onchange={load} />
   {#if note}<p class="notice" role="status">{note}</p>{/if}
+  {#if !locked}
   <div class="wrap">
     {#if sections.length}
       <nav class="toc panel" aria-label="Sections of the plan">
@@ -63,6 +68,7 @@
       </div>
     </div>
   </div>
+  {/if}
 </section>
 
 <style>

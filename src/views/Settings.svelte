@@ -185,11 +185,15 @@
       {@render toggle('showHints', 'Show a hint when the pointer rests on a button', 'A short sentence that says what the button does. Turn it off if the hints get in the way.')}
     </div>
     <div class="panel">
+      <div class="label">PRIVATE NOTES</div>
+      {@render slider('privateLockMinutes', 'Lock private notes after', 'minutes', 'Journal, personal photos and comms plan that have a passcode lock themselves again after this long without use. 0 means they stay open until you lock them or close the program.')}
+    </div>
+    <div class="panel">
       <div class="label">STARTING UP</div>
       {@render choose('startScreen', 'Open on this screen', 'The screen you see when the program starts. If your edition does not have it, the first one it does have opens.',
         SCREENS.map((s) => [s, screenName(s)] as [string, string]))}
     </div>
-    {@render reset(['uiScale', 'showStatusBar', 'showHints', 'startScreen'])}
+    {@render reset(['uiScale', 'showStatusBar', 'showHints', 'startScreen', 'privateLockMinutes'])}
   {:else if tab === 'Assistant'}
     <div class="panel">
       <div class="label">THE ASSISTANT</div>

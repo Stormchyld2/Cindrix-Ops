@@ -34,6 +34,7 @@ pub mod guides;
 pub mod hotspot;
 pub mod ops;
 pub mod people;
+pub mod privacy;
 pub mod profile;
 pub mod senses;
 pub mod share;

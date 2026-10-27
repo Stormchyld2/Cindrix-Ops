@@ -526,8 +526,7 @@ fn dispatch(app: &tauri::AppHandle, cmd: &str, a: &Value, role: &Role) -> Result
             let scope: String = arg(a, "scope")?;
             let name: String = arg(a, "name")?;
             let (sc, pe) = share::photo_target(role, &scope, true)?;
-            let dir = cindrix_core::people::photo_dir(&crate::root().join("user"), sc, &pe)?;
-            cindrix_core::people::photo_delete(&dir, &name)?;
+            crate::photo_delete_for(sc, &pe, &name)?;
             Ok(Value::Null)
         }
         "guides_list" => { let section: String = arg(a, "section")?; tv(crate::guides_for(&section, false)?) }
@@ -578,8 +577,7 @@ fn photo_add_call(req: &Request, role: &Role) -> Response {
     let scope = req.header("x-scope").unwrap_or("shared").to_string();
     let name = share::url_decode(req.header("x-file-name").unwrap_or("photo"));
     let r = share::photo_target(role, &scope, true).and_then(|(sc, pe)| {
-        let dir = cindrix_core::people::photo_dir(&crate::root().join("user"), sc, &pe)?;
-        cindrix_core::people::photo_add(&dir, &name, &req.body)
+        crate::photo_add_for(sc, &pe, &name, &req.body)
     });
     match r {
         Ok(n) => Response::json(200, &json!(n).to_string()),

@@ -102,6 +102,43 @@ export async function journalSave(person: string, date: string, text: string): P
   const rest = (memJournal[person] ?? []).filter((e) => e.date !== date);
   memJournal[person] = text.trim() ? [...rest, { date, text }] : rest;
 }
+// ---------- the passcode on a person's journal, own photos and comms plan ----------
+export type LockStatus = { protected: boolean; unlocked: boolean };
+/** True when an error from a private-notes call means "this person's passcode has not been typed yet". */
+export const isLocked = (e: unknown): boolean => String(e).trim().replace(/^Error:\s*/, '') === 'locked';
+const memLocks: Record<string, string> = {};
+const memOpen: Record<string, boolean> = {};
+export async function lockStatus(person: string): Promise<LockStatus> {
+  if (tauriHost) return call<LockStatus>('person_lock_status', { person });
+  return { protected: person in memLocks, unlocked: !(person in memLocks) || !!memOpen[person] };
+}
+export async function lockSet(person: string, passcode: string): Promise<number> {
+  if (tauriHost) return call<number>('person_lock_set', { person, passcode });
+  memLocks[person] = passcode; memOpen[person] = true; return 0;
+}
+export async function lockUnlock(person: string, passcode: string): Promise<void> {
+  if (tauriHost) return call<void>('person_lock_unlock', { person, passcode });
+  if (memLocks[person] !== passcode) throw new Error('That passcode is not right.');
+  memOpen[person] = true;
+}
+export async function lockRelock(person: string): Promise<void> {
+  if (tauriHost) return call<void>('person_lock_relock', { person });
+  memOpen[person] = false;
+}
+export async function lockChange(person: string, oldPasscode: string, newPasscode: string): Promise<void> {
+  if (tauriHost) return call<void>('person_lock_change', { person, oldPasscode, newPasscode });
+  if (memLocks[person] !== oldPasscode) throw new Error('That passcode is not right.');
+  memLocks[person] = newPasscode;
+}
+export async function lockRemove(person: string, passcode: string): Promise<number> {
+  if (tauriHost) return call<number>('person_lock_remove', { person, passcode });
+  if (memLocks[person] !== passcode) throw new Error('That passcode is not right.');
+  delete memLocks[person]; return 0;
+}
+export async function privacySetIdle(minutes: number): Promise<void> {
+  if (tauriHost) return call<void>('privacy_set_idle', { minutes });
+}
+
 let memPlan = '';
 export async function commsPlanLoad(person: string): Promise<string> {
   if (tauriHost) return call<string>('comms_plan_load', { person });
