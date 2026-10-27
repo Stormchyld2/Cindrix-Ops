@@ -2,7 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import {
     musicStatus, musicScan, musicQuery, musicFacets, musicPlaylists, musicPlaylistLoad, musicPlaylistSave, musicPlaylistDelete, musicClearCache, musicResolve,
-    type MusicStatus, type MusicTrack, type MusicFacet, type PlaylistMeta,
+    type MusicStatus, type MusicQuery, type MusicEntry, type MusicTrack, type MusicFacet, type PlaylistMeta,
   } from '../lib/api';
   import { player, fmtTime, EQ_BANDS, EQ_PRESETS } from '../lib/player.svelte';
 
@@ -13,12 +13,13 @@
   let note = $state('');
 
   // browsing
-  type Mode = 'All' | 'Artists' | 'Albums' | 'Genres' | 'Folders';
-  const modes: Mode[] = ['All', 'Artists', 'Albums', 'Genres', 'Folders'];
-  type Field = 'all' | 'title' | 'artist' | 'genre';
+  type Mode = 'All' | 'Albums' | 'Genres' | 'Folders';
+  const modes: Mode[] = ['Folders', 'Genres', 'Albums', 'All'];
+  const modeName: Record<Mode, string> = { Folders: 'Categories', Genres: 'Genres', Albums: 'Albums', All: 'All songs' };
+  type Field = 'all' | 'title' | 'genre';
   let field = $state<Field>('all');
   let genre: string | null = $state(null);
-  let mode = $state<Mode>('All');
+  let mode = $state<Mode>('Folders');
   let text = $state('');
   let artist: string | null = $state(null);
   let album: string | null = $state(null);
@@ -51,15 +52,15 @@
     } catch (e) { error = String(e); }
   }
 
-  const showFacets = $derived(!text && ((mode === 'Artists' && artist === null) || (mode === 'Albums' && album === null) || (mode === 'Genres' && genre === null) || mode === 'Folders'));
-  const showTracks = $derived(mode === 'All' || !!text || (mode === 'Artists' && artist !== null) || (mode === 'Albums' && album !== null) || (mode === 'Genres' && genre !== null) || mode === 'Folders');
+  const showFacets = $derived(!text && ((mode === 'Albums' && album === null) || (mode === 'Genres' && genre === null) || mode === 'Folders'));
+  const showTracks = $derived(mode === 'All' || !!text || (mode === 'Albums' && album !== null) || (mode === 'Genres' && genre !== null) || mode === 'Folders');
 
   async function reload() {
     const mine = ++seq;
     busy = true;
     try {
       if (showFacets) {
-        const f = mode === 'Artists' ? await musicFacets('artists') : mode === 'Albums' ? await musicFacets('albums') : mode === 'Genres' ? await musicFacets('genres') : await musicFacets('folders', folder ?? '');
+        const f = mode === 'Albums' ? await musicFacets('albums') : mode === 'Genres' ? await musicFacets('genres') : await musicFacets('folders', folder ?? '');
         if (mine !== seq) return;
         facets = f;
       } else facets = [];
@@ -74,7 +75,6 @@
   }
   function queryArgs() {
     if (text) return { text, field };
-    if (mode === 'Artists') return { artist };
     if (mode === 'Albums') return { artist, album };
     if (mode === 'Genres') return { genre };
     if (mode === 'Folders') return { folder: folder ?? '', direct: true };
@@ -87,8 +87,7 @@
   function onSearch() { clearTimeout(debounce); debounce = setTimeout(reload, 200); }
   function setMode(m: Mode) { mode = m; artist = null; album = null; genre = null; folder = null; text = ''; void reload(); }
   function openFacet(f: MusicFacet) {
-    if (mode === 'Artists') artist = f.name;
-    else if (mode === 'Albums') { album = f.name; artist = f.sub; }
+    if (mode === 'Albums') { album = f.name; artist = f.sub; }
     else if (mode === 'Genres') genre = f.name;
     else folder = f.folder;
     void reload();
@@ -98,10 +97,10 @@
     else { artist = null; album = null; genre = null; }
     void reload();
   }
-  const crumb = $derived(mode === 'Artists' ? artist : mode === 'Albums' ? (album ? `${album}${artist ? ' · ' + artist : ''}` : null) : mode === 'Genres' ? (genre === null ? null : genre || 'Not sorted') : mode === 'Folders' ? folder : null);
+  const crumb = $derived(mode === 'Albums' ? (album ? `${album}${artist ? ' · ' + artist : ''}` : null) : mode === 'Genres' ? (genre === null ? null : genre || 'Not sorted') : mode === 'Folders' ? folder : null);
 
-  async function everything(): Promise<MusicTrack[]> {
-    const q = text ? { text, field } : mode === 'Folders' ? { folder: folder ?? '' } : queryArgs();
+  async function everything(given?: MusicQuery): Promise<MusicTrack[]> {
+    const q = given ?? (text ? { text, field } : mode === 'Folders' ? { folder: folder ?? '' } : queryArgs());
     const r = await musicQuery(q, 0, 500);
     let all = r.tracks;
     while (all.length < r.total && all.length < 5000) all = [...all, ...(await musicQuery(q, all.length, 500)).tracks];
@@ -112,6 +111,44 @@
     player.setShuffle(shuffle);
     await player.playTracks(all, shuffle ? Math.floor(Math.random() * all.length) : 0);
   }
+  function facetQuery(f: MusicFacet): MusicQuery {
+    if (mode === 'Albums') return { artist: f.sub || null, album: f.name };
+    if (mode === 'Genres') return { genre: f.name };
+    return { folder: f.folder };
+  }
+  async function playFacet(f: MusicFacet, shuffle: boolean) {
+    try {
+      const all = await everything(facetQuery(f));
+      if (!all.length) return;
+      player.setShuffle(shuffle);
+      await player.playTracks(all, shuffle ? Math.floor(Math.random() * all.length) : 0);
+    } catch (e) { error = String(e); }
+  }
+  /** Put every song of a category, genre, album or the current list into a playlist (no doubles). */
+  async function addManyTo(name: string, q: MusicQuery) {
+    if (!name) return;
+    try {
+      const all = await everything(q);
+      const entries = await musicPlaylistLoad(name);
+      const have = new Set(entries.map((e) => e.path));
+      let n = 0;
+      for (const t of all) if (!have.has(t.rel)) { entries.push({ path: t.rel, title: t.title, artist: t.artist, album: t.album }); n++; }
+      await musicPlaylistSave(name, entries);
+      note = `Added ${n} song${n === 1 ? '' : 's'} to “${name}”.`; await loadPlaylists();
+    } catch (e) { error = String(e); }
+  }
+  /** A brand-new playlist from the songs shown (or empty). */
+  async function createPlaylist(name: string, q: MusicQuery | null) {
+    name = name.trim();
+    if (!name) return;
+    if (playlists.some((p) => p.name.toLowerCase() === name.toLowerCase())) { error = 'There is already a playlist with that name.'; return; }
+    try {
+      const all = q ? await everything(q) : [];
+      await musicPlaylistSave(name, all.map((t) => ({ path: t.rel, title: t.title, artist: t.artist, album: t.album })));
+      note = q ? `Made “${name}” with ${all.length} songs.` : `Made the empty playlist “${name}”.`; plName = ''; await loadPlaylists();
+    } catch (e) { error = String(e); }
+  }
+  let plName = $state('');
   async function playFrom(i: number) { await player.playTracks(tracks, i); }
 
   // playlists
@@ -145,6 +182,33 @@
     } catch (e) { error = String(e); }
   }
   let confirmDelete: string | null = $state(null);
+  let open: string | null = $state(null);
+  let openEntries: MusicEntry[] = $state([]);
+  let renameTo = $state('');
+  async function openPlaylist(name: string) {
+    try { openEntries = await musicPlaylistLoad(name); open = name; renameTo = name; } catch (e) { error = String(e); }
+  }
+  async function moveEntry(name: string, i: number, d: number) {
+    const j = i + d;
+    if (j < 0 || j >= openEntries.length) return;
+    const next = [...openEntries];
+    [next[i], next[j]] = [next[j], next[i]];
+    try { await musicPlaylistSave(name, next); openEntries = next; } catch (e) { error = String(e); }
+  }
+  async function dropEntry(name: string, i: number) {
+    const next = openEntries.filter((_, k) => k !== i);
+    try { await musicPlaylistSave(name, next); openEntries = next; await loadPlaylists(); } catch (e) { error = String(e); }
+  }
+  /** Save under the new name first, delete the old one only after that worked. */
+  async function renamePlaylist(name: string) {
+    const to = renameTo.trim();
+    if (playlists.some((p) => p.name.toLowerCase() === to.toLowerCase() && p.name !== name)) { error = 'There is already a playlist with that name.'; return; }
+    try {
+      await musicPlaylistSave(to, openEntries);
+      if (to.toLowerCase() !== name.toLowerCase()) await musicPlaylistDelete(name);
+      open = to; note = `Renamed to “${to}”.`; await loadPlaylists();
+    } catch (e) { error = String(e); }
+  }
   async function removePlaylist(name: string) {
     try { await musicPlaylistDelete(name); confirmDelete = null; await loadPlaylists(); } catch (e) { error = String(e); }
   }
@@ -180,12 +244,12 @@
   {:else}
     <section class="panel">
       <div class="row">
-        <input class="input grow" type="search" placeholder={field === 'all' ? 'Search songs, artists, genres' : `Search by ${field}`} aria-label="Search music" bind:value={text} oninput={onSearch} />
+        <input class="input grow" type="search" placeholder={field === 'all' ? 'Search songs, categories, genres' : `Search by ${field}`} aria-label="Search music" bind:value={text} oninput={onSearch} />
         <select class="input" aria-label="Search in" title="Choose where the search looks" bind:value={field} onchange={onSearch}>
-          <option value="all">Everything</option><option value="title">Song title</option><option value="artist">Artist</option><option value="genre">Genre</option>
+          <option value="all">Everything</option><option value="title">Song title</option><option value="genre">Genre</option>
         </select>
         <div class="modes" role="group" aria-label="Browse by">
-          {#each modes as m}<button class:on={mode === m && !text} onclick={() => setMode(m)}>{m}</button>{/each}
+          {#each modes as m}<button class:on={mode === m && !text} onclick={() => setMode(m)}>{modeName[m]}</button>{/each}
         </div>
       </div>
       <div class="row status muted">
@@ -202,11 +266,31 @@
           <button class="btn" onclick={() => playAll(true)}>⤮ Shuffle</button>
           <span class="muted">{total.toLocaleString()} songs</span>
         </div>
+        <div class="row">
+          {#if playlists.length}
+            <select class="input" aria-label="Add these songs to a playlist" onchange={(e) => { void addManyTo(e.currentTarget.value, text ? { text, field } : queryArgs()); e.currentTarget.value = ''; }}>
+              <option value="">♫ Add these songs to a playlist…</option>
+              {#each playlists as p}<option value={p.name}>{p.name}</option>{/each}
+            </select>
+          {/if}
+          <input class="input" maxlength="60" placeholder="Or name a new playlist" bind:value={plName} aria-label="New playlist name" />
+          <button class="btn" disabled={!plName.trim()} onclick={() => createPlaylist(plName, text ? { text, field } : queryArgs())}>Make it from these</button>
+        </div>
       {/if}
       {#if showFacets}
         <ul class="facets">
           {#each facets as f}
-            <li><button onclick={() => openFacet(f)}><span>{f.name || (mode === 'Genres' ? 'Not sorted' : '(unknown)')}{#if f.sub}<small> · {f.sub}</small>{/if}</span><small>{f.count}</small></button></li>
+            <li class="facet">
+              <button class="open" onclick={() => openFacet(f)}><span>{f.name || (mode === 'Genres' ? 'Not sorted' : '(unknown)')}{#if f.sub && mode !== 'Albums'}<small> · {f.sub}</small>{/if}</span><small>{f.count}</small></button>
+              <button class="icon" title="Play all of these" aria-label={'Play ' + f.name} onclick={() => playFacet(f, false)}>▶</button>
+              <button class="icon" title="Shuffle these" aria-label={'Shuffle ' + f.name} onclick={() => playFacet(f, true)}>⤮</button>
+              {#if playlists.length}
+                <select class="pl" aria-label="Add all of these to a playlist" onchange={(e) => { void addManyTo(e.currentTarget.value, facetQuery(f)); e.currentTarget.value = ''; }}>
+                  <option value="">♫</option>
+                  {#each playlists as p}<option value={p.name}>{p.name}</option>{/each}
+                </select>
+              {/if}
+            </li>
           {/each}
           {#if !facets.length && !busy}<li class="muted">Nothing here.</li>{/if}
         </ul>
@@ -272,14 +356,19 @@
   </section>
 {:else if tab === 'Playlists'}
   <section class="panel">
-    <p class="muted small">Playlists are spreadsheet files in <code>user/playlists</code>. Save the queue as a playlist from the Queue tab.</p>
+    <p class="muted small">Make as many playlists as you like. They are spreadsheet files in <code>user/playlists</code>. Add songs from the Library (the ♫ button on a song, a category, a genre or an album), or save the queue from the Queue tab.</p>
+    <div class="row">
+      <input class="input grow" maxlength="60" placeholder="Name for a new, empty playlist" bind:value={plName} aria-label="New playlist name" />
+      <button class="btn" disabled={!plName.trim()} onclick={() => createPlaylist(plName, null)}>Make playlist</button>
+    </div>
     {#if !playlists.length}<p class="muted">No playlists yet.</p>{/if}
     <ul class="plist">
-      {#each playlists as p}
+      {#each playlists as p (p.name)}
         <li>
           <span><b>{p.name}</b> <small class="muted">{p.count} songs</small></span>
           <span class="row">
             <button class="btn" onclick={() => playPlaylist(p.name)}>▶ Play</button>
+            <button class="btn" onclick={() => (open === p.name ? (open = null) : openPlaylist(p.name))}>{open === p.name ? 'Close' : 'Edit'}</button>
             {#if confirmDelete === p.name}
               <button class="btn danger" onclick={() => removePlaylist(p.name)}>Delete “{p.name}”</button>
               <button class="btn" onclick={() => (confirmDelete = null)}>Keep</button>
@@ -287,6 +376,25 @@
               <button class="btn" onclick={() => (confirmDelete = p.name)}>Delete</button>
             {/if}
           </span>
+          {#if open === p.name}
+            <div class="edit">
+              <div class="row">
+                <input class="input grow" maxlength="60" bind:value={renameTo} aria-label="New name" />
+                <button class="btn" disabled={!renameTo.trim() || renameTo.trim() === p.name} onclick={() => renamePlaylist(p.name)}>Rename</button>
+              </div>
+              {#if !openEntries.length}<p class="muted">Empty. Add songs from the Library.</p>{/if}
+              <ol class="tracks">
+                {#each openEntries as e, i (e.path)}
+                  <li>
+                    <span class="main"><span class="t">{e.title || e.path}</span><span class="a muted">{e.artist || e.album || e.path}</span></span>
+                    <button class="icon" title="Move up" aria-label="Move up" disabled={i === 0} onclick={() => moveEntry(p.name, i, -1)}>▲</button>
+                    <button class="icon" title="Move down" aria-label="Move down" disabled={i === openEntries.length - 1} onclick={() => moveEntry(p.name, i, 1)}>▼</button>
+                    <button class="icon" title="Take out of this playlist" aria-label="Remove" onclick={() => dropEntry(p.name, i)}>✕</button>
+                  </li>
+                {/each}
+              </ol>
+            </div>
+          {/if}
         </li>
       {/each}
     </ul>
@@ -345,7 +453,11 @@
   code { font-family: var(--mono); font-size: 12px; background: var(--panel2); padding: 1px 5px; border-radius: 4px; }
   ul, ol { list-style: none; margin: 0; padding: 0; }
   .facets { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 6px; }
-  .facets button { width: 100%; display: flex; justify-content: space-between; gap: 8px; text-align: left; padding: 9px 11px; background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; color: var(--text); font: inherit; }
+  .facet { display: flex; align-items: center; gap: 2px; }
+  .facets .open { flex: 1; min-width: 0; width: auto; }
+  .facets button.icon { width: auto; padding: 0; border: 1px solid transparent; background: none; }
+  .edit { flex: 1 1 100%; display: flex; flex-direction: column; gap: 8px; padding: 6px 0 4px 10px; border-left: 3px solid var(--line2); }
+  .facets button:not(.icon) { width: 100%; display: flex; justify-content: space-between; gap: 8px; text-align: left; padding: 9px 11px; background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; color: var(--text); font: inherit; }
   .facets button:hover { border-color: var(--blue-line); }
   .tracks li { display: flex; align-items: center; gap: 4px; border-bottom: 1px solid var(--line); }
   .tracks li.now { background: var(--blue-soft); }

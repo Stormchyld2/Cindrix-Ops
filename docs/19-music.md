@@ -26,7 +26,9 @@ converted files into `music/`). Everything in the first column plays on Android 
 ## What it does
 
 - **Library:** search (every word must match the title, artist, album, genre or path; a box beside it
-  limits the search to song title, artist or genre), browse by Artists, Albums, Genres or Folders,
+  limits the search to song title or genre), browse by **Categories** (the folders in `music/`, opened first, like the
+  Shelf), Genres, Albums or All songs. There is no artist list. Every category, genre and album has Play, Shuffle and
+  "add all to a playlist" beside it,
   Play all, Shuffle, Play next, Add to queue, Add to playlist.
 - **Genres:** read from the file's tag (ID3 TCON with the old numbers looked up, Vorbis GENRE, MP4
   ©gen/gnre, WMA WM/Genre, WAV IGNR). A file with no genre takes the name of the top folder it sits
@@ -34,7 +36,8 @@ converted files into `music/`). Everything in the first column plays on Android 
   Genres button is the genre folders: the files are never moved. The index cache gained a genre
   column, so the first look after updating reads the tags again.
 - **Queue:** reorder, remove, jump, save as a playlist. Shuffle, repeat (off, all, one).
-- **Playlists:** plain CSV files in `user/playlists/` (path, title, artist, album). A song that has
+- **Playlists:** as many as you like; plain CSV files in `user/playlists/` (path, title, artist, album), up to 20,000 songs each.
+  Make an empty one, make one from the songs shown, add a whole category/genre/album (no doubles), rename, reorder, remove songs. A song that has
   moved is skipped and the screen says how many.
 - **Equalizer:** ten bands (31 Hz to 16 kHz, plus or minus 12 dB) and eight presets. It is built only
   the first time a slider is moved, so ordinary playback has no extra processing.
