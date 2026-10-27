@@ -83,3 +83,12 @@ of `yes` (public domain or openly licensed, credit where it is required), `check
 (non-commercial or copyrighted). `get-library.ps1 -SellOnly` fetches only the `yes` ones; `-List` shows the flag.
 The flags are Claude's reading of each license, not legal advice: check them before selling. A test refuses a
 `yes` next to anything marked non-commercial. Defense and weapons books are allowed for the private drive.
+
+## Get-Library is for the sell version only (owner, 2026-10-27)
+
+`scripts/get-library.ps1` and `content/library-catalog.json` stay in the repository, but the CI-built drive
+no longer carries them: the owner's private library is built by hand. For the sell version, add these lines back
+to the "Include the drive and map scripts" step in `.github/workflows/ci.yml` and run the script with `-SellOnly`:
+
+    cp scripts/get-library.ps1 scripts/Get-Library.bat out/Cindrix/scripts/
+    mkdir -p out/Cindrix/content && cp content/library-catalog.json out/Cindrix/content/

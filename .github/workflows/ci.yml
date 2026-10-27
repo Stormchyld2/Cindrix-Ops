@@ -409,9 +409,7 @@ jobs:
         run: |
           mkdir -p out/Cindrix/scripts out/Cindrix/manifest
           cp scripts/build-drive.ps1 scripts/get-maps.ps1 scripts/Get-Maps.bat out/Cindrix/scripts/
-          cp scripts/get-library.ps1 scripts/Get-Library.bat out/Cindrix/scripts/
           cp scripts/get-druglabels.ps1 scripts/Get-DrugLabels.bat out/Cindrix/scripts/
-          mkdir -p out/Cindrix/content && cp content/library-catalog.json out/Cindrix/content/
           cp manifest/content.json out/Cindrix/manifest/
       - name: Add a small test map (this also runs the real map download script)
         continue-on-error: true
