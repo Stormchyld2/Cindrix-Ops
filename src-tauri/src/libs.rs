@@ -58,6 +58,18 @@ pub fn all_zim_files() -> Vec<PathBuf> {
     libraries::archive_files(&library_dir(), &others, kiwix::zim_files)
 }
 
+/// Every library folder archives may sit in (the primary one first); a folder inside one of them is a category.
+pub fn library_roots() -> Vec<PathBuf> {
+    let mut v = vec![library_dir()];
+    for (r, _) in enabled_roots() {
+        let l = r.join("library");
+        if !v.contains(&l) {
+            v.push(l);
+        }
+    }
+    v
+}
+
 /// The roots of the other libraries that may be read (not the primary one).
 pub fn other_roots(primary: &Path) -> Vec<PathBuf> {
     enabled_roots().into_iter().map(|(r, _)| r).filter(|r| r != primary).collect()

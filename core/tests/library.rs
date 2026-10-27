@@ -109,3 +109,30 @@ fn the_library_server_restarts_only_once_new_archives_have_settled() {
     assert!(w.should_restart(std::slice::from_ref(&a), &[a.clone(), b.clone()]));
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn folders_below_the_library_give_categories_and_narrow_the_search() {
+    use cindrix_core::library::category_for;
+    let root = std::env::temp_dir().join(format!("cx-cats-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    std::fs::create_dir_all(root.join("Medicine")).unwrap();
+    std::fs::create_dir_all(root.join("Survival/Water")).unwrap();
+    let z = zims();
+    std::fs::copy(&z[0], root.join("Medicine/a.zim")).unwrap();
+    std::fs::copy(&z[1], root.join("Survival/Water/b.zim")).unwrap();
+    std::fs::copy(&z[2], root.join("c.zim")).unwrap();
+    let files = vec![root.join("Medicine/a.zim"), root.join("Survival/Water/b.zim"), root.join("c.zim")];
+    let roots = vec![root.clone()];
+    assert_eq!(category_for(&files[0], &roots), "Medicine");
+    assert_eq!(category_for(&files[1], &roots), "Survival");
+    assert_eq!(category_for(&files[2], &roots), "");
+    assert_eq!(category_for(&PathBuf::from("/elsewhere/x.zim"), &roots), "");
+    let lib = Library::open_in(&files, &roots);
+    assert_eq!(lib.categories(), vec!["Medicine".to_string(), "Survival".to_string()]);
+    let all = lib.suggest_in(None, "water", 2, 10);
+    let med = lib.suggest_in(Some("medicine"), "water", 2, 10);
+    assert!(!med.is_empty() && med.iter().all(|h| h.book == "a"));
+    assert!(all.len() > med.len());
+    assert!(lib.suggest_in(Some("Nothing"), "water", 2, 10).is_empty());
+    std::fs::remove_dir_all(&root).ok();
+}

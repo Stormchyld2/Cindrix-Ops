@@ -60,7 +60,7 @@ pub fn library() -> Arc<Library> {
             return l.clone();
         }
     }
-    let l = Arc::new(Library::open(&files));
+    let l = Arc::new(Library::open_in(&files, &super::libs::library_roots()));
     *g = Some((sig, l.clone(), std::time::Instant::now()));
     l
 }
@@ -170,6 +170,8 @@ pub struct BookDto {
     description: String,
     articles: u32,
     mb: u64,
+    /// The folder it sits in below the library folder, or empty.
+    category: String,
 }
 
 /// The archives on the drive, with the names used in their addresses.
@@ -184,6 +186,7 @@ pub fn zim_books() -> Vec<BookDto> {
             description: b.archive.metadata("Description").unwrap_or_default().chars().take(400).collect(),
             articles: b.archive.articles,
             mb: std::fs::metadata(&b.file).map(|m| m.len() / 1_048_576).unwrap_or(0),
+            category: b.category.clone(),
         })
         .collect()
 }
@@ -199,10 +202,10 @@ pub struct HitDto {
 
 /// Titles matching the words in every archive at once, best of each first.
 #[tauri::command]
-pub async fn zim_search_all(term: String) -> Result<Vec<HitDto>, String> {
+pub async fn zim_search_all(term: String, category: Option<String>) -> Result<Vec<HitDto>, String> {
     tauri::async_runtime::spawn_blocking(move || {
         library()
-            .suggest_all(&term, 6, 36)
+            .suggest_in(category.as_deref(), &term, 6, 36)
             .into_iter()
             .map(|h| HitDto {
                 path: format!("/content/{}/{}", library::encode_path(&h.book), library::encode_path(&h.address)),

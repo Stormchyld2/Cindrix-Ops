@@ -428,7 +428,7 @@ export async function marksSetLast(book: string, page: number): Promise<void> {
 }
 
 // ---------- archives (ZIM files) and sharing ----------
-export type ArchiveInfo = { file: string; mb: number; articles: number; saved_site: boolean; note: string; library: string; removable: boolean };
+export type ArchiveInfo = { file: string; mb: number; articles: number; saved_site: boolean; note: string; library: string; removable: boolean; category?: string };
 export type DriveInfo = { name: string; edition: string; path: string };
 export type LibraryStatus = {
   archives: ArchiveInfo[];
@@ -1041,7 +1041,7 @@ export async function musicClearCache(): Promise<number> {
 
 
 // ---------- the in-app archive reader ----------
-export type ZimBook = { name: string; title: string; description: string; articles: number; mb: number };
+export type ZimBook = { name: string; title: string; description: string; articles: number; mb: number; category?: string };
 export type ZimHit = { book: string; book_title: string; title: string; path: string };
 export type ZimBookmark = { book: string; path: string; title: string };
 export type ZimSuggestion = { title: string; path: string };
@@ -1056,11 +1056,11 @@ let memZimBookmarks = '{}';
 
 export async function zimBooks(): Promise<ZimBook[]> {
   if (inTauri) return call<ZimBook[]>('zim_books');
-  return [{ name: 'sample', title: 'Sample library (preview)', description: 'A made-up archive for the browser preview.', articles: 3, mb: 1 }];
+  return [{ name: 'sample', title: 'Sample library (preview)', description: 'A made-up archive for the browser preview.', articles: 3, mb: 1, category: 'Sample' }];
 }
-/** Titles matching the words in every archive at once (best of each archive first). */
-export async function zimSearchAll(term: string): Promise<ZimHit[]> {
-  if (inTauri) return call<ZimHit[]>('zim_search_all', { term });
+/** Titles matching the words in every archive at once (best of each archive first). `category`: only the archives in that folder. */
+export async function zimSearchAll(term: string, category = ''): Promise<ZimHit[]> {
+  if (inTauri) return call<ZimHit[]>('zim_search_all', category ? { term, category } : { term });
   const t = term.toLowerCase();
   return Object.entries(previewPages).filter(([, v]) => v.title.toLowerCase().includes(t)).map(([p, v]) => ({ book: 'sample', book_title: 'Sample library (preview)', title: v.title, path: p }));
 }

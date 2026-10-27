@@ -17,6 +17,8 @@ pub struct Book {
     pub title: String,
     pub file: PathBuf,
     pub archive: Archive,
+    /// The folder inside the library folder the file sits in ("Medicine"), or empty at the top.
+    pub category: String,
 }
 
 pub struct Library {
@@ -24,6 +26,21 @@ pub struct Library {
 }
 
 /// The name used for an archive in addresses.
+/// The category an archive gets from where it sits: the first folder below its library folder
+/// (`library/Medicine/x.zim` is "Medicine"). A file straight in the library folder has none.
+pub fn category_for(file: &Path, roots: &[PathBuf]) -> String {
+    for r in roots {
+        if let Ok(rel) = file.strip_prefix(r) {
+            let parts: Vec<_> = rel.components().collect();
+            if parts.len() >= 2 {
+                return parts[0].as_os_str().to_string_lossy().trim().to_string();
+            }
+            return String::new();
+        }
+    }
+    String::new()
+}
+
 pub fn book_name(file: &Path) -> String {
     let stem = file.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
     let n: String = stem.chars().map(|c| if c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_') { c } else { '_' }).collect();
@@ -75,6 +92,11 @@ pub struct Hit {
 impl Library {
     /// Open every readable archive. A file that cannot be read is left out, not an error.
     pub fn open(files: &[PathBuf]) -> Library {
+        Library::open_in(files, &[])
+    }
+
+    /// Like `open`, and each archive's category comes from the folder it is in below one of `roots`.
+    pub fn open_in(files: &[PathBuf], roots: &[PathBuf]) -> Library {
         let mut books: Vec<Book> = Vec::new();
         for f in files {
             let Ok(archive) = Archive::open(f) else { continue };
@@ -83,7 +105,8 @@ impl Library {
                 name.push('_');
             }
             let title = archive.metadata("Title").unwrap_or_else(|| name.replace('_', " "));
-            books.push(Book { name, title, file: f.clone(), archive });
+            let category = category_for(f, roots);
+            books.push(Book { name, title, file: f.clone(), archive, category });
         }
         Library { books }
     }
@@ -112,6 +135,29 @@ impl Library {
     /// Titles matching `term` in EVERY archive, for the Intel search box. Up to `per_book` come
     /// from each archive and the list alternates between archives (everyone's best first), so a
     /// huge encyclopedia does not push a small manual off the list. At most `total` are returned.
+    /// The categories there are, sorted (empty ones left out).
+    pub fn categories(&self) -> Vec<String> {
+        let mut v: Vec<String> = self.books.iter().map(|b| b.category.clone()).filter(|c| !c.is_empty()).collect();
+        v.sort_by_key(|c| c.to_lowercase());
+        v.dedup_by(|a, b| a.eq_ignore_ascii_case(b));
+        v
+    }
+
+    /// Titles in every archive of one category (all when `category` is None or empty), best of each first.
+    pub fn suggest_in(&self, category: Option<&str>, term: &str, per_book: usize, total: usize) -> Vec<Hit> {
+        match category.map(|c| c.trim()).filter(|c| !c.is_empty()) {
+            None => self.suggest_all(term, per_book, total),
+            Some(c) => {
+                let names: Vec<&str> = self.books.iter().filter(|b| b.category.eq_ignore_ascii_case(c)).map(|b| b.name.as_str()).collect();
+                self.suggest_all(term, per_book, total.saturating_mul(self.books.len().max(1)))
+                    .into_iter()
+                    .filter(|h| names.contains(&h.book.as_str()))
+                    .take(total)
+                    .collect()
+            }
+        }
+    }
+
     pub fn suggest_all(&self, term: &str, per_book: usize, total: usize) -> Vec<Hit> {
         let term = term.trim();
         if term.chars().count() < 2 || per_book == 0 {

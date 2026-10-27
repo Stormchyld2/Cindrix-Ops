@@ -16,6 +16,10 @@
 
   const MAX_TABS = 12;
   let books: ZimBook[] = $state([]);
+  /** Only the archives in this folder (a category), or '' for all of them. */
+  let category = $state('');
+  const categories = $derived.by(() => [...new Set(books.map((b) => b.category ?? '').filter((c) => c))].sort((x, y) => x.localeCompare(y)));
+  const shownBooks = $derived.by(() => (category ? books.filter((b) => (b.category ?? '').toLowerCase() === category.toLowerCase()) : books));
   let st: LibraryStatus | null = $state(null);
   let tabs: Tab[] = $state([]);
   let active = $state(0);
@@ -288,13 +292,13 @@
     clearTimeout(debounce);
     if (term.trim().length < 2) { suggestions = []; return; }
     debounce = setTimeout(async () => {
-      try { suggestions = (await zimSearchAll(term.trim())).slice(0, 10); } catch { suggestions = []; }
+      try { suggestions = (await zimSearchAll(term.trim(), category)).slice(0, 10); } catch { suggestions = []; }
     }, 200);
   }
   async function runSearch(q: string) {
     searching = true;
     hits = [];
-    try { hits = await zimSearchAll(q); } catch { hits = []; }
+    try { hits = await zimSearchAll(q, category); } catch { hits = []; }
     searching = false;
   }
   function submit() {
@@ -354,6 +358,12 @@
         </ul>
       {/if}
     </div>
+    {#if categories.length}
+      <select class="input cat" bind:value={category} aria-label="Search only one category" title="Search only the archives in one folder">
+        <option value="">All categories</option>
+        {#each categories as c}<option value={c}>{c}</option>{/each}
+      </select>
+    {/if}
     <button class="btn" onclick={submit} disabled={!term.trim()}>Search</button>
     {#if bookHere}
       <button class="btn" onclick={searchInside} disabled={!term.trim()} title="Search the words inside the archive that is open">Search inside {bookTitle(bookHere)}</button>
@@ -421,9 +431,10 @@
           </div>
         {:else}
           <div class="grid">
-            {#each books as b (b.name)}
+            {#each shownBooks as b (b.name)}
               <button class="card" onclick={() => go(homeOf(b.name))}>
                 <strong>{b.title}</strong>
+                {#if b.category}<span class="meta">{b.category}</span>{/if}
                 {#if b.description}<span class="desc">{b.description}</span>{/if}
                 <span class="meta">{b.articles.toLocaleString()} pages · {size(b.mb)}</span>
               </button>
@@ -469,6 +480,7 @@
   .bar .btn { padding: 8px 12px; }
   .bar .btn.on { color: var(--accent); border-color: var(--accent-line); }
   .find { position: relative; flex: 1 1 220px; min-width: 160px; }
+  .cat { flex: 0 0 auto; width: auto; max-width: 180px; }
   .find .input { width: 100%; }
   .sug { position: absolute; z-index: 4; left: 0; right: 0; top: 100%; margin: 2px 0 0; padding: 4px; list-style: none; background: var(--panel); border: 1px solid var(--line2); border-radius: 8px; max-height: 320px; overflow: auto; }
   .sug button { width: 100%; text-align: left; padding: 8px 10px; background: none; border: 0; color: var(--text); font: inherit; cursor: pointer; border-radius: 6px; }

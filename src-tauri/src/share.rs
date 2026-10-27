@@ -548,7 +548,7 @@ fn dispatch(app: &tauri::AppHandle, cmd: &str, a: &Value, role: &Role) -> Result
         "directions" => tv(tauri::async_runtime::block_on(crate::directions(arg(a, "from")?, arg(a, "to")?, arg(a, "avoid")?))?),
         "route_stats" => tv(crate::route_stats(arg(a, "points")?)),
         "zim_books" => tv(crate::zimview::zim_books()),
-        "zim_search_all" => tv(tauri::async_runtime::block_on(crate::zimview::zim_search_all(arg(a, "term")?))?),
+        "zim_search_all" => tv(tauri::async_runtime::block_on(crate::zimview::zim_search_all(arg(a, "term")?, a.get("category").and_then(|v| v.as_str()).map(|s| s.to_string())))?),
         "music_status" => tv(crate::music::music_status(st)),
         "music_query" => tv(crate::music::music_query(st, arg(a, "args")?, arg(a, "offset")?, arg(a, "limit")?)),
         "music_facets" => tv(crate::music::music_facets(st, arg(a, "kind")?, arg(a, "prefix")?)),

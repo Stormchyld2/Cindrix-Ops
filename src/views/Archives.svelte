@@ -155,6 +155,7 @@
             <div class="grow">
               <strong>{a.file}</strong>
               <span class="muted"> · {size(a.mb)}{a.articles ? ' · ' + a.articles.toLocaleString() + ' items' : ''}</span>
+              {#if a.category}<span class="tagline">{a.category}</span>{/if}
               {#if manyLibraries && a.library}<span class="tagline">On {a.library}</span>{/if}
               {#if a.saved_site}<span class="tagline">Saved website · the assistant can read it</span>{/if}
               {#if a.note}<div class="warn small">{a.note}</div>{/if}

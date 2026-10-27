@@ -92,3 +92,13 @@ to the "Include the drive and map scripts" step in `.github/workflows/ci.yml` an
 
     cp scripts/get-library.ps1 scripts/Get-Library.bat out/Cindrix/scripts/
     mkdir -p out/Cindrix/content && cp content/library-catalog.json out/Cindrix/content/
+
+## Archive categories from folders (owner, 2026-10-27)
+
+An archive's category is the first folder it sits in below the library folder: `library/Medicine/x.zim` is
+"Medicine", `library/Survival/Water/y.zim` is "Survival", and a file straight in `library` has none
+(`core/src/library.rs` `category_for`, tested in `core/tests/library.rs`). It works like the Shelf, which takes
+its category from the folder too. Intel shows a category picker next to the search box (only when there are
+categories); it narrows the search and the list of archives. Archives lists each archive's category. Other
+libraries' `library` folders work the same way. Two archives with the same file name in different folders
+still count as one (the first is used). The guest search accepts the same optional `category`.

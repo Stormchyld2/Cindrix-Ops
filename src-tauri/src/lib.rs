@@ -337,6 +337,8 @@ struct ArchiveDto {
     library: String,
     /// Only archives in the main library can be removed from here
     removable: bool,
+    /// The folder it sits in below the library folder ("Medicine"), or empty
+    category: String,
 }
 
 #[derive(Serialize)]
@@ -389,6 +391,7 @@ fn archive_list() -> Vec<ArchiveDto> {
                 saved_site: web_text_dir().join(format!("{}.md", stem)).exists(),
                 note: license_note(&file),
                 library: libs::library_name_of(&p),
+                category: cindrix_core::library::category_for(&p, &libs::library_roots()),
                 removable: p.starts_with(&main),
                 file,
                 mb,
