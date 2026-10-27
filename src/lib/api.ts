@@ -1063,21 +1063,28 @@ export async function musicArtUrl(rel: string): Promise<string | null> {
   return convertFileSrc('a/' + rel, 'cindrix-music');
 }
 
-export async function musicPlaylists(): Promise<PlaylistMeta[]> {
-  if (inTauri) return call<PlaylistMeta[]>('music_playlists');
+/** `person` '' = the shared playlists everyone sees; a name = that person's own. */
+export async function musicPlaylists(person = ''): Promise<PlaylistMeta[]> {
+  if (inTauri) return call<PlaylistMeta[]>('music_playlists', { person });
   return Object.entries(memPlaylists).map(([name, e]) => ({ name, count: e.length })).sort((a, b) => a.name.localeCompare(b.name));
 }
-export async function musicPlaylistLoad(name: string): Promise<MusicEntry[]> {
-  if (inTauri) return call<MusicEntry[]>('music_playlist_load', { name });
+export type PlaylistOwned = { owner: string; name: string; count: number };
+/** Every playlist of everyone ('' as owner = shared), so anyone can play what the others made. */
+export async function musicPlaylistsAll(): Promise<PlaylistOwned[]> {
+  if (inTauri) return call<PlaylistOwned[]>('music_playlists_all');
+  return Object.entries(memPlaylists).map(([name, e]) => ({ owner: '', name, count: e.length }));
+}
+export async function musicPlaylistLoad(name: string, person = ''): Promise<MusicEntry[]> {
+  if (inTauri) return call<MusicEntry[]>('music_playlist_load', { name, person });
   if (!memPlaylists[name]) throw 'There is no such playlist.';
   return memPlaylists[name];
 }
-export async function musicPlaylistSave(name: string, entries: MusicEntry[]): Promise<void> {
-  if (inTauri) return call<void>('music_playlist_save', { name, entries });
+export async function musicPlaylistSave(name: string, entries: MusicEntry[], person = ''): Promise<void> {
+  if (inTauri) return call<void>('music_playlist_save', { name, entries, person });
   memPlaylists[name] = entries;
 }
-export async function musicPlaylistDelete(name: string): Promise<void> {
-  if (inTauri) return call<void>('music_playlist_delete', { name });
+export async function musicPlaylistDelete(name: string, person = ''): Promise<void> {
+  if (inTauri) return call<void>('music_playlist_delete', { name, person });
   delete memPlaylists[name];
 }
 export async function musicStateLoad(): Promise<string> {

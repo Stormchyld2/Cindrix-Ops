@@ -1,9 +1,11 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import {
-    musicStatus, musicScan, musicQuery, musicFacets, musicPlaylists, musicPlaylistLoad, musicPlaylistSave, musicPlaylistDelete, musicClearCache, musicResolve,
-    type MusicStatus, type MusicQuery, type MusicEntry, type MusicTrack, type MusicFacet, type PlaylistMeta,
+    musicStatus, musicScan, musicQuery, musicFacets, musicPlaylists, musicPlaylistsAll, musicPlaylistLoad, musicPlaylistSave, musicPlaylistDelete, musicClearCache, musicResolve,
+    type MusicStatus, type MusicQuery, type MusicEntry, type PlaylistOwned, type MusicTrack, type MusicFacet, type PlaylistMeta,
   } from '../lib/api';
+  import { who } from '../lib/person.svelte';
+  import PersonPick from '../lib/PersonPick.svelte';
   import { player, fmtTime, EQ_BANDS, EQ_PRESETS } from '../lib/player.svelte';
 
   const tabs = ['Library', 'Queue', 'Playlists', 'Equalizer'] as const;
@@ -129,11 +131,11 @@
     if (!name) return;
     try {
       const all = await everything(q);
-      const entries = await musicPlaylistLoad(name);
+      const entries = await musicPlaylistLoad(name, who.name);
       const have = new Set(entries.map((e) => e.path));
       let n = 0;
       for (const t of all) if (!have.has(t.rel)) { entries.push({ path: t.rel, title: t.title, artist: t.artist, album: t.album }); n++; }
-      await musicPlaylistSave(name, entries);
+      await musicPlaylistSave(name, entries, who.name);
       note = `Added ${n} song${n === 1 ? '' : 's'} to “${name}”.`; await loadPlaylists();
     } catch (e) { error = String(e); }
   }
@@ -144,26 +146,80 @@
     if (playlists.some((p) => p.name.toLowerCase() === name.toLowerCase())) { error = 'There is already a playlist with that name.'; return; }
     try {
       const all = q ? await everything(q) : [];
-      await musicPlaylistSave(name, all.map((t) => ({ path: t.rel, title: t.title, artist: t.artist, album: t.album })));
+      await musicPlaylistSave(name, all.map((t) => ({ path: t.rel, title: t.title, artist: t.artist, album: t.album })), who.name);
       note = q ? `Made “${name}” with ${all.length} songs.` : `Made the empty playlist “${name}”.`; plName = ''; await loadPlaylists();
     } catch (e) { error = String(e); }
   }
   let plName = $state('');
+  // songs ticked from any folder, genre or search: kept while you move around, then added to a playlist
+  let picks: Map<string, MusicTrack> = $state(new Map());
+  function togglePick(t: MusicTrack) {
+    const m = new Map(picks);
+    if (m.has(t.rel)) m.delete(t.rel); else m.set(t.rel, t);
+    picks = m;
+  }
+  const pickedList = $derived([...picks.values()]);
+  const asEntries = (l: MusicTrack[]): MusicEntry[] => l.map((t) => ({ path: t.rel, title: t.title, artist: t.artist, album: t.album }));
+  async function addPicksTo(name: string) {
+    if (!name) return;
+    try {
+      const entries = await musicPlaylistLoad(name, who.name);
+      const have = new Set(entries.map((e) => e.path));
+      const fresh = asEntries(pickedList.filter((t) => !have.has(t.rel)));
+      await musicPlaylistSave(name, [...entries, ...fresh], who.name);
+      note = `Added ${fresh.length} song${fresh.length === 1 ? '' : 's'} to “${name}”.`; picks = new Map(); await loadPlaylists();
+    } catch (e) { error = String(e); }
+  }
+  async function makeFromPicks() {
+    const name = plName.trim();
+    if (!name) return;
+    if (playlists.some((x) => x.name.toLowerCase() === name.toLowerCase())) { error = 'You already have a playlist with that name.'; return; }
+    try {
+      await musicPlaylistSave(name, asEntries(pickedList), who.name);
+      note = `Made “${name}” with ${pickedList.length} songs.`; plName = ''; picks = new Map(); await loadPlaylists();
+    } catch (e) { error = String(e); }
+  }
   async function playFrom(i: number) { await player.playTracks(tracks, i); }
 
   // playlists
-  async function loadPlaylists() { try { playlists = await musicPlaylists(); } catch (e) { error = String(e); } }
+  let everyonesLists: PlaylistOwned[] = $state([]);
+  async function loadPlaylists() {
+    try {
+      playlists = await musicPlaylists(who.name);
+      everyonesLists = await musicPlaylistsAll();
+    } catch (e) { error = String(e); }
+  }
+  /** Other people's playlists (and the shared ones), grouped by owner. */
+  const mineKey = $derived(who.name.trim().replace(/\s+/g, ' ').toLowerCase());
+  const othersByOwner = $derived.by(() => {
+    const m = new Map<string, PlaylistOwned[]>();
+    for (const p of everyonesLists) {
+      if (p.owner && p.owner.toLowerCase() === mineKey) continue;
+      m.set(p.owner, [...(m.get(p.owner) ?? []), p]);
+    }
+    return [...m.entries()];
+  });
+  /** Copy somebody else's playlist into my own set. */
+  async function copyToMine(owner: string, name: string) {
+    try {
+      const entries = await musicPlaylistLoad(name, owner);
+      let to = name, n = 2;
+      while (playlists.some((x) => x.name.toLowerCase() === to.toLowerCase())) to = `${name} (${n++})`;
+      await musicPlaylistSave(to, entries, who.name);
+      note = `Copied to your playlists as “${to}”.`; await loadPlaylists();
+    } catch (e) { error = String(e); }
+  }
   async function saveQueue() {
     const name = newName.trim();
     if (!name) return;
     try {
-      await musicPlaylistSave(name, player.queue.map((t) => ({ path: t.rel, title: t.title, artist: t.artist, album: t.album })));
+      await musicPlaylistSave(name, player.queue.map((t) => ({ path: t.rel, title: t.title, artist: t.artist, album: t.album })), who.name);
       note = `Saved “${name}”.`; newName = ''; await loadPlaylists();
     } catch (e) { error = String(e); }
   }
-  async function playPlaylist(name: string) {
+  async function playPlaylist(name: string, owner: string = who.name) {
     try {
-      const entries = await musicPlaylistLoad(name);
+      const entries = await musicPlaylistLoad(name, owner);
       const found = await musicResolve(entries.map((e) => e.path));
       const byRel = new Map(found.map((t) => [t.rel, t]));
       const list = entries.map((e) => byRel.get(e.path)).filter((t): t is MusicTrack => !!t);
@@ -175,9 +231,9 @@
   async function addToPlaylist(name: string, t: MusicTrack) {
     if (!name) return;
     try {
-      const entries = await musicPlaylistLoad(name);
+      const entries = await musicPlaylistLoad(name, who.name);
       if (!entries.some((e) => e.path === t.rel)) entries.push({ path: t.rel, title: t.title, artist: t.artist, album: t.album });
-      await musicPlaylistSave(name, entries);
+      await musicPlaylistSave(name, entries, who.name);
       note = `Added to “${name}”.`; await loadPlaylists();
     } catch (e) { error = String(e); }
   }
@@ -186,31 +242,31 @@
   let openEntries: MusicEntry[] = $state([]);
   let renameTo = $state('');
   async function openPlaylist(name: string) {
-    try { openEntries = await musicPlaylistLoad(name); open = name; renameTo = name; } catch (e) { error = String(e); }
+    try { openEntries = await musicPlaylistLoad(name, who.name); open = name; renameTo = name; } catch (e) { error = String(e); }
   }
   async function moveEntry(name: string, i: number, d: number) {
     const j = i + d;
     if (j < 0 || j >= openEntries.length) return;
     const next = [...openEntries];
     [next[i], next[j]] = [next[j], next[i]];
-    try { await musicPlaylistSave(name, next); openEntries = next; } catch (e) { error = String(e); }
+    try { await musicPlaylistSave(name, next, who.name); openEntries = next; } catch (e) { error = String(e); }
   }
   async function dropEntry(name: string, i: number) {
     const next = openEntries.filter((_, k) => k !== i);
-    try { await musicPlaylistSave(name, next); openEntries = next; await loadPlaylists(); } catch (e) { error = String(e); }
+    try { await musicPlaylistSave(name, next, who.name); openEntries = next; await loadPlaylists(); } catch (e) { error = String(e); }
   }
   /** Save under the new name first, delete the old one only after that worked. */
   async function renamePlaylist(name: string) {
     const to = renameTo.trim();
     if (playlists.some((p) => p.name.toLowerCase() === to.toLowerCase() && p.name !== name)) { error = 'There is already a playlist with that name.'; return; }
     try {
-      await musicPlaylistSave(to, openEntries);
-      if (to.toLowerCase() !== name.toLowerCase()) await musicPlaylistDelete(name);
+      await musicPlaylistSave(to, openEntries, who.name);
+      if (to.toLowerCase() !== name.toLowerCase()) await musicPlaylistDelete(name, who.name);
       open = to; note = `Renamed to “${to}”.`; await loadPlaylists();
     } catch (e) { error = String(e); }
   }
   async function removePlaylist(name: string) {
-    try { await musicPlaylistDelete(name); confirmDelete = null; await loadPlaylists(); } catch (e) { error = String(e); }
+    try { await musicPlaylistDelete(name, who.name); confirmDelete = null; await loadPlaylists(); } catch (e) { error = String(e); }
   }
 
   async function rescan() { await musicScan(); await refreshStatus(); }
@@ -257,6 +313,21 @@
         {:else if status}{status.count.toLocaleString()} songs{#if status.skipped} · {status.skipped} files skipped (names the drive cannot use){/if}{/if}
         <button class="link" onclick={rescan} disabled={status?.scanning}>Look again</button>
       </div>
+      {#if picks.size}
+        <div class="tray row">
+          <b>{picks.size} song{picks.size === 1 ? '' : 's'} picked</b>
+          <span class="muted small">from any folder; keep browsing and ticking more</span>
+          {#if playlists.length}
+            <select class="input" aria-label="Add the picked songs to a playlist" onchange={(e) => { void addPicksTo(e.currentTarget.value); e.currentTarget.value = ''; }}>
+              <option value="">♫ Add to…</option>
+              {#each playlists as p}<option value={p.name}>{p.name}</option>{/each}
+            </select>
+          {/if}
+          <input class="input" maxlength="60" placeholder="Name a new playlist" bind:value={plName} aria-label="New playlist name for the picked songs" />
+          <button class="btn primary" disabled={!plName.trim()} onclick={makeFromPicks}>Make playlist</button>
+          <button class="btn" onclick={() => (picks = new Map())}>Clear</button>
+        </div>
+      {/if}
       {#if crumb && !text}
         <div class="row"><button class="btn" onclick={up}>← Back</button><b>{crumb}</b></div>
       {/if}
@@ -299,6 +370,7 @@
         <ol class="tracks">
           {#each tracks as t, i (t.rel)}
             <li class:now={player.current?.rel === t.rel}>
+              <input type="checkbox" class="pick" checked={picks.has(t.rel)} onchange={() => togglePick(t)} aria-label={'Pick ' + t.title + ' for a playlist'} title="Tick songs from any folder, then put them in a playlist" />
               <button class="main" onclick={() => playFrom(i)} aria-label={`Play ${t.title}`}>
                 <span class="t">{t.title}</span><span class="a muted">{label(t)}</span>
               </button>
@@ -357,11 +429,12 @@
 {:else if tab === 'Playlists'}
   <section class="panel">
     <p class="muted small">Make as many playlists as you like. They are spreadsheet files in <code>user/playlists</code>. Add songs from the Library (the ♫ button on a song, a category, a genre or an album), or save the queue from the Queue tab.</p>
+    <div class="row"><PersonPick onchange={loadPlaylists} /><span class="muted small">These are {who.name}’s playlists. Everyone can play everyone’s.</span></div>
     <div class="row">
       <input class="input grow" maxlength="60" placeholder="Name for a new, empty playlist" bind:value={plName} aria-label="New playlist name" />
       <button class="btn" disabled={!plName.trim()} onclick={() => createPlaylist(plName, null)}>Make playlist</button>
     </div>
-    {#if !playlists.length}<p class="muted">No playlists yet.</p>{/if}
+    {#if !playlists.length}<p class="muted">{who.name} has no playlists yet.</p>{/if}
     <ul class="plist">
       {#each playlists as p (p.name)}
         <li>
@@ -398,6 +471,20 @@
         </li>
       {/each}
     </ul>
+    {#each othersByOwner as [owner, lists] (owner)}
+      <h3 class="owner">{owner ? owner + '’s playlists' : 'Shared playlists'}</h3>
+      <ul class="plist">
+        {#each lists as p (p.name)}
+          <li>
+            <span><b>{p.name}</b> <small class="muted">{p.count} songs</small></span>
+            <span class="row">
+              <button class="btn" onclick={() => playPlaylist(p.name, owner)}>▶ Play</button>
+              <button class="btn" title="Make your own copy that you can change" onclick={() => copyToMine(owner, p.name)}>Copy to mine</button>
+            </span>
+          </li>
+        {/each}
+      </ul>
+    {/each}
   </section>
 {:else}
   <section class="panel">
@@ -467,6 +554,9 @@
   .icon { min-width: 36px; min-height: 36px; background: none; border: 1px solid transparent; border-radius: 8px; color: var(--muted); font-size: 15px; cursor: pointer; }
   .icon:hover { border-color: var(--blue-line); color: var(--blue); }
   .pl { width: 44px; min-height: 36px; background: var(--panel2); color: var(--muted); border: 1px solid var(--line); border-radius: 8px; }
+  .tray { position: sticky; top: 0; z-index: 2; padding: 8px 10px; background: var(--panel2); border: 1px solid var(--blue-line); border-radius: 8px; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .pick { width: 20px; height: 20px; flex: none; }
+  .owner { margin: 14px 0 0; font-size: 15px; }
   .plist li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); }
   .eq { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 4px; align-items: end; padding: 8px 0; }
   .eq label { display: flex; flex-direction: column; align-items: center; gap: 6px; }

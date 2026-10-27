@@ -60,6 +60,32 @@ impl Store {
         Store { dir: user.join("playlists"), backups: user.join("backups") }
     }
 
+    /// One person's own playlists: `user/playlists/<person>/`. `Store::new` is the shared set everyone sees.
+    pub fn for_person(user: &Path, person: &str) -> Result<Store, String> {
+        let folder = crate::people::folder_name(person)?;
+        Ok(Store { dir: user.join("playlists").join(folder), backups: user.join("backups") })
+    }
+
+    /// Every playlist of everyone: the shared ones (owner "") and each person's own (owner = their folder name).
+    /// All of them can be played by anyone; only the owner changes their own.
+    pub fn all(user: &Path) -> Vec<(String, Meta)> {
+        let mut out: Vec<(String, Meta)> = Store::new(user).list().into_iter().map(|m| (String::new(), m)).collect();
+        let mut owners: Vec<String> = fs::read_dir(user.join("playlists"))
+            .into_iter()
+            .flatten()
+            .flatten()
+            .filter(|e| e.path().is_dir())
+            .map(|e| e.file_name().to_string_lossy().to_string())
+            .collect();
+        owners.sort_by_key(|o| o.to_lowercase());
+        for o in owners {
+            if let Ok(s) = Store::for_person(user, &o) {
+                out.extend(s.list().into_iter().map(|m| (o.clone(), m)));
+            }
+        }
+        out
+    }
+
     fn file(&self, name: &str) -> Result<PathBuf, String> {
         if valid_name(name) { Ok(self.dir.join(format!("{}.csv", name))) } else { Err("That is not a usable playlist name. Use letters, numbers and spaces, up to 60 characters.".into()) }
     }
@@ -137,6 +163,31 @@ mod tests {
 
     fn e(path: &str, title: &str) -> Entry {
         Entry { path: path.into(), title: title.into(), artist: "A, B".into(), album: "The \"Album\"".into() }
+    }
+
+    #[test]
+    fn each_person_has_their_own_playlists_beside_the_shared_ones() {
+        let u = tmp("people");
+        let shared = Store::new(&u);
+        let anna = Store::for_person(&u, "Anna").unwrap();
+        let ben = Store::for_person(&u, "Ben").unwrap();
+        anna.save("Road trip", &[e("Rock/a.mp3", "A"), e("Folk/b.flac", "B")]).unwrap();
+        ben.save("Road trip", &[e("Jazz/c.ogg", "C")]).unwrap();
+        shared.save("Everyone", &[e("Rock/a.mp3", "A")]).unwrap();
+        assert_eq!(anna.load("Road trip").unwrap().len(), 2);
+        assert_eq!(ben.load("Road trip").unwrap().len(), 1);
+        assert_eq!(anna.list().iter().map(|m| m.name.as_str()).collect::<Vec<_>>(), vec!["Road trip"]);
+        assert_eq!(shared.list().iter().map(|m| m.name.as_str()).collect::<Vec<_>>(), vec!["Everyone"]);
+        assert!(anna.load("Everyone").is_err());
+        anna.delete("Road trip").unwrap();
+        assert_eq!(ben.load("Road trip").unwrap().len(), 1);
+        
+        assert!(Store::for_person(&u, "  ").is_err());
+        // everyone can see everyone's lists, and a list can be read back through its owner's folder name
+        ben.save("Evening", &[e("Jazz/c.ogg", "C")]).unwrap();
+        let all: Vec<(String, String)> = Store::all(&u).into_iter().map(|(o, m)| (o, m.name)).collect();
+        assert_eq!(all, vec![("".to_string(), "Everyone".to_string()), ("Ben".to_string(), "Evening".to_string()), ("Ben".to_string(), "Road trip".to_string())]);
+        assert_eq!(Store::for_person(&u, "Ben").unwrap().load("Evening").unwrap().len(), 1);
     }
 
     #[test]

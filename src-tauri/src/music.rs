@@ -375,6 +375,14 @@ pub fn music_clear_cache() -> u64 {
 
 // ---------- playlists ----------
 
+/// The shared playlists (no person, or an empty name) or one person's own.
+fn store(person: Option<String>) -> Result<playlist::Store, String> {
+    match person.as_deref().map(str::trim) {
+        None | Some("") => Ok(playlist::Store::new(&user_dir())),
+        Some(p) => playlist::Store::for_person(&user_dir(), p),
+    }
+}
+
 #[derive(Serialize)]
 pub struct PlaylistMeta {
     name: String,
@@ -393,24 +401,37 @@ pub struct EntryDto {
 }
 
 #[tauri::command]
-pub fn music_playlists() -> Vec<PlaylistMeta> {
-    playlist::Store::new(&user_dir()).list().into_iter().map(|m| PlaylistMeta { name: m.name, count: m.count }).collect()
+pub fn music_playlists(person: Option<String>) -> Result<Vec<PlaylistMeta>, String> {
+    Ok(store(person)?.list().into_iter().map(|m| PlaylistMeta { name: m.name, count: m.count }).collect())
+}
+
+#[derive(Serialize)]
+pub struct PlaylistAll {
+    owner: String,
+    name: String,
+    count: usize,
+}
+
+/// Every playlist of every person, so anyone can listen to what the others made.
+#[tauri::command]
+pub fn music_playlists_all() -> Vec<PlaylistAll> {
+    playlist::Store::all(&user_dir()).into_iter().map(|(owner, m)| PlaylistAll { owner, name: m.name, count: m.count }).collect()
 }
 
 #[tauri::command]
-pub fn music_playlist_load(name: String) -> Result<Vec<EntryDto>, String> {
-    Ok(playlist::Store::new(&user_dir()).load(&name)?.into_iter().map(|e| EntryDto { path: e.path, title: e.title, artist: e.artist, album: e.album }).collect())
+pub fn music_playlist_load(name: String, person: Option<String>) -> Result<Vec<EntryDto>, String> {
+    Ok(store(person)?.load(&name)?.into_iter().map(|e| EntryDto { path: e.path, title: e.title, artist: e.artist, album: e.album }).collect())
 }
 
 #[tauri::command]
-pub fn music_playlist_save(name: String, entries: Vec<EntryDto>) -> Result<(), String> {
+pub fn music_playlist_save(name: String, entries: Vec<EntryDto>, person: Option<String>) -> Result<(), String> {
     let v: Vec<playlist::Entry> = entries.into_iter().map(|e| playlist::Entry { path: e.path, title: e.title, artist: e.artist, album: e.album }).collect();
-    playlist::Store::new(&user_dir()).save(&name, &v)
+    store(person)?.save(&name, &v)
 }
 
 #[tauri::command]
-pub fn music_playlist_delete(name: String) -> Result<(), String> {
-    playlist::Store::new(&user_dir()).delete(&name)
+pub fn music_playlist_delete(name: String, person: Option<String>) -> Result<(), String> {
+    store(person)?.delete(&name)
 }
 
 // ---------- remembered player settings ----------

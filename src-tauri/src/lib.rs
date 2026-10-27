@@ -2754,6 +2754,7 @@ pub fn run() {
             music::music_prepare,
             music::music_clear_cache,
             music::music_playlists,
+            music::music_playlists_all,
             music::music_playlist_load,
             music::music_playlist_save,
             music::music_playlist_delete,
