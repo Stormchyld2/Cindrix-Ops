@@ -20,4 +20,19 @@ fn the_library_catalog_is_well_formed() {
     let titles = text.lines().filter(|l| l.trim().starts_with("\"title\":")).count();
     assert_eq!(urls.len(), sizes);
     assert_eq!(urls.len(), titles);
+    // every archive says what license it is under and whether the sold version may carry it
+    let licenses = text.lines().filter(|l| l.trim().starts_with("\"license\":")).count();
+    assert_eq!(urls.len(), licenses);
+    let sell: Vec<&str> = text.lines().filter_map(|l| l.trim().strip_prefix("\"sell_ok\": \"")).collect();
+    assert_eq!(urls.len(), sell.len());
+    for v in &sell {
+        assert!(v.starts_with("yes\"") || v.starts_with("check\"") || v.starts_with("no\""), "bad sell_ok {}", v);
+    }
+    // nothing known to be non-commercial may be marked as sellable
+    for (i, l) in text.lines().enumerate() {
+        if l.contains("NC-") || l.contains("non-commercial") || l.contains("Non-commercial") {
+            let around: String = text.lines().skip(i).take(3).collect();
+            assert!(!around.contains("\"sell_ok\": \"yes\""), "non-commercial marked sellable near line {}", i);
+        }
+    }
 }

@@ -16,7 +16,9 @@
               "description": "Field and emergency medicine books and guides",
               "url": "https://download.kiwix.org/zim/other/zimgit-medicine_en_2024-08.zim",
               "size_mb": 67,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "Compiled from government and other sources, not checked",
+              "sell_ok": "check"
             },
             {
               "id": "nhs.uk_en_medicines",
@@ -24,7 +26,9 @@
               "description": "How medicines work, dosages, side effects, and interactions",
               "url": "https://download.kiwix.org/zim/zimit/nhs.uk_en_medicines_2025-12.zim",
               "size_mb": 16,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "UK NHS website terms, not checked",
+              "sell_ok": "check"
             },
             {
               "id": "fas-military-medicine_en",
@@ -32,7 +36,9 @@
               "description": "Tactical and field medicine manuals",
               "url": "https://download.kiwix.org/zim/zimit/fas-military-medicine_en_2025-06.zim",
               "size_mb": 78,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "Compiled from government and other sources, not checked",
+              "sell_ok": "check"
             },
             {
               "id": "wwwnc.cdc.gov_en_all",
@@ -40,7 +46,9 @@
               "description": "Disease prevention, travel health, and outbreak information",
               "url": "https://download.kiwix.org/zim/zimit/wwwnc.cdc.gov_en_all_2024-11.zim",
               "size_mb": 170,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "U.S. government (CDC), public domain",
+              "sell_ok": "yes"
             }
           ]
         },
@@ -54,7 +62,9 @@
               "description": "NIH's consumer health encyclopedia - diseases, conditions, drugs, supplements",
               "url": "https://download.kiwix.org/zim/zimit/medlineplus.gov_en_all_2025-01.zim",
               "size_mb": 1800,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "U.S. National Library of Medicine, mostly public domain (some images are not)",
+              "sell_ok": "check"
             }
           ]
         },
@@ -68,7 +78,9 @@
               "description": "Curated medical articles from Wikipedia with images",
               "url": "https://download.kiwix.org/zim/wikipedia/wikipedia_en_medicine_maxi_2026-01.zim",
               "size_mb": 2000,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "CC BY-SA 4.0 (credit Wikipedia, share alike)",
+              "sell_ok": "yes"
             },
             {
               "id": "libretexts.org_en_med",
@@ -76,7 +88,9 @@
               "description": "Open-source medical textbooks and educational content",
               "url": "https://download.kiwix.org/zim/libretexts/libretexts.org_en_med_2025-01.zim",
               "size_mb": 1100,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "Varies by book; many are non-commercial (CC BY-NC-SA)",
+              "sell_ok": "no"
             },
             {
               "id": "librepathology_en_all_maxi",
@@ -84,7 +98,9 @@
               "description": "Pathology reference for disease identification",
               "url": "https://download.kiwix.org/zim/other/librepathology_en_all_maxi_2026-09.zim",
               "size_mb": 95,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "Not checked",
+              "sell_ok": "check"
             },
             {
               "id": "gutenberg_en_lcc-r",
@@ -92,7 +108,9 @@
               "description": "Old and public-domain books on medicine (Library of Congress class R). Historical: not current medical advice.",
               "url": "https://download.kiwix.org/zim/gutenberg/gutenberg_en_lcc-r_2026-03.zim",
               "size_mb": 1926,
-              "source": "you found it"
+              "source": "you found it",
+              "license": "Public domain in the U.S. (Project Gutenberg terms; do not use their name or logo without checking)",
+              "sell_ok": "yes"
             }
           ]
         }
@@ -113,7 +131,9 @@
               "description": "Collecting, filtering, and purifying drinking water",
               "url": "https://download.kiwix.org/zim/other/zimgit-water_en_2024-08.zim",
               "size_mb": 20,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "Compiled library, not checked",
+              "sell_ok": "check"
             },
             {
               "id": "zimgit-food-preparation_en",
@@ -121,7 +141,9 @@
               "description": "Recipes and techniques for preparing and preserving food",
               "url": "https://download.kiwix.org/zim/other/zimgit-food-preparation_en_2025-04.zim",
               "size_mb": 97,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "Compiled library, not checked",
+              "sell_ok": "check"
             },
             {
               "id": "zimgit-knots_en",
@@ -129,7 +151,9 @@
               "description": "Illustrated guides to knots, lashings, ladders, and sutures",
               "url": "https://download.kiwix.org/zim/other/zimgit-knots_en_2024-08.zim",
               "size_mb": 27,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "Compiled library, not checked",
+              "sell_ok": "check"
             },
             {
               "id": "canadian-prepper_en_winterprepping",
@@ -137,7 +161,9 @@
               "description": "Video guides for winter survival and cold weather emergencies",
               "url": "https://download.kiwix.org/zim/videos/canadian-prepper_en_winterprepping_2026-08.zim",
               "size_mb": 1342,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "Creator's own videos and text, copyrighted",
+              "sell_ok": "no"
             },
             {
               "id": "canadian-prepper_en_bugoutroll",
@@ -145,7 +171,9 @@
               "description": "Essential gear selection for your bug-out bag",
               "url": "https://download.kiwix.org/zim/videos/canadian-prepper_en_bugoutroll_2026-07.zim",
               "size_mb": 879,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "Creator's own videos and text, copyrighted",
+              "sell_ok": "no"
             }
           ]
         },
@@ -159,7 +187,9 @@
               "description": "Official US disaster planning guidance - weather, fire, evacuation plans, and emergency kits",
               "url": "https://download.kiwix.org/zim/zimit/www.ready.gov_en_2024-12.zim",
               "size_mb": 2429,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "U.S. government (FEMA), public domain",
+              "sell_ok": "yes"
             },
             {
               "id": "outdoors.stackexchange.com_en_all",
@@ -167,7 +197,9 @@
               "description": "Answered questions on hiking, camping, navigation, and wilderness skills",
               "url": "https://download.kiwix.org/zim/stack_exchange/outdoors.stackexchange.com_en_all_2026-02.zim",
               "size_mb": 142,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "CC BY-SA (Stack Exchange; credit the authors)",
+              "sell_ok": "yes"
             },
             {
               "id": "ham.stackexchange.com_en_all",
@@ -175,7 +207,9 @@
               "description": "Answered questions on radio equipment, antennas, licensing, and emergency communications",
               "url": "https://download.kiwix.org/zim/stack_exchange/ham.stackexchange.com_en_all_2026-02.zim",
               "size_mb": 75,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "CC BY-SA (Stack Exchange; credit the authors)",
+              "sell_ok": "yes"
             },
             {
               "id": "canadian-prepper_en_bugoutconcepts",
@@ -183,7 +217,9 @@
               "description": "Strategies and planning for emergency evacuation",
               "url": "https://download.kiwix.org/zim/videos/canadian-prepper_en_bugoutconcepts_2026-08.zim",
               "size_mb": 2886,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "Creator's own videos and text, copyrighted",
+              "sell_ok": "no"
             },
             {
               "id": "urban-prepper_en_all",
@@ -191,7 +227,9 @@
               "description": "Comprehensive urban emergency preparedness video series",
               "url": "https://download.kiwix.org/zim/videos/urban-prepper_en_all_2026-08.zim",
               "size_mb": 2245,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "Creator's own videos and text, copyrighted",
+              "sell_ok": "no"
             }
           ]
         },
@@ -205,7 +243,9 @@
               "description": "Long-term food storage and survival meal preparation",
               "url": "https://download.kiwix.org/zim/videos/canadian-prepper_en_preppingfood_2026-07.zim",
               "size_mb": 2160,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "Creator's own videos and text, copyrighted",
+              "sell_ok": "no"
             },
             {
               "id": "zimgit-post-disaster_en",
@@ -213,7 +253,9 @@
               "description": "Shelter, sanitation, salvage, and recovery guidance for the aftermath of a disaster",
               "url": "https://download.kiwix.org/zim/other/zimgit-post-disaster_en_2024-05.zim",
               "size_mb": 644,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "Compiled library, not checked",
+              "sell_ok": "check"
             },
             {
               "id": "100r.co_en_all",
@@ -221,7 +263,9 @@
               "description": "Field notes on low-tech living - solar power, water, food, and repair from a decade off-grid",
               "url": "https://download.kiwix.org/zim/zimit/100r.co_en_all_2026-06.zim",
               "size_mb": 172,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "Likely non-commercial (CC BY-NC-SA); not checked",
+              "sell_ok": "no"
             },
             {
               "id": "gutenberg_en_lcc-u",
@@ -229,7 +273,9 @@
               "description": "Classic military strategy, tactics, and field manuals",
               "url": "https://download.kiwix.org/zim/gutenberg/gutenberg_en_lcc-u_2026-03.zim",
               "size_mb": 1200,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "Public domain in the U.S. (Project Gutenberg terms; do not use their name or logo without checking)",
+              "sell_ok": "yes"
             },
             {
               "id": "cd3wdproject.org_en_all",
@@ -237,7 +283,9 @@
               "description": "Practical guides to food production, water and sanitation, construction, and village-scale manufacturing without industrial supply chains",
               "url": "https://download.kiwix.org/zim/zimit/cd3wdproject.org_en_all_2025-11.zim",
               "size_mb": 581,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "Mixed sources, many copyrighted",
+              "sell_ok": "no"
             }
           ]
         }
@@ -258,7 +306,9 @@
               "description": "Open-content textbooks covering math, science, computing, and more",
               "url": "https://download.kiwix.org/zim/wikibooks/wikibooks_en_all_nopic_2026-01.zim",
               "size_mb": 3100,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "CC BY-SA 4.0",
+              "sell_ok": "yes"
             }
           ]
         },
@@ -272,7 +322,9 @@
               "description": "Educational video lessons on science, history, literature, and more",
               "url": "https://download.kiwix.org/zim/ted/ted_mul_ted-ed_2026-09.zim",
               "size_mb": 6381,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "CC BY-NC-ND (non-commercial, no changes)",
+              "sell_ok": "no"
             },
             {
               "id": "wikiversity_en_all_maxi",
@@ -280,7 +332,9 @@
               "description": "Tutorials, courses, and learning materials for all levels",
               "url": "https://download.kiwix.org/zim/wikiversity/wikiversity_en_all_maxi_2026-02.zim",
               "size_mb": 2370,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "CC BY-SA 4.0",
+              "sell_ok": "yes"
             },
             {
               "id": "libretexts.org_en_math",
@@ -288,7 +342,9 @@
               "description": "Open-source math textbooks from algebra to calculus",
               "url": "https://download.kiwix.org/zim/libretexts/libretexts.org_en_math_2026-01.zim",
               "size_mb": 792,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "Varies by book; many are non-commercial (CC BY-NC-SA)",
+              "sell_ok": "no"
             },
             {
               "id": "libretexts.org_en_phys",
@@ -296,7 +352,9 @@
               "description": "Physics courses and textbooks",
               "url": "https://download.kiwix.org/zim/libretexts/libretexts.org_en_phys_2026-01.zim",
               "size_mb": 534,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "Varies by book; many are non-commercial (CC BY-NC-SA)",
+              "sell_ok": "no"
             },
             {
               "id": "libretexts.org_en_chem",
@@ -304,7 +362,9 @@
               "description": "Chemistry courses and textbooks",
               "url": "https://download.kiwix.org/zim/libretexts/libretexts.org_en_chem_2025-01.zim",
               "size_mb": 2180,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "Varies by book; many are non-commercial (CC BY-NC-SA)",
+              "sell_ok": "no"
             },
             {
               "id": "libretexts.org_en_bio",
@@ -312,7 +372,9 @@
               "description": "Biology courses and textbooks",
               "url": "https://download.kiwix.org/zim/libretexts/libretexts.org_en_bio_2025-01.zim",
               "size_mb": 2240,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "Varies by book; many are non-commercial (CC BY-NC-SA)",
+              "sell_ok": "no"
             }
           ]
         },
@@ -326,7 +388,9 @@
               "description": "Open textbooks with full illustrations and diagrams",
               "url": "https://download.kiwix.org/zim/wikibooks/wikibooks_en_all_maxi_2026-01.zim",
               "size_mb": 5400,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "CC BY-SA 4.0",
+              "sell_ok": "yes"
             },
             {
               "id": "ted_mul_ted-conference",
@@ -334,7 +398,9 @@
               "description": "Main TED conference talks on ideas worth spreading",
               "url": "https://download.kiwix.org/zim/ted/ted_mul_ted-conference_2026-09.zim",
               "size_mb": 18136,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "CC BY-NC-ND (non-commercial, no changes)",
+              "sell_ok": "no"
             },
             {
               "id": "libretexts.org_en_human",
@@ -342,7 +408,9 @@
               "description": "Literature, philosophy, history, and social sciences",
               "url": "https://download.kiwix.org/zim/libretexts/libretexts.org_en_human_2025-01.zim",
               "size_mb": 3730,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "Varies by book; many are non-commercial (CC BY-NC-SA)",
+              "sell_ok": "no"
             },
             {
               "id": "libretexts.org_en_geo",
@@ -350,7 +418,9 @@
               "description": "Earth science, geology, and environmental studies",
               "url": "https://download.kiwix.org/zim/libretexts/libretexts.org_en_geo_2026-01.zim",
               "size_mb": 1127,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "Varies by book; many are non-commercial (CC BY-NC-SA)",
+              "sell_ok": "no"
             },
             {
               "id": "libretexts.org_en_eng",
@@ -358,7 +428,9 @@
               "description": "Engineering courses and technical references",
               "url": "https://download.kiwix.org/zim/libretexts/libretexts.org_en_eng_2025-01.zim",
               "size_mb": 678,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "Varies by book; many are non-commercial (CC BY-NC-SA)",
+              "sell_ok": "no"
             },
             {
               "id": "libretexts.org_en_biz",
@@ -366,7 +438,9 @@
               "description": "Business, economics, and management textbooks",
               "url": "https://download.kiwix.org/zim/libretexts/libretexts.org_en_biz_2026-01.zim",
               "size_mb": 801,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "Varies by book; many are non-commercial (CC BY-NC-SA)",
+              "sell_ok": "no"
             },
             {
               "id": "gutenberg_en_lcc-pe",
@@ -374,7 +448,9 @@
               "description": "Books on the English language: grammar, dictionaries, usage (Library of Congress class PE).",
               "url": "https://download.kiwix.org/zim/gutenberg/gutenberg_en_lcc-pe_2026-03.zim",
               "size_mb": 758,
-              "source": "you found it"
+              "source": "you found it",
+              "license": "Public domain in the U.S. (Project Gutenberg terms; do not use their name or logo without checking)",
+              "sell_ok": "yes"
             }
           ]
         }
@@ -395,7 +471,9 @@
               "description": "Stack Exchange Q&A for carpentry, joinery, and woodcraft",
               "url": "https://download.kiwix.org/zim/stack_exchange/woodworking.stackexchange.com_en_all_2026-02.zim",
               "size_mb": 99,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "CC BY-SA (Stack Exchange; credit the authors)",
+              "sell_ok": "yes"
             },
             {
               "id": "mechanics.stackexchange.com_en_all",
@@ -403,7 +481,9 @@
               "description": "Stack Exchange Q&A for car and motorcycle repair",
               "url": "https://download.kiwix.org/zim/stack_exchange/mechanics.stackexchange.com_en_all_2026-02.zim",
               "size_mb": 321,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "CC BY-SA (Stack Exchange; credit the authors)",
+              "sell_ok": "yes"
             }
           ]
         },
@@ -417,7 +497,9 @@
               "description": "Stack Exchange Q&A for home repairs, electrical, plumbing, and construction",
               "url": "https://download.kiwix.org/zim/stack_exchange/diy.stackexchange.com_en_all_2026-02.zim",
               "size_mb": 1900,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "CC BY-SA (Stack Exchange; credit the authors)",
+              "sell_ok": "yes"
             }
           ]
         },
@@ -431,7 +513,9 @@
               "description": "Step-by-step repair guides for electronics, appliances, and vehicles",
               "url": "https://download.kiwix.org/zim/ifixit/ifixit_en_all_2025-12.zim",
               "size_mb": 3380,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "CC BY-NC-SA (non-commercial)",
+              "sell_ok": "no"
             }
           ]
         }
@@ -452,7 +536,9 @@
               "description": "Quick and easy cooking guides and recipes",
               "url": "https://download.kiwix.org/zim/zimit/foss.cooking_en_all_2026-02.zim",
               "size_mb": 24,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "Not checked",
+              "sell_ok": "check"
             },
             {
               "id": "based.cooking_en_all",
@@ -460,7 +546,9 @@
               "description": "Simple, practical recipes from the community",
               "url": "https://download.kiwix.org/zim/zimit/based.cooking_en_all_2026-08.zim",
               "size_mb": 16,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "Not checked",
+              "sell_ok": "check"
             }
           ]
         },
@@ -474,7 +562,9 @@
               "description": "Stack Exchange Q&A for growing your own food, plant care, and landscaping",
               "url": "https://download.kiwix.org/zim/stack_exchange/gardening.stackexchange.com_en_all_2026-02.zim",
               "size_mb": 923,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "CC BY-SA (Stack Exchange; credit the authors)",
+              "sell_ok": "yes"
             },
             {
               "id": "cooking.stackexchange.com_en_all",
@@ -482,7 +572,9 @@
               "description": "Stack Exchange Q&A for cooking techniques, food safety, and recipes",
               "url": "https://download.kiwix.org/zim/stack_exchange/cooking.stackexchange.com_en_all_2026-02.zim",
               "size_mb": 236,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "CC BY-SA (Stack Exchange; credit the authors)",
+              "sell_ok": "yes"
             }
           ]
         },
@@ -496,7 +588,9 @@
               "description": "Beekeeping, animal husbandry, and sustainable living practices",
               "url": "https://download.kiwix.org/zim/videos/lrnselfreliance_en_all_2026-06.zim",
               "size_mb": 3790,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "Not checked",
+              "sell_ok": "check"
             },
             {
               "id": "gutenberg_en_lcc-s",
@@ -504,7 +598,9 @@
               "description": "Classic texts on farming, animal husbandry, plant cultivation, and food preservation",
               "url": "https://download.kiwix.org/zim/gutenberg/gutenberg_en_lcc-s_2026-03.zim",
               "size_mb": 4300,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "Public domain in the U.S. (Project Gutenberg terms; do not use their name or logo without checking)",
+              "sell_ok": "yes"
             }
           ]
         }
@@ -525,7 +621,9 @@
               "description": "Interactive programming tutorials - JavaScript, algorithms, and data structures",
               "url": "https://download.kiwix.org/zim/freecodecamp/freecodecamp_en_all_2026-08.zim",
               "size_mb": 8,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "BSD-3 (code), CC BY-SA (curriculum)",
+              "sell_ok": "yes"
             },
             {
               "id": "devdocs_en_python",
@@ -533,7 +631,9 @@
               "description": "Complete Python language reference and tutorials",
               "url": "https://download.kiwix.org/zim/devdocs/devdocs_en_python_2026-08.zim",
               "size_mb": 4,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "PSF license",
+              "sell_ok": "yes"
             },
             {
               "id": "devdocs_en_javascript",
@@ -541,7 +641,9 @@
               "description": "MDN JavaScript reference and guides",
               "url": "https://download.kiwix.org/zim/devdocs/devdocs_en_javascript_2026-07.zim",
               "size_mb": 3,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "CC BY-SA (MDN)",
+              "sell_ok": "yes"
             },
             {
               "id": "devdocs_en_html",
@@ -549,7 +651,9 @@
               "description": "MDN HTML elements and attributes reference",
               "url": "https://download.kiwix.org/zim/devdocs/devdocs_en_html_2026-07.zim",
               "size_mb": 2,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "CC BY-SA (MDN)",
+              "sell_ok": "yes"
             },
             {
               "id": "devdocs_en_css",
@@ -557,7 +661,9 @@
               "description": "MDN CSS properties and selectors reference",
               "url": "https://download.kiwix.org/zim/devdocs/devdocs_en_css_2026-07.zim",
               "size_mb": 5,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "CC BY-SA (MDN)",
+              "sell_ok": "yes"
             }
           ]
         },
@@ -571,7 +677,9 @@
               "description": "Stack Exchange Q&A for Arduino microcontroller projects",
               "url": "https://download.kiwix.org/zim/stack_exchange/arduino.stackexchange.com_en_all_2026-02.zim",
               "size_mb": 247,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "CC BY-SA (Stack Exchange; credit the authors)",
+              "sell_ok": "yes"
             },
             {
               "id": "raspberrypi.stackexchange.com_en_all",
@@ -579,7 +687,9 @@
               "description": "Stack Exchange Q&A for Raspberry Pi projects and troubleshooting",
               "url": "https://download.kiwix.org/zim/stack_exchange/raspberrypi.stackexchange.com_en_all_2026-02.zim",
               "size_mb": 285,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "CC BY-SA (Stack Exchange; credit the authors)",
+              "sell_ok": "yes"
             },
             {
               "id": "devdocs_en_node",
@@ -587,7 +697,9 @@
               "description": "Node.js API reference and guides",
               "url": "https://download.kiwix.org/zim/devdocs/devdocs_en_node_2026-08.zim",
               "size_mb": 1,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "MIT / CC BY",
+              "sell_ok": "yes"
             },
             {
               "id": "devdocs_en_react",
@@ -595,7 +707,9 @@
               "description": "React library reference and tutorials",
               "url": "https://download.kiwix.org/zim/devdocs/devdocs_en_react_2026-02.zim",
               "size_mb": 3,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "CC BY 4.0",
+              "sell_ok": "yes"
             },
             {
               "id": "devdocs_en_git",
@@ -603,7 +717,9 @@
               "description": "Git version control reference",
               "url": "https://download.kiwix.org/zim/devdocs/devdocs_en_git_2026-07.zim",
               "size_mb": 2,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "GPL-2.0 / CC BY-NC-SA (Pro Git); not checked",
+              "sell_ok": "check"
             }
           ]
         },
@@ -617,7 +733,9 @@
               "description": "Stack Exchange Q&A for circuit design, components, and electrical engineering",
               "url": "https://download.kiwix.org/zim/stack_exchange/electronics.stackexchange.com_en_all_2026-02.zim",
               "size_mb": 3800,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "CC BY-SA (Stack Exchange; credit the authors)",
+              "sell_ok": "yes"
             },
             {
               "id": "robotics.stackexchange.com_en_all",
@@ -625,7 +743,9 @@
               "description": "Stack Exchange Q&A for robotics projects and automation",
               "url": "https://download.kiwix.org/zim/stack_exchange/robotics.stackexchange.com_en_all_2026-02.zim",
               "size_mb": 233,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "CC BY-SA (Stack Exchange; credit the authors)",
+              "sell_ok": "yes"
             },
             {
               "id": "devdocs_en_docker",
@@ -633,7 +753,9 @@
               "description": "Docker container reference and guides",
               "url": "https://download.kiwix.org/zim/devdocs/devdocs_en_docker_2026-07.zim",
               "size_mb": 2,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "Apache-2.0",
+              "sell_ok": "yes"
             },
             {
               "id": "devdocs_en_bash",
@@ -641,7 +763,9 @@
               "description": "Linux command reference and system administration",
               "url": "https://download.kiwix.org/zim/devdocs/devdocs_en_bash_2026-01.zim",
               "size_mb": 1,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "GPL, not checked",
+              "sell_ok": "check"
             }
           ]
         }
@@ -662,7 +786,9 @@
               "description": "Top 100,000 articles with minimal images. Great for quick lookups.",
               "url": "https://download.kiwix.org/zim/wikipedia/wikipedia_en_top_mini_2026-06.zim",
               "size_mb": 331,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "CC BY-SA 4.0 (credit Wikipedia, share alike)",
+              "sell_ok": "yes"
             }
           ]
         },
@@ -676,7 +802,9 @@
               "description": "Top articles without images. Good balance of content and size.",
               "url": "https://download.kiwix.org/zim/wikipedia/wikipedia_en_top_nopic_2026-06.zim",
               "size_mb": 2239,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "CC BY-SA 4.0 (credit Wikipedia, share alike)",
+              "sell_ok": "yes"
             }
           ]
         },
@@ -690,7 +818,9 @@
               "description": "All articles without images. Comprehensive offline reference.",
               "url": "https://download.kiwix.org/zim/wikipedia/wikipedia_en_all_nopic_2026-06.zim",
               "size_mb": 52690,
-              "source": "nomad"
+              "source": "nomad",
+              "license": "CC BY-SA 4.0 (credit Wikipedia, share alike)",
+              "sell_ok": "yes"
             }
           ]
         }

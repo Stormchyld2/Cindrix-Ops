@@ -5,6 +5,7 @@
 #   powershell -File scripts\get-library.ps1 -Target D:\Cindrix -List
 #   powershell -File scripts\get-library.ps1 -Target D:\Cindrix -Category medicine,survival -Tier essential
 #   powershell -File scripts\get-library.ps1 -Target D:\Cindrix -Category all -Tier standard -Yes
+#   powershell -File scripts\get-library.ps1 -Target D:\Cindrix -Tier comprehensive -SellOnly   (only what may be sold: public domain or openly licensed)
 #   powershell -File scripts\get-library.ps1 -Target D:\Cindrix -Url https://download.kiwix.org/zim/.../name.zim   (any one archive by its address)
 #
 # Tiers add up: "standard" also gets "essential"; "comprehensive" gets all three. The total size is shown
@@ -20,6 +21,8 @@ param(
   [ValidateSet('essential','standard','comprehensive')][string]$Tier = 'essential',
   [switch]$List,
   [switch]$Yes,
+  # Only archives marked sell_ok = yes (public domain or openly licensed, credit required). For the version you give or sell.
+  [switch]$SellOnly,
   [string]$Catalog = '',
   # One archive by its address (for example a Khan Academy style course archive from the Kiwix library).
   [string]$Url = ''
@@ -40,7 +43,7 @@ if ($List) {
     foreach ($t in $c.tiers) {
       $mb = ($t.resources | Measure-Object size_mb -Sum).Sum
       Write-Host ("  {0}: {1} archives, about {2:N1} GB. {3}" -f $t.tier, @($t.resources).Count, ($mb/1024), $t.description)
-      foreach ($r in $t.resources) { Write-Host ("      {0} ({1:N0} MB): {2}" -f $r.title, $r.size_mb, $r.description) }
+      foreach ($r in $t.resources) { Write-Host ("      {0} ({1:N0} MB) [sell: {2}]: {3}" -f $r.title, $r.size_mb, $r.sell_ok, $r.description) }
     }
   }
   if ($cat.to_find) {
@@ -54,7 +57,7 @@ $want = @()
 foreach ($c in $cat.categories) {
   if ($Category -notcontains 'all' -and $Category -notcontains $c.slug) { continue }
   foreach ($t in $c.tiers) {
-    if ($rank[$t.tier] -le $rank[$Tier]) { $want += $t.resources }
+    if ($rank[$t.tier] -le $rank[$Tier]) { $want += @($t.resources | Where-Object { -not $SellOnly -or $_.sell_ok -eq 'yes' }) }
   }
 }
 if ($want.Count -eq 0) { Write-Host "Nothing matches. Use -List to see the category names."; exit 1 }

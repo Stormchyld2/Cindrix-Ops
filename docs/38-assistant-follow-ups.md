@@ -74,3 +74,12 @@ are NOT from NOMAD live in `to_find`: name, a search word for https://browse.lib
 no download address yet because none could be checked from here (Khan Academy is first); paste an address
 into the list, or use `get-library.ps1 -Url`. `-List` prints that checklist. Food for Preppers was listed
 twice and now appears once.
+
+## Private drive and the version to sell (owner, 2026-10-27)
+
+The owner builds a private library first and will strip it to public-domain and openly licensed material for
+a version to sell. Every archive in `content/library-catalog.json` therefore has a `license` and a `sell_ok`
+of `yes` (public domain or openly licensed, credit where it is required), `check` (not verified) or `no`
+(non-commercial or copyrighted). `get-library.ps1 -SellOnly` fetches only the `yes` ones; `-List` shows the flag.
+The flags are Claude's reading of each license, not legal advice: check them before selling. A test refuses a
+`yes` next to anything marked non-commercial. Defense and weapons books are allowed for the private drive.
