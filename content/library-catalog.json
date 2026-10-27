@@ -85,6 +85,14 @@
               "url": "https://download.kiwix.org/zim/other/librepathology_en_all_maxi_2026-09.zim",
               "size_mb": 95,
               "source": "nomad"
+            },
+            {
+              "id": "gutenberg_en_lcc-r",
+              "title": "Project Gutenberg: Medicine",
+              "description": "Old and public-domain books on medicine (Library of Congress class R). Historical: not current medical advice.",
+              "url": "https://download.kiwix.org/zim/gutenberg/gutenberg_en_lcc-r_2026-03.zim",
+              "size_mb": 1926,
+              "source": "you found it"
             }
           ]
         }
@@ -359,6 +367,14 @@
               "url": "https://download.kiwix.org/zim/libretexts/libretexts.org_en_biz_2026-01.zim",
               "size_mb": 801,
               "source": "nomad"
+            },
+            {
+              "id": "gutenberg_en_lcc-pe",
+              "title": "Project Gutenberg: English Language",
+              "description": "Books on the English language: grammar, dictionaries, usage (Library of Congress class PE).",
+              "url": "https://download.kiwix.org/zim/gutenberg/gutenberg_en_lcc-pe_2026-03.zim",
+              "size_mb": 758,
+              "source": "you found it"
             }
           ]
         }
@@ -738,6 +754,31 @@
         "title": "Stack Overflow",
         "search": "Stack Overflow",
         "why": "Programming answers (large)."
+      },
+      {
+        "title": "True Prepper (trueprepper.com)",
+        "search": "trueprepper",
+        "why": "Already on your drive (trueprepper.com_en_all_2026-05.zim, 1.4 GB). Needs a checked address so the list can fetch it again."
+      },
+      {
+        "title": "Project Gutenberg: Science (class Q)",
+        "search": "gutenberg lcc-q",
+        "why": "Books on science, math and natural history. Same family as your other Gutenberg subject files; check it exists."
+      },
+      {
+        "title": "Project Gutenberg: Technology (class T)",
+        "search": "gutenberg lcc-t",
+        "why": "Books on engineering, building, trades and manufacturing."
+      },
+      {
+        "title": "Project Gutenberg: Geography and travel (class G)",
+        "search": "gutenberg lcc-g",
+        "why": "Maps, travel and place descriptions; useful for planning routes."
+      },
+      {
+        "title": "Project Gutenberg: Naval science (class V)",
+        "search": "gutenberg lcc-v",
+        "why": "Boats, seamanship and navigation."
       }
     ]
   }
