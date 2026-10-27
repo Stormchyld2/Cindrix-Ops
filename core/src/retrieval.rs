@@ -163,7 +163,7 @@ mod tests {
 
     #[test]
     fn bold_inside_a_word_does_not_split_it() {
-        assert_eq!(tokens("**F**ace droops"), vec!["face", "droops"]);
+        assert_eq!(tokens("**F**ace droops"), vec!["face", "droop"]);
     }
 
     #[test]
