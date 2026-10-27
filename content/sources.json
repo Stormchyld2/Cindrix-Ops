@@ -82,13 +82,13 @@
           "note": "Drafts, not yet reviewed by a qualified person. Sources: Ready.gov / FEMA, CDC, National Weather Service, USDA FSIS, American Red Cross, American Heart Association, American Academy of Pediatrics, Wilderness Medical Society, American Dental Association, NIH, Stop the Bleed, Poison Help, WHO oral rehydration guidance, SAMHSA 988. Each card names its source. US government pages are public domain; the Red Cross and other guidance is paraphrased in our own words, not copied."
         },
         {
-          "name": "Seed vault guides (12) and the Seed vault course",
+          "name": "Seed vault guides (19), the suggested seed list (138 crops) and the Seed vault course",
           "license": "Written for this project; facts paraphrased from university extension guidance",
           "status": "in this build",
           "note": "Drafts, not yet reviewed. Sources: Purdue Extension, University of Wisconsin-Madison Extension, Oregon State and Penn State Extension, USDA. Seed life numbers are rules of thumb; a germination test is better."
         },
         {
-          "name": "Agro guides (62 pages) and radio reference (30 pages)",
+          "name": "Agro guides (128 pages: crops, planting calendar by zone, livestock, soil and water, food preservation) and radio reference (55 pages)",
           "license": "Written for this project; facts paraphrased from public guidance",
           "status": "in this build",
           "note": "Drafts, not yet reviewed by a qualified person. Sources named on each page: state Extension services (general gardening and livestock practice), USDA, NOAA, USDA FSIS and FoodSafety.gov, EPA, FCC (47 CFR Part 95), ITU and ICAO. US government pages are public domain; nothing is copied. Home canning times and pressures are deliberately not included: the page sends people to the USDA Complete Guide to Home Canning."

@@ -202,4 +202,11 @@ mod tests {
         let two = frost_markers("05-10", "10-12", day("2026-10-01"), day("2027-05-31"));
         assert_eq!(two.len(), 2);
     }
+
+    #[test]
+    fn every_suggested_seed_has_planting_words_the_calendar_understands() {
+        for x in crate::seedlist::SUGGESTED {
+            assert!(parse_when(x.plant_when).is_some(), "{}: {}", x.crop, x.plant_when);
+        }
+    }
 }

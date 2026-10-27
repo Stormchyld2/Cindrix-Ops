@@ -105,7 +105,11 @@ export async function journalSave(person: string, date: string, text: string): P
 let memPlan = '';
 export async function commsPlanLoad(person: string): Promise<string> {
   if (tauriHost) return call<string>('comms_plan_load', { person });
-  return memPlan || 'My family\'s communication plan\n\nWho carries a radio or a phone:\n';
+  return memPlan || 'FAMILY COMMUNICATION PLAN\n\n## 1. When this plan is used\n\n## 4. The PACE plan: four ways to reach each other\n';
+}
+export async function commsPlanAddMissing(text: string): Promise<string> {
+  if (tauriHost) return call<string>('comms_plan_add_missing', { text });
+  return text + '\n\n## (in the real program the missing sections are added here)\n';
 }
 export async function commsPlanSave(person: string, text: string): Promise<void> {
   if (tauriHost) return call<void>('comms_plan_save', { person, text });
@@ -843,6 +847,19 @@ export async function seedSave(seed: Seed): Promise<Seed[]> {
 export async function seedDelete(ids: string[]): Promise<Seed[]> {
   if (inTauri) return call<Seed[]>('seed_delete', { ids });
   memSeeds = memSeeds.filter((s) => !ids.includes(s.id));
+  return memSeeds.map(seedDecorate);
+}
+export type SuggestedSeed = { crop: string; group: string; why: string; plant_when: string; days: number; target: number; have: boolean };
+export async function seedsSuggested(): Promise<SuggestedSeed[]> {
+  if (inTauri) return call<SuggestedSeed[]>('seeds_suggested');
+  return [
+    { crop: 'Dry bean (kidney, pinto, black)', group: 'Protein (beans, peas and others)', why: 'The store-and-cook staple.', plant_when: 'Spring after last frost', days: 90, target: 4, have: false },
+    { crop: 'Carrot', group: 'Roots and bulbs', why: 'Stores in ground or cellar.', plant_when: 'Early spring', days: 70, target: 3, have: false },
+  ];
+}
+export async function seedsAddSuggested(crops: string[]): Promise<Seed[]> {
+  if (inTauri) return call<Seed[]>('seeds_add_suggested', { crops });
+  for (const c of crops) if (!memSeeds.some((s) => s.crop.toLowerCase() === c.toLowerCase())) memSeeds.push({ id: String(memSeeds.length + 10), crop: c, variety: '', kind: '', packets: 0, seeds_per_packet: 0, year_packed: 0, germination: 0, tested: '', source: '', location: '', plant_when: '', days_to_harvest: 0, target: 1, notes: 'Added from the suggested list' });
   return memSeeds.map(seedDecorate);
 }
 export async function seedGuides(): Promise<Card[]> {

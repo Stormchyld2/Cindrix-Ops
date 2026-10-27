@@ -26,6 +26,7 @@ export type Settings = {
   answerSources: number;
   answerLength: 'short' | 'normal' | 'long';
   answerStyle: 'exact' | 'steady' | 'natural';
+  followUpMemory: number;
   searchSpeed: 'quick' | 'normal' | 'thorough';
   showSourceChips: boolean;
   extraFolders: string[];
@@ -43,6 +44,14 @@ export type Settings = {
   musicFolder: string[];
   // Maps
   mapUnits: 'imperial' | 'metric';
+  // Calendar
+  weekStart: 'sunday' | 'monday';
+  timeFormat: '12h' | '24h';
+  calendarView: 'month' | 'week';
+  calShowBirthdays: boolean;
+  calShowPlanting: boolean;
+  calShowFrost: boolean;
+  calShowTasks: boolean;
   // Plan
   planActDays: number;
   planCheckDays: number;
@@ -63,6 +72,7 @@ export const DEFAULTS: Settings = {
   answerSources: 3,
   answerLength: 'normal',
   answerStyle: 'steady',
+  followUpMemory: 2,
   searchSpeed: 'normal',
   showSourceChips: true,
   extraFolders: [],
@@ -75,6 +85,13 @@ export const DEFAULTS: Settings = {
   scanMusicOnStart: true,
   musicFolder: [],
   mapUnits: 'imperial',
+  weekStart: 'sunday',
+  timeFormat: '12h',
+  calendarView: 'month',
+  calShowBirthdays: true,
+  calShowPlanting: true,
+  calShowFrost: true,
+  calShowTasks: true,
   planActDays: 7,
   planCheckDays: 14,
   planExpiryMonths: 3,
@@ -87,6 +104,7 @@ export const RANGES: Record<string, [number, number]> = {
   planActDays: [1, 60],
   planCheckDays: [2, 120],
   planExpiryMonths: [0, 24],
+  followUpMemory: [0, 4],
 };
 
 /** Allowed words for each choice. */
@@ -98,6 +116,9 @@ export const CHOICES: Record<string, readonly string[]> = {
   intelStart: ['archives', 'first'],
   intelReader: ['server', 'builtin'],
   mapUnits: ['imperial', 'metric'],
+  weekStart: ['sunday', 'monday'],
+  timeFormat: ['12h', '24h'],
+  calendarView: ['month', 'week'],
 };
 
 /** Turn whatever was in the file into a complete, valid list of settings. Anything missing or

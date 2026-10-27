@@ -134,24 +134,59 @@ pub fn journal_save(user_dir: &Path, person: &str, date: &str, text: &str) -> Re
 
 // ---------- comms plan ----------
 
-/// The words a new comms plan starts with.
+/// The words a new comms plan starts with: a complete plan with blanks to fill (see `commsplan.txt`).
 pub fn comms_plan_template() -> String {
-    "My family's communication plan\n\
-\n\
-Who carries a radio or a phone:\n\
-\n\
-First channel (and a second one if it is busy):\n\
-\n\
-When we check in (for example, the top of every hour for 5 minutes):\n\
-\n\
-Where we meet if we cannot reach each other (near home, and farther away):\n\
-\n\
-What we say to mean \"I am safe\", \"I need help\" and \"Come home\":\n\
-\n\
-The one person outside the area we all call or message:\n\
-\n\
-Phone numbers and radio call signs:\n"
-        .to_string()
+    include_str!("commsplan.txt").replace("\r\n", "\n")
+}
+
+/// The headings of a plan: lines that start with "## ", with that start removed.
+pub fn plan_headings(text: &str) -> Vec<String> {
+    text.lines().filter_map(|l| l.strip_prefix("## ")).map(|h| h.trim().to_string()).collect()
+}
+
+/// The template sections the saved plan does not have yet. Sections are matched by their title without the
+/// number in front, so a plan that has been renumbered still counts.
+pub fn plan_missing_sections(text: &str) -> Vec<String> {
+    fn bare(h: &str) -> String {
+        h.trim_start_matches(|c: char| c.is_ascii_digit() || c == '.' || c == ' ').to_lowercase()
+    }
+    let have: Vec<String> = plan_headings(text).iter().map(|h| bare(h)).collect();
+    plan_headings(&comms_plan_template()).into_iter().filter(|h| !have.contains(&bare(h))).collect()
+}
+
+/// The saved plan with the template sections it lacks added at the end. Nothing the person wrote is changed.
+pub fn plan_with_missing(text: &str) -> String {
+    let missing = plan_missing_sections(text);
+    if missing.is_empty() {
+        return text.to_string();
+    }
+    let template = comms_plan_template();
+    let mut out = text.trim_end().to_string();
+    let mut take = false;
+    let mut cur = String::new();
+    let mut blocks: Vec<(String, String)> = Vec::new();
+    for l in template.lines() {
+        if let Some(h) = l.strip_prefix("## ") {
+            if take {
+                blocks.push((std::mem::take(&mut cur), String::new()));
+            }
+            take = missing.iter().any(|m| m == h.trim());
+            cur.clear();
+        }
+        if take {
+            cur.push_str(l);
+            cur.push('\n');
+        }
+    }
+    if take {
+        blocks.push((cur, String::new()));
+    }
+    for (b, _) in blocks {
+        out.push_str("\n\n");
+        out.push_str(b.trim_end());
+    }
+    out.push('\n');
+    out
 }
 
 fn plan_file(user_dir: &Path, person: &str) -> Result<PathBuf, String> {
@@ -348,12 +383,34 @@ mod tests {
     #[test]
     fn the_comms_plan_starts_from_a_template_and_is_private_to_the_person() {
         let u = tmp("plan");
-        assert!(plan_load(&u, "Anna").unwrap().contains("check in"));
+        assert!(plan_load(&u, "Anna").unwrap().contains("check-in"));
         plan_save(&u, "Anna", "Channel 3, hourly.").unwrap();
         assert_eq!(plan_load(&u, "Anna").unwrap(), "Channel 3, hourly.");
-        assert!(plan_load(&u, "Ben").unwrap().contains("check in"));
+        assert!(plan_load(&u, "Ben").unwrap().contains("check-in"));
         plan_save(&u, "Anna", "Channel 5.").unwrap();
         assert_eq!(fs::read_dir(person_dir(&u, "Anna").unwrap().join("backups")).unwrap().count(), 1);
+    }
+
+    #[test]
+    fn the_template_is_a_full_plan_and_missing_sections_are_added_without_touching_the_rest() {
+        let t = comms_plan_template();
+        assert!(t.len() > 6000 && t.len() < MAX_PLAN_BYTES / 2);
+        let heads = plan_headings(&t);
+        assert!(heads.len() >= 18, "{:?}", heads);
+        for need in ["PACE", "Meeting places", "If the radios fail", "Practice and upkeep", "Radio log"] {
+            assert!(heads.iter().any(|h| h.contains(need)), "{}", need);
+        }
+        assert!(plan_missing_sections(&t).is_empty());
+        // an old short plan gets everything it lacks
+        let old = "Channel 3, hourly.\n\n## 10. Meeting places\nThe oak tree.";
+        let missing = plan_missing_sections(old);
+        assert_eq!(missing.len(), heads.len() - 1);
+        assert!(!missing.iter().any(|h| h.contains("Meeting places")));
+        let merged = plan_with_missing(old);
+        assert!(merged.starts_with("Channel 3, hourly.\n\n## 10. Meeting places\nThe oak tree."));
+        assert_eq!(plan_with_missing(&merged), merged);
+        assert!(plan_missing_sections(&merged).is_empty());
+        assert_eq!(merged.matches("## 10. Meeting places").count(), 1);
     }
 
     #[test]

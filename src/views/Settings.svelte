@@ -27,12 +27,12 @@
     }
   }
 
-  const tabs = ['General', 'Assistant', 'My details', 'Sharing', 'Library', 'Intel', 'Music', 'Maps', 'Plan', 'Your own cards and plans', 'Drive', 'Sources and licenses', 'About'] as const;
+  const tabs = ['General', 'Assistant', 'My details', 'Sharing', 'Library', 'Intel', 'Music', 'Maps', 'Plan', 'Calendar', 'Your own cards and plans', 'Drive', 'Sources and licenses', 'About'] as const;
   let tab: (typeof tabs)[number] = $state('General');
   // the tabs, in groups, down the left side (the short names stay the same; only what is shown changes)
   const tabGroups: { title: string; tabs: (typeof tabs)[number][] }[] = [
     { title: 'YOU', tabs: ['General', 'My details', 'Sharing'] },
-    { title: 'THE SCREENS', tabs: ['Assistant', 'Library', 'Intel', 'Music', 'Maps', 'Plan'] },
+    { title: 'THE SCREENS', tabs: ['Assistant', 'Library', 'Intel', 'Music', 'Maps', 'Plan', 'Calendar'] },
     { title: 'THE DRIVE', tabs: ['Drive', 'Your own cards and plans', 'Sources and licenses', 'About'] },
   ];
   const tabLabel: Record<string, string> = { Drive: 'Drives and libraries', Library: 'Shelf and Archives' };
@@ -44,7 +44,7 @@
 
   type BoolKey = { [K in keyof Settings]: Settings[K] extends boolean ? K : never }[keyof Settings];
   type NumKey = { [K in keyof Settings]: Settings[K] extends number ? K : never }[keyof Settings];
-  type ChoiceKey = 'startScreen' | 'answerLength' | 'answerStyle' | 'searchSpeed' | 'intelStart' | 'intelReader' | 'mapUnits';
+  type ChoiceKey = 'startScreen' | 'answerLength' | 'answerStyle' | 'searchSpeed' | 'intelStart' | 'intelReader' | 'mapUnits' | 'weekStart' | 'timeFormat' | 'calendarView';
 
   let ms = $state<ModelStatus | null>(null);
   let models: ModelChoice[] = $state([]);
@@ -236,6 +236,7 @@
       {@render slider('answerSources', 'Passages it reads', '', 'How many pieces of text it reads before answering. More can help with hard questions, but it is slower and needs more memory.')}
       {@render choose('answerLength', 'Answer length', 'Short answers finish sooner. Long answers can explain more.', [['short', 'Short'], ['normal', 'Normal'], ['long', 'Long']])}
       {@render choose('answerStyle', 'Answer style', 'Exact sticks closest to the pages. Steady is the everyday choice. Natural sounds more like talking, but may wander a little.', [['exact', 'Exact'], ['steady', 'Steady'], ['natural', 'Natural']])}
+      {@render slider('followUpMemory', 'Earlier questions it remembers', 'questions', 'So you can ask “how long does it last?” after a question. 0 means every question stands alone.')}
       {@render choose('searchSpeed', 'How long to look through files', 'Searching loose files is done fresh for each question. Quick stops after about a second; thorough keeps going for about eight, which a very large drive may need.', [['quick', 'Quick'], ['normal', 'Normal'], ['thorough', 'Thorough']])}
       {@render toggle('showSourceChips', 'Show where each answer came from', 'The small labels under an answer naming the page or file it used.')}
     </div>
@@ -251,7 +252,7 @@
       {/if}
       <div class="row"><button class="btn" onclick={addFolder}>Add a folder…</button></div>
     </div>
-    {@render reset(['searchBooks', 'searchArchives', 'searchFiles', 'searchSavedSites', 'answerSources', 'answerLength', 'answerStyle', 'searchSpeed', 'showSourceChips', 'extraFolders'])}
+    {@render reset(['searchBooks', 'searchArchives', 'searchFiles', 'searchSavedSites', 'answerSources', 'answerLength', 'answerStyle', 'followUpMemory', 'searchSpeed', 'showSourceChips', 'extraFolders'])}
   {:else if tab === 'My details'}
     <MyDetails />
   {:else if tab === 'Sharing'}
@@ -309,6 +310,22 @@
       {@render slider('planExpiryMonths', 'Check when the use-by date is within', 'months', 'Items already past their date are always act now.')}
     </div>
     {@render reset(['planActDays', 'planCheckDays', 'planExpiryMonths'])}
+  {:else if tab === 'Calendar'}
+    <div class="panel">
+      <div class="label">THE CALENDAR</div>
+      {@render choose('weekStart', 'The week starts on', 'Which day is first in the month and week grids.', [['sunday', 'Sunday'], ['monday', 'Monday']])}
+      {@render choose('timeFormat', 'Show times as', 'For the time of an event.', [['12h', '1:30 PM'], ['24h', '13:30']])}
+      {@render choose('calendarView', 'Open on', 'Whether the calendar opens on the month or on the week.', [['month', 'The month'], ['week', 'The week']])}
+    </div>
+    <div class="panel">
+      <div class="label">WHAT FILLS IT IN BY ITSELF</div>
+      <p class="muted fine">Your own events always show. These are the things the program puts on the calendar for you. Turn off any that crowd it.</p>
+      {@render toggle('calShowBirthdays', 'Birthdays from the Family page', 'Each person with a birthday on the Family page.')}
+      {@render toggle('calShowPlanting', 'Planting times from the Seed vault', 'When to start or plant each seed, worked out from your frost dates in My details.')}
+      {@render toggle('calShowFrost', 'The usual frost days', 'Your usual last spring frost and first fall frost.')}
+      {@render toggle('calShowTasks', 'Tasks that fall due', 'Tasks from the To-do list that have a due date.')}
+    </div>
+    {@render reset(['weekStart', 'timeFormat', 'calendarView', 'calShowBirthdays', 'calShowPlanting', 'calShowFrost', 'calShowTasks'])}
   {:else if tab === 'Your own cards and plans'}
     <div class="panel">
       <div class="label">ADD YOUR OWN</div>

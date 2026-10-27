@@ -52,11 +52,11 @@ pub enum Status {
 pub fn years_good(crop: &str) -> u32 {
     let c = crop.to_lowercase();
     let has = |w: &[&str]| w.iter().any(|x| c.contains(x));
-    if has(&["onion", "leek", "parsnip", "chive"]) {
+    if has(&["onion", "leek", "parsnip", "chive", "salsify", "scorzonera", "shallot"]) {
         1
     } else if has(&["corn", "okra", "pepper", "chili", "chile"]) {
         2
-    } else if has(&["bean", "carrot", "pea", "kohlrabi", "squash", "zucchini", "sunflower", "herb", "basil", "parsley", "dill", "cilantro", "coriander"]) {
+    } else if has(&["bean", "carrot", "pea", "kohlrabi", "squash", "zucchini", "sunflower", "herb", "basil", "parsley", "dill", "cilantro", "coriander", "fava", "lentil", "chickpea", "soybean", "cowpea", "lima", "tepary", "amaranth", "quinoa", "sorghum", "millet", "thyme", "sage", "oregano", "chamomile", "calendula", "echinacea", "yarrow", "balm", "feverfew", "borage", "fennel", "celery", "celeriac", "eggplant", "tomatillo", "flax", "luffa", "gourd", "clover", "vetch", "rye", "marigold", "zinnia", "cosmos", "nasturtium"]) {
         3
     } else if has(&["beet", "chard", "pumpkin", "tomato", "turnip", "watermelon", "kale", "mustard"]) {
         4
@@ -177,6 +177,36 @@ impl Vault {
         Ok(all)
     }
 
+    /// Add the suggested crops (see `seedlist`) that are not in the vault yet, each with no packets, the planting
+    /// words, days to harvest and a target. A crop that is already there (same name, any case) is left alone.
+    /// Returns the whole list.
+    pub fn add_suggested(&self, crops: &[String]) -> Result<Vec<Seed>, String> {
+        let mut all = self.list()?;
+        let mut next = all.iter().filter_map(|x| x.id.parse::<u32>().ok()).max().unwrap_or(0);
+        let mut changed = false;
+        for want in crops {
+            let Some(sug) = crate::seedlist::SUGGESTED.iter().find(|x| x.crop.eq_ignore_ascii_case(want.trim())) else { continue };
+            if all.iter().any(|x| x.crop.trim().eq_ignore_ascii_case(sug.crop)) {
+                continue;
+            }
+            next += 1;
+            all.push(Seed {
+                id: next.to_string(),
+                crop: sug.crop.to_string(),
+                plant_when: sug.plant_when.to_string(),
+                days_to_harvest: sug.days,
+                target: sug.target,
+                notes: "Added from the suggested list".to_string(),
+                ..Default::default()
+            });
+            changed = true;
+        }
+        if changed {
+            self.save_all(&all)?;
+        }
+        Ok(all)
+    }
+
     pub fn delete(&self, ids: &[String]) -> Result<Vec<Seed>, String> {
         let all: Vec<Seed> = self.list()?.into_iter().filter(|s| !ids.contains(&s.id)).collect();
         self.save_all(&all)?;
@@ -194,6 +224,32 @@ mod tests {
         fs::create_dir_all(&d).unwrap();
         d
     }
+    #[test]
+    fn suggested_crops_are_added_once_and_never_over_what_you_have() {
+        let d = tmp("suggest");
+        let v = Vault::new(&d);
+        v.save(tomato()).unwrap();
+        let all = v.add_suggested(&["Dry bean (kidney, pinto, black)".into(), "tomato".into(), "Not on the list".into(), "Carrot".into()]).unwrap();
+        assert_eq!(all.len(), 3, "{:?}", all.iter().map(|s| s.crop.clone()).collect::<Vec<_>>());
+        assert!(all.iter().any(|s| s.crop == "Carrot" && s.target > 0.0 && s.packets == 0.0 && !s.plant_when.is_empty()));
+        let again = v.add_suggested(&["Carrot".into()]).unwrap();
+        assert_eq!(again.len(), 3);
+        let ids: std::collections::HashSet<_> = again.iter().map(|s| s.id.clone()).collect();
+        assert_eq!(ids.len(), 3);
+    }
+
+    #[test]
+    fn the_suggested_list_is_sound() {
+        let l = crate::seedlist::SUGGESTED;
+        assert!(l.len() >= 120);
+        let mut names = std::collections::HashSet::new();
+        for s in l {
+            assert!(names.insert(s.crop.to_lowercase()), "twice: {}", s.crop);
+            assert!(!s.group.is_empty() && !s.why.is_empty() && s.days > 0.0 && s.target >= 0.0, "{}", s.crop);
+            assert!(!s.crop.contains(',') || s.crop.contains('('), "{}", s.crop);
+        }
+    }
+
     fn tomato() -> Seed {
         Seed { crop: "Tomato".into(), variety: "Brandywine, pink".into(), kind: "Heirloom".into(), packets: 2.0, seeds_per_packet: 30.0, year_packed: 2024, ..Default::default() }
     }

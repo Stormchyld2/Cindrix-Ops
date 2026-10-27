@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { seedsList, seedSave, seedDelete, seedGuides, type Seed, type Card } from '../lib/api';
+  import { seedsList, seedSave, seedDelete, seedGuides, seedsSuggested, seedsAddSuggested, type Seed, type Card, type SuggestedSeed } from '../lib/api';
   import { parts, blocks } from '../lib/cardtext';
 
   let { go }: { go: (tab: string) => void } = $props();
@@ -10,7 +10,10 @@
 
   let seeds: Seed[] = $state([]);
   let guides: Card[] = $state([]);
-  let tab: 'guides' | 'mine' = $state('guides');
+  let tab: 'guides' | 'mine' | 'suggested' = $state('guides');
+  let suggested: SuggestedSeed[] = $state([]);
+  let picked: string[] = $state([]);
+  let added = $state('');
   let openGuide: Card | null = $state(null);
   let error = $state('');
   let search = $state('');
@@ -28,11 +31,30 @@
     try {
       guides = await seedGuides();
       seeds = await seedsList();
+      suggested = await seedsSuggested();
       if (seeds.length) tab = 'mine';
     } catch (e) {
       error = String(e);
     }
   });
+
+  const sugGroups = $derived.by(() => {
+    const m = new Map<string, SuggestedSeed[]>();
+    for (const x of suggested) { if (!m.has(x.group)) m.set(x.group, []); m.get(x.group)!.push(x); }
+    return [...m.entries()].map(([title, list]) => ({ title, list }));
+  });
+  const missing = $derived(suggested.filter((x) => !x.have));
+  const cropNames = $derived([...new Set([...CROPS, ...suggested.map((x) => x.crop)])]);
+  async function addPicked(list: string[]) {
+    if (!list.length) return;
+    try {
+      const before = seeds.length;
+      seeds = await seedsAddSuggested(list);
+      suggested = await seedsSuggested();
+      added = `Added ${seeds.length - before} to My seeds. Set how many packets you have there.`;
+      picked = [];
+    } catch (e) { error = String(e); }
+  }
 
   const GROUPS: [string, string][] = [['buy', 'WHAT TO BUY'], ['store', 'KEEPING SEEDS'], ['grow', 'PLANNING WHAT TO GROW'], ['save', 'SAVING YOUR OWN SEED']];
   const groups = $derived(GROUPS.map(([k, t]) => ({ title: t, list: guides.filter((g) => g.kind === k) })).filter((g) => g.list.length));
@@ -88,6 +110,7 @@
 <div class="tabs" role="tablist">
   <button role="tab" aria-selected={tab === 'guides'} class:on={tab === 'guides'} onclick={() => { tab = 'guides'; openGuide = null; }}>Guides: what to buy and how</button>
   <button role="tab" aria-selected={tab === 'mine'} class:on={tab === 'mine'} onclick={() => (tab = 'mine')}>My seeds ({seeds.length})</button>
+  <button role="tab" aria-selected={tab === 'suggested'} class:on={tab === 'suggested'} onclick={() => { tab = 'suggested'; added = ''; }}>Seeds to add ({missing.length})</button>
 </div>
 
 {#if tab === 'guides'}
@@ -119,6 +142,26 @@
     {/if}
     {#if !guides.length}<p class="muted">No guides found. They are text files in the <code>seed-guides</code> folder.</p>{/if}
   {/if}
+{:else if tab === 'suggested'}
+  <div class="panel intro">
+    <strong>A well-stocked vault.</strong> {suggested.length} crops that cover calories, protein, greens, herbs, remedies, soil-building and more. Tick the ones you want and press Add: they go into <em>My seeds</em> with when to plant and a target number of packets, and then show up on the Calendar. Crops you already have are marked and left alone.
+  </div>
+  <div class="row sugbar">
+    <button class="btn primary" disabled={!picked.length} onclick={() => addPicked(picked)}>Add {picked.length || ''} selected</button>
+    <button class="btn" disabled={!missing.length} onclick={() => addPicked(missing.map((x) => x.crop))} title="Add every crop you do not have yet">Add all {missing.length} I do not have</button>
+    {#if added}<span class="muted" role="status">{added}</span>{/if}
+  </div>
+  {#each sugGroups as g (g.title)}
+    <div class="label gh">{g.title.toUpperCase()}</div>
+    <div class="sug">
+      {#each g.list as x (x.crop)}
+        <label class="sugrow" class:have={x.have}>
+          <input type="checkbox" bind:group={picked} value={x.crop} disabled={x.have} aria-label={'Add ' + x.crop} />
+          <span><strong>{x.crop}</strong>{#if x.have}<span class="badge">In My seeds</span>{/if}<span class="muted small"> · {x.why} Plant: {x.plant_when.toLowerCase()}. About {x.days} days.</span></span>
+        </label>
+      {/each}
+    </div>
+  {/each}
 {:else}
   <div class="row top">
     <span class="muted">{seeds.length} kinds · {packets} packets{needAttention ? ` · ${needAttention} to check` : ''}</span>
@@ -172,7 +215,7 @@
       <legend>1. What is it?</legend>
       <label>Crop
         <input class="input" list="crops" bind:value={form.crop} required placeholder="Tomato, pole bean, carrot…" />
-        <datalist id="crops">{#each CROPS as c}<option value={c}></option>{/each}</datalist>
+        <datalist id="crops">{#each cropNames as c}<option value={c}></option>{/each}</datalist>
       </label>
       <div class="row">
         <label class="half">Variety<input class="input" bind:value={form.variety} placeholder="Brandywine, Kentucky Wonder…" /></label>
@@ -225,6 +268,11 @@
   .tabs button { padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line2); background: var(--panel); color: #b5ada0; }
   .tabs button.on { background: var(--blue-soft); border-color: var(--blue-line); color: var(--blue); font-weight: 600; }
   .intro { max-width: 760px; }
+  .sugbar { margin: 10px 0 0; flex-wrap: wrap; }
+  .sug { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 6px 14px; margin: 6px 0; }
+  .sugrow { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); }
+  .sugrow.have { opacity: 0.6; }
+  .sugrow input { width: 20px; height: 20px; margin-top: 2px; accent-color: var(--blue); }
   .gh { margin-top: 16px; }
   .list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; margin: 8px 0; }
   .card { text-align: left; padding: 14px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }

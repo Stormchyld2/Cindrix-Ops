@@ -1085,7 +1085,10 @@ async fn ask_stream(question: String, history: Option<Vec<String>>, project: Opt
 fn ask_run(app: &tauri::AppHandle, question: String, history: Vec<String>, guest: bool, project: Option<String>, mut send: impl FnMut(StreamEvent)) -> Result<ReplyDto, String> {
     {
         // a follow-up ("how long does it last?") borrows the words of the question before it, for the search and for the model
-        let followed = cindrix_core::followup::resolve(&question, &history);
+        // (Settings > Assistant: how many earlier questions it remembers; 0 means every question stands alone)
+        let remember = settings::number("followUpMemory", 2, 0, 4) as usize;
+        let earlier: Vec<String> = history.iter().rev().take(remember).rev().cloned().collect();
+        let followed = cindrix_core::followup::resolve(&question, &earlier);
         let (search, asked) = (followed.search, followed.asked);
         let lib = content_sub("library-sample");
         let port = *app.state::<AppState>().port.lock().unwrap();
@@ -2123,6 +2126,36 @@ fn seed_delete(ids: Vec<String>) -> Result<Vec<SeedDto>, String> {
     Ok(seed_dtos(seeds::Vault::new(&root().join("user")).delete(&ids)?))
 }
 
+#[derive(Serialize)]
+struct SuggestedSeedDto {
+    crop: String,
+    group: String,
+    why: String,
+    plant_when: String,
+    days: f64,
+    target: f64,
+    /// Already in the vault
+    have: bool,
+}
+
+/// The suggested seed list, marked with what the vault already holds.
+#[tauri::command]
+fn seeds_suggested() -> Result<Vec<SuggestedSeedDto>, String> {
+    let mine = seeds::Vault::new(&root().join("user")).list()?;
+    Ok(cindrix_core::seedlist::SUGGESTED
+        .iter()
+        .map(|x| SuggestedSeedDto {
+            crop: x.crop.into(), group: x.group.into(), why: x.why.into(), plant_when: x.plant_when.into(), days: x.days, target: x.target,
+            have: mine.iter().any(|m| m.crop.trim().eq_ignore_ascii_case(x.crop)),
+        })
+        .collect())
+}
+
+#[tauri::command]
+fn seeds_add_suggested(crops: Vec<String>) -> Result<Vec<SeedDto>, String> {
+    Ok(seed_dtos(seeds::Vault::new(&root().join("user")).add_suggested(&crops)?))
+}
+
 /// The seed guide cards: the program's own, the drive's `seed-guides` folder and the user's.
 #[tauri::command]
 fn seed_guides() -> Vec<CardDto> {
@@ -2184,6 +2217,12 @@ fn comms_plan_load(person: String) -> Result<String, String> {
 #[tauri::command]
 fn comms_plan_save(person: String, text: String) -> Result<(), String> {
     cindrix_core::people::plan_save(&root().join("user"), &person, &text)
+}
+
+/// The plan text with the sections of the full template that it lacks added at the end (nothing is saved).
+#[tauri::command]
+fn comms_plan_add_missing(text: String) -> String {
+    cindrix_core::people::plan_with_missing(&text)
 }
 
 #[derive(Serialize)]
@@ -2714,12 +2753,15 @@ pub fn run() {
             seeds_list,
             seed_save,
             seed_delete,
+            seeds_suggested,
+            seeds_add_suggested,
             seed_guides,
             guides_list,
             journal_list,
             journal_save,
             comms_plan_load,
             comms_plan_save,
+            comms_plan_add_missing,
             photos_list,
             photo_read,
             photo_add,

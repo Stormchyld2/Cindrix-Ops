@@ -1,0 +1,170 @@
+FAMILY COMMUNICATION PLAN
+Family name: 
+Plan written on: 
+Last updated on: 
+Where the printed copies are kept (home, car, go-bags, with the out-of-area contact): 
+
+Fill in every line you can. Print it. Practise it. A plan nobody has read does not work. Other devices on your hotspot cannot see this page.
+
+## 1. When this plan is used
+Level 1 (a few hours to a few days: power out, storm, local emergency): phones may work, but use the plan to practise.
+Level 2 (a regional disaster: phone towers and internet down or jammed for days): the radio schedule starts, meeting points are used, no one travels alone.
+Level 3 (a long emergency: no grid for weeks or more): radios saved for set times, the neighbourhood network starts, runners and signs are used.
+Who decides we have moved up a level: 
+How everyone is told the level has changed (a radio call, a sign, a bell, a flag): 
+
+## 2. Who does what
+Plan keeper (updates this plan, checks batteries): 
+Net control (runs the check-in, keeps the log): 
+Back-up net control: 
+Scribe or logger (writes every message down): 
+Weather and news watcher: 
+Runner (carries messages when radios fail): 
+Medical lead (who we call first for first aid): 
+Children's helper (who checks the children and the elderly have what they need): 
+
+## 3. People, phone numbers and radio call signs
+Write one line for each person: name, mobile number, radio name or call sign, where they are in the day, medical needs, who to tell if they cannot be reached.
+1. 
+2. 
+3. 
+4. 
+5. 
+6. 
+Out-of-area contact (someone 100 miles or more away, who is likely to still have phone or internet): 
+Second out-of-area contact: 
+Work, school and care contacts: 
+Doctor, pharmacy, vet: 
+Police, fire, ambulance (usually 911), poison control (1-800-222-1222 in the United States): 
+Utility numbers (power, gas, water): 
+Neighbours we trust (name, house, what they have): 
+
+## 4. The PACE plan: four ways to reach each other
+Primary (the usual way): mobile phone call or text.
+Alternate (if the primary fails): 
+Contingency (if the alternate fails): 
+Emergency (the last resort when all else fails): 
+Example order: 1) mobile call or text, 2) a FRS or GMRS radio on the family channel, 3) a CB or amateur radio on the backup channel, 4) meeting in person at the meeting place at the set time.
+Change one step at a time. Say which step you are using: "We are on Alternate."
+
+## 5. Radios and equipment
+Write the radio, who carries it, the battery type, the spare battery and where the charger is.
+Radio 1: 
+Radio 2: 
+Radio 3: 
+Radio 4: 
+Base station or vehicle radio: 
+AM/FM/weather radio (hand-crank or battery): 
+Shortwave receiver: 
+Spare batteries, solar charger, power banks, cables: 
+Antennas and spare cables: 
+Notebook, pencils, this plan in a waterproof bag: 
+Whistles, mirrors, flashlights, flags: 
+
+## 6. Channels, frequencies and codes
+Our family channel (first choice) and privacy code: 
+Our second channel (if the first is busy or jammed): 
+Our "all call" channel for the whole neighbourhood: 
+Channel for calling for help (see Radio reference, Emergency channels): 
+CB radio: channel 9 is for emergencies; channel 19 is used by truckers for road news.
+Amateur radio: 146.520 MHz is the national 2-metre calling frequency; 446.000 MHz is the 70-centimetre calling frequency. Our local repeater (and what to use if it is down): 
+Our amateur call signs and who holds a licence: 
+NOAA Weather Radio frequency for our area (162.400, 162.425, 162.450, 162.475, 162.500, 162.525 or 162.550 MHz): 
+Local AM/FM emergency station: 
+Shortwave or ham net we listen to for wider news: 
+
+## 7. When we talk: the schedule
+Daily check-in times (for example 8:00, 12:00 and 18:00, 5 minutes each): 
+Everyone listens at the top of the hour for 5 minutes. Say the call sign or name, then "monitoring".
+Emergency calls can be made at any time, on the family channel.
+Long-emergency saving rule: listen most of the time, talk briefly, change batteries on schedule.
+Silent periods (for example, to save power at night; except for emergency): 
+
+## 8. Call signs, names and sign-offs
+Use first names or nicknames on the air, not full names or addresses.
+Our radio names (one per person):
+Challenge and reply words, to prove who we are. Write several; use each once and then cross it out: 
+Duress word (said when someone is forced to speak, meaning "I am in danger" without anyone knowing): 
+All-clear word: 
+Words not to say on the air (home address, "we have lots of food", "we are alone", where valuables are): 
+
+## 9. Plain messages: the words we use
+Use plain words. Avoid made-up codes that strangers or children cannot follow.
+"I am safe": 
+"I need help": 
+"Come home": 
+"Stay where you are": 
+"Meet at point A, B or C": 
+"Evacuate now": 
+"All clear": 
+Medical emergency call: say "Medical emergency", who, what happened, where, what help is on hand.
+
+## 10. Meeting places
+Meeting place A (at or near the home, if the house is unsafe, for example the mailbox or a neighbour's tree): 
+Meeting place B (in the neighbourhood, within a 10-minute walk, for example a park or school): 
+Meeting place C (outside the neighbourhood, in case we cannot return, for example a relative's home): 
+Meeting place D (a rally point if we must leave the area; a landmark): 
+If we have to leave the house, we leave a note saying who left, when, and where we went: where the note goes: 
+How long we wait at each place before we go to the next: 
+
+## 11. If the radios fail
+Whistle signal: three blasts means "I need help"; one means "I am here".
+Light signals: three flashes of a torch or mirror.
+Flags, ribbons or signs on the front door (for example green cloth on the door: we are all right; red cloth: need help): 
+Runner routes between houses: 
+Message board or tree where notes are left: 
+Time of day for meeting (for example noon at the meeting place): 
+
+## 12. Power for communications
+How many days of power for each radio: 
+Chargers: solar, hand crank, car, power banks: 
+Battery rotation (who checks and when): 
+Radios charged first when the power fails: 
+Fuel stored for a generator and where it is run (never indoors): 
+
+## 13. News and information
+Where we listen for news and warnings: 
+Who listens and reports: 
+Times of day for news (for example 7:00 and 19:00): 
+Official sources: county emergency management, NOAA Weather Radio, FEMA, Red Cross. Rumour is not news. We check two sources before acting.
+How we spread verified news to the family and neighbours: 
+
+## 14. The neighbourhood network
+Neighbours with radios, call signs and channels: 
+Skills nearby (doctor, nurse, electrician, mechanic, veterinarian, radio amateur): 
+Neighbours who need help (elderly, ill, alone) and who checks on them: 
+Shared channel and schedule: 
+How we alert each other to danger: 
+Rules for strangers: 
+
+## 15. Keeping safe on the air
+Anyone can listen. Do not give names, addresses, numbers of people or amounts of supplies on the radio.
+Change channels and codes if someone unknown joins.
+Be polite. A calm voice carries further.
+Do not transmit while someone else is calling for help. Make way and listen.
+
+## 16. Special people: children, elderly and people who cannot use a radio
+A card in each child's bag with the family contacts, the meeting places and a line to say: 
+A child who is alone does this: 
+An older or ill person has a loud whistle or bell and a regular visitor: 
+Who has the keys, medicine list and spare glasses: 
+
+## 17. Emergency calls: say it like this
+1) "Break, break, emergency." 2) Who you are and where you are. 3) What is wrong (fire, injury, danger). 4) What help you need. 5) Say "over" and listen.
+For a missing person: the name, age, what they wear, where last seen, the time, and a contact.
+Write each call and answer in the log.
+
+## 18. Practice and upkeep
+Monthly: radio test on the family channel. Check batteries and the antenna.
+Every three months: practise the full plan, including walking to the meeting places and a no-phone day.
+Every year: update the phone numbers, call signs, meeting places and the people in the plan.
+After any use: write down what worked and what did not, and change the plan.
+Next test date: 
+
+## 19. Radio log
+Date and time | From | To | Message | What we did
+1. 
+2. 
+3. 
+
+For the words to use, the channels and how to set up a radio, see Radio reference in the Comms menu.

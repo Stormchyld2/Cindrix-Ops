@@ -6,13 +6,24 @@
   import { opsLoad, agendaGet, eventSave, eventDelete, type AgendaItem, type EventRec, type ProjectRec, type Link } from '../lib/api';
   import Connected from '../lib/Connected.svelte';
   import { openLink, nav } from '../lib/nav.svelte';
+  import { settings } from '../lib/settings.svelte';
 
   const pad = (n: number) => String(n).padStart(2, '0');
   const iso = (d: Date) => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
   const parse = (s: string) => new Date(s + 'T12:00:00');
   const todayIso = iso(new Date());
 
-  let view: 'month' | 'week' = $state('month');
+  let view: 'month' | 'week' = $state(settings.values.calendarView);
+  const mon = $derived(settings.values.weekStart === 'monday');
+  const lead = (d: Date) => (mon ? (d.getDay() + 6) % 7 : d.getDay());
+  const WEEKDAYS = $derived(mon ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']);
+  /** "13:30" shown as "1:30 PM" unless 24-hour times are chosen. */
+  function showTime(t: string): string {
+    const m = /^(\d{1,2}):(\d{2})$/.exec(t ?? '');
+    if (!m || settings.values.timeFormat === '24h') return t;
+    const h = Number(m[1]);
+    return `${h % 12 === 0 ? 12 : h % 12}:${m[2]} ${h < 12 ? 'AM' : 'PM'}`;
+  }
   /** The day that is picked. The grid shows the month, or the week, it is in. */
   let day = $state(todayIso);
   let agenda: AgendaItem[] = $state([]);
@@ -26,8 +37,8 @@
   const days = $derived.by(() => {
     const sel = parse(day);
     const from = view === 'week'
-      ? new Date(sel.getFullYear(), sel.getMonth(), sel.getDate() - sel.getDay(), 12)
-      : (() => { const first = new Date(sel.getFullYear(), sel.getMonth(), 1, 12); return new Date(first.getFullYear(), first.getMonth(), 1 - first.getDay(), 12); })();
+      ? new Date(sel.getFullYear(), sel.getMonth(), sel.getDate() - lead(sel), 12)
+      : (() => { const first = new Date(sel.getFullYear(), sel.getMonth(), 1, 12); return new Date(first.getFullYear(), first.getMonth(), 1 - lead(first), 12); })();
     return Array.from({ length: view === 'week' ? 7 : 42 }, (_, i) => {
       const d = new Date(from.getFullYear(), from.getMonth(), from.getDate() + i, 12);
       return { iso: iso(d), n: d.getDate(), other: view === 'month' && d.getMonth() !== sel.getMonth() };
@@ -55,7 +66,15 @@
   }
   $effect(() => { const r = range; void load(r.from, r.to); });
 
-  const all = $derived([...agenda, ...overdueTasks]);
+  const wanted = (a: AgendaItem) => {
+    const v = settings.values;
+    if (a.kind === 'season') return v.calShowFrost;
+    if (a.kind === 'seed') return v.calShowPlanting;
+    if (a.kind === 'task') return v.calShowTasks;
+    if (isBirthday(a)) return v.calShowBirthdays;
+    return true;
+  };
+  const all = $derived([...agenda, ...overdueTasks].filter(wanted));
   const byDay = $derived.by(() => {
     const m: Record<string, AgendaItem[]> = {};
     for (const a of all) (m[a.date] ??= []).push(a);
@@ -121,7 +140,7 @@
         {#each LEGEND as [k, name] (k)}<span class="lg"><i class={'sw ' + k}></i>{name}</span>{/each}
       </div>
       <div class="grid" class:week={view === 'week'} role="grid" aria-label={title}>
-        {#each ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as w}<div class="wd" role="columnheader">{w}</div>{/each}
+        {#each WEEKDAYS as w}<div class="wd" role="columnheader">{w}</div>{/each}
         {#each days as d (d.iso)}
           {@const items = byDay[d.iso] ?? []}
           <div class="cell" class:other={d.other} class:today={d.iso === todayIso} class:sel={d.iso === day} role="presentation"
@@ -129,7 +148,7 @@
             <button class="num" aria-label={'Pick ' + d.iso + (items.length ? ', ' + items.length + ' things' : '')} onclick={(e) => { e.stopPropagation(); day = d.iso; }}>{d.n}</button>
             <div class="chips">
               {#each items.slice(0, SHOW) as a (a.kind + a.id + a.date)}
-                <button class={'chip ' + cls(a)} title={label(a) + ': ' + a.title + (a.overdue ? ' (late)' : '')} onclick={(e) => { e.stopPropagation(); open(a); }}>{#if a.time}<b>{a.time}</b> {/if}{a.title}</button>
+                <button class={'chip ' + cls(a)} title={label(a) + ': ' + a.title + (a.overdue ? ' (late)' : '')} onclick={(e) => { e.stopPropagation(); open(a); }}>{#if a.time}<b>{showTime(a.time)}</b> {/if}{a.title}</button>
               {/each}
               {#if items.length > SHOW}<button class="more" onclick={(e) => { e.stopPropagation(); day = d.iso; }}>+{items.length - SHOW} more</button>{/if}
             </div>
@@ -144,7 +163,7 @@
         {#if thatDay.length}
           <ul class="list">
             {#each thatDay as a (a.kind + a.id + a.date)}
-              <li><button onclick={() => open(a)}><i class={'sw ' + cls(a)}></i><span class="k">{label(a)}</span> {#if a.time}<b>{a.time}</b>{/if} {a.title}{#if a.overdue} <em>late</em>{/if}</button></li>
+              <li><button onclick={() => open(a)}><i class={'sw ' + cls(a)}></i><span class="k">{label(a)}</span> {#if a.time}<b>{showTime(a.time)}</b>{/if} {a.title}{#if a.overdue} <em>late</em>{/if}</button></li>
             {/each}
           </ul>
         {:else}<p class="muted">Nothing on this day.</p>{/if}

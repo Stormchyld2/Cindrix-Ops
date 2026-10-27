@@ -127,3 +127,27 @@ The library search matched "dress" and "cut" in a dulcimer-making chapter. `retr
 reads a question that has a wound word (cut, scrape, gash...) together with dress/wrap/cover/clean as
 a question about bandaging a wound, and looks for "dressing", "bandage", "clean" and "wound" instead.
 Page text is still read as written. Golden question added (`wound-care`).
+
+## Growing, livestock, soil and water, radio, comms plan, seeds, settings (this round)
+
+- **Crop guides** went from 18 to 39 pages (broccoli family, greens, roots, legumes, fruit, herbs, grains, mushrooms and more).
+  **Planting calendar** now has "Every crop: when to start, sow and plant out (weeks from frost)", "Soil temperature for sowing", and
+  month-by-month pages for zones 3-4, 5, 6, 7, 8, 9 and 10 (generated from the same week offsets, so they agree).
+- **Livestock** has cattle, pigs, sheep, other poultry, fish, worms and insects, fencing, pasture, hay, daily health check, predators,
+  milk to cheese, butchering, work animals, dogs and cats, a breeding table, feed and land per animal, livestock without power, records
+  and "which animals first". No animal medicine amounts: pages send people to a vet.
+- **Soil and water** adds texture and pH tests, manure safety, worm bins, no-dig beds, deficiency signs, weeds, drip and ollas, swales,
+  wells and springs, ponds, greywater, household water treatment, drought and a small-plot plan.
+- **Seed vault**: "Seeds to add" tab with 138 suggested crops (`core/src/seedlist.rs`), added to My seeds in one tap with planting words the
+  Calendar understands (a test checks every line parses). Seven more seed guides. More crops have a seed-life figure.
+- **Comms plan** is now a full 19-section plan (`core/src/commsplan.txt`): activation levels, roles, contacts, PACE, equipment, channels,
+  schedule, authentication and duress words, plain messages, meeting places, no-radio signals, power, news, neighbourhood network,
+  safety on air, children and elderly, emergency call format, practice, and a log. "Add the sections I am missing" appends sections an
+  older saved plan lacks without changing anything the person wrote. Stored per person in `user/people/<name>/comms-plan.md`.
+- **Radio reference** went from 30 to 55 pages (frequency chart, FRS/GMRS channels, CB, marine, aircraft and beacons, licences, HF,
+  digital modes, repeaters, Q-codes, antenna lengths, lightning and EMP, weather radio, satellite, phones, net script, groups, glossary).
+- **Settings**: a Calendar tab (week start, 12/24-hour time, month or week view, and which automatic items show), and "Earlier questions
+  it remembers" under Assistant (0 to 4).
+- **Privacy**: journal, comms plan and personal photos are plain files in the person's folder under `user/people/<name>/`. Guests on the
+  hotspot cannot use any journal or comms plan command and see only the shared photo album. On the host computer the person picker lets
+  anyone using the program choose a name unless the Family page lock is on, so the folders separate people but are not a password.
