@@ -29,7 +29,7 @@ License status: **PD** = US government work or public domain. **Verify** = I bel
 Survival Medicine Handbook; Where There Is No Doctor and Where There Is No Dentist (Hesperian, non-commercial license); Ball Complete Book of Home Preserving; Humanure Handbook; Foxfire; All New Square Foot Gardening; Gaia's Garden; Prepper's Long-Term Survival Guide; Deep Survival; ARRL ham license manual.
 
 ## Left out on purpose
-Defense and weapons books, and political or economic forecasting. A home-safety shelf (fire, carbon monoxide, securing the house) covers the safe part.
+Political or economic forecasting. (Defense and weapons books were listed here in an earlier draft without the owner's say-so; the owner decided on 2026-10-27 that they are wanted, so they are no longer left out.) A home-safety shelf (fire, carbon monoxide, securing the house) covers the safe part.
 
 ## How the app uses it
 Real books go in as Kiwix archives or PDFs/MD in the library folder, with a Sources screen row for each (title, license, link). Our own pieces are Markdown in `content/`. Each file carries its source in the answer's "Sources" line.
@@ -71,7 +71,7 @@ Sharing: off by default. When turned on (with a confirmation), the library progr
 
 Which archives to bundle: Wikipedia, WikiMed, Wikibooks, Wikisource and Project Gutenberg (public domain), and Stack Exchange archives such as DIY, Home Improvement, Outdoors and Gardening (CC BY-SA, attribution required). Skip anything under a non-commercial license (for example wikiHow and iFixit). The build script should read each ZIM's license from its metadata and refuse non-commercial ones.
 
-Left out on purpose: manuals for explosives, booby traps, improvised munitions, weapon conversions and similar material, even where an old government copy exists.
+Defense, firearms, military and weapons-maintenance books are allowed (owner, 2026-10-27), as long as each has a clear license or is public domain. One limit stays in the shipped lists and download scripts, and it is Claude's own: step-by-step manuals for building explosives, booby traps or improvised munitions are not listed or fetched by them. The owner can still add their own files to the Shelf.
 
 ## Save a website from inside the app (design, not built)
 

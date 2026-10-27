@@ -170,10 +170,10 @@
           "note": "Fine for your own use if you add them yourself, but they are not sold with this product. Hesperian needs written permission to include."
         },
         {
-          "name": "Weapons, explosives and booby-trap manuals",
-          "license": "n/a",
-          "status": "not included",
-          "note": "Not part of this product."
+          "name": "Defense, firearms and military books",
+          "license": "Public domain or openly licensed titles only",
+          "status": "you add",
+          "note": "Allowed (owner, 2026-10-27), for example U.S. Army field manuals and Gutenberg military science. Check each title's license. The shipped lists and download scripts do not include build manuals for explosives, booby traps or improvised munitions; you can add your own files to the Shelf."
         }
       ]
     }
