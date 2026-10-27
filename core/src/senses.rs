@@ -78,6 +78,96 @@ const RULES: &[Rule] = &[
         wrong: &["market", "share", "investor", "dividend", "broth", "bond", "nasdaq"],
         support: &["storage", "supply", "pantry", "rotate", "store", "emergency"],
     },
+    Rule {
+        name: "cold illness",
+        word: &["cold", "colds"],
+        context: &["cough", "runny", "congestion", "sneeze", "sneezing", "throat", "flu", "symptom", "nose", "tea", "remedy", "catch"],
+        add: &["cough", "congestion", "throat", "rest"],
+        drop_word: false,
+        wrong: &["freezer", "fridge", "frostbite", "hypothermia", "storm", "blizzard"],
+        support: &["cough", "congestion", "throat", "flu", "sneeze", "runny"],
+    },
+    Rule {
+        name: "cold exposure",
+        word: &["cold"],
+        context: &["exposure", "shiver", "shivering", "freezing", "frostbite", "outside", "tent", "hypothermia", "winter", "snow", "night", "blanket"],
+        add: &["hypothermia", "warm", "insulation", "shelter"],
+        drop_word: false,
+        wrong: &["cough", "congestion", "runny", "sneeze", "throat"],
+        support: &["hypothermia", "frostbite", "insulation", "shelter", "warm", "shiver"],
+    },
+    Rule {
+        name: "muscle strain",
+        word: &["strain", "strained", "pulled"],
+        context: &["muscle", "ankle", "back", "knee", "wrist", "sprain", "lifting", "swollen", "swelling"],
+        add: &["sprain", "muscle", "swelling", "rest"],
+        drop_word: false,
+        wrong: &["filter", "sieve", "cheesecloth", "broth", "strainer"],
+        support: &["sprain", "muscle", "swelling", "ligament", "rest", "splint"],
+    },
+    Rule {
+        name: "straining a liquid",
+        word: &["strain", "strained"],
+        context: &["tea", "broth", "liquid", "cloth", "cheesecloth", "herb", "tincture", "juice", "water"],
+        add: &["filter", "cloth", "sieve"],
+        drop_word: false,
+        wrong: &["ligament", "sprain", "muscle", "ankle"],
+        support: &["filter", "cloth", "sieve", "cheesecloth", "liquid", "steep"],
+    },
+    Rule {
+        name: "blood pressure",
+        word: &["pressure"],
+        context: &["blood", "heart", "dizzy", "hypertension", "headache", "high", "low", "salt"],
+        add: &["blood", "hypertension", "heart"],
+        drop_word: false,
+        wrong: &["canner", "cooker", "psi", "gauge", "regulator", "tire"],
+        support: &["blood", "hypertension", "heart", "dizzy", "systolic"],
+    },
+    Rule {
+        name: "pressure canning",
+        word: &["pressure"],
+        context: &["canner", "canning", "jar", "jars", "cooker", "psi", "preserve", "beans"],
+        add: &["canner", "canning", "psi"],
+        drop_word: false,
+        wrong: &["blood", "hypertension", "systolic", "dizzy"],
+        support: &["canner", "canning", "psi", "jar", "processing"],
+    },
+    Rule {
+        name: "stroke",
+        word: &["stroke"],
+        context: &["face", "arm", "speech", "numb", "sudden", "droop", "drooping", "slurred", "confusion", "brain"],
+        add: &["stroke", "face", "speech", "brain"],
+        drop_word: false,
+        wrong: &["swim", "freestyle", "backstroke", "golf", "brush", "paddle", "piston", "engine"],
+        support: &["face", "speech", "brain", "droop", "numb"],
+    },
+    Rule {
+        name: "garden plants",
+        word: &["plant", "plants", "planting"],
+        context: &["garden", "grow", "seed", "soil", "harvest", "bed", "spring", "vegetable", "frost", "water"],
+        add: &["grow", "garden", "seed"],
+        drop_word: false,
+        wrong: &["factory", "reactor", "manufacturing", "turbine", "refinery", "nuclear"],
+        support: &["grow", "garden", "seed", "soil", "harvest"],
+    },
+    Rule {
+        name: "practice drill",
+        word: &["drill", "drills"],
+        context: &["family", "practice", "evacuation", "fire", "earthquake", "rehearse", "school", "kids", "children", "exercise"],
+        add: &["practice", "rehearse", "exercise"],
+        drop_word: false,
+        wrong: &["bit", "chuck", "torque", "cordless", "masonry", "bore"],
+        support: &["practice", "rehearse", "evacuation", "family", "exercise"],
+    },
+    Rule {
+        name: "bug-out",
+        word: &["bug"],
+        context: &["out", "bag", "evacuate", "leave", "plan", "route", "vehicle", "go"],
+        add: &["evacuate", "bag", "plan", "route"],
+        drop_word: false,
+        wrong: &["mosquito", "beetle", "spray", "repellent", "software", "debug"],
+        support: &["evacuate", "bag", "route", "plan", "leave"],
+    },
 ];
 
 fn folded(list: &[&str]) -> Vec<String> {
@@ -134,8 +224,8 @@ pub fn weight(query: &[String], passage: &[String]) -> f64 {
             m *= 0.2;
         }
     }
-    // Coverage: with four or more different question words, a passage that holds fewer than
-    // a third of them is a weak match for the whole question (small filler words are common).
+    // Coverage: with four or more different question words, a passage that holds only one
+    // of them (a stray word) is a weak match for the whole question.
     let mut distinct: Vec<&String> = Vec::new();
     for w in query {
         if !distinct.contains(&w) {
@@ -144,7 +234,7 @@ pub fn weight(query: &[String], passage: &[String]) -> f64 {
     }
     if distinct.len() >= 4 {
         let hit = distinct.iter().filter(|w| passage.contains(**w)).count();
-        if hit * 3 < distinct.len() {
+        if hit <= 1 {
             m *= 0.5;
         }
     }
@@ -170,6 +260,20 @@ mod tests {
         assert!(q("how do i dress for the cold").contains(&"clothing".to_string()));
         assert!(q("how do i charge a phone with solar").contains(&"battery".to_string()));
         assert!(q("how much food should i stock for a family").contains(&"storage".to_string()));
+    }
+
+    #[test]
+    fn more_words_follow_their_context() {
+        assert!(q("my child has a cold with a cough").contains(&"congestion".to_string()));
+        assert!(q("i am cold and shivering outside at night").contains(&"hypothermia".to_string()));
+        assert!(q("i strained my ankle lifting").contains(&"sprain".to_string()));
+        assert!(q("how do i strain tea through cloth").contains(&"filter".to_string()));
+        assert!(q("my blood pressure is high and i am dizzy").contains(&"hypertension".to_string()));
+        assert!(q("what psi for a pressure canner with jars").contains(&"canning".to_string()));
+        assert!(q("sudden numb face and slurred speech stroke").contains(&"brain".to_string()));
+        assert!(q("when should i plant seed in the garden").contains(&"grow".to_string()));
+        assert!(q("how do we practice a family fire drill").contains(&"rehearse".to_string()));
+        assert!(q("when do we bug out and which route").contains(&"evacuate".to_string()));
     }
 
     #[test]

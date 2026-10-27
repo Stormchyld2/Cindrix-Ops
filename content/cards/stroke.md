@@ -9,12 +9,12 @@ reviewed:
 
 Look for **BE FAST**:
 
-- **B**alance: sudden loss of balance or dizziness
-- **E**yes: sudden trouble seeing
-- **F**ace: one side droops when they smile
-- **A**rms: one arm drifts down when both are raised
-- **S**peech: slurred, strange or hard to understand
-- **T**ime: call 911 at once
+- **B** is Balance: sudden loss of balance or dizziness
+- **E** is Eyes: sudden trouble seeing
+- **F** is Face: one side droops when they smile
+- **A** is Arms: one arm drifts down when both are raised
+- **S** is Speech: slurred, strange or hard to understand
+- **T** is Time: call 911 at once
 
 Other signs: sudden numbness or weakness on one side, sudden confusion, sudden severe headache with no known cause.
 

@@ -20,7 +20,9 @@ const STOP: &[&str] = &[
 ];
 
 pub fn tokens(s: &str) -> Vec<String> {
-    s.to_lowercase()
+    // Markdown bold inside a word ("**S**top") must not cut the word in two.
+    s.replace('*', "")
+        .to_lowercase()
         .split(|c: char| !c.is_alphanumeric())
         .filter(|w| w.len() > 1 && !STOP.contains(w))
         .map(fold_plural)
@@ -157,6 +159,11 @@ mod tests {
         assert!(q.contains(&"wound".to_string()) && q.contains(&"bandage".to_string()));
         assert!(!q.contains(&"dress".to_string()));
         assert_eq!(query_tokens("dress a dulcimer"), tokens("dress a dulcimer"));
+    }
+
+    #[test]
+    fn bold_inside_a_word_does_not_split_it() {
+        assert_eq!(tokens("**F**ace droops"), vec!["face", "droops"]);
     }
 
     #[test]

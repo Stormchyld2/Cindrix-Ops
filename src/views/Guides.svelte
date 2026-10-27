@@ -33,8 +33,9 @@
     {/if}
     {#if loaded && !pages.length && !error}
       <div class="panel empty">
-        <strong>Nothing here yet.</strong>
-        <p class="muted">Pages are plain text files. Put one in <b>user\guides\{section}</b> on the drive (copy a card from <b>cards</b> as a template) and it shows up here. Every page needs a <b>Source:</b> line at the end.</p>
+        <strong>These pages are not on this drive yet.</strong>
+        <p class="muted">They come in the <b>Cindrix content pack</b> (the download called <b>Cindrix-content-pack</b>). Copy its <b>guides</b> folder onto the top of the drive and choose <b>Merge</b>, then come back here. The pages go in <b>guides\{section}</b>.</p>
+        <p class="muted">You can also write your own: put a text file in <b>user\guides\{section}</b> (copy a card from <b>cards</b> as a template). Every page needs a <b>Source:</b> line at the end.</p>
       </div>
     {/if}
     <div class="list">

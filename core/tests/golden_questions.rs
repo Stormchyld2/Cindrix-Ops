@@ -7,7 +7,7 @@ use std::path::PathBuf;
 
 fn page_folders() -> Vec<PathBuf> {
     let base = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../content");
-    let mut v = vec![base.join("library-sample"), base.join("cards")];
+    let mut v = vec![base.join("library-sample"), base.join("cards"), base.join("plans")];
     if let Ok(rd) = std::fs::read_dir(base.join("guides")) {
         for e in rd.flatten() {
             if e.path().is_dir() {
