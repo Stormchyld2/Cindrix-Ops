@@ -103,6 +103,23 @@ categories); it narrows the search and the list of archives. Archives lists each
 libraries' `library` folders work the same way. Two archives with the same file name in different folders
 still count as one (the first is used). The guest search accepts the same optional `category`.
 
+## Word guardrails (`core/src/senses.rs`)
+
+Many everyday words have more than one meaning ("dress a cut", "dress for the cold", "dress a board";
+"charge a phone", "charge in court"; "burn", "shock", "stock"). `senses.rs` holds a small table of rules.
+Each rule reads the rest of the question for a clue, and only then:
+
+1. rewrites the search words to the right meaning ("dress a cut" searches for wound, dressing, bandage, clean);
+2. pushes passages that are plainly about the wrong meaning down to a fifth of their score (a dulcimer
+   chapter has "saw", "jointer" and "glue" and nothing about wounds).
+
+A question with no clue is searched exactly as written. A second guard: with four or more different
+words in the question, a passage that holds fewer than a third of them is halved. Both apply to the
+shipped pages, the Shelf, saved websites and the Kiwix archives (`retrieval::score` and `kiwix::relevance`).
+To add a word, add one `Rule` in `senses.rs` (ambiguous word, clue words, words to add, words of the wrong
+meaning, words of the right meaning) and a golden question in `core/tests/golden/questions.tsv`.
+Rules now: wound care, clothing for weather, burn injury, electric shock, charging a battery, food stores.
+
 ## "How do I dress a cut" (search fix)
 
 The library search matched "dress" and "cut" in a dulcimer-making chapter. `retrieval::query_tokens` now

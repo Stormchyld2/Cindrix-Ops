@@ -27,25 +27,11 @@ pub fn tokens(s: &str) -> Vec<String> {
         .collect()
 }
 
-const WOUND_WORDS: &[&str] = &["cut", "gash", "scrape", "laceration", "wound", "graze", "slice"];
-
-/// The words of a question, plus plain-language helpers: "dress a cut" is about bandaging a
-/// wound, not about dressing timber. Use this for the person's question; `tokens` for page text.
+/// The words of a question, rewritten to the meaning its context points to (see `senses`):
+/// "dress a cut" is about bandaging a wound, not dressing timber. Use this for the person's
+/// question; `tokens` for page text.
 pub fn query_tokens(question: &str) -> Vec<String> {
-    let mut t = tokens(question);
-    let hurt = t.iter().any(|w| WOUND_WORDS.contains(&w.as_str()));
-    if hurt {
-        let dressing = t.iter().any(|w| matches!(w.as_str(), "dress" | "dressed" | "dressing" | "wrap" | "cover" | "bandage" | "treat" | "clean"));
-        if dressing {
-            t.retain(|w| !matches!(w.as_str(), "dress" | "dressed" | "dressing"));
-            for extra in ["dressing", "bandage", "clean"] {
-                t.push(extra.to_string());
-            }
-        }
-        t.push("wound".to_string());
-    }
-    t.dedup();
-    t
+    crate::senses::expand(tokens(question))
 }
 
 /// "burns" and "burn" should match: drop a plural "s" from longer words (not "ss", "us" or "is" endings).
@@ -83,6 +69,8 @@ pub fn sections(md: &str) -> Vec<(String, String)> {
 pub fn score(query: &[String], heading: &str, text: &str) -> f64 {
     let h = tokens(heading);
     let t = tokens(text);
+    let mut all = h.clone();
+    all.extend(t.iter().cloned());
     let mut s = 0.0;
     for q in query {
         if h.contains(q) {
@@ -91,7 +79,7 @@ pub fn score(query: &[String], heading: &str, text: &str) -> f64 {
         let hits = t.iter().filter(|w| *w == q).count() as f64;
         s += hits.min(3.0);
     }
-    s
+    s * crate::senses::weight(query, &all)
 }
 
 /// The `title:` of a page's front matter (cards and guide pages have one), or empty.

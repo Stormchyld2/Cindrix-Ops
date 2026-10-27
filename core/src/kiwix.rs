@@ -553,7 +553,9 @@ fn relevance(keys: &[String], title: &str, text: &str) -> f64 {
         }
         s += (tt.iter().filter(|w| loosely(w, k)).count() as f64).min(3.0);
     }
-    s
+    let mut all = ht;
+    all.extend(tt);
+    s * crate::senses::weight(keys, &all)
 }
 
 fn merge(into: &mut Vec<(String, String)>, list: Vec<(String, String)>) {

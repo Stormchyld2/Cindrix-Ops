@@ -35,6 +35,7 @@ pub mod hotspot;
 pub mod ops;
 pub mod people;
 pub mod profile;
+pub mod senses;
 pub mod share;
 pub mod sourcelink;
 pub mod prompt;
