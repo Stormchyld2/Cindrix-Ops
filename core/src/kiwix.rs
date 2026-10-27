@@ -222,7 +222,7 @@ pub fn keywords(question: &str) -> Vec<String> {
         "by", "from", "as", "so", "but", "not", "this", "that", "there", "was", "were", "has", "have", "had", "will", "would", "could", "your", "our", "they", "them", "than", "then", "into", "about", "which", "who", "where", "why",
     ];
     let mut seen: Vec<String> = Vec::new();
-    for t in retrieval::tokens(question) {
+    for t in retrieval::query_tokens(question) {
         if !LITTLE.contains(&t.as_str()) && !seen.contains(&t) {
             seen.push(t);
         }
@@ -421,7 +421,7 @@ pub fn html_to_text(html: &str) -> String {
 /// about 1200 characters, each chunk is scored against the question, and the best one is returned.
 /// A long article is therefore not cut off at its introduction when the answer is further down.
 pub fn best_chunk(title: &str, text: &str, question: &str) -> String {
-    let q = retrieval::tokens(question);
+    let q = retrieval::query_tokens(question);
     let mut chunks: Vec<String> = Vec::new();
     let mut cur = String::new();
     for para in text.split("\n\n") {
@@ -464,7 +464,7 @@ pub fn search(port: u16, question: &str, limit: usize) -> Vec<Passage> {
     let names = book_names(port);
     let keys = {
         let k = keywords(question);
-        if k.is_empty() { retrieval::tokens(question) } else { k }
+        if k.is_empty() { retrieval::query_tokens(question) } else { k }
     };
     // No book list: one search over the whole library (no title search, which needs a book name).
     let targets: Vec<Option<String>> = if names.is_empty() { vec![None] } else { names.into_iter().map(Some).collect() };

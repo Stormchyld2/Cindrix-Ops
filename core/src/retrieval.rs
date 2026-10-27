@@ -27,6 +27,27 @@ pub fn tokens(s: &str) -> Vec<String> {
         .collect()
 }
 
+const WOUND_WORDS: &[&str] = &["cut", "gash", "scrape", "laceration", "wound", "graze", "slice"];
+
+/// The words of a question, plus plain-language helpers: "dress a cut" is about bandaging a
+/// wound, not about dressing timber. Use this for the person's question; `tokens` for page text.
+pub fn query_tokens(question: &str) -> Vec<String> {
+    let mut t = tokens(question);
+    let hurt = t.iter().any(|w| WOUND_WORDS.contains(&w.as_str()));
+    if hurt {
+        let dressing = t.iter().any(|w| matches!(w.as_str(), "dress" | "dressed" | "dressing" | "wrap" | "cover" | "bandage" | "treat" | "clean"));
+        if dressing {
+            t.retain(|w| !matches!(w.as_str(), "dress" | "dressed" | "dressing"));
+            for extra in ["dressing", "bandage", "clean"] {
+                t.push(extra.to_string());
+            }
+        }
+        t.push("wound".to_string());
+    }
+    t.dedup();
+    t
+}
+
 /// "burns" and "burn" should match: drop a plural "s" from longer words (not "ss", "us" or "is" endings).
 fn fold_plural(w: &str) -> String {
     if w.len() > 3 && w.ends_with('s') && !w.ends_with("ss") && !w.ends_with("us") && !w.ends_with("is") {
@@ -94,7 +115,7 @@ pub fn front_title(md: &str) -> String {
 pub const MIN_SCORE: f64 = 3.0;
 
 pub fn search(dir: &Path, question: &str, limit: usize) -> Vec<Passage> {
-    let q = tokens(question);
+    let q = query_tokens(question);
     let mut found = Vec::new();
     if q.is_empty() {
         return found;
@@ -124,7 +145,7 @@ pub fn search(dir: &Path, question: &str, limit: usize) -> Vec<Passage> {
 
 /// The relevant sections of one piece of text (a document the person keeps), best first.
 pub fn search_text(source: &str, text: &str, question: &str, limit: usize) -> Vec<Passage> {
-    let q = tokens(question);
+    let q = query_tokens(question);
     if q.is_empty() {
         return Vec::new();
     }
@@ -142,6 +163,14 @@ pub fn search_text(source: &str, text: &str, question: &str, limit: usize) -> Ve
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn dress_a_cut_is_about_wounds_not_timber() {
+        let q = query_tokens("how do i dress a cut");
+        assert!(q.contains(&"wound".to_string()) && q.contains(&"bandage".to_string()));
+        assert!(!q.contains(&"dress".to_string()));
+        assert_eq!(query_tokens("dress a dulcimer"), tokens("dress a dulcimer"));
+    }
+
     #[test]
     fn plural_words_match_the_single_word() {
         assert_eq!(tokens("burns"), tokens("burn"));

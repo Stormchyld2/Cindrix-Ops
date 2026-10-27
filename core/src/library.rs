@@ -300,7 +300,7 @@ impl Library {
 /// The meaningful words of a question, in order, without repeats.
 pub fn keywords(question: &str) -> Vec<String> {
     let mut v: Vec<String> = Vec::new();
-    for t in retrieval::tokens(question) {
+    for t in retrieval::query_tokens(question) {
         if t.chars().count() >= 3 && !v.contains(&t) {
             v.push(t);
         }

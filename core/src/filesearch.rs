@@ -115,7 +115,7 @@ fn shown(root_for: &Path, p: &Path) -> String {
 /// Passages from the loose files under `roots` that answer `question`, best first (at most `limit`).
 /// `base` is the folder paths are shown relative to (the drive's root).
 pub fn search(base: &Path, roots: &[PathBuf], question: &str, limit: usize, lim: &Limits) -> (Vec<Passage>, Scan) {
-    let q = retrieval::tokens(question);
+    let q = retrieval::query_tokens(question);
     let mut scan = Scan::default();
     if q.is_empty() || limit == 0 {
         return (vec![], scan);

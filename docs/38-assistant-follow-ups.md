@@ -102,3 +102,10 @@ its category from the folder too. Intel shows a category picker next to the sear
 categories); it narrows the search and the list of archives. Archives lists each archive's category. Other
 libraries' `library` folders work the same way. Two archives with the same file name in different folders
 still count as one (the first is used). The guest search accepts the same optional `category`.
+
+## "How do I dress a cut" (search fix)
+
+The library search matched "dress" and "cut" in a dulcimer-making chapter. `retrieval::query_tokens` now
+reads a question that has a wound word (cut, scrape, gash...) together with dress/wrap/cover/clean as
+a question about bandaging a wound, and looks for "dressing", "bandage", "clean" and "wound" instead.
+Page text is still read as written. Golden question added (`wound-care`).
