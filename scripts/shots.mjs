@@ -176,10 +176,10 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
 
   // Music: browse, play a generated tone, watch the clock advance, use the equalizer.
   await nav(page, 'Morale', 'Music');
-  await page.getByRole('button', { name: 'Play Dawn' }).waitFor();
+  await page.getByRole('button', { name: /^Other Band/ }).waitFor();
   await shoot(page, `${label}-2d-music-library`);
-  await page.getByRole('button', { name: 'Artists', exact: true }).click();
-  await page.getByRole('button', { name: /Other Band/ }).click();
+  await page.getByRole('button', { name: /^Other Band/ }).click();
+  await page.getByRole('button', { name: /^Night Shift/ }).click();
   await page.getByRole('button', { name: 'Play Lamp' }).waitFor();
   await page.getByRole('button', { name: 'Play Moth' }).click();
   await page.getByRole('button', { name: 'Pause' }).waitFor();
