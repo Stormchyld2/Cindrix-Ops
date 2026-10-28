@@ -32,3 +32,21 @@ fn the_seed_vault_course_loads_with_quizzes() {
         }
     }
 }
+
+#[test]
+fn the_navigation_course_loads_with_quizzes_and_sources() {
+    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../content/academy");
+    let l = cindrix_core::academy::load_dir(&dir);
+    assert!(l.problems.is_empty(), "{:?}", l.problems);
+    let c = l.courses.iter().find(|c| c.id == "land-navigation").expect("land-navigation course");
+    assert_eq!(c.modules.len(), 5);
+    let mut n = 0;
+    for m in &c.modules {
+        for les in &m.lessons {
+            n += 1;
+            assert!(les.quiz.len() >= 3, "{}", les.id);
+            assert!(!les.source.is_empty(), "{}", les.id);
+        }
+    }
+    assert!(n >= 20, "only {} lessons", n);
+}

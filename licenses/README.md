@@ -46,7 +46,7 @@ their full text.
 | Wikipedia, WikiMed, WikEM and similar archives | CC BY-SA 4.0 | Credit and link; share-alike for anything we change |
 | US government manuals and guides (Army, FEMA, CDC, FDA, USGS) | Public domain | Record edition and date |
 | Project Gutenberg titles | Public domain in the US | Check each title |
-| Academy lessons we wrote | Ours | Drafts until reviewed by a qualified person |
+| Academy lessons we wrote (Survival basics, Seed vault, Map reading and land navigation) | Ours, from public-domain US government manuals where noted | Drafts until reviewed by a qualified person |
 | Academy courses someone else wrote | Set by the author in `course.md` (`license:`) | The Academy shows the author; do not ship a course with no license |
 | Music and books you add yourself | Yours | Not part of what we ship |
 

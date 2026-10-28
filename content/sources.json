@@ -70,6 +70,12 @@
           "note": "Based on US Army field manuals (FM 21-76, FM 3-25.26, FM 3-05.70), FEMA/Ready.gov, CDC and Red Cross public guidance. Each lesson names its source. All are DRAFTS until a qualified reviewer signs them off. Not medical or legal advice."
         },
         {
+          "name": "Academy course: Map reading and land navigation (5 modules, 20 lessons)",
+          "license": "Written for this project, from public-domain US government manuals",
+          "status": "in this build",
+          "note": "Based on Army FM 3-25.26 (Map Reading and Land Navigation), FM 21-76, USGS map symbol guidance and NOAA magnetic field information. Each lesson names its source. DRAFTS until a qualified reviewer signs them off."
+        },
+        {
           "name": "Academy courses added by you or others",
           "license": "Set by the author in each course's course.md",
           "status": "you add",
