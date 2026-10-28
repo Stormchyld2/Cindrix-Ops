@@ -24,7 +24,7 @@ Windows comes first; Android and iPhone wrap it later.
 - `crypto/`: passphrase lock. `content/`: shipped sample content (cards, academy, plans). `docs/`: design docs, numbered. `licenses/`: license texts and credits; `scripts/collect-licenses.mjs` adds the libraries' own at build time.
 - `mockups/`: design mockups. Match them when changing a screen.
 
-## Direction (decided 2026-10-21, not built yet; details in `docs/24-hosts-libraries-browser-clients.md`)
+## Direction (decided 2026-10-21; libraries and the share server are built but not run on real hardware, Android is not started; details in `docs/24-hosts-libraries-browser-clients.md`)
 
 - Go carries program and content on one stick. Vault and Hub are one exFAT drive of content; the program
   runs on a host (Windows laptop for Vault, Android phone for Hub). The drive also holds a rescue copy of

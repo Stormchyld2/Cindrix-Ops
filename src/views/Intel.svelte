@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount, onDestroy, untrack } from 'svelte';
   import {
     zimBooks, zimFrame, zimOrigin, zimSearchAll, zimBookmarksLoad, zimBookmarksSave, libraryStatus,
     type ZimBook, type ZimBookmark, type ZimHit, type LibraryStatus,
@@ -141,6 +141,21 @@
     }
   }
   $effect(() => { if (intelRequest.path && tabs.length) void takeRequest(); });
+  // The library server may come up after a page was already opened (it starts in the background), and the
+  // page was then drawn by the built-in reader, which leaves some saved websites blank. When the way pages
+  // are shown changes, draw the page that is on screen again the right way.
+  let lastServerOn: boolean | null = null;
+  $effect(() => {
+    const on = serverOn;
+    const before = lastServerOn;
+    lastServerOn = on;
+    if (before === null || before === on) return;
+    untrack(() => {
+      const t = cur();
+      const l = t ? t.history[t.idx] : undefined;
+      if (l && l.t === 'page' && !plain) void show(l);
+    });
+  });
   onDestroy(() => {
     window.removeEventListener('message', onMessage);
     clearTimeout(debounce);

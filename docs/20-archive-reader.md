@@ -15,6 +15,11 @@ the links clicked inside it (tab titles, the bookmark star and Back inside an ar
 page that was opened, not later ones). Text size works. Owning the server, so both work together, is
 the plan in doc 24.
 
+(2026-10-28) The library server is slow to start in the background. A page opened before it was up used to
+be drawn by the built-in reader and stay blank after the server came up. Now, when the way pages are shown
+changes (server up or down, or the setting changed), Intel draws the page on screen again the right way.
+Not run on real hardware yet.
+
 ## Built in: no Kiwix program needed
 
 The program reads ZIM files itself (`core/src/zimread.rs`, `library.rs`). It understands:
