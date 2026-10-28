@@ -48,5 +48,5 @@ fn the_navigation_course_loads_with_quizzes_and_sources() {
             assert!(!les.source.is_empty(), "{}", les.id);
         }
     }
-    assert!(n >= 20, "only {} lessons", n);
+    assert!(n >= 41, "only {} lessons", n);
 }

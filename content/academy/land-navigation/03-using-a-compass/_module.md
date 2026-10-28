@@ -1,4 +1,4 @@
 ---
 title: Using a compass
-summary: Parts, orienting a map, taking and following a bearing, finding your position and care.
+summary: Parts, orienting a map, bearings, lensatic techniques, detours, fixing your position, GPS and care.
 ---

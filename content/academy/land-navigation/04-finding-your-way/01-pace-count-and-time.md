@@ -7,15 +7,21 @@ source: Army FM 3-25.26 Map Reading and Land Navigation (US government, public d
 Knowing **how far** you have gone is as important as knowing which way. Without a map scale on the ground, you use your own steps and the clock.
 
 ## Pace count
-A **pace** here means every time your **same foot** touches the ground (a double step). Most adults take about 60 to 70 of these in 100 meters on flat ground, but **you must measure your own**.
+There are two common ways to count, and either is fine if you always use the same one.
+- **Count every step** (each foot). This is a natural step of about 30 inches (76 cm). Most adults take about **120** in 100 meters on flat ground.
+- **Count every second step** (each time the same foot touches the ground, a double step). That is about **60 to 65** in 100 meters.
+Whatever you pick, **measure your own**.
 
-1. Mark out a measured 100 meters (or 100 yards) on a flat path.
+1. Mark out a measured 100 meters (or 100 yards) on a path, or a longer course of up to 600 meters (divide your total by 6 for 100 meters).
 2. Walk it in your normal stride and count. Do it three times and take the average.
 3. Write the number on your compass or map case.
+Use ground like the ground you will really cross. A flat course does not give you a count for hills.
 
-Your count changes with the ground:
-- **Uphill:** more paces for the same distance.
-- **Downhill, with a load, in sand, snow, mud or brush:** usually more as well.
+Your count changes with the conditions:
+- **Uphill:** shorter steps. If you normally take 120, you may take 130 or more. Downhill steps are longer.
+- **Sand, gravel, mud and snow:** shorter steps.
+- **A head wind** shortens your step and a **tail wind** lengthens it.
+- **Rain, snow or ice, heavy clothing, boots with poor grip, fog and darkness** all shorten it.
 Measure your count on different ground and write them down.
 
 ## Keeping count
@@ -36,11 +42,11 @@ Work out when you must stop. Plan to arrive or to be camped well before dark. In
 > A rough plan that you follow is better than a fine plan you abandon.
 
 ## Check yourself
-? What is a pace in a pace count?
-+ Each time the same foot touches the ground
-- Every single step
-- One meter
-> A pair of steps counts as one pace.
+? What matters most when you count paces?
++ Measure your own count and always use the same method
+- Use a friend's count
+- Count in meters
+> Every person's stride and method differ.
 ? Why measure your own pace count on different ground?
 + Your pace count changes uphill, with a load, or in mud and snow
 - It never changes

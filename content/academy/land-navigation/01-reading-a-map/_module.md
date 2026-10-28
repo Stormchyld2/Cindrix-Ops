@@ -1,4 +1,4 @@
 ---
 title: Reading a map
-summary: What a map shows: the margin, scale, contour lines, symbols and colors.
+summary: Kinds of maps, the margin, scale math, contour lines, slope, terrain features, aerial pictures and sketching.
 ---
