@@ -15,24 +15,34 @@ const FOLDER: &str = "bible";
 /// How long a look at the drive is reused. Files copied on show up within this time without a restart.
 const REUSE: Duration = Duration::from_secs(20);
 
-static CACHE: Mutex<Option<(Instant, Arc<Library>)>> = Mutex::new(None);
+static CACHE: Mutex<Option<(Instant, Vec<PathBuf>, Arc<Library>)>> = Mutex::new(None);
 
+/// Where to look: `library/bible` on each library drive, then the folder chosen in Settings > Library
+/// (for example Canonleaf's own folder on this computer), which is read where it is and never copied.
 fn roots() -> Vec<PathBuf> {
-    crate::libs::library_roots().into_iter().map(|r| r.join(FOLDER)).collect()
+    let mut v: Vec<PathBuf> = crate::libs::library_roots().into_iter().map(|r| r.join(FOLDER)).collect();
+    for f in crate::settings::folders("bibleFolder").into_iter().take(1) {
+        if !v.contains(&f) {
+            v.push(f);
+        }
+    }
+    v
 }
 
 /// The Bible study books on the drives that may be read. `fresh` looks at the drive again now.
 pub fn library(fresh: bool) -> Arc<Library> {
+    let wanted = roots();
     let mut g = CACHE.lock().unwrap_or_else(|e| e.into_inner());
     if !fresh {
-        if let Some((at, lib)) = g.as_ref() {
-            if at.elapsed() < REUSE {
+        // a change of folder in Settings is picked up at once, not after the reuse time
+        if let Some((at, had, lib)) = g.as_ref() {
+            if at.elapsed() < REUSE && *had == wanted {
                 return lib.clone();
             }
         }
     }
-    let lib = Arc::new(Library::open(&roots()));
-    *g = Some((Instant::now(), lib.clone()));
+    let lib = Arc::new(Library::open(&wanted));
+    *g = Some((Instant::now(), wanted, lib.clone()));
     lib
 }
 
@@ -75,7 +85,7 @@ pub fn bible_status(fresh: Option<bool>) -> StatusDto {
             .iter()
             .map(|m| ModuleDto { id: m.id.clone(), title: m.title.clone(), kind: m.kind.clone(), license: m.license.clone(), attribution: m.attribution.clone() })
             .collect(),
-        where_to_put: "the folder library\\bible on the drive".to_string(),
+        where_to_put: "the folder library\\bible on the drive, or choose Canonleaf's folder in Settings > Library".to_string(),
     }
 }
 

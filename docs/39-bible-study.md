@@ -12,6 +12,11 @@ installed `library/resources/<id>` folders (or unzipped `.theopack` files) in. A
 links, unsafe ids and duplicate ids are skipped (the first wins). A file named by a manifest cannot point
 outside its folder. The list is looked at again every 20 seconds, or at once with "Look again".
 
+Instead of copying, **Settings > Library > Bible study books > Choose a folder** points the program at Canonleaf's
+own folder (or any folder of its resources). It is read where it is, nothing is copied or changed, a change is
+picked up at once, and one folder can be chosen. It works only while that computer runs the program, so a Go
+stick or the Hub phone still needs its own copy on the drive. Guests on the hotspot see what the host reads.
+
 ## What is read
 Bibles (`books/<CODE>.json`), commentaries (verse-range lists and Markdown chapters), dictionaries and topical
 books (Nave, Torrey, Easton and so on), cross-references (`crossrefs/<Book>.json`, matched to the Bible's

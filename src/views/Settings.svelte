@@ -112,6 +112,15 @@
       error = String(e);
     }
   }
+  async function chooseBibleFolder() {
+    error = '';
+    try {
+      const p = await pickFolder();
+      if (p) settings.set('bibleFolder', [p]);
+    } catch (e) {
+      error = String(e);
+    }
+  }
   async function chooseMusicFolder() {
     error = '';
     try {
@@ -273,7 +282,16 @@
       <div class="row"><button class="btn" onclick={openArchives}>Archives, saving websites and sharing →</button></div>
       <p class="muted fine">Sharing the library with other devices is never turned on by a setting. It is off every time the program starts, and you turn it on in Archives.</p>
     </div>
-    {@render reset(['autoScanShelf', 'autoRestartLibrary'])}
+    <div class="panel">
+      <div class="label">BIBLE STUDY BOOKS</div>
+      <p class="muted fine">Bible study (Intel) reads the Bible, commentaries and dictionaries from the <b>library\bible</b> folder on the drive. If you already use <b>Canonleaf</b>, choose its folder here and the books are read where they are, with nothing copied or changed. A folder on this computer is only available while this computer is running the program. Copy the files onto the drive for a stick or phone that must work on its own.</p>
+      <div class="row">
+        <div class="grow path">{settings.values.bibleFolder[0] ?? 'Only the library\\bible folder on the drive'}</div>
+        <button class="btn" onclick={chooseBibleFolder}>Choose a folder…</button>
+        {#if settings.values.bibleFolder.length}<button class="btn" onclick={() => settings.set('bibleFolder', [])}>Use only the drive</button>{/if}
+      </div>
+    </div>
+    {@render reset(['autoScanShelf', 'autoRestartLibrary', 'bibleFolder'])}
   {:else if tab === 'Intel'}
     <div class="panel">
       <div class="label">INTEL, THE OFFLINE INTERNET</div>

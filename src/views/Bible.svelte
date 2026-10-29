@@ -151,7 +151,7 @@
   {#if status && !status.found}
     <div class="panel empty">
       <strong>No Bible is on this drive yet.</strong>
-      <p class="muted">Copy the Bible, commentary and dictionary files from Canonleaf into {status.where_to_put}, then press the button below. The program only reads them.</p>
+      <p class="muted">The Bible, commentary and dictionary files from Canonleaf are read from {status.where_to_put}. Once they are there, press the button below. The program only reads them.</p>
       <div class="row"><button class="btn" onclick={async () => { status = await bibleStatus(true); if (status.found) start(); }}>Look again</button></div>
     </div>
   {:else if status}

@@ -1511,6 +1511,23 @@ mod tests {
         assert!(lib.define("nothingatall", 5).is_empty());
     }
 
+    #[test]
+    fn canonleafs_own_folder_can_be_the_root() {
+        // Canonleaf keeps installed packs in <its folder>/library/resources/<id> and its bundled Bibles
+        // beside them; choosing that top folder must find them all where they are.
+        let root = tmp();
+        put(&root, "Canonleaf Library/library/resources/bible-xyz/manifest.json", &manifest("bible-xyz", "bible", &[("books/JHN.json", "book", "JHN")]));
+        put(&root, "Canonleaf Library/library/resources/bible-xyz/books/JHN.json", JOHN);
+        put(&root, "Canonleaf Library/bundled/bsb/manifest.json", &manifest("bible-bsb", "bible", &[("books/JHN.json", "book", "JHN")]));
+        put(&root, "Canonleaf Library/bundled/bsb/books/JHN.json", JOHN);
+        let lib = Library::open(&[root.clone()]);
+        let mut ids: Vec<&str> = lib.modules.iter().map(|m| m.id.as_str()).collect();
+        ids.sort();
+        assert_eq!(ids, vec!["bible-bsb", "bible-xyz"]);
+        assert_eq!(lib.default_bible().unwrap().id, "bible-bsb");
+        assert_eq!(lib.chapter("bible-xyz", "JHN", 3).unwrap().len(), 3);
+    }
+
     // ----- cross-references, dictionaries, lexicon -----
 
     #[test]
