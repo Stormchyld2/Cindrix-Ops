@@ -40,6 +40,15 @@ pub const GUEST_COMMANDS: &[&str] = &[
     "shelf_list",
     "shelf_read",
     "sources_list",
+    "bible_status",
+    "bible_books",
+    "bible_chapter",
+    "bible_notes",
+    "bible_crossrefs",
+    "bible_search",
+    "bible_parse",
+    "bible_define",
+    "bible_strongs",
     "settings_load",
     "dashboard_suggestions",
     "ask_stream",
@@ -526,6 +535,22 @@ mod tests {
         assert!(p.chars().all(|c| c.is_ascii_digit()));
         assert_eq!(new_token().len(), 48);
         assert_ne!(new_token(), new_token());
+    }
+
+    #[test]
+    fn guests_can_study_the_bible_and_every_such_command_only_reads() {
+        let bible: Vec<&&str> = GUEST_COMMANDS.iter().filter(|c| c.starts_with("bible_")).collect();
+        assert_eq!(bible.len(), 9, "{bible:?}");
+        for c in ["bible_status", "bible_books", "bible_chapter", "bible_notes", "bible_crossrefs", "bible_search", "bible_parse", "bible_define", "bible_strongs"] {
+            assert!(guest_allowed(c), "{}", c);
+        }
+        // nothing that changes a book, a note or a saved place is offered to guests
+        for c in ["bible_save", "bible_note_save", "bible_install", "bible_remove", "bible_import", "bible_bookmark_save"] {
+            assert!(!guest_allowed(c), "{}", c);
+        }
+        for c in bible {
+            assert!(!["save", "add", "remove", "delete", "install", "import", "write", "update"].iter().any(|w| c.contains(w)), "{}", c);
+        }
     }
 
     #[test]

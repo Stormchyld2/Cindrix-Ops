@@ -1407,3 +1407,46 @@ export async function drugLabelsGet(id: string): Promise<DrugLabel> {
   if (tauriHost) return call<DrugLabel>('druglabels_get', { id });
   return { id, brand: 'Sample Tablets', generic: 'SAMPLE', maker: 'Sample Maker', parts: [['What it is for', 'A sample so this screen can be looked at in a browser.'], ['Dosage and how to give it (as the FDA published it)', 'Sample text only.']] };
 }
+
+// ---------- Bible study (Canonleaf's files, read from library\bible; read-only, guests may use it) ----------
+export type BibleModule = { id: string; title: string; kind: string; license: string; attribution: string };
+export type BibleStatus = { found: boolean; default_bible: string | null; modules: BibleModule[]; where_to_put: string };
+export type BibleBook = { code: string; name: string; chapters: number };
+export type BibleVerse = { number: string; text: string };
+export type BibleNote = { label: string; text: string };
+export type BibleRef = { text: string; code: string };
+export type BibleCross = { source: string; items: { anchor: string; refs: BibleRef[] }[] };
+export type BibleHit = { book: string; name: string; chapter: number; verse: string; text: string };
+export type BiblePlace = { book: string; chapter: number; verse: number | null };
+export type BibleEntry = { source: string; kind: string; title: string; body: string; refs: BibleRef[] };
+export type BibleStrongs = { number: string; lemma: string; transliteration: string; gloss: string; morphology: string; source: string };
+
+// Outside the program and the share page there is no drive to read, so these show nothing (never made-up text).
+export async function bibleStatus(fresh = false): Promise<BibleStatus> {
+  if (inTauri) return call<BibleStatus>('bible_status', { fresh });
+  return { found: false, default_bible: null, modules: [], where_to_put: 'the folder library\\bible on the drive' };
+}
+export async function bibleBooks(bible: string): Promise<BibleBook[]> {
+  return inTauri ? call<BibleBook[]>('bible_books', { bible }) : [];
+}
+export async function bibleChapter(bible: string, book: string, chapter: number): Promise<BibleVerse[]> {
+  return inTauri ? call<BibleVerse[]>('bible_chapter', { bible, book, chapter }) : [];
+}
+export async function bibleNotes(module: string, book: string, chapter: number, verse: number | null): Promise<BibleNote[]> {
+  return inTauri ? call<BibleNote[]>('bible_notes', { module, book, chapter, verse }) : [];
+}
+export async function bibleCrossrefs(bible: string, book: string, chapter: number, verse: number): Promise<BibleCross> {
+  return inTauri ? call<BibleCross>('bible_crossrefs', { bible, book, chapter, verse }) : { source: '', items: [] };
+}
+export async function bibleSearch(bible: string, query: string): Promise<BibleHit[]> {
+  return inTauri ? call<BibleHit[]>('bible_search', { bible, query }) : [];
+}
+export async function bibleParse(text: string): Promise<BiblePlace | null> {
+  return inTauri ? call<BiblePlace | null>('bible_parse', { text }) : null;
+}
+export async function bibleDefine(term: string): Promise<BibleEntry[]> {
+  return inTauri ? call<BibleEntry[]>('bible_define', { term }) : [];
+}
+export async function bibleStrongs(number: string): Promise<BibleStrongs[]> {
+  return inTauri ? call<BibleStrongs[]>('bible_strongs', { number }) : [];
+}

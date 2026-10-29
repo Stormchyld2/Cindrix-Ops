@@ -558,6 +558,15 @@ fn dispatch(app: &tauri::AppHandle, cmd: &str, a: &Value, role: &Role) -> Result
         "plans_list" => tv(crate::plans_list(None)?),
         "drills_list" => tv(crate::drills_list()?),
         "shelf_list" => tv(crate::shelf_list()?),
+        "bible_status" => tv(crate::bible::bible_status(a.get("fresh").and_then(|v| v.as_bool()))),
+        "bible_books" => tv(crate::bible::bible_books(arg(a, "bible")?)?),
+        "bible_chapter" => tv(crate::bible::bible_chapter(arg(a, "bible")?, arg(a, "book")?, arg(a, "chapter")?)?),
+        "bible_notes" => tv(crate::bible::bible_notes(arg(a, "module")?, arg(a, "book")?, arg(a, "chapter")?, a.get("verse").and_then(|v| v.as_u64()).map(|v| v as u32))?),
+        "bible_crossrefs" => tv(crate::bible::bible_crossrefs(arg(a, "bible")?, arg(a, "book")?, arg(a, "chapter")?, arg(a, "verse")?)?),
+        "bible_search" => { let (b, q): (String, String) = (arg(a, "bible")?, arg(a, "query")?); tv(crate::bible::search_for(&b, &q)?) }
+        "bible_parse" => tv(crate::bible::bible_parse(arg(a, "text")?)),
+        "bible_define" => { let t: String = arg(a, "term")?; tv(crate::bible::define_for(&t)?) }
+        "bible_strongs" => { let n: String = arg(a, "number")?; tv(crate::bible::strongs_for(&n)?) }
         "sources_list" => tv(crate::sources_list()),
         "settings_load" => tv(crate::settings::settings_load()),
         "dashboard_suggestions" => tv(crate::dashboard_suggestions(

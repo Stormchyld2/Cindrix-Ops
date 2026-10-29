@@ -20,6 +20,7 @@ export type Settings = {
   // Assistant
   searchBooks: boolean;
   searchArchives: boolean;
+  searchBible: boolean;
   searchFiles: boolean;
   searchSavedSites: boolean;
   shareAuto: boolean;
@@ -67,6 +68,7 @@ export const DEFAULTS: Settings = {
   showHints: true,
   searchBooks: true,
   searchArchives: true,
+  searchBible: true,
   searchFiles: true,
   searchSavedSites: true,
   shareAuto: true,

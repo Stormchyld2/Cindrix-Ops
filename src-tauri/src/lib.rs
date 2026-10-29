@@ -21,6 +21,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use tauri_plugin_dialog::DialogExt;
 
+mod bible;
 mod druglabels;
 mod fetch;
 mod libs;
@@ -1099,6 +1100,7 @@ fn ask_run(app: &tauri::AppHandle, question: String, history: Vec<String>, guest
         let use_archives = settings::flag("searchArchives", true);
         let use_files = settings::flag("searchFiles", true);
         let use_sites = settings::flag("searchSavedSites", true);
+        let use_bible = settings::flag("searchBible", true);
         let keep = settings::number("answerSources", 3, 1, 6) as usize;
         let budget_ms = match settings::choice("searchSpeed", "normal", &["quick", "normal", "thorough"]).as_str() {
             "quick" => 1000,
@@ -1147,6 +1149,11 @@ fn ask_run(app: &tauri::AppHandle, question: String, history: Vec<String>, guest
                 // every archive on the drive, by title (needs no Kiwix program)
                 p.extend(zimview::library().passages(&search, 2, 3));
             }
+            if use_bible {
+                // Canonleaf's Bible study books on the drive: verses of any reference asked about, a commentary note,
+                // and (for a Bible question) the topical index and dictionaries. Each says which book it came from.
+                p.extend(bible::library(false).passages(&search, 3));
+            }
             if use_files {
                 // loose text, Markdown and web page files anywhere on the drive, and in the folders added in Settings
                 let mut roots = vec![root()];
@@ -1159,6 +1166,10 @@ fn ask_run(app: &tauri::AppHandle, question: String, history: Vec<String>, guest
             // the same article found two ways counts once
             let mut seen: Vec<String> = Vec::new();
             p.retain(|x| {
+                // a Bible study book and a dictionary can both have an entry with the same heading; both are kept
+                if x.link.starts_with("bible:") {
+                    return true;
+                }
                 let k = x.heading.to_lowercase();
                 if seen.contains(&k) { false } else { seen.push(k); true }
             });
@@ -2698,6 +2709,15 @@ pub fn run() {
             ops::connect_suggest,
             ops::agenda_get,
             ops::birthdays_sync,
+            bible::bible_status,
+            bible::bible_books,
+            bible::bible_chapter,
+            bible::bible_notes,
+            bible::bible_crossrefs,
+            bible::bible_search,
+            bible::bible_parse,
+            bible::bible_define,
+            bible::bible_strongs,
             druglabels::druglabels_status,
             druglabels::druglabels_prepare,
             druglabels::druglabels_search,

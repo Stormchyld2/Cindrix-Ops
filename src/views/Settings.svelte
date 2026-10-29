@@ -232,6 +232,7 @@
       <p class="muted fine">The emergency cards are always searched. Turn off anything you do not want it to use.</p>
       {@render toggle('searchBooks', 'Your books on the Shelf', 'Books you added or that were found on the drive, once their text has been read.')}
       {@render toggle('searchArchives', 'The archives (Wikipedia, guides, saved websites as archives)', 'Every .zim file on the drive, searched by title, and by full text when the library server is running.')}
+      {@render toggle('searchBible', 'Bible study books', 'The Bible, commentaries and Bible dictionaries in the library\\bible folder. A question that names a verse brings in that verse and its notes.')}
       {@render toggle('searchFiles', 'Files and folders on the drive', 'Text, Markdown and web page files anywhere on the drive and in the folders you add below. PDFs are read through the Shelf.')}
       {@render toggle('searchSavedSites', 'Websites you saved with the website saver', 'The plain-text copies made when a site is saved.')}
     </div>
@@ -256,7 +257,7 @@
       {/if}
       <div class="row"><button class="btn" onclick={addFolder}>Add a folder…</button></div>
     </div>
-    {@render reset(['searchBooks', 'searchArchives', 'searchFiles', 'searchSavedSites', 'answerSources', 'answerLength', 'answerStyle', 'followUpMemory', 'searchSpeed', 'showSourceChips', 'extraFolders'])}
+    {@render reset(['searchBooks', 'searchArchives', 'searchBible', 'searchFiles', 'searchSavedSites', 'answerSources', 'answerLength', 'answerStyle', 'followUpMemory', 'searchSpeed', 'showSourceChips', 'extraFolders'])}
   {:else if tab === 'My details'}
     <MyDetails />
   {:else if tab === 'Sharing'}
