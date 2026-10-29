@@ -32,7 +32,7 @@ topical or dictionary entries first (score 20). Sources open the Bible screen (`
 `bible:term:<Title>`).
 
 ## Limits
-Dictionary alternative names are only found inside the same-letter file. The search scans the whole Bible
+A dictionary word is found under another entry's alternative name even in another letter's file; those files are first read as plain text and only parsed if the word is written in them, so it stays quick. The search scans the whole Bible
 (about 85 ms). BSB text can carry section headings inside a verse (that is how Canonleaf's file is).
 Tested on a real library through the ignored test `real_library_smoke` (`CINDRIX_BIBLE_TEST`), not yet on
 real hardware or through the hotspot (doc 22).

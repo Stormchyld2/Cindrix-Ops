@@ -374,6 +374,27 @@ fn read_json(p: &Path) -> Result<Json, String> {
     json::parse(&s).map_err(|e| format!("{} ({})", e, name))
 }
 
+/// The text of a file that is read before it is parsed, with the same size limit as `read_json`.
+fn read_text(p: &Path) -> Option<String> {
+    if fs::metadata(p).ok()?.len() > MAX_FILE {
+        return None;
+    }
+    fs::read_to_string(p).ok()
+}
+
+/// The ways a word may be written in a file: as typed, lower case, Capitalised, UPPER CASE.
+fn spellings(term: &str) -> Vec<String> {
+    let t = term.trim();
+    let lower = t.to_lowercase();
+    let mut cap = lower.clone();
+    if let Some(c) = cap.chars().next() {
+        cap = c.to_uppercase().collect::<String>() + &cap[c.len_utf8()..];
+    }
+    let mut v = vec![t.to_string(), lower, cap, t.to_uppercase()];
+    v.dedup();
+    v
+}
+
 fn safe_id(s: &str) -> bool {
     !s.is_empty() && s.len() <= 160 && s.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
 }
@@ -653,16 +674,30 @@ impl Library {
             return Vec::new();
         }
         let first = q_full.chars().next().unwrap_or(' ');
+        let alt_spellings: Vec<String> = spellings(term).into_iter().chain(spellings(term.trim_end_matches('s'))).collect();
         let mut found: Vec<(u8, Entry)> = Vec::new();
         for m in self.modules.iter().filter(|m| matches!(m.kind.as_str(), "dictionary" | "topical" | "theology")) {
             for f in m.role_files("articles") {
                 // a dictionary split by letter: only the file for this word's letter
                 let stem = f.path.rsplit('/').next().unwrap_or("").trim_end_matches(".json");
-                if stem.len() == 1 && stem.chars().next().map(|c| c.to_ascii_lowercase()) != Some(first) {
-                    continue;
-                }
+                let other_letter = stem.len() == 1 && stem.chars().next().map(|c| c.to_ascii_lowercase()) != Some(first);
                 let Some(path) = m.member(&f.path) else { continue };
-                let Ok(j) = read_json(&path) else { continue };
+                let j = if other_letter {
+                    // An entry in another letter's file can still list this word as another name for itself
+                    // ("Favour" under G for Grace). Looking is cheap: the file is only opened as text, and it
+                    // is read as JSON only if the word is written in it somewhere.
+                    let Some(raw) = read_text(&path) else { continue };
+                    if !alt_spellings.iter().any(|w| raw.contains(w.as_str())) {
+                        continue;
+                    }
+                    match json::parse(&raw) {
+                        Ok(j) => j,
+                        Err(_) => continue,
+                    }
+                } else {
+                    let Ok(j) = read_json(&path) else { continue };
+                    j
+                };
                 for e in entries_of(&j) {
                     let title = entry_title(e);
                     if title.is_empty() {
@@ -670,6 +705,9 @@ impl Library {
                     }
                     let t = key(title);
                     let alt_hit = e.list("alt_terms").iter().filter_map(|a| a.as_str()).any(|a| key(a) == q_full || key(a) == q);
+                    if other_letter && !alt_hit {
+                        continue;
+                    }
                     let score = if t == q_full || t == q || alt_hit {
                         3
                     } else if t.starts_with(&q_full) && q_full.len() >= 3 {
@@ -1456,6 +1494,21 @@ mod tests {
         assert!(lib.notes("clarke", "GEN", 1, None).unwrap().is_empty());
         assert!(lib.notes("henry", "1JN", 1, None).unwrap().is_empty());
         assert!(lib.notes("bible-test", "JHN", 3, None).is_err());
+    }
+
+    #[test]
+    fn another_name_in_a_different_letters_file_is_found() {
+        let root = tmp();
+        put(&root, "dict/manifest.json", &manifest("dict", "dictionary", &[("articles/f.json", "articles", ""), ("articles/g.json", "articles", "")]));
+        put(&root, "dict/articles/f.json", r#"{"data":[{"term":"Faith","definition_blocks":["Trust."]}]}"#);
+        put(&root, "dict/articles/g.json", r#"{"data":[{"term":"Grace","alt_terms":["Favour"],"definition_blocks":["Unmerited favour."]}]}"#);
+        let lib = Library::open(&[root]);
+        let e = lib.define("favour", 5);
+        assert_eq!(e.len(), 1, "{e:?}");
+        assert_eq!(e[0].title, "Grace");
+        // the word is written in g.json, but the entry in f.json is not dragged in by it
+        assert!(lib.define("faith", 5).iter().all(|x| x.title == "Faith"));
+        assert!(lib.define("nothingatall", 5).is_empty());
     }
 
     // ----- cross-references, dictionaries, lexicon -----
