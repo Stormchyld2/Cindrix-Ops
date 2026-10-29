@@ -618,7 +618,7 @@ impl Library {
         if j.get("data").is_some() {
             return Ok(notes_from_entries(&j, chapter, verse));
         }
-        if j.get("chapters").is_some() {
+        if j.get("chapters").is_some() || j.get("pages").is_some() {
             return Ok(notes_from_chapters(&j, chapter, verse));
         }
         Ok(Vec::new())
@@ -1016,8 +1016,11 @@ fn chapter_of_name(name: &str) -> Option<u32> {
 
 fn notes_from_chapters(j: &Json, chapter: u32, verse: Option<u32>) -> Vec<Note> {
     let mut out = Vec::new();
-    for c in j.list("chapters") {
-        if chapter_of_name(c.text("source_name")) != Some(chapter) {
+    // Most packs list `chapters` named by `source_name`; Song of Solomon lists `pages` named by `path`
+    // (with an `_index.md` front page that has no chapter number and is skipped).
+    for c in j.list("chapters").iter().chain(j.list("pages")) {
+        let name = if c.get("source_name").is_some() { c.text("source_name") } else { c.text("path") };
+        if chapter_of_name(name) != Some(chapter) {
             continue;
         }
         for s in md_sections(c.text("markdown")) {
@@ -1431,6 +1434,23 @@ mod tests {
     }
 
     #[test]
+    fn commentary_listed_as_pages_is_read_like_chapters() {
+        let root = tmp();
+        put(&root, "mh-song/manifest.json", &manifest("mh-song", "commentary", &[("notes/song.json", "notes", "SNG")]));
+        put(
+            &root,
+            "mh-song/notes/song.json",
+            "{\"book\":\"song\",\"pages\":[{\"path\":\"_index.md\",\"markdown\":\"---\\ntitle: x\\n---\\n\\nFront page 2.\"},{\"path\":\"chapter-2.md\",\"markdown\":\"---\\ntitle: x\\n---\\n\\n# Song 2\\n\\n## The Church\\n\\n> **\\u00b9** I am the rose of Sharon.  \\n> **\\u00b2** As the lily among thorns.\\n\\nChrist speaks.\"}]}",
+        );
+        let lib = Library::open(&[root]);
+        let all = lib.notes("mh-song", "SNG", 2, None).unwrap();
+        assert_eq!(all.len(), 1, "the front page is not a chapter");
+        assert_eq!(all[0].text, "Christ speaks.");
+        assert_eq!(lib.notes("mh-song", "SNG", 2, Some(2)).unwrap().len(), 1);
+        assert!(lib.notes("mh-song", "SNG", 3, None).unwrap().is_empty());
+    }
+
+    #[test]
     fn a_commentary_that_lacks_the_book_gives_nothing() {
         let lib = Library::open(&[sample()]);
         assert!(lib.notes("clarke", "GEN", 1, None).unwrap().is_empty());
@@ -1588,6 +1608,11 @@ mod tests {
         for t in ["Aaron", "grace", "forgiveness", "Abana"] {
             let e = lib.define(t, 3);
             println!("define {:<12} -> {:?}", t, e.iter().map(|x| format!("{}: {} ({} chars, {} refs)", x.source, x.title, x.body.len(), x.refs.len())).collect::<Vec<_>>());
+        }
+        for m in lib.of_kind("commentary").into_iter().filter(|m| m.id.contains("song")) {
+            let n = lib.notes(&m.id, "SNG", 2, Some(1)).unwrap_or_default();
+            println!("commentary {} Song 2:1 -> {} notes {}", m.id, n.len(), n.first().map(|x| x.label.as_str()).unwrap_or("-"));
+            assert!(!n.is_empty(), "the Song of Solomon pages were not read");
         }
         println!("strongs G5485 -> {:?}", lib.strongs("G5485").first());
         println!("strongs H0430 -> {:?}", lib.strongs("H0430").first());

@@ -15,7 +15,7 @@ outside its folder. The list is looked at again every 20 seconds, or at once wit
 ## What is read
 Bibles (`books/<CODE>.json`), commentaries (verse-range lists and Markdown chapters), dictionaries and topical
 books (Nave, Torrey, Easton and so on), cross-references (`crossrefs/<Book>.json`, matched to the Bible's
-edition) and the STEP lexicon for Strong's numbers. Not read: Song of Solomon in the "pages" shape, English
+edition) and the STEP lexicon for Strong's numbers. Commentary lists written as `pages` (Matthew Henry on the Song of Solomon) are read like chapters. Not read: English
 concordances, STEP verse tokens, whole-work theology files. Missing data is shown as missing, never filled in.
 
 ## Rules kept
