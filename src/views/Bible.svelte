@@ -7,7 +7,7 @@
   } from '../lib/api';
   import { bibleRequest } from '../lib/chat.svelte';
 
-  let status: BibleStatus | null = $state(null);
+  let status = $state<BibleStatus | null>(null);
   let error = $state('');
   let bible = $state('');
   let books: BibleBook[] = $state([]);
@@ -23,7 +23,7 @@
   let commentary = $state('');
   let notes: BibleNote[] = $state([]);
   let notesNote = $state('');
-  let cross: BibleCross | null = $state(null);
+  let cross = $state<BibleCross | null>(null);
   let mentions: BibleMention[] = $state([]);
   let term = $state('');
   let entries: BibleEntry[] = $state([]);
