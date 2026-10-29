@@ -2718,6 +2718,7 @@ pub fn run() {
             bible::bible_parse,
             bible::bible_define,
             bible::bible_strongs,
+            bible::bible_mentions,
             druglabels::druglabels_status,
             druglabels::druglabels_prepare,
             druglabels::druglabels_search,

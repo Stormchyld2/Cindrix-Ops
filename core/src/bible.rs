@@ -316,6 +316,9 @@ pub fn find_references(text: &str) -> Vec<Ref> {
 // ---------- finding the resources ----------
 
 /// What a resource can be. Others (and old schema-1 test files) are left alone.
+mod mentions;
+pub use mentions::Mention;
+
 pub const SUPPORTED_KINDS: &[&str] = &["bible", "commentary", "dictionary", "topical", "concordance", "theology"];
 
 const MAX_SCAN_DEPTH: usize = 5;

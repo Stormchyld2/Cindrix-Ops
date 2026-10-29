@@ -49,6 +49,7 @@ pub const GUEST_COMMANDS: &[&str] = &[
     "bible_parse",
     "bible_define",
     "bible_strongs",
+    "bible_mentions",
     "settings_load",
     "dashboard_suggestions",
     "ask_stream",
@@ -541,7 +542,7 @@ mod tests {
     fn guests_can_study_the_bible_and_every_such_command_only_reads() {
         let bible: Vec<&&str> = GUEST_COMMANDS.iter().filter(|c| c.starts_with("bible_")).collect();
         assert_eq!(bible.len(), 9, "{bible:?}");
-        for c in ["bible_status", "bible_books", "bible_chapter", "bible_notes", "bible_crossrefs", "bible_search", "bible_parse", "bible_define", "bible_strongs"] {
+        for c in ["bible_status", "bible_books", "bible_chapter", "bible_notes", "bible_crossrefs", "bible_search", "bible_parse", "bible_define", "bible_strongs", "bible_mentions"] {
             assert!(guest_allowed(c), "{}", c);
         }
         // nothing that changes a book, a note or a saved place is offered to guests

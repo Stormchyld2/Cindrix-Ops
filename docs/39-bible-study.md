@@ -41,3 +41,12 @@ A dictionary word is found under another entry's alternative name even in anothe
 (about 85 ms). BSB text can carry section headings inside a verse (that is how Canonleaf's file is).
 Tested on a real library through the ignored test `real_library_smoke` (`CINDRIX_BIBLE_TEST`), not yet on
 real hardware or through the hotspot (doc 22).
+
+## Topics tab (what else mentions this verse)
+
+Tapping a verse number also fills a **Topics** tab: the entries of the topical books (Nave), theology
+books (Torrey) and Bible dictionaries (Easton, Smith, Hitchcock) that cite that verse.
+`core/src/bible/mentions.rs` reads only the structured reference fields of each entry, never verse
+numbers found in prose. Whole-chapter references do not count, and the wrong book never matches.
+Nave and Torrey show the subheadings that cite the verse; a dictionary shows the text around the
+citation. At most 8 entries per book and 40 overall. Command `bible_mentions` (also allowed for guests).

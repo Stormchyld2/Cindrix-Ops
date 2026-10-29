@@ -2,8 +2,8 @@
   // Bible study: reads Canonleaf's Bible, commentary, dictionary and cross-reference files from library\bible.
   // Read-only. Guests on the share page get the same screen. Nothing is shown that is not in those files.
   import {
-    bibleStatus, bibleBooks, bibleChapter, bibleNotes, bibleCrossrefs, bibleSearch, bibleParse, bibleDefine, bibleStrongs,
-    type BibleStatus, type BibleBook, type BibleVerse, type BibleNote, type BibleCross, type BibleHit, type BibleEntry, type BibleStrongs, type BibleRef,
+    bibleStatus, bibleBooks, bibleChapter, bibleNotes, bibleCrossrefs, bibleSearch, bibleParse, bibleDefine, bibleStrongs, bibleMentions,
+    type BibleStatus, type BibleBook, type BibleVerse, type BibleNote, type BibleCross, type BibleHit, type BibleEntry, type BibleStrongs, type BibleRef, type BibleMention,
   } from '../lib/api';
   import { bibleRequest } from '../lib/chat.svelte';
 
@@ -18,12 +18,13 @@
   let goto = $state('');
   let gotoNote = $state('');
 
-  type Tab = 'Commentary' | 'Cross-references' | 'Look up' | 'Search';
+  type Tab = 'Commentary' | 'Cross-references' | 'Topics' | 'Look up' | 'Search';
   let tab: Tab = $state('Commentary');
   let commentary = $state('');
   let notes: BibleNote[] = $state([]);
   let notesNote = $state('');
   let cross: BibleCross | null = $state(null);
+  let mentions: BibleMention[] = $state([]);
   let term = $state('');
   let entries: BibleEntry[] = $state([]);
   let strongs: BibleStrongs[] = $state([]);
@@ -62,7 +63,7 @@
   async function load() {
     error = '';
     selected = null;
-    notes = []; cross = null; notesNote = '';
+    notes = []; cross = null; notesNote = ''; mentions = [];
     try {
       verses = await bibleChapter(bible, book, chapter);
       try { sessionStorage.setItem('cindrix.bible', JSON.stringify({ bible, book, chapter })); } catch { /* not remembered */ }
@@ -118,6 +119,7 @@
         notesNote = notes.length ? '' : 'This commentary has nothing on this verse.';
       } else { notes = []; notesNote = 'No commentary is on the drive.'; }
       cross = await bibleCrossrefs(bible, book, chapter, verseNo);
+      mentions = await bibleMentions([`${book}.${chapter}.${verseNo}`]);
     } catch (e) { notesNote = String(e); }
   }
   async function lookup() {
@@ -189,7 +191,7 @@
 
       <div class="panel side">
         <div class="tabs" role="tablist">
-          {#each ['Commentary', 'Cross-references', 'Look up', 'Search'] as t (t)}
+          {#each ['Commentary', 'Cross-references', 'Topics', 'Look up', 'Search'] as t (t)}
             <button class="btn" class:active={tab === t} role="tab" aria-selected={tab === t} onclick={() => (tab = t as Tab)}>{t}</button>
           {/each}
         </div>
@@ -224,6 +226,20 @@
             {/each}
             {#if !cross.items.length}<p class="muted">Nothing is listed for this verse.</p>{/if}
             <p class="muted fine">From {cross.source}.</p>
+          {/if}
+        {:else if tab === 'Topics'}
+          {#if verseNo === null}
+            <p class="muted">Tap a verse number to see the topics and dictionary entries that mention it.</p>
+          {:else}
+            <h3>{bookInfo?.name} {chapter}:{verseNo}</h3>
+            {#each mentions as m, i (i)}
+              <div class="note">
+                <div class="label">{m.title} <span class="fine">· {m.source}</span></div>
+                {#each m.points as p, j (j)}<p>{p}</p>{/each}
+                {#if m.excerpt}<p>{m.excerpt}</p>{/if}
+              </div>
+            {/each}
+            {#if !mentions.length}<p class="muted">None of the topic books or dictionaries on the drive mention this verse.</p>{/if}
           {/if}
         {:else if tab === 'Look up'}
           <form class="goto" onsubmit={(e) => { e.preventDefault(); lookup(); }}>

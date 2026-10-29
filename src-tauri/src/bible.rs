@@ -244,3 +244,31 @@ pub fn strongs_for(number: &str) -> Result<Vec<StrongsDto>, String> {
 pub async fn bible_strongs(number: String) -> Result<Vec<StrongsDto>, String> {
     tauri::async_runtime::spawn_blocking(move || strongs_for(&number)).await.map_err(|_| "The look-up stopped early. Try again.".to_string())?
 }
+
+#[derive(Serialize)]
+pub struct MentionDto {
+    module_id: String,
+    source: String,
+    kind: String,
+    title: String,
+    points: Vec<String>,
+    excerpt: String,
+    verses: Vec<String>,
+}
+
+/// Topical books and Bible dictionaries that cite any of these verses (`BOOK.CHAPTER.VERSE`).
+pub fn mentions_for(verses: &[String]) -> Result<Vec<MentionDto>, String> {
+    if verses.len() > 30 || verses.iter().any(|v| v.len() > 24) {
+        return Err("Pick fewer verses and try again.".into());
+    }
+    Ok(library(false)
+        .mentions(verses)
+        .into_iter()
+        .map(|m| MentionDto { module_id: m.module_id, source: m.source, kind: m.kind, title: m.title, points: m.points, excerpt: m.excerpt, verses: m.verses })
+        .collect())
+}
+
+#[tauri::command]
+pub async fn bible_mentions(verses: Vec<String>) -> Result<Vec<MentionDto>, String> {
+    tauri::async_runtime::spawn_blocking(move || mentions_for(&verses)).await.map_err(|_| "The look-up stopped early. Try again.".to_string())?
+}

@@ -1447,6 +1447,18 @@ export async function bibleParse(text: string): Promise<BiblePlace | null> {
 export async function bibleDefine(term: string): Promise<BibleEntry[]> {
   return inTauri ? call<BibleEntry[]>('bible_define', { term }) : [];
 }
+export type BibleMention = {
+  module_id: string;
+  source: string;
+  kind: string;
+  title: string;
+  points: string[];
+  excerpt: string;
+  verses: string[];
+};
+export async function bibleMentions(verses: string[]): Promise<BibleMention[]> {
+  return inTauri && verses.length ? call<BibleMention[]>('bible_mentions', { verses }) : [];
+}
 export async function bibleStrongs(number: string): Promise<BibleStrongs[]> {
   return inTauri ? call<BibleStrongs[]>('bible_strongs', { number }) : [];
 }

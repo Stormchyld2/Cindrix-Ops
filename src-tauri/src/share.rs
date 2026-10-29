@@ -566,6 +566,7 @@ fn dispatch(app: &tauri::AppHandle, cmd: &str, a: &Value, role: &Role) -> Result
         "bible_search" => { let (b, q): (String, String) = (arg(a, "bible")?, arg(a, "query")?); tv(crate::bible::search_for(&b, &q)?) }
         "bible_parse" => tv(crate::bible::bible_parse(arg(a, "text")?)),
         "bible_define" => { let t: String = arg(a, "term")?; tv(crate::bible::define_for(&t)?) }
+        "bible_mentions" => { let v: Vec<String> = arg(a, "verses")?; tv(crate::bible::mentions_for(&v)?) }
         "bible_strongs" => { let n: String = arg(a, "number")?; tv(crate::bible::strongs_for(&n)?) }
         "sources_list" => tv(crate::sources_list()),
         "settings_load" => tv(crate::settings::settings_load()),
