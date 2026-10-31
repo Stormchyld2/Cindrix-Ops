@@ -431,6 +431,39 @@ export async function shelfRead(id: string): Promise<Uint8Array> {
   return b.bytes.slice();
 }
 
+/**
+ * Save a copy of a book as a plain file, so it can be read later without this library.
+ * In a browser on another device the browser does the saving (the host sends the file); in the program
+ * a Save window asks where it should go. Returns a sentence to show, or '' when the person cancelled.
+ */
+export async function shelfDownload(book: Book): Promise<string> {
+  if (inShare) {
+    const a = document.createElement('a');
+    a.href = '/api/shelf_download?id=' + encodeURIComponent(book.id);
+    a.download = '';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    return `Downloading “${book.title}”. When it finishes, look for it in your Downloads.`;
+  }
+  if (tauriHost) {
+    const where = await call<string | null>('shelf_save_copy', { id: book.id });
+    return where ? `Saved “${book.title}” to ${where}.` : '';
+  }
+  // a browser tab outside the program (screen preview): hand over the sample
+  const b = memBooks.find((x) => x.meta.id === book.id);
+  if (!b) throw 'No such book.';
+  const url = URL.createObjectURL(new Blob([b.bytes as unknown as BlobPart]));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${book.title}.${book.kind}`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  return `Downloading “${book.title}”.`;
+}
+
 export async function shelfUpdate(id: string, title: string, author: string, category: string): Promise<void> {
   if (inTauri) return call<void>('shelf_update', { id, title, author, category });
   const b = memBooks.find((x) => x.meta.id === id);

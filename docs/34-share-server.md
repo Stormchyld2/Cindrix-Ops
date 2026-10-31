@@ -10,7 +10,7 @@
 - **The page for guests:** Settings, Sharing, shows the address(es), a QR code (made by `src/lib/qr.ts`, no library), the PIN and how many devices are signed in.
 
 ## What a guest can do
-- Read: archives and the reader (`/content/…` pages), the Shelf (books are downloaded to the browser and read there), emergency cards, Academy, plans, drills, maps (`/tiles/…`, same range requests as the app), music (`/music/…`), and Ask (answers stream in).
+- Read: archives and the reader (`/content/…` pages), the Shelf (books are downloaded to the browser and read there; every book and manual on the Shelf and in the Reading Corner also has a download arrow that saves it as a plain PDF, Markdown or text file to read offline: `GET /api/shelf_download?id=…`, open to guests and trusted devices, resumable with `Range`; the app itself shows a Save window instead; ZIM archives are not offered this way), emergency cards, Academy, plans, drills, maps (`/tiles/…`, same range requests as the app), music (`/music/…`), and Ask (answers stream in).
 - Only the actions in `GUEST_COMMANDS` (`core/src/share.rs`) work. Everything else answers "This can only be done on the host…". That keeps the family page, inventory, My details, notes, chats, settings changes, adding or removing things and saving websites on the host.
 - Ask for guests never reads the `user` folders (`filesearch::Limits.hide_user`), and only two questions run at once; others are told to wait.
 - Each browser keeps its own bookmarks and open tabs. Reading position and saved maps are host-only for now.

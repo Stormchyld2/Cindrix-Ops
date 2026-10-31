@@ -1320,6 +1320,22 @@ fn shelf_read(id: String) -> Result<tauri::ipc::Response, String> {
     Ok(tauri::ipc::Response::new(shelf_for(&id).read(&id)?))
 }
 
+/// The app's own "download": a Save window asks where a copy of the book should go, then the plain
+/// file is written there. Returns where it was saved, or None when the person cancelled the window.
+/// (Another device's browser gets the same file from the share server: `/api/shelf_download`.)
+#[tauri::command]
+async fn shelf_save_copy(id: String, app: tauri::AppHandle) -> Result<Option<String>, String> {
+    let d = shelf_for(&id).download(&id)?;
+    let name = d.name.clone();
+    let picked = tauri::async_runtime::spawn_blocking(move || app.dialog().file().set_file_name(name).blocking_save_file())
+        .await
+        .map_err(|e| e.to_string())?;
+    let Some(fp) = picked else { return Ok(None) };
+    let dest = fp.into_path().map_err(|e| e.to_string())?;
+    cindrix_core::fsio::write_atomic(&dest, &d.bytes).map_err(|e| format!("The copy could not be saved ({}). Pick another place and try again.", e))?;
+    Ok(Some(dest.to_string_lossy().to_string()))
+}
+
 #[tauri::command]
 fn shelf_update(id: String, title: String, author: String, category: String) -> Result<(), String> {
     if id.starts_with('b') {
@@ -2814,6 +2830,7 @@ pub fn run() {
             shelf_scan_drive,
             shelf_add,
             shelf_read,
+            shelf_save_copy,
             shelf_update,
             shelf_remove,
             shelf_save_text,
