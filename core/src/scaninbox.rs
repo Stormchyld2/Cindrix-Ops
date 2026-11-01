@@ -277,7 +277,8 @@ pub fn accept(root: &Path, backups: &Path, name: &str) -> Result<Report, String>
     };
     let mut applied = load_applied(root);
     let report = apply(&mut items, &lines, &mut applied);
-    fsio::backup_then_write(&inv_path, backups, inventory::serialize(&items).as_bytes()).map_err(|e| format!("The inventory could not be saved: {}", e))?;
+    let _ = backups; // the inventory is backed up by UserDir::save_inventory, in root/backups
+    crate::userdata::UserDir::new(root).save_inventory(&items).map_err(|e| format!("The inventory could not be saved: {}", e))?;
     let mut ids: Vec<&String> = applied.iter().collect();
     ids.sort();
     let text: String = ids.iter().map(|i| format!("{}\n", i)).collect();

@@ -320,6 +320,17 @@ export async function scanInboxDismiss(name: string): Promise<void> {
   if (inTauri) await call<void>('scan_inbox_dismiss', { name });
 }
 
+export interface SyncReport { added: number; removed: number; combined: number; notes: string[] }
+/** Copies of the inventory from the other editing device, waiting to be merged. */
+export async function syncInboxList(): Promise<string[]> {
+  if (inTauri) return call<string[]>('sync_inbox_list');
+  return [];
+}
+export async function syncMerge(name: string): Promise<SyncReport> {
+  if (inTauri) return call<SyncReport>('sync_merge', { name });
+  return { added: 0, removed: 0, combined: 0, notes: [] };
+}
+
 export async function inventoryDelete(ids: string[]): Promise<Item[]> {
   if (inTauri) return call<Item[]>('inventory_delete', { ids });
   memItems = memItems.filter((i) => !ids.includes(i.id));

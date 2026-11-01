@@ -2,7 +2,7 @@
 
 use std::fmt;
 
-pub const HEADER: &str = "id,category,name,location,quantity,unit,use_per_day,use_by,notes,brand,size,for_whom,bought,target,condition,checked,cost,source,serial";
+pub const HEADER: &str = "id,category,name,location,quantity,unit,use_per_day,use_by,notes,brand,size,for_whom,bought,target,condition,checked,cost,source,serial,uid,changed,counts";
 /// The first nine columns are the original layout; files written before the extra columns are still read.
 const CORE_COLUMNS: usize = 9;
 
@@ -38,6 +38,12 @@ pub struct Item {
     pub source: String,
     /// Model or serial number.
     pub serial: String,
+    /// Same on every device for the same line, so two copies of the inventory can be merged. Filled in on save.
+    pub uid: String,
+    /// UTC time (YYYY-MM-DDTHH:MM:SSZ) this line last changed. Filled in on save.
+    pub changed: String,
+    /// Each device's running totals of stock added and taken out of this line (see sync.rs). Filled in on save.
+    pub counts: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -126,6 +132,9 @@ pub fn parse(csv: &str) -> Result<Vec<Item>, ParseError> {
             cost: num(&extra(7), "cost")?,
             source: extra(8),
             serial: extra(9),
+            uid: extra(10),
+            changed: extra(11),
+            counts: extra(12),
         });
     }
     Ok(items)
@@ -136,14 +145,21 @@ pub fn serialize(items: &[Item]) -> String {
     out.push('\n');
     for i in items {
         out.push_str(&format!(
-            "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}\n",
+            "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}\n",
             quote(&i.id), quote(&i.category), quote(&i.name), quote(&i.location), i.quantity,
             quote(&i.unit), i.use_per_day, quote(&i.use_by), quote(&i.notes),
             quote(&i.brand), quote(&i.size), quote(&i.for_whom), quote(&i.bought), i.target,
-            quote(&i.condition), quote(&i.checked), i.cost, quote(&i.source), quote(&i.serial)
+            quote(&i.condition), quote(&i.checked), i.cost, quote(&i.source), quote(&i.serial),
+            quote(&i.uid), quote(&i.changed), quote(&i.counts)
         ));
     }
     out
+}
+
+/// True when two lines say the same thing, ignoring the local number, the merge id and the change time.
+pub fn same_content(a: &Item, b: &Item) -> bool {
+    let strip = |i: &Item| Item { id: String::new(), uid: String::new(), changed: String::new(), counts: String::new(), ..i.clone() };
+    strip(a) == strip(b)
 }
 
 /// Whole days the item lasts at the current use rate, or None if it is not used up daily.

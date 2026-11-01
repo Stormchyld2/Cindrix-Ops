@@ -98,11 +98,139 @@ impl UserDir {
     }
 
     pub fn save_inventory(&self, items: &[Item]) -> Result<(), String> {
+        // Give every line a merge id, record how its quantity moved, and stamp the lines that are new or different.
+        let before: Vec<Item> = match fs::read_to_string(self.inventory_path()) {
+            Ok(t) => inventory::parse(&t).unwrap_or_default(),
+            Err(_) => Vec::new(),
+        };
+        let device = self.device_id();
+        let now = Self::now_stamp();
+        let stamped: Vec<Item> = items
+            .iter()
+            .map(|i| {
+                let old = before.iter().find(|b| b.id == i.id);
+                let mut n = i.clone();
+                if n.uid.is_empty() {
+                    n.uid = old.map(|o| o.uid.clone()).filter(|u| !u.is_empty()).unwrap_or_else(crate::sync::new_uid);
+                }
+                let unchanged = old.map(|o| inventory::same_content(o, &n) && o.quantity == n.quantity).unwrap_or(false);
+                if unchanged && old.map(|o| !o.counts.is_empty()).unwrap_or(false) {
+                    n.counts = old.map(|o| o.counts.clone()).unwrap_or_default();
+                    n.changed = old.map(|o| o.changed.clone()).unwrap_or_default();
+                } else {
+                    crate::sync::record_local_change(old, &mut n, &device);
+                    if !unchanged || n.changed.is_empty() {
+                        n.changed = now.clone();
+                    }
+                }
+                n
+            })
+            .collect();
+        // Remember what was deleted, so a merge does not bring it back.
+        let kept: std::collections::HashSet<&str> = stamped.iter().map(|i| i.uid.as_str()).collect();
+        let mut tombs = self.load_tombstones();
+        for o in before.iter().filter(|o| !o.uid.is_empty() && !kept.contains(o.uid.as_str())) {
+            tombs.insert(o.uid.clone(), now.clone());
+        }
+        self.write_inventory_raw(&stamped)?;
+        self.write_tombstones(&tombs)
+    }
+
+    fn now_stamp() -> String {
+        crate::stocklist::utc_stamp(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0))
+    }
+
+    /// A short name for this device in the per-device totals; made once and kept in `sync/device-id.txt`.
+    pub fn device_id(&self) -> String {
+        let path = self.root.join("sync").join("device-id.txt");
+        if let Ok(t) = fs::read_to_string(&path) {
+            let t = t.trim().to_string();
+            if !t.is_empty() {
+                return t;
+            }
+        }
+        let id: String = crate::sync::new_uid().chars().filter(|c| c.is_ascii_alphanumeric()).rev().take(8).collect();
+        let _ = fsio::write_atomic(&path, id.as_bytes());
+        id
+    }
+
+    fn tombstones_path(&self) -> PathBuf {
+        self.root.join("sync").join("deleted.csv")
+    }
+    pub fn load_tombstones(&self) -> crate::sync::Tombstones {
+        crate::sync::parse_tombstones(&fs::read_to_string(self.tombstones_path()).unwrap_or_default())
+    }
+    fn write_tombstones(&self, t: &crate::sync::Tombstones) -> Result<(), String> {
+        let text = crate::sync::format_tombstones(t);
+        fsio::write_atomic(&self.tombstones_path(), text.as_bytes()).map_err(|e| e.to_string())?;
+        let _ = fsio::write_atomic(&self.root.join("outbox").join("inventory-deleted.csv"), text.as_bytes());
+        Ok(())
+    }
+
+    /// Writes exactly these lines (backed up first), plus the read-only copies for the phones and the other device.
+    fn write_inventory_raw(&self, items: &[Item]) -> Result<(), String> {
         let csv = inventory::serialize(items);
         fsio::backup_then_write(&self.inventory_path(), &self.backups(), csv.as_bytes()).map_err(|e| e.to_string())?;
-        // The read-only copy for the phone apps. A failure here must never undo the real save.
+        // The copies must never undo the real save.
         let _ = self.write_stock_list(items);
+        let _ = fsio::write_atomic(&self.sync_export_path(), csv.as_bytes());
         Ok(())
+    }
+
+    fn sync_inbox(&self) -> PathBuf {
+        self.root.join("inbox").join("sync")
+    }
+    fn sync_name_ok(name: &str) -> bool {
+        name.starts_with("inventory-sync") && name.ends_with(".csv") && name.len() <= 120 && !name.contains(['/', '\\', ':'])
+    }
+    /// Copies from the other editing device waiting in `inbox/sync/`.
+    pub fn sync_files_waiting(&self) -> Vec<String> {
+        let mut v: Vec<String> = fs::read_dir(self.sync_inbox())
+            .map(|rd| rd.flatten().map(|e| e.file_name().to_string_lossy().to_string()).filter(|n| Self::sync_name_ok(n)).collect())
+            .unwrap_or_default();
+        v.sort();
+        v
+    }
+    /// Merge a waiting copy (and its `inventory-deleted...` partner, if sent) and move both to `done/`.
+    pub fn merge_waiting(&self, name: &str) -> Result<crate::sync::MergeReport, String> {
+        if !Self::sync_name_ok(name) {
+            return Err("That file could not be found.".into());
+        }
+        let dir = self.sync_inbox();
+        let text = fs::read_to_string(dir.join(name)).map_err(|_| "That file could not be found.".to_string())?;
+        let partner = name.replacen("inventory-sync", "inventory-deleted", 1);
+        let deleted = fs::read_to_string(dir.join(&partner)).unwrap_or_default();
+        let report = self.merge_in(&text, &deleted)?;
+        let done = dir.join("done");
+        fs::create_dir_all(&done).map_err(|e| e.to_string())?;
+        let _ = fs::rename(dir.join(name), done.join(name));
+        let _ = fs::rename(dir.join(&partner), done.join(&partner));
+        Ok(report)
+    }
+
+    /// `outbox/inventory-sync.csv` (with `inventory-deleted.csv` beside it): this device's whole inventory,
+    /// for the other editing device to merge.
+    pub fn sync_export_path(&self) -> PathBuf {
+        self.root.join("outbox").join("inventory-sync.csv")
+    }
+
+    /// Merge the other device's copy into this one (docs/39). Safe to repeat and safe in any order.
+    /// Nothing is changed if the copy cannot be read.
+    pub fn merge_in(&self, theirs_text: &str, theirs_deleted_text: &str) -> Result<crate::sync::MergeReport, String> {
+        let theirs = inventory::parse(theirs_text).map_err(|e| format!("That is not an inventory copy: {}", e))?;
+        if theirs.iter().any(|i| i.uid.is_empty()) {
+            return Err("That copy was saved by an older version. Open and save it once in the newer Ops, then send it again.".into());
+        }
+        let mut mine = self.load_inventory()?;
+        if mine.iter().any(|i| i.uid.is_empty() || i.counts.is_empty()) {
+            self.save_inventory(&mine)?; // gives older lines their ids and totals
+            mine = self.load_inventory()?;
+        }
+        let (merged, tombs, report) =
+            crate::sync::merge(&mine, &theirs, &self.load_tombstones(), &crate::sync::parse_tombstones(theirs_deleted_text), &self.device_id());
+        self.write_inventory_raw(&merged)?;
+        self.write_tombstones(&tombs)?;
+        Ok(report)
     }
 
     // ---------- tasks, calendar events, projects and the change log (core/src/ops.rs) ----------
@@ -228,6 +356,95 @@ mod tests {
     fn item(id: &str) -> Item {
         Item { id: id.into(), category: "Water".into(), name: "Jug".into(), location: "Pantry".into(),
                quantity: 3.0, unit: "gal".into(), use_per_day: 1.0, use_by: "".into(), notes: "".into(), ..Default::default() }
+    }
+
+    fn exchange(from: &UserDir, to: &UserDir) -> crate::sync::MergeReport {
+        let inv = fs::read_to_string(from.sync_export_path()).unwrap();
+        let del = fs::read_to_string(from.root.join("outbox").join("inventory-deleted.csv")).unwrap_or_default();
+        to.merge_in(&inv, &del).unwrap()
+    }
+
+    #[test]
+    fn two_editing_devices_merge_through_files() {
+        let a = UserDir::new(&tmp("laptop"));
+        let b = UserDir::new(&tmp("phone"));
+        a.save_inventory(&[item("1")]).unwrap(); // Jug, 3
+        exchange(&a, &b);
+        assert_eq!(b.load_inventory().unwrap().len(), 1);
+        assert_ne!(a.device_id(), b.device_id());
+
+        // both change the quantity while apart: +6 on the laptop, -1 on the phone
+        let mut x = a.load_inventory().unwrap();
+        x[0].quantity += 6.0;
+        a.save_inventory(&x).unwrap();
+        let mut y = b.load_inventory().unwrap();
+        y[0].quantity -= 1.0;
+        b.save_inventory(&y).unwrap();
+
+        exchange(&b, &a);
+        exchange(&a, &b);
+        assert_eq!(a.load_inventory().unwrap()[0].quantity, 8.0);
+        assert_eq!(b.load_inventory().unwrap()[0].quantity, 8.0);
+        // the same files again, and a reply that never arrived: nothing moves
+        exchange(&b, &a);
+        exchange(&a, &b);
+        exchange(&a, &b);
+        assert_eq!(a.load_inventory().unwrap()[0].quantity, 8.0);
+        assert_eq!(b.load_inventory().unwrap()[0].quantity, 8.0);
+        assert_eq!(a.load_inventory().unwrap().len(), 1);
+    }
+
+    #[test]
+    fn a_line_deleted_on_one_device_is_deleted_on_the_other() {
+        let a = UserDir::new(&tmp("del-a"));
+        let b = UserDir::new(&tmp("del-b"));
+        a.save_inventory(&[item("1"), item("2")]).unwrap();
+        exchange(&a, &b);
+        let keep = vec![a.load_inventory().unwrap().remove(0)];
+        a.save_inventory(&keep).unwrap();
+        exchange(&a, &b);
+        assert_eq!(b.load_inventory().unwrap().len(), 1);
+        exchange(&b, &a);
+        assert_eq!(a.load_inventory().unwrap().len(), 1);
+    }
+
+    #[test]
+    fn saving_gives_lines_an_id_and_only_restamps_what_changed() {
+        let u = UserDir::new(&tmp("stamp"));
+        u.save_inventory(&[item("1"), item("2")]).unwrap();
+        let first = u.load_inventory().unwrap();
+        assert!(!first[0].uid.is_empty() && first[0].uid != first[1].uid);
+        assert!(!first[0].counts.is_empty());
+        let mut again = first.clone();
+        again[1].quantity = 9.0;
+        u.save_inventory(&again).unwrap();
+        let second = u.load_inventory().unwrap();
+        assert_eq!(second[0].uid, first[0].uid);
+        assert_eq!(second[0].counts, first[0].counts);
+        assert_eq!(second[0].changed, first[0].changed);
+        assert!(second[1].counts != first[1].counts);
+    }
+
+    #[test]
+    fn a_waiting_copy_is_merged_and_moved_aside() {
+        let a = UserDir::new(&tmp("w-a"));
+        let b = UserDir::new(&tmp("w-b"));
+        a.save_inventory(&[item("1")]).unwrap();
+        let inbox = b.root.join("inbox").join("sync");
+        fs::create_dir_all(&inbox).unwrap();
+        fs::copy(a.sync_export_path(), inbox.join("inventory-sync-laptop.csv")).unwrap();
+        fs::write(inbox.join("notes.csv"), "x").unwrap();
+        assert_eq!(b.sync_files_waiting(), vec!["inventory-sync-laptop.csv".to_string()]);
+        let r = b.merge_waiting("inventory-sync-laptop.csv").unwrap();
+        assert_eq!(r.added, 1);
+        assert!(b.sync_files_waiting().is_empty());
+        assert!(b.merge_waiting("../inventory.csv").is_err());
+    }
+
+    #[test]
+    fn unreadable_copies_are_refused() {
+        let u = UserDir::new(&tmp("bad"));
+        assert!(u.merge_in("nonsense", "").is_err());
     }
 
     #[test]

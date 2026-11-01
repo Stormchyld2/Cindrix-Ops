@@ -45,16 +45,27 @@ read the same file. The phones never edit it.
 
 Two devices may change it: the Windows computer, and the Android phone hosting the server (the Note10).
 Later, when only phones are left to save power, the phone host is the only one. Scan and Pocket never change it;
-Scan sends add and take-out files. Two editors need a merge so nothing is lost; the plan is in the next section.
+Scan sends add and take-out files.
 
-## Merge between the two editors (planned, not built)
+## Keeping the two copies together (`core/src/sync.rs`, built)
 
-Each inventory line gets a stable id and a last-changed time; each change is also logged as a small delta
-(add 6, take out 1) with a unique id. Merging two copies applies every delta once (like Scan's `scan_id`) and,
-for edits to other fields, the newest change to a line wins. Quantities never overwrite each other.
+Every save writes `user/outbox/inventory-sync.csv` (the whole inventory) and `inventory-deleted.csv` (what was
+deleted). Send both to the other device with AirLink or by hand and put them in its `user/inbox/sync/`. Inventory then
+shows "A copy of the inventory from your other device" with a "Join with mine" button. Send yours the other way.
+
+How the join works, and why it cannot lose or double-count stock:
+- Every line has a `uid` that is the same on both devices, and a time it last changed.
+- Every device keeps its own running totals per line: all it has added and all it has taken out (`counts`, e.g.
+  `ab12:16:0;cd34:0:1`). The quantity is adds minus take-outs. Joining keeps the larger total for each device, so +6 on
+  the laptop and -1 on the phone gives +5 whichever meets first. The same file joined twice, or a copy sent again because a
+  reply got lost, changes nothing.
+- Name, place, use-by and the other fields: the newer change to a line wins, and the person is told when the
+  other copy had a different value.
+- A deleted line is remembered with its time and stays deleted on both, unless it was changed after.
+- A copy saved by an older version has no line ids; open and save it once in the newer Ops, then send it.
+- Taking in a Scan file goes through the same save, so those changes are counted for this device too.
 
 ## Not built yet
 
-- Moving the stock list to the phones without a file picker (Hub Wi-Fi, AirLink).
-- The Windows computer keeping a read-only mirror of the phone host's inventory (needs the full inventory, not just
-  the stock list; to be designed with the Android host).
+- Moving the stock list and the sync files without hand-carrying them (Hub Wi-Fi, AirLink receive folder).
+- Cindrix Pocket reading the stock list.

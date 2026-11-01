@@ -1423,7 +1423,7 @@ impl From<ItemDto> for Item {
         Item { id: d.id, category: d.category, name: d.name, location: d.location, quantity: d.quantity,
                unit: d.unit, use_per_day: d.use_per_day, use_by: d.use_by, notes: d.notes,
                brand: d.brand, size: d.size, for_whom: d.for_whom, bought: d.bought, target: d.target, condition: d.condition,
-               checked: d.checked, cost: d.cost, source: d.source, serial: d.serial }
+               checked: d.checked, cost: d.cost, source: d.source, serial: d.serial, ..Default::default() }
     }
 }
 
@@ -1529,6 +1529,26 @@ fn scan_inbox_accept(name: String) -> Result<ScanReportDto, String> {
 #[tauri::command]
 fn scan_inbox_dismiss(name: String) -> Result<(), String> {
     cindrix_core::scaninbox::dismiss(&user().root, &name)
+}
+
+#[derive(Serialize)]
+struct SyncReportDto {
+    added: usize,
+    removed: usize,
+    combined: usize,
+    notes: Vec<String>,
+}
+
+/// Copies of the inventory from the other editing device, waiting to be merged (docs/39).
+#[tauri::command]
+fn sync_inbox_list() -> Vec<String> {
+    user().sync_files_waiting()
+}
+
+#[tauri::command]
+fn sync_merge(name: String) -> Result<SyncReportDto, String> {
+    let r = user().merge_waiting(&name)?;
+    Ok(SyncReportDto { added: r.added, removed: r.removed, combined: r.quantities_combined, notes: r.notes })
 }
 
 #[derive(Serialize)]
@@ -2887,6 +2907,8 @@ pub fn run() {
             scan_inbox_preview,
             scan_inbox_accept,
             scan_inbox_dismiss,
+            sync_inbox_list,
+            sync_merge,
             what_fails_next,
             family_status,
             export_text,

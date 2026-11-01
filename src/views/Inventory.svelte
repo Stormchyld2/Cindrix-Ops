@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { inventoryList, inventorySave, inventoryDelete, scanInboxList, scanInboxPreview, scanInboxAccept, scanInboxDismiss, stockNeeds, profileLoad, type Item, type Need, type ScanFile, type ScanLine } from '../lib/api';
+  import { inventoryList, inventorySave, inventoryDelete, scanInboxList, scanInboxPreview, scanInboxAccept, scanInboxDismiss, syncInboxList, syncMerge, stockNeeds, profileLoad, type Item, type Need, type ScanFile, type ScanLine } from '../lib/api';
   import { onMount } from 'svelte';
   import { categories, categoryHint, categoryUnits, categoryAsk, forWhomChoices, conditionChoices } from '../lib/categories';
   import { learner, loadPeople } from '../lib/learner.svelte';
@@ -113,10 +113,29 @@
     try { await scanInboxDismiss(name); peek = ''; await loadWaiting(); } catch (e) { error = String(e); }
   }
 
+  // A copy of the inventory from the other editing device (the Windows computer or the phone that hosts the server).
+  let syncWaiting: string[] = $state([]);
+  async function loadSync() {
+    try { syncWaiting = await syncInboxList(); } catch { syncWaiting = []; }
+  }
+  async function mergeCopy(name: string) {
+    try {
+      const r = await syncMerge(name);
+      const bits = [];
+      if (r.added) bits.push(`${r.added} new`);
+      if (r.removed) bits.push(`${r.removed} removed`);
+      if (r.combined) bits.push(`${r.combined} counts combined`);
+      scanNote = 'Joined with the other copy' + (bits.length ? ': ' + bits.join(', ') : ': nothing differed') + '.' + (r.notes.length ? ' ' + r.notes.join(' ') : '');
+      await loadSync();
+      await load();
+    } catch (e) { error = String(e); }
+  }
+
   onMount(async () => {
     if (!learner.loaded) void loadPeople();
     await load();
     await loadWaiting();
+    await loadSync();
   });
 
   async function load() {
@@ -203,6 +222,19 @@
 {#if error}<div class="warn" role="alert">{error}</div>{/if}
 
 {#if scanNote}<div class="okbar" role="status">{scanNote} <button class="mini" onclick={() => (scanNote = '')}>OK</button></div>{/if}
+
+{#if syncWaiting.length}
+  <section class="panel waiting" aria-label="Copy from the other device">
+    <h2>A copy of the inventory from your other device</h2>
+    <p class="muted">Joining keeps both sets of changes. Counts are added together, not replaced.</p>
+    {#each syncWaiting as n (n)}
+      <div class="wrow">
+        <div class="grow"><strong>{n}</strong></div>
+        <button class="btn primary" onclick={() => mergeCopy(n)} title="Join this copy with yours">Join with mine</button>
+      </div>
+    {/each}
+  </section>
+{/if}
 
 {#if waiting.length}
   <section class="panel waiting" aria-label="Waiting from Scan">
