@@ -34,7 +34,27 @@ line, added, or set aside ("Not now"). Nothing changes until "Add to inventory".
 
 None of these commands is allowed for guests (not in the guest list in `share.rs`).
 
+## The way back: the stock list (`core/src/stocklist.rs`)
+
+Every time the inventory is saved, Ops also writes `user/outbox/stock-list.csv` (`#cindrix-stock-list v1`,
+columns `name,barcode,unit,location,qty,use_by,category,updated`; used-up lines left out; the barcode is the one
+Scan left in the notes). Cindrix Scan reads it for its "In stock" tab and its "On hand" line. Cindrix Pocket will
+read the same file. The phones never edit it.
+
+## Who changes the inventory (owner, 2026-11-01)
+
+Two devices may change it: the Windows computer, and the Android phone hosting the server (the Note10).
+Later, when only phones are left to save power, the phone host is the only one. Scan and Pocket never change it;
+Scan sends add and take-out files. Two editors need a merge so nothing is lost; the plan is in the next section.
+
+## Merge between the two editors (planned, not built)
+
+Each inventory line gets a stable id and a last-changed time; each change is also logged as a small delta
+(add 6, take out 1) with a unique id. Merging two copies applies every delta once (like Scan's `scan_id`) and,
+for edits to other fields, the newest change to a line wins. Quantities never overwrite each other.
+
 ## Not built yet
 
-The way back: Ops writing its stock list for Scan (names, units, places, how many on hand) so Scan's catalog
-matches Ops and shows what is already in stock.
+- Moving the stock list to the phones without a file picker (Hub Wi-Fi, AirLink).
+- The Windows computer keeping a read-only mirror of the phone host's inventory (needs the full inventory, not just
+  the stock list; to be designed with the Android host).

@@ -75,6 +75,15 @@ impl UserDir {
         }
         fs::remove_file(self.root.join("chats").join(name)).map_err(|e| e.to_string())
     }
+    /// `outbox/stock-list.csv`: what the phone apps read (docs/39).
+    pub fn stock_list_path(&self) -> PathBuf {
+        self.root.join("outbox").join("stock-list.csv")
+    }
+    pub fn write_stock_list(&self, items: &[Item]) -> std::io::Result<()> {
+        let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
+        let stamp = crate::stocklist::utc_stamp(secs);
+        fsio::write_atomic(&self.stock_list_path(), crate::stocklist::build(items, &stamp).as_bytes())
+    }
     pub fn backups(&self) -> PathBuf {
         self.root.join("backups")
     }
@@ -90,7 +99,10 @@ impl UserDir {
 
     pub fn save_inventory(&self, items: &[Item]) -> Result<(), String> {
         let csv = inventory::serialize(items);
-        fsio::backup_then_write(&self.inventory_path(), &self.backups(), csv.as_bytes()).map_err(|e| e.to_string())
+        fsio::backup_then_write(&self.inventory_path(), &self.backups(), csv.as_bytes()).map_err(|e| e.to_string())?;
+        // The read-only copy for the phone apps. A failure here must never undo the real save.
+        let _ = self.write_stock_list(items);
+        Ok(())
     }
 
     // ---------- tasks, calendar events, projects and the change log (core/src/ops.rs) ----------
