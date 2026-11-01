@@ -299,6 +299,27 @@ export async function inventorySave(item: Item): Promise<Item[]> {
   return memItems.map(decorate);
 }
 
+export interface ScanFile { name: string; from: string; adds: number; removes: number; modified: number }
+export interface ScanLine { remove: boolean; name: string; qty: number; unit: string; use_by: string; location: string }
+export interface ScanReport { added: number; removed: number; repeated: number; missing: string[] }
+
+/** Files left by Cindrix Scan, waiting to be added to the inventory. */
+export async function scanInboxList(): Promise<ScanFile[]> {
+  if (inTauri) return call<ScanFile[]>('scan_inbox_list');
+  return [];
+}
+export async function scanInboxPreview(name: string): Promise<ScanLine[]> {
+  if (inTauri) return call<ScanLine[]>('scan_inbox_preview', { name });
+  return [];
+}
+export async function scanInboxAccept(name: string): Promise<ScanReport> {
+  if (inTauri) return call<ScanReport>('scan_inbox_accept', { name });
+  return { added: 0, removed: 0, repeated: 0, missing: [] };
+}
+export async function scanInboxDismiss(name: string): Promise<void> {
+  if (inTauri) await call<void>('scan_inbox_dismiss', { name });
+}
+
 export async function inventoryDelete(ids: string[]): Promise<Item[]> {
   if (inTauri) return call<Item[]>('inventory_delete', { ids });
   memItems = memItems.filter((i) => !ids.includes(i.id));

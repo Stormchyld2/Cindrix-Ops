@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { inventoryList, inventorySave, inventoryDelete, stockNeeds, profileLoad, type Item, type Need } from '../lib/api';
+  import { inventoryList, inventorySave, inventoryDelete, scanInboxList, scanInboxPreview, scanInboxAccept, scanInboxDismiss, stockNeeds, profileLoad, type Item, type Need, type ScanFile, type ScanLine } from '../lib/api';
   import { onMount } from 'svelte';
   import { categories, categoryHint, categoryUnits, categoryAsk, forWhomChoices, conditionChoices } from '../lib/categories';
   import { learner, loadPeople } from '../lib/learner.svelte';
@@ -84,9 +84,39 @@
     return { id: '', category: 'Water', name: '', location: '', quantity: 1, unit: '', use_per_day: 0, use_by: '', notes: '', brand: '', size: '', for_whom: '', bought: '', target: 0, condition: '', checked: '', cost: 0, source: '', serial: '' };
   }
 
+  // Files left by Cindrix Scan, waiting until the person says to add them.
+  let waiting: ScanFile[] = $state([]);
+  let peek = $state('');
+  let peekLines: ScanLine[] = $state([]);
+  let scanNote = $state('');
+  async function loadWaiting() {
+    try { waiting = await scanInboxList(); } catch { waiting = []; }
+  }
+  async function look(name: string) {
+    if (peek === name) { peek = ''; return; }
+    try { peekLines = await scanInboxPreview(name); peek = name; } catch (e) { error = String(e); }
+  }
+  async function takeIn(name: string) {
+    try {
+      const r = await scanInboxAccept(name);
+      const bits = [];
+      if (r.added) bits.push(`${r.added} added`);
+      if (r.removed) bits.push(`${r.removed} taken out`);
+      if (r.repeated) bits.push(`${r.repeated} already done before`);
+      scanNote = bits.join(', ') + '.' + (r.missing.length ? ` There was less than expected of: ${r.missing.join(', ')}.` : '');
+      peek = '';
+      await loadWaiting();
+      await load();
+    } catch (e) { error = String(e); }
+  }
+  async function setAside(name: string) {
+    try { await scanInboxDismiss(name); peek = ''; await loadWaiting(); } catch (e) { error = String(e); }
+  }
+
   onMount(async () => {
     if (!learner.loaded) void loadPeople();
     await load();
+    await loadWaiting();
   });
 
   async function load() {
@@ -171,6 +201,33 @@
 </section>
 
 {#if error}<div class="warn" role="alert">{error}</div>{/if}
+
+{#if scanNote}<div class="okbar" role="status">{scanNote} <button class="mini" onclick={() => (scanNote = '')}>OK</button></div>{/if}
+
+{#if waiting.length}
+  <section class="panel waiting" aria-label="Waiting from Scan">
+    <h2>Waiting from your phone ({waiting.length})</h2>
+    <p class="muted">Lists sent by Cindrix Scan. Nothing changes until you add them.</p>
+    {#each waiting as w (w.name)}
+      <div class="wrow">
+        <div class="grow">
+          <strong>{w.from || 'A phone'}</strong>
+          <span class="muted">: {w.adds} to add{w.removes ? `, ${w.removes} to take out` : ''}</span>
+        </div>
+        <button class="btn" onclick={() => look(w.name)}>{peek === w.name ? 'Hide' : 'Look'}</button>
+        <button class="btn primary" onclick={() => takeIn(w.name)} title="Put these into your inventory">Add to inventory</button>
+        <button class="btn" onclick={() => setAside(w.name)} title="Set this list aside without using it">Not now</button>
+      </div>
+      {#if peek === w.name}
+        <ul class="plines">
+          {#each peekLines as l}
+            <li>{l.remove ? 'Take out' : 'Add'} {l.qty} {l.unit} {l.name}{l.use_by ? `, use by ${l.use_by}` : ''}{l.location ? `, ${l.location}` : ''}</li>
+          {/each}
+        </ul>
+      {/if}
+    {/each}
+  </section>
+{/if}
 
 <div class="layout">
   <aside class="panel">
@@ -421,4 +478,8 @@
   .need .grow { flex: 1; }
   .block { display: block; }
   .done { padding: 10px 12px; border: 1px solid var(--blue-line); background: var(--blue-soft); border-radius: 8px; }
+  .waiting { margin: 0 0 1rem; padding: 0.8rem 1rem; }
+  .wrow { display: flex; gap: 0.5rem; align-items: center; margin: 0.4rem 0; flex-wrap: wrap; }
+  .plines { margin: 0.2rem 0 0.6rem 1rem; font-size: 0.9rem; }
+  .okbar { padding: 0.6rem 1rem; margin: 0 0 1rem; border-radius: 10px; background: var(--panel, #2a2e33); }
 </style>

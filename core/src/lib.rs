@@ -54,6 +54,7 @@ pub mod seasons;
 pub mod seeds;
 pub mod seedlist;
 pub mod safety;
+pub mod scaninbox;
 pub mod userdata;
 pub mod xz;
 pub mod zim;

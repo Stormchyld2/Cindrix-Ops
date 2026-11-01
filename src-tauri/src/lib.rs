@@ -1474,6 +1474,63 @@ fn inventory_delete(ids: Vec<String>) -> Result<Vec<ItemDto>, String> {
     Ok(items.iter().map(|i| to_dto(i, &t)).collect())
 }
 
+// ---------- files waiting from Cindrix Scan (docs/39) ----------
+
+#[derive(Serialize)]
+struct ScanFileDto {
+    name: String,
+    from: String,
+    adds: usize,
+    removes: usize,
+    modified: u64,
+}
+
+#[derive(Serialize)]
+struct ScanLineDto {
+    remove: bool,
+    name: String,
+    qty: f64,
+    unit: String,
+    use_by: String,
+    location: String,
+}
+
+#[derive(Serialize)]
+struct ScanReportDto {
+    added: usize,
+    removed: usize,
+    repeated: usize,
+    missing: Vec<String>,
+}
+
+#[tauri::command]
+fn scan_inbox_list() -> Vec<ScanFileDto> {
+    cindrix_core::scaninbox::list(&user().root)
+        .into_iter()
+        .map(|f| ScanFileDto { name: f.name, from: f.from, adds: f.adds, removes: f.removes, modified: f.modified })
+        .collect()
+}
+
+#[tauri::command]
+fn scan_inbox_preview(name: String) -> Result<Vec<ScanLineDto>, String> {
+    Ok(cindrix_core::scaninbox::preview(&user().root, &name)?
+        .into_iter()
+        .map(|l| ScanLineDto { remove: l.remove, name: l.name, qty: l.qty, unit: l.unit, use_by: l.use_by, location: l.location })
+        .collect())
+}
+
+#[tauri::command]
+fn scan_inbox_accept(name: String) -> Result<ScanReportDto, String> {
+    let u = user();
+    let r = cindrix_core::scaninbox::accept(&u.root, &u.backups(), &name)?;
+    Ok(ScanReportDto { added: r.added, removed: r.removed, repeated: r.repeated, missing: r.missing })
+}
+
+#[tauri::command]
+fn scan_inbox_dismiss(name: String) -> Result<(), String> {
+    cindrix_core::scaninbox::dismiss(&user().root, &name)
+}
+
 #[derive(Serialize)]
 struct RunsOutDto {
     name: String,
@@ -2826,6 +2883,10 @@ pub fn run() {
             inventory_list,
             inventory_save_item,
             inventory_delete,
+            scan_inbox_list,
+            scan_inbox_preview,
+            scan_inbox_accept,
+            scan_inbox_dismiss,
             what_fails_next,
             family_status,
             export_text,
