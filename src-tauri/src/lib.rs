@@ -1532,6 +1532,50 @@ fn scan_inbox_dismiss(name: String) -> Result<(), String> {
 }
 
 #[derive(Serialize)]
+struct SafeBackupDto {
+    name: String,
+    size: u64,
+    modified: u64,
+    items: usize,
+    problem: String,
+}
+
+fn safe_dto(b: cindrix_core::safebackup::BackupInfo) -> SafeBackupDto {
+    SafeBackupDto { name: b.name, size: b.size, modified: b.modified, items: b.items, problem: b.problem }
+}
+
+#[tauri::command]
+fn safe_backups_waiting() -> Vec<SafeBackupDto> {
+    cindrix_core::safebackup::waiting(&user().root).into_iter().map(safe_dto).collect()
+}
+
+#[tauri::command]
+fn safe_backups_kept() -> Vec<SafeBackupDto> {
+    cindrix_core::safebackup::stored(&user().root).into_iter().map(safe_dto).collect()
+}
+
+#[tauri::command]
+fn safe_backup_keep(name: String) -> Result<(), String> {
+    cindrix_core::safebackup::keep(&user().root, &name).map(|_| ())
+}
+
+#[tauri::command]
+fn safe_backup_set_aside(name: String) -> Result<(), String> {
+    cindrix_core::safebackup::set_aside(&user().root, &name)
+}
+
+#[tauri::command]
+fn safe_backup_remove(name: String) -> Result<(), String> {
+    cindrix_core::safebackup::remove_kept(&user().root, &name)
+}
+
+/// Puts a copy in `user/outbox/safe/` and returns where it is, for sending back to the phone.
+#[tauri::command]
+fn safe_backup_to_outbox(name: String) -> Result<String, String> {
+    cindrix_core::safebackup::copy_to_outbox(&user().root, &name).map(|p| p.to_string_lossy().to_string())
+}
+
+#[derive(Serialize)]
 struct SyncReportDto {
     added: usize,
     removed: usize,
@@ -2907,6 +2951,12 @@ pub fn run() {
             scan_inbox_preview,
             scan_inbox_accept,
             scan_inbox_dismiss,
+            safe_backups_waiting,
+            safe_backups_kept,
+            safe_backup_keep,
+            safe_backup_set_aside,
+            safe_backup_remove,
+            safe_backup_to_outbox,
             sync_inbox_list,
             sync_merge,
             what_fails_next,

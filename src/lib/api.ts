@@ -320,6 +320,30 @@ export async function scanInboxDismiss(name: string): Promise<void> {
   if (inTauri) await call<void>('scan_inbox_dismiss', { name });
 }
 
+export interface SafeBackup { name: string; size: number; modified: number; items: number; problem: string }
+/** Backups sent by Cindrix Safe. Encrypted: Ops only keeps them and never opens them. Host only. */
+export async function safeBackupsWaiting(): Promise<SafeBackup[]> {
+  if (inTauri) return call<SafeBackup[]>('safe_backups_waiting');
+  return [];
+}
+export async function safeBackupsKept(): Promise<SafeBackup[]> {
+  if (inTauri) return call<SafeBackup[]>('safe_backups_kept');
+  return [];
+}
+export async function safeBackupKeep(name: string): Promise<void> {
+  if (inTauri) await call<void>('safe_backup_keep', { name });
+}
+export async function safeBackupSetAside(name: string): Promise<void> {
+  if (inTauri) await call<void>('safe_backup_set_aside', { name });
+}
+export async function safeBackupRemove(name: string): Promise<void> {
+  if (inTauri) await call<void>('safe_backup_remove', { name });
+}
+export async function safeBackupToOutbox(name: string): Promise<string> {
+  if (inTauri) return call<string>('safe_backup_to_outbox', { name });
+  return '';
+}
+
 export interface SyncReport { added: number; removed: number; combined: number; notes: string[] }
 /** Copies of the inventory from the other editing device, waiting to be merged. */
 export async function syncInboxList(): Promise<string[]> {

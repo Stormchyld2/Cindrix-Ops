@@ -54,6 +54,7 @@ pub mod seasons;
 pub mod seeds;
 pub mod seedlist;
 pub mod safety;
+pub mod safebackup;
 pub mod scaninbox;
 pub mod stocklist;
 pub mod sync;
