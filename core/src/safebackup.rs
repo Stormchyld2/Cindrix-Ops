@@ -217,7 +217,7 @@ const MAX_RECEIPTS: usize = 200;
 fn write_receipt(root: &Path, info: &BackupInfo) -> std::io::Result<()> {
     let path = receipts_path(root);
     let mut lines: Vec<String> = fs::read_to_string(&path)
-        .map(|t| t.lines().filter(|l| !l.starts_with('#') && !l.trim().is_empty()).map(|l| l.to_string()).collect())
+        .map(|t| t.lines().filter(|l| !l.starts_with('#') && !l.starts_with("name,size,") && !l.trim().is_empty()).map(|l| l.to_string()).collect())
         .unwrap_or_default();
     let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
     lines.push(format!("{},{},{}", info.name, info.size, now));
