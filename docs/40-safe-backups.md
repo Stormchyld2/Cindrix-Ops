@@ -30,6 +30,13 @@ Standard library only. It reads the zip's file list and the first bytes of `vaul
 - At most 5000 entries. Names cannot contain folders that climb out, because only the names above are allowed.
 - It does not decrypt or unpack anything. The files inside are sealed with a key only the Safe passphrase (or recovery code) opens.
 
+## The receipt (so the phone knows)
+
+When a backup is kept, Ops adds a line to `user/outbox/safe/received.csv` (`#cindrix-safe-receipts v1`, columns
+`name,size,kept_at` with `kept_at` in Unix seconds; newest last; the last 200 kept). A failed or set-aside file gets no
+line. Cindrix Safe reads this file to tell the person "Ops has your backup" (it matches the file name and size it wrote).
+If the phone and the drive share a folder, that is all it takes; otherwise copy or send the file back by hand.
+
 ## Host only
 
 None of these commands is in the guest list in `share.rs`, so guests cannot reach them.
@@ -44,7 +51,13 @@ asks for the Safe passphrase and never stores it.
 
 The exact file format is written in Cindrix-Formats, `docs/SAFE_BACKUP_FORMAT.md`.
 
+## Linking the phone to the folder (Safe 0.8.0)
+
+Safe can be linked once to the folder that holds `inbox/` and `outbox/` (the drive's `user` folder when the phone hosts Ops,
+or a Cindrix folder that AirLink or a shared drive keeps in step). After that, "Save to the linked folder" writes straight
+to `inbox/safe/` and "Check if Ops has it" reads `outbox/safe/received.csv`. Safe asks for access to that one folder only.
+
 ## Not built yet
 
-- Moving the files without hand-carrying them (Hub Wi-Fi, AirLink receive folder set up automatically).
-- Telling Safe, on the phone, that its backup arrived.
+- Carrying the folders between a phone and a computer that are not sharing storage (AirLink's receive folder and Hub Wi-Fi
+  still need their own work; the files themselves are ready for either).

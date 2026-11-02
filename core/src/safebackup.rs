@@ -201,7 +201,38 @@ pub fn keep(root: &Path, name: &str) -> Result<BackupInfo, String> {
         return Err(info.problem);
     }
     move_file(&inbox_dir(root).join(name), &store_dir(root), name)?;
+    // The receipt is a courtesy for the phone; failing to write it never undoes keeping the backup.
+    let _ = write_receipt(root, &info);
     Ok(info)
+}
+
+pub fn receipts_path(root: &Path) -> PathBuf {
+    root.join("outbox").join("safe").join("received.csv")
+}
+
+const RECEIPT_HEADER: &str = "#cindrix-safe-receipts v1";
+const MAX_RECEIPTS: usize = 200;
+
+/// Adds "this backup arrived" to `user/outbox/safe/received.csv`, for Safe to read (docs/40). Newest last.
+fn write_receipt(root: &Path, info: &BackupInfo) -> std::io::Result<()> {
+    let path = receipts_path(root);
+    let mut lines: Vec<String> = fs::read_to_string(&path)
+        .map(|t| t.lines().filter(|l| !l.starts_with('#') && !l.trim().is_empty()).map(|l| l.to_string()).collect())
+        .unwrap_or_default();
+    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
+    lines.push(format!("{},{},{}", info.name, info.size, now));
+    if lines.len() > MAX_RECEIPTS {
+        lines.drain(..lines.len() - MAX_RECEIPTS);
+    }
+    if let Some(dir) = path.parent() {
+        fs::create_dir_all(dir)?;
+    }
+    let mut text = format!("{}\nname,size,kept_at\n", RECEIPT_HEADER);
+    for l in lines {
+        text.push_str(&l);
+        text.push('\n');
+    }
+    fsio::write_atomic(&path, text.as_bytes())
 }
 
 /// Set a waiting file aside without keeping it (it moves to `done/`; nothing is deleted).
@@ -332,6 +363,27 @@ mod tests {
         assert_eq!(k.items, 2);
         assert_eq!(stored(&root).len(), 1);
         assert_eq!(waiting(&root).len(), 1);
+    }
+
+    #[test]
+    fn keeping_writes_a_receipt_for_the_phone() {
+        let root = tmp("receipt");
+        let inbox = inbox_dir(&root);
+        fs::create_dir_all(&inbox).unwrap();
+        fs::write(inbox.join("one.csbackup"), good()).unwrap();
+        fs::write(inbox.join("two.csbackup"), good()).unwrap();
+        keep(&root, "one.csbackup").unwrap();
+        keep(&root, "two.csbackup").unwrap();
+        let t = fs::read_to_string(receipts_path(&root)).unwrap();
+        let rows: Vec<&str> = t.lines().collect();
+        assert_eq!(rows[0], "#cindrix-safe-receipts v1");
+        assert_eq!(rows[1], "name,size,kept_at");
+        assert!(rows[2].starts_with(&format!("one.csbackup,{},", good().len())));
+        assert!(rows[3].starts_with("two.csbackup,"));
+        // A bad file earns no receipt.
+        fs::write(inbox.join("bad.csbackup"), b"junk").unwrap();
+        assert!(keep(&root, "bad.csbackup").is_err());
+        assert_eq!(fs::read_to_string(receipts_path(&root)).unwrap().lines().count(), 4);
     }
 
     #[test]
