@@ -76,6 +76,12 @@
           "note": "Based on the whole of Army FM 3-25.26 (Map Reading and Land Navigation; military-only parts left out), FM 21-76, USGS map symbol guidance and NOAA magnetic field information. Each lesson names its source. DRAFTS until a qualified reviewer signs them off."
         },
         {
+          "name": "Academy course: Casualty care in a crisis (5 modules, 20 lessons)",
+          "license": "Written for this project in our own words from public guidance",
+          "status": "in this build",
+          "note": "Based on the published Committee on Tactical Combat Casualty Care (CoTCCC) guidelines, Stop the Bleed (American College of Surgeons), the HHS CHEMM START triage algorithm, FEMA CERT Basic Training (public domain) and American Red Cross first aid guidance. Nothing is copied from any training school's course. No medicine doses. DRAFTS until a qualified reviewer signs them off; it does not replace a hands-on class."
+        },
+        {
           "name": "Academy courses added by you or others",
           "license": "Set by the author in each course's course.md",
           "status": "you add",

@@ -766,6 +766,43 @@ mod tests {
     }
 
     #[test]
+    fn every_shipped_course_names_sources_has_quizzes_and_never_gives_doses() {
+        let shipped = Path::new(env!("CARGO_MANIFEST_DIR")).join("../content/academy");
+        let l = load_dir(&shipped);
+        assert!(l.problems.is_empty(), "{:?}", l.problems);
+        let mut ids = std::collections::HashSet::new();
+        for c in &l.courses {
+            assert!(!c.title.is_empty(), "course {} needs a title", c.id);
+            // the original course (older layout, no course.md) is Cindrix's own; every other one must name its license
+            assert!(c.id == "survival-basics" || !c.license.is_empty(), "course {} needs a license", c.id);
+            for m in &c.modules {
+                assert!(!m.summary.is_empty(), "module {} has no summary", m.id);
+                for les in &m.lessons {
+                    assert!(ids.insert(les.id.clone()), "duplicate lesson {}", les.id);
+                    assert!(!les.source.is_empty(), "{} names no source", les.id);
+                    assert!(les.quiz.len() >= 3, "{} has {} quiz questions", les.id, les.quiz.len());
+                    let mut all = String::new();
+                    for b in &les.body {
+                        match b {
+                            Block::Heading(t) | Block::Para(t) | Block::Note(t) => all.push_str(&format!("{}\n", t)),
+                            Block::Bullets(v) | Block::Steps(v) => v.iter().for_each(|t| all.push_str(&format!("{}\n", t))),
+                            Block::Image { alt, .. } => all.push_str(&format!("{}\n", alt)),
+                        }
+                    }
+                    for q in &les.quiz {
+                        all.push_str(&q.text);
+                        q.options.iter().for_each(|o| all.push_str(&format!("\n{}", o)));
+                        all.push_str(&q.explain);
+                        all.push('\n');
+                    }
+                    assert!(!crate::safety::output_contains_dose(&all), "{} looks like it gives a dose", les.id);
+                }
+            }
+        }
+        assert!(l.courses.iter().any(|c| c.id == "casualty-care"));
+    }
+
+    #[test]
     fn the_template_course_is_a_valid_course_once_renamed() {
         let tpl = Path::new(env!("CARGO_MANIFEST_DIR")).join("../content/academy/_template-course");
         let d = tmp("tpl");
