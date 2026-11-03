@@ -88,6 +88,12 @@
           "note": "Based on American Academy of Pediatrics HealthyChildren.org, CDC, ACOG patient guidance, American Red Cross, National Institute on Aging (NIH), American Heart Association, SAMHSA 988, ASPCA Animal Poison Control and AVMA guidance. Nothing is copied from any training school's course. No medicine doses: it says what a medicine is for, the dangers and when to see a doctor. DRAFTS until a qualified reviewer signs them off; it does not replace a doctor or a hands-on class."
         },
         {
+          "name": "Academy course: Building your stash (5 modules, 15 lessons)",
+          "license": "Written for this project in our own words from public guidance",
+          "status": "in this build",
+          "note": "Based on Ready.gov / FEMA, CDC and EPA guidance on making water safe, CDC pool chemical safety, USDA Food Safety and Inspection Service, US university extension guidance on long-term food storage, CPSC and NFPA safety guidance and the USGS National Map. Prompted by a video of hardware-store items; nothing is copied from it, and its unsafe claims (food-unsafe buckets, tape on chest wounds, cord stitches) are corrected. No prices, no medicine doses. DRAFTS until a qualified reviewer signs them off."
+        },
+        {
           "name": "Academy courses added by you or others",
           "license": "Set by the author in each course's course.md",
           "status": "you add",
