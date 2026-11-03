@@ -23,6 +23,7 @@ Windows comes first; Android and iPhone wrap it later.
 - `core/src/ops.rs` is the connecting layer (to-do list, calendar, projects, the agenda, one search, links, change log; `user/tasks.txt`, `events.txt`, `projects.txt`): `docs/37-connecting-layer.md`. Host-only: none of its commands is allowed for guests. `core/src/seasons.rs` works out planting times and frost days for the calendar from the seed vault and My details.
 - `src/lib/tooltips.ts` gives every button hover text (fallback for new ones); `src/lib/planfacts.ts` works out what plan steps can tick themselves from.
 - `crypto/`: passphrase lock. `content/`: shipped sample content (cards, academy, plans). `docs/`: design docs, numbered. `licenses/`: license texts and credits; `scripts/collect-licenses.mjs` adds the libraries' own at build time.
+- `core/examples/`: small programs the CI jobs run (`make_zim`, `check_drive`, `cross_check`, `probe_*`). They look unused locally but CI needs them; do not delete (they were removed by mistake twice).
 - `mockups/`: design mockups. Match them when changing a screen.
 
 ## Direction (decided 2026-10-21; libraries and the share server are built but not run on real hardware, Android is not started; details in `docs/24-hosts-libraries-browser-clients.md`)
