@@ -74,7 +74,13 @@ foreach ($i in $items) {
   if ($s.kind -eq 'kiwix') {
     $listing = (& curl.exe -sL --fail --max-time 120 "$kiwix/$($s.dir)/") -join "`n"
     $names = [regex]::Matches($listing, [regex]::Escape($s.prefix) + '[0-9-]+\.zim(?![.\w])') | ForEach-Object { $_.Value } | Sort-Object -Unique
-    if (-not $names) { $row.note = "NOT FOUND on the server ($($s.dir)/$($s.prefix)*)" } else {
+    if (-not $names) {
+      # Say what is there instead, so a renamed or moved file can be spotted at once.
+      $stem = ($s.prefix -split '_')[0]
+      $similar = @([regex]::Matches($listing, '[\w.\-]*' + [regex]::Escape($stem) + '[\w.\-]*\.zim(?![.\w])') | ForEach-Object { $_.Value } | Sort-Object -Unique | Select-Object -First 5)
+      $hint = if ($similar.Count) { " Similar names there: $($similar -join ', ')" } else { " Nothing like '$stem' in $($s.dir)/ either." }
+      $row.note = "NOT FOUND on the server ($($s.dir)/$($s.prefix)*).$hint"
+    } else {
       $row.file = @($names)[-1]; $row.url = "$kiwix/$($s.dir)/$($row.file)"
       $b = Head $row.url
       if ($null -eq $b) { $row.note = 'server did not answer for this file' } else { $row.bytes = [math]::Max($b, 0) }
