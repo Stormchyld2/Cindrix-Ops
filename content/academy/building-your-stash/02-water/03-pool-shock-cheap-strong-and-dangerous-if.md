@@ -10,15 +10,39 @@ source: CDC pool chemical safety guidance (US government, public domain); CDC em
 
 ## Buy the right kind
 - Pure **calcium hypochlorite**, at about 65 to 78 percent strength, with **no other ingredients**.
-- **Not** the stabilised chlorine pucks or tablets (trichlor), not "shock plus algaecide", not clarifier or scented kinds.
+- **Not** the stabilised chlorine pucks (trichlor), not "shock plus algaecide", not clarifier or scented kinds.
 - Read the label for added ingredients.
 
-## Make a stock solution, then treat water
-The CDC method:
-1. **Stock:** stir **one heaping teaspoon** of granules into **two gallons** of water. Do it outside.
-2. **Use:** add **one part of stock to every 100 parts** of water you are treating. For example, a cup of stock for about six and a half gallons.
-3. Stir, wait 30 minutes. It should smell faintly of chlorine.
-4. Label the stock jar and do not drink it. Make a fresh batch regularly.
+## Step 1: make the stock solution (the "mother" batch)
+Do this **outside**, wearing gloves and eye protection.
+- **US measures:** stir **one heaping teaspoon** of granules into **two gallons** of water.
+- **Metric:** **5 mL (about 7 grams)** of granules into **7.5 litres** of water.
+- Stir until the granules are gone. Pour into a clean plastic or glass jug with a lid.
+- This stock is strong (about 500 parts per million of chlorine). **It is not for drinking.**
+- Label the jug **"CHLORINE STOCK - DO NOT DRINK"** with the date. Keep it closed, cool and dark. It weakens over days, so make a fresh batch about every week or two, only when you need it.
+
+## Step 2: add the stock to your water (1 part stock to 100 parts water)
+| Water to treat | Stock to add |
+|---|---|
+| 1 quart (1 litre) | 2 teaspoons (10 mL) |
+| 1 gallon (4 litres) | 2 1/2 tablespoons (about 40 mL) |
+| 5 gallons (20 litres) | about 3/4 cup plus 1 tablespoon (200 mL) |
+| 10 gallons (40 litres) | 1 1/2 cups plus 2 tablespoons (about 400 mL) |
+| 55-gallon drum (200 litres) | about 9 cups, or 2 quarts and 1 cup (2 litres) |
+
+Rule to remember: **about 1 cup of stock for every 6 1/2 gallons.** For any other amount, use **one part stock to 100 parts water**.
+
+## Step 3: mix, wait, test
+1. Stir or shake well.
+2. **Wait 30 minutes** (longer if the water is very cold).
+3. Smell it. It should have a **faint chlorine smell**. If there is none, add the same amount of stock again and wait another 15 minutes.
+4. If the water is cloudy, **let it settle and strain it first**, because mud and dirt use up the chlorine.
+5. If it tastes strongly of chlorine, pour it back and forth between clean containers, or let it stand uncovered for a few hours.
+
+## A worked example
+You have a 5-gallon water jug from a stream. Strain it, add **3/4 cup and 1 tablespoon** of stock, stir, wait 30 minutes, smell for chlorine. Done.
+
+Always check these amounts against the current CDC page ("Making Water Safe in an Emergency") before you rely on them.
 
 ## Handle it safely
 - **Wear gloves and eye protection.** Do not breathe the dust.
