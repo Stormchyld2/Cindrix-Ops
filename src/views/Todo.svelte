@@ -130,7 +130,7 @@
   .grow { flex: 1; min-width: 200px; }
   .filt { margin: 4px 0 8px; justify-content: space-between; }
   .gh { font-size: 14px; margin: 16px 0 6px; color: var(--muted); }
-  .gh.late { color: var(--accent); }
+  .gh.late { color: var(--warn); }
   .list { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
   .task { border: 1px solid var(--line); border-left: 3px solid var(--cat-ops); border-radius: 8px; background: var(--panel); padding: 8px 10px; }
   .task.isdone .title { text-decoration: line-through; color: var(--muted); }
@@ -138,7 +138,7 @@
   .title { flex: 1; min-width: 160px; text-align: left; border: 0; background: transparent; font-size: 15px; padding: 2px 0; }
   .title:hover { color: var(--blue); }
   .chip { font-family: var(--mono); font-size: 11px; padding: 2px 8px; border: 1px solid var(--line2); border-radius: 999px; color: var(--muted); }
-  .chip.late { border-color: var(--accent-line); color: var(--accent); }
+  .chip.late { border-color: var(--warn-line); color: var(--warn); }
   .chip.proj { border-color: var(--blue-line); color: var(--blue); }
   .x { border: 0; background: transparent; color: var(--muted); font-size: 18px; }
   .x:hover { color: var(--text); }

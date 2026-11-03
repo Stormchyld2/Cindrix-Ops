@@ -419,18 +419,18 @@
     padding: 12px 24px; background: var(--panel2); border-bottom: 1px solid var(--line); border-top: 3px solid var(--accent); }
   .brand { display: flex; gap: 12px; align-items: center; }
   .name { font-family: var(--display); font-weight: 700; font-size: 24px; letter-spacing: .12em; line-height: 1; }
-  .name span { color: var(--accent); }
+  .name span { color: var(--brand); }
   .name small { font-size: 12px; letter-spacing: .2em; color: var(--muted); }
   .tag { font-family: var(--mono); text-transform: uppercase; letter-spacing: .14em; font-size: 10px; color: var(--muted); margin-top: 4px; }
   nav { display: flex; flex-wrap: wrap; gap: 4px; }
   .item { position: relative; }
-  .item > button { display: flex; gap: 6px; align-items: center; padding: 8px 10px; border-radius: 6px; border: 1px solid transparent; background: transparent; color: #aab3ad; font-family: var(--mono); font-size: 11.5px; text-transform: uppercase; letter-spacing: .1em; font-weight: 500; }
+  .item > button { display: flex; gap: 6px; align-items: center; padding: 8px 10px; border-radius: 6px; border: 1px solid transparent; background: transparent; color: #a9b2bc; font-family: var(--mono); font-size: 11.5px; text-transform: uppercase; letter-spacing: .1em; font-weight: 500; }
   .item > button::before { content: '\25C6'; font-size: 9px; color: var(--c, var(--muted)); }
   .item > button:hover { color: var(--text); }
   .item.on > button { background: var(--blue-soft); color: var(--blue); border-color: var(--blue-line); font-weight: 600; }
   .item.on > button, .item.open > button { box-shadow: inset 0 -2px 0 var(--c, var(--blue)); }
   .caret { font-size: 9px; opacity: .7; }
-  .menu { position: absolute; top: calc(100% + 6px); left: 0; min-width: 210px; z-index: 60; background: #1b1f1d; border: 1px solid var(--line); border-top: 2px solid var(--c, var(--blue)); border-radius: 0 0 6px 6px; padding: 6px; box-shadow: 0 10px 24px #000a; }
+  .menu { position: absolute; top: calc(100% + 6px); left: 0; min-width: 210px; z-index: 60; background: #24282c; border: 1px solid var(--line); border-top: 2px solid var(--c, var(--blue)); border-radius: 0 0 6px 6px; padding: 6px; box-shadow: 0 10px 24px #000a; }
   .menu button { display: flex; width: 100%; justify-content: space-between; gap: 14px; padding: 9px 10px; border: 0; border-radius: 4px; background: transparent; color: var(--text); font-family: var(--display); font-size: 15px; text-align: left; }
   .menu button:hover { background: var(--blue-soft); }
   .menu small { color: var(--muted); font-family: var(--mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; align-self: center; }

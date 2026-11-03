@@ -471,7 +471,7 @@
   .cat.on { background: var(--blue-soft); border-color: var(--blue-line); color: var(--blue); font-weight: 600; }
   .main { flex: 1 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
   .chips { gap: 6px; }
-  .chip { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line2); background: var(--panel); font-size: 13px; color: #b5ada0; }
+  .chip { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line2); background: var(--panel); font-size: 13px; color: #aab2bb; }
   .chip.on { background: var(--blue-soft); border-color: var(--blue-line); color: var(--blue); font-weight: 600; }
   .bar { padding: 8px 10px; border-radius: 10px; background: #241512; border: 1px solid #6b2a20; }
   .right { margin-left: auto; }

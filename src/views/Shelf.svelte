@@ -155,7 +155,7 @@
 
     {#if resume}
       <div class="resume panel">
-        <div class="swatch" style="background: linear-gradient(160deg, {color(resume.title)}, #161918)"></div>
+        <div class="swatch" style="background: linear-gradient(160deg, {color(resume.title)}, #262a2f)"></div>
         <div class="grow">
           <div class="label">CONTINUE READING</div>
           <strong>{resume.title}</strong>
@@ -202,7 +202,7 @@
     <div class="grid">
       {#each shown as b (b.id)}
         <div class="book">
-          <button class="cover" style="background: linear-gradient(160deg, {color(b.title)}, #161918)" onclick={() => (reading = b)} aria-label="Open {b.title}">
+          <button class="cover" style="background: linear-gradient(160deg, {color(b.title)}, #262a2f)" onclick={() => (reading = b)} aria-label="Open {b.title}">
             <span class="spine"></span>
             <span class="t">{b.title}</span>
             <span class="k">{b.kind.toUpperCase()}{b.author ? ' · ' + b.author : ''}</span>
@@ -265,7 +265,7 @@
   .sortpick { display: inline-flex; gap: 8px; align-items: center; color: var(--muted); font-size: 13px; }
   .sortpick .input { min-width: 160px; }
   .pills { display: flex; flex-wrap: wrap; gap: 8px; }
-  .pill { padding: 7px 14px; border-radius: 999px; border: 1px solid var(--line2); background: transparent; color: #b5ada0; font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: .1em; }
+  .pill { padding: 7px 14px; border-radius: 999px; border: 1px solid var(--line2); background: transparent; color: #aab2bb; font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: .1em; }
   .pill.on { border-color: var(--blue); background: var(--blue-soft); color: var(--blue); }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 18px; }
   .book { display: flex; flex-direction: column; gap: 8px; }
@@ -273,7 +273,7 @@
   .cover:hover { border-color: var(--blue); }
   .spine { position: absolute; left: 0; top: 0; bottom: 0; width: 8px; background: #00000055; }
   .t { font-family: var(--display); font-weight: 700; font-size: 18px; line-height: 1.05; letter-spacing: .04em; text-transform: uppercase; padding-left: 6px; overflow-wrap: break-word; hyphens: auto; min-width: 0; }
-  .k { font-family: var(--mono); font-size: 10px; letter-spacing: .1em; color: #ece7dea0; padding-left: 6px; text-transform: uppercase; }
+  .k { font-family: var(--mono); font-size: 10px; letter-spacing: .1em; color: #e8ecf0a0; padding-left: 6px; text-transform: uppercase; }
   .meta { font-size: 12px; color: var(--muted); }
   .small { gap: 6px; }
   .mini-btn { padding: 3px 10px; border-radius: 6px; border: 1px solid var(--line2); background: transparent; font-size: 12px; color: var(--muted); }

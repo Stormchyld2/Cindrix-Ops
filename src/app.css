@@ -1,21 +1,27 @@
 /* System fonts only: nothing is loaded from the internet. */
 :root {
-  --bg: #0f1110;
-  --panel: #161918;
-  --panel2: #121514;
-  --line: #262c29;
-  --line2: #36403b;
-  --text: #ece7de;
-  --muted: #9a9388;
-  --accent: #ff9a1f;
-  --accent-soft: #ff9a1f1f;
-  --accent-line: #ff9a1f66;
-  --blue: #5aa9e6;
-  --blue-soft: #5aa9e61f;
-  --blue-line: #5aa9e670;
-  --link: #5aa9e6;
+  /* Cindrix house look (same family as AirLink): charcoal surfaces, one blue accent. */
+  --bg: #1f2226;
+  --panel: #262a2f;
+  --panel2: #1a1d20;
+  --line: #363b41;
+  --line2: #454b52;
+  --text: #e8ecf0;
+  --muted: #98a2ad;
+  --accent: #67b4ff;
+  --accent-soft: #67b4ff1f;
+  --accent-line: #67b4ff66;
+  --blue: #67b4ff;
+  --blue-soft: #67b4ff1f;
+  --blue-line: #67b4ff70;
+  --link: #67b4ff;
   --danger: #e5533d;
   --ok: #6fbf73;
+  /* amber is kept for warnings ("check", overdue) and for the flame logo wordmark, not as the accent */
+  --warn: #f0b35a;
+  --warn-soft: #f0b35a1f;
+  --warn-line: #f0b35a66;
+  --brand: #ff9a1f;
   /* one colour per group in the top bar, reused for the stripes on the Dashboard */
   --cat-home: #ece7de; --cat-ops: #e0a030; --cat-intel: #4a90d0; --cat-academy: #c47a5a; --cat-agro: #8fb866;
   --cat-maps: #4fb3a9; --cat-morale: #d9779b; --cat-comms: #9b79c9; --cat-system: #8a9189;
@@ -33,18 +39,18 @@ a { color: var(--link); }
 input[type='checkbox'] { accent-color: var(--blue); }
 
 /* shared pieces */
-h1 { margin: 0; text-transform: uppercase; font-family: var(--display); letter-spacing: .12em; font-weight: 600; font-size: 30px; }
-h2 { margin: 0; text-transform: uppercase; font-family: var(--display); letter-spacing: .14em; font-weight: 600; }
+h1 { margin: 0; text-transform: uppercase; font-family: var(--display); letter-spacing: .12em; font-weight: 700; font-size: 30px; }
+h2 { margin: 0; text-transform: uppercase; font-family: var(--display); letter-spacing: .14em; font-weight: 700; }
 .sub { color: var(--muted); max-width: 720px; margin: 2px 0 0; }
 .muted { color: var(--muted); }
 .label { text-transform: uppercase; font-family: var(--mono); font-size: 11px; letter-spacing: .14em; color: var(--muted); }
 .panel { position: relative; padding: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; border-top: 2px solid var(--line2); overflow: hidden; }
-.panel::before { content: ''; position: absolute; top: -2px; left: -1px; width: 18px; height: 2px; background: var(--amber-tick, var(--accent)); }
+.panel::before { content: ''; position: absolute; top: -2px; left: -1px; width: 18px; height: 2px; background: var(--accent); }
 .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-.btn { padding: 9px 16px; border-radius: 8px; border: 1px solid var(--line2); background: transparent; color: var(--text); font-size: 12px; font-family: var(--mono); text-transform: uppercase; letter-spacing: .1em; }
+.btn { padding: 9px 16px; border-radius: 10px; border: 1px solid var(--line2); background: transparent; color: var(--text); font-size: 12px; font-family: var(--mono); text-transform: uppercase; letter-spacing: .1em; }
 .btn:hover:not(:disabled) { border-color: var(--blue-line); color: var(--blue); }
 .btn.primary { background: var(--blue); border-color: var(--blue); color: #07131d; font-weight: 700; }
-.btn.primary:hover:not(:disabled) { color: #07131d; background: #7bbdf0; }
+.btn.primary:hover:not(:disabled) { color: #07131d; background: #8cc3ff; }
 .btn.danger { border-color: #c0432f; background: #3a1a14; color: #ff9a86; font-weight: 700; }
 .btn:disabled { opacity: .5; cursor: default; }
 .input, select.input, textarea.input { padding: 9px 10px; border-radius: 8px; border: 1px solid var(--line2); background: var(--panel2); color: var(--text); font: inherit; }

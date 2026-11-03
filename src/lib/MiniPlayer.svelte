@@ -45,7 +45,7 @@
   button { min-width: 40px; min-height: 40px; background: none; border: 1px solid transparent; border-radius: 8px; color: var(--text); font-size: 16px; cursor: pointer; }
   button:hover { border-color: var(--blue-line); color: var(--blue); }
   .big { background: var(--blue); color: #07131d; min-width: 46px; }
-  .big:hover { color: #07131d; background: #7bbdf0; }
+  .big:hover { color: #07131d; background: #8cc3ff; }
   .tog { color: var(--muted); }
   .tog.on { color: var(--blue); border-color: var(--blue-line); }
   .seek { flex: 1 1 100%; order: 10; accent-color: var(--blue); }

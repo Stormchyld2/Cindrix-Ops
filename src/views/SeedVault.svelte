@@ -265,7 +265,7 @@
   .head { justify-content: space-between; flex-wrap: nowrap; }
   .grow { flex: 1 1 200px; }
   .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 12px; }
-  .tabs button { padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line2); background: var(--panel); color: #b5ada0; }
+  .tabs button { padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line2); background: var(--panel); color: #aab2bb; }
   .tabs button.on { background: var(--blue-soft); border-color: var(--blue-line); color: var(--blue); font-weight: 600; }
   .intro { max-width: 760px; }
   .sugbar { margin: 10px 0 0; flex-wrap: wrap; }

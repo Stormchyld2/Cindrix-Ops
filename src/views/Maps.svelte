@@ -201,13 +201,13 @@
         m.addLayer({
           id: `poi-${g.id}${sfx}`, type: 'circle', source: src, 'source-layer': 'pois', minzoom: 7, filter,
           layout: { visibility: vis },
-          paint: { 'circle-color': g.color, 'circle-radius': ['interpolate', ['linear'], ['zoom'], 7, 2.5, 12, 5, 16, 8], 'circle-stroke-color': '#0b0d0c', 'circle-stroke-width': 1.5 },
+          paint: { 'circle-color': g.color, 'circle-radius': ['interpolate', ['linear'], ['zoom'], 7, 2.5, 12, 5, 16, 8], 'circle-stroke-color': '#1a1d20', 'circle-stroke-width': 1.5 },
         } as never);
         if (withNames) {
           m.addLayer({
             id: `poi-${g.id}${sfx}-label`, type: 'symbol', source: src, 'source-layer': 'pois', minzoom: 12.5, filter,
             layout: { visibility: vis, 'text-field': ['coalesce', ['get', 'name'], ''], 'text-font': ['Noto Sans Regular'], 'text-size': 11, 'text-anchor': 'top', 'text-offset': [0, 0.8], 'text-optional': true, 'text-max-width': 8 },
-            paint: { 'text-color': look === 'light' ? '#1d2420' : '#ece7de', 'text-halo-color': look === 'light' ? '#ffffff' : '#0b0d0c', 'text-halo-width': 1.4 },
+            paint: { 'text-color': look === 'light' ? '#1d2420' : '#e8ecf0', 'text-halo-color': look === 'light' ? '#ffffff' : '#1a1d20', 'text-halo-width': 1.4 },
           } as never);
         }
       });
@@ -533,7 +533,7 @@
       pinDraft = { lat: p5[0], lon: p5[1], kind: addMode };
       pinName = '';
       pinTag = tag;
-      pinCol = PIN_TAGS.find((t) => t.name === tag)?.color ?? '#5aa9e6';
+      pinCol = PIN_TAGS.find((t) => t.name === tag)?.color ?? '#67b4ff';
       setTimeout(() => document.getElementById('pin-name')?.focus(), 30);
     } else if (addMode === 'corner') {
       draft = [...draft, p5];
@@ -742,7 +742,7 @@
   let pinDraft: { lat: number; lon: number; kind: 'pin' | 'rendezvous' } | null = $state(null);
   let pinName = $state('');
   let pinTag = $state('Other');
-  let pinCol = $state('#5aa9e6');
+  let pinCol = $state('#67b4ff');
   function chooseTag(t: { name: string; color: string }) { pinTag = t.name; pinCol = t.color; }
   function savePinDraft() {
     const d = pinDraft;
@@ -1229,7 +1229,7 @@
     const el = document.createElement('div');
     el.className = 'pinmark';
     el.innerHTML = '<span class="pdot"></span><span class="plab"></span>';
-    (el.querySelector('.pdot') as HTMLElement).style.background = '#5aa9e6';
+    (el.querySelector('.pdot') as HTMLElement).style.background = '#67b4ff';
     (el.querySelector('.plab') as HTMLElement).textContent = h.name;
     foundMarker = new ml.Marker({ element: el, anchor: 'left' }).setLngLat([h.lon, h.lat]).addTo(map);
   }
@@ -1459,7 +1459,7 @@
     return { x, y, barPx: km * pxPerKm, barKm: km };
   });
 
-  const pinColor = (k: string) => (k === 'rendezvous' ? '#6fbf73' : '#5aa9e6');
+  const pinColor = (k: string) => (k === 'rendezvous' ? '#6fbf73' : '#67b4ff');
 </script>
 
 {#snippet eyeIcon(off: boolean)}
@@ -1901,7 +1901,7 @@
       </div>
     {:else}
       <svg viewBox="0 0 {W} {H}" role="img" aria-label="Plan view of your points" class="plan">
-        <rect width={W} height={H} fill="#0f1110" />
+        <rect width={W} height={H} fill="#1f2226" />
         {#if view}
           {#each nogo as a}
             <polygon points={a.points.map((p) => view.x(p[1]) + ',' + view.y(p[0])).join(' ')} fill="#e5533d33" stroke="#e5533d" stroke-width="1.5" stroke-dasharray="5 4" />
@@ -1913,14 +1913,14 @@
             <polyline points={routePoints.map((p) => view.x(p[1]) + ',' + view.y(p[0])).join(' ')} fill="none" stroke="#ff9a1f" stroke-width="2.5" />
           {/if}
           {#each pins as p}
-            <circle cx={view.x(p.lon)} cy={view.y(p.lat)} r="6" fill={p.color ?? pinColor(p.kind)} stroke="#0f1110" stroke-width="2" />
-            <text x={view.x(p.lon) + 10} y={view.y(p.lat) + 4} fill="#ece7de" font-size="12">{p.label}</text>
+            <circle cx={view.x(p.lon)} cy={view.y(p.lat)} r="6" fill={p.color ?? pinColor(p.kind)} stroke="#1f2226" stroke-width="2" />
+            <text x={view.x(p.lon) + 10} y={view.y(p.lat) + 4} fill="#e8ecf0" font-size="12">{p.label}</text>
           {/each}
-          <line x1={PAD} y1={H - 14} x2={PAD + view.barPx} y2={H - 14} stroke="#b5ada0" stroke-width="2" />
-          <text x={PAD + view.barPx + 8} y={H - 10} fill="#b5ada0" font-size="11">{settings.values.mapUnits === 'metric' ? `${view.barKm} km` : `${(view.barKm * 0.621371).toFixed(view.barKm < 1 ? 2 : 1)} mi`}</text>
-          <text x={W - 24} y="22" fill="#b5ada0" font-size="12" text-anchor="middle">N ↑</text>
+          <line x1={PAD} y1={H - 14} x2={PAD + view.barPx} y2={H - 14} stroke="#aab2bb" stroke-width="2" />
+          <text x={PAD + view.barPx + 8} y={H - 10} fill="#aab2bb" font-size="11">{settings.values.mapUnits === 'metric' ? `${view.barKm} km` : `${(view.barKm * 0.621371).toFixed(view.barKm < 1 ? 2 : 1)} mi`}</text>
+          <text x={W - 24} y="22" fill="#aab2bb" font-size="12" text-anchor="middle">N ↑</text>
         {:else}
-          <text x={W / 2} y={H / 2} fill="#9a9388" font-size="14" text-anchor="middle">Add a point below to start your plan.</text>
+          <text x={W / 2} y={H / 2} fill="#98a2ad" font-size="14" text-anchor="middle">Add a point below to start your plan.</text>
         {/if}
       </svg>
     {/if}
@@ -2009,7 +2009,7 @@
   .tagrow { display: flex; flex-wrap: wrap; gap: 6px; }
   .tagbtn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line, #444); background: transparent; color: inherit; cursor: pointer; font-size: 13px; }
   .tagbtn.on { border-color: #6fcf8d; background: #1f2a1d; }
-  .swatch { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #0f1110; cursor: pointer; }
+  .swatch { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #1f2226; cursor: pointer; }
   .swatch.on { outline: 3px solid #6fcf8d; }
   .tagbtn .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
   .tiny { padding: 4px 10px; font-size: 12px; }
@@ -2044,7 +2044,7 @@
   .finds button { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 6px 8px; border-radius: 6px; }
   .finds button:hover { background: var(--blue-soft); }
   .stage { display: flex; flex-direction: column; gap: 8px; }
-  .stage.full { position: fixed; inset: 0; z-index: 2000; background: #0b0d0c; padding: 10px; }
+  .stage.full { position: fixed; inset: 0; z-index: 2000; background: #1a1d20; padding: 10px; }
   .tools { display: flex; flex-direction: column; gap: 8px; }
   .mapbox { position: relative; flex: 1; min-height: 0; }
   .stage.full .mapbox { display: flex; }
@@ -2054,22 +2054,22 @@
   .cross span::before, .cross span::after { content: ''; position: absolute; background: #ff9a1f; }
   .cross span::before { left: 50%; top: 0; bottom: 0; width: 1px; }
   .cross span::after { top: 50%; left: 0; right: 0; height: 1px; }
-  .hud { position: absolute; left: 50%; transform: translateX(-50%); bottom: 8px; padding: 6px 9px; background: #0b0d0ccc; border: 1px solid #3a3f3a; border-left: 3px solid #ff9a1f; border-radius: 4px; font-family: var(--mono, monospace); font-size: 11px; letter-spacing: .06em; color: #cfd6cc; pointer-events: none; }
+  .hud { position: absolute; left: 50%; transform: translateX(-50%); bottom: 8px; padding: 6px 9px; background: #1a1d20cc; border: 1px solid #3a3f45; border-left: 3px solid #ff9a1f; border-radius: 4px; font-family: var(--mono, monospace); font-size: 11px; letter-spacing: .06em; color: #d0d7de; pointer-events: none; }
   .hud:empty { display: none; }
-  .drawer { position: absolute; top: 10px; right: 10px; bottom: 28px; width: 290px; overflow: auto; padding: 10px; background: #0b0d0cee; border: 1px solid #3a3f3a; border-radius: 8px; display: flex; flex-direction: column; gap: 8px; z-index: 5; }
-  .layers { position: absolute; top: 190px; left: 10px; bottom: 120px; width: 270px; z-index: 6; overflow: auto; padding: 10px; background: #0b0d0cee; border: 1px solid #3a3f3a; border-radius: 8px; display: flex; flex-direction: column; gap: 6px; z-index: 5; }
+  .drawer { position: absolute; top: 10px; right: 10px; bottom: 28px; width: 290px; overflow: auto; padding: 10px; background: #1a1d20ee; border: 1px solid #3a3f45; border-radius: 8px; display: flex; flex-direction: column; gap: 8px; z-index: 5; }
+  .layers { position: absolute; top: 190px; left: 10px; bottom: 120px; width: 270px; z-index: 6; overflow: auto; padding: 10px; background: #1a1d20ee; border: 1px solid #3a3f45; border-radius: 8px; display: flex; flex-direction: column; gap: 6px; z-index: 5; }
   .grp { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 2px 0; }
-  .swatch { width: 10px; height: 10px; border-radius: 50%; border: 1px solid #0b0d0c; flex: 0 0 auto; }
+  .swatch { width: 10px; height: 10px; border-radius: 50%; border: 1px solid #1a1d20; flex: 0 0 auto; }
   .near { display: flex; flex-direction: column; text-align: left; gap: 1px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: transparent; font-size: 13px; }
   .near:hover { border-color: var(--blue-line); }
-  .pick { position: absolute; left: 50%; transform: translateX(-50%); bottom: 34px; min-width: 240px; max-width: 360px; padding: 10px 12px; background: #0b0d0cf2; border: 1px solid #3a3f3a; border-left: 3px solid #ff9a1f; border-radius: 6px; display: flex; flex-direction: column; gap: 6px; z-index: 6; }
+  .pick { position: absolute; left: 50%; transform: translateX(-50%); bottom: 34px; min-width: 240px; max-width: 360px; padding: 10px 12px; background: #1a1d20f2; border: 1px solid #3a3f45; border-left: 3px solid #ff9a1f; border-radius: 6px; display: flex; flex-direction: column; gap: 6px; z-index: 6; }
   .gap { margin-top: 8px; }
   .drawer.closed { width: auto; bottom: auto; }
   .errtxt { color: #ffb4a6; }
-  .tilemap { width: 100%; height: clamp(520px, calc(100vh - 260px), 1200px); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #0f1110; }
+  .tilemap { width: 100%; height: clamp(520px, calc(100vh - 260px), 1200px); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #1f2226; }
   :global(.pinmark) { display: flex; align-items: center; gap: 6px; pointer-events: none; }
-  :global(.pinmark .pdot) { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #0f1110; display: inline-block; }
-  :global(.pinmark .plab) { color: #ece7de; font-size: 12px; text-shadow: 0 0 3px #000, 0 0 3px #000; white-space: nowrap; }
+  :global(.pinmark .pdot) { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #1f2226; display: inline-block; }
+  :global(.pinmark .plab) { color: #e8ecf0; font-size: 12px; text-shadow: 0 0 3px #000, 0 0 3px #000; white-space: nowrap; }
 
   /* Google-Maps-like controls floating over the map */
   .ov { position: absolute; z-index: 5; pointer-events: none; }
