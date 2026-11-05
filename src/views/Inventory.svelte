@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { inventoryList, inventorySave, inventoryDelete, scanInboxList, scanInboxPreview, scanInboxAccept, scanInboxDismiss, syncInboxList, syncMerge, stockNeeds, profileLoad, type Item, type Need, type ScanFile, type ScanLine } from '../lib/api';
+  import { inventoryList, inventorySave, inventoryDelete, scanInboxList, scanInboxPreview, scanInboxAccept, scanInboxDismiss, syncInboxList, syncMerge, stockNeeds, profileLoad, inventoryPlaces, inventoryWhere, shelfLifeSuggest, placeParts, insidePlace, type Item, type Need, type Place, type Found, type ShelfGuess, type ScanFile, type ScanLine } from '../lib/api';
   import { onMount } from 'svelte';
   import { categories, categoryHint, categoryUnits, categoryAsk, forWhomChoices, conditionChoices } from '../lib/categories';
   import { learner, loadPeople } from '../lib/learner.svelte';
@@ -80,8 +80,63 @@
   }
   let form: Item = $state(blank());
 
+  // Places inside places (docs/42): "Garage > Shelf 2 > Black pail".
+  let places: Place[] = $state([]);
+  let found: Found[] = $state([]);
+  async function refreshPlaces() {
+    try { places = await inventoryPlaces(); } catch { places = []; }
+  }
+  $effect(() => {
+    items; // run again whenever the list changes
+    void refreshPlaces();
+  });
+  $effect(() => {
+    const q = search.trim();
+    if (q.length < 2) { found = []; return; }
+    const t = setTimeout(async () => {
+      try { found = await inventoryWhere(q); } catch { found = []; }
+    }, 200);
+    return () => clearTimeout(t);
+  });
+  const trail = $derived(placeParts(location === 'All' ? '' : location));
+  const steps = $derived(trail.map((p, n) => ({ name: p, path: trail.slice(0, n + 1).join(' > ') })));
+  const inside = $derived(places.filter((p) => p.depth === trail.length && (trail.length === 0 || insidePlace(p.path, location))));
+  function openFound(f: Found) {
+    const it = items.find((i) => i.id === f.id);
+    if (it) openEdit(it);
+  }
+
+  // How food is packed, and a use-by month worked out from it (docs/42).
+  const packagingChoices: [string, string][] = [
+    ['mylar', 'Foil (mylar) pouch'], ['o2', 'Oxygen absorber inside'], ['vacuum', 'Vacuum sealed'],
+    ['sealed-can', 'Sealed metal can'], ['jar', 'Glass jar with a gasket lid'], ['bucket', 'Food-grade bucket with a gasket lid'],
+    ['desiccant', 'Desiccant packet'],
+  ];
+  const hasPack = (code: string) => (form.packaging ?? '').split(',').includes(code);
+  function togglePack(code: string) {
+    const have = (form.packaging ?? '').split(',').filter(Boolean);
+    form.packaging = (have.includes(code) ? have.filter((c) => c !== code) : [...have, code]).join(',');
+    guess = null; guessNote = '';
+  }
+  let guess: ShelfGuess | null = $state(null);
+  let guessNote = $state('');
+  async function suggestUseBy() {
+    guess = null; guessNote = '';
+    if (!form.name.trim()) { guessNote = 'Type the item name first.'; return; }
+    try {
+      const g = await shelfLifeSuggest(form.name, form.packaging ?? '', form.bought ?? '');
+      if (!g) { guessNote = 'There is no shelf-life guess for this item. Use the date on the package.'; return; }
+      guess = g;
+    } catch (e) { guessNote = String(e); }
+  }
+  function useGuess() {
+    if (guess?.use_by) form.use_by = guess.use_by;
+    if (guess?.assumed_today && !form.bought) form.bought = guess.use_by ? new Date().toISOString().slice(0, 7) : '';
+    guess = null;
+  }
+
   function blank(): Item {
-    return { id: '', category: 'Water', name: '', location: '', quantity: 1, unit: '', use_per_day: 0, use_by: '', notes: '', brand: '', size: '', for_whom: '', bought: '', target: 0, condition: '', checked: '', cost: 0, source: '', serial: '' };
+    return { id: '', category: 'Water', name: '', location: '', quantity: 1, unit: '', use_per_day: 0, use_by: '', notes: '', brand: '', size: '', for_whom: '', bought: '', target: 0, condition: '', checked: '', cost: 0, source: '', serial: '', packaging: '' };
   }
 
   // Files left by Cindrix Scan, waiting until the person says to add them.
@@ -147,12 +202,12 @@
     }
   }
 
-  let locations = $derived(['All', ...new Set(items.map((i) => i.location).filter((l) => l))]);
+  let locations = $derived(['All', ...places.map((p) => p.path)]);
   let shown = $derived(
     items.filter((i) => {
       if (category !== 'All' && i.category !== category) return false;
-      if (location !== 'All' && i.location !== location) return false;
-      if (search && !(i.name + ' ' + i.notes).toLowerCase().includes(search.toLowerCase())) return false;
+      if (location !== 'All' && !insidePlace(i.location, location)) return false;
+      if (search && !(i.name + ' ' + i.notes + ' ' + (i.brand ?? '') + ' ' + i.location).toLowerCase().includes(search.toLowerCase())) return false;
       if (show === 'low' && i.status === 'ok') return false;
       return true;
     }),
@@ -170,10 +225,12 @@
 
   function openNew() {
     form = { ...blank(), category: category === 'All' ? 'Water' : category };
+    guess = null; guessNote = '';
     dlg.showModal();
   }
   function openEdit(i: Item) {
     form = { ...blank(), ...i };
+    guess = null; guessNote = '';
     dlg.showModal();
   }
   async function saveForm() {
@@ -276,17 +333,32 @@
       {#each categories as c}<option value={c}>{c} ({count(c)})</option>{/each}
     </select>
     <div class="row">
-      <input class="input grow" type="search" placeholder="Search your inventory" aria-label="Search" bind:value={search} />
+      <input class="input grow" type="search" placeholder="Search your inventory, or ask where something is" aria-label="Search" bind:value={search} />
       <select class="input" aria-label="Show" bind:value={show}>
         <option value="all">Show all</option>
         <option value="low">Low or expiring</option>
       </select>
     </div>
-    <div class="row chips">
-      {#each locations as l}
-        <button class="chip" class:on={location === l} onclick={() => (location = l)}>{l === 'All' ? 'All locations' : l}</button>
+    <div class="row chips" aria-label="Where">
+      <button class="chip" class:on={location === 'All'} onclick={() => (location = 'All')} title="Show everything, wherever it is">All places</button>
+      {#each steps as st, n (st.path)}
+        <span class="muted">›</span>
+        <button class="chip" class:on={n === steps.length - 1} onclick={() => (location = st.path)} title={'Show what is in ' + st.name}>{st.name}</button>
+      {/each}
+      {#if inside.length}<span class="muted">{steps.length ? 'Inside it:' : 'Open:'}</span>{/if}
+      {#each inside as p (p.path)}
+        <button class="chip sub" onclick={() => (location = p.path)} title={'Look inside ' + p.name}>{p.name} <span class="muted">{p.inside}</span></button>
       {/each}
     </div>
+    {#if found.length}
+      <div class="where" role="status">
+        <strong>Where is it?</strong>
+        {#each found.slice(0, 8) as f (f.id)}
+          <button class="wline" onclick={() => openFound(f)} title="Open this item"><span>{f.name}</span><span class="muted"> · {f.quantity} {f.unit} · {f.place || 'no place set'}</span></button>
+        {/each}
+        {#if found.length > 8}<span class="muted small">and {found.length - 8} more below</span>{/if}
+      </div>
+    {/if}
 
     <div class="bar row">
       <label class="row"><input type="checkbox" checked={allSelected} onchange={toggleAll} aria-label="Select all items" /> Select all</label>
@@ -368,17 +440,43 @@
         <datalist id="whom">{#each [...forWhomChoices, ...learner.people] as w}<option value={w}></option>{/each}</datalist>
       </label>
       <label>Where it is
-        <input class="input" list="places" bind:value={form.location} placeholder="Pantry, Garage, Go-bag…" />
+        <input class="input" list="places" bind:value={form.location} placeholder="Pantry, or Garage > Shelf 2 > Black pail" />
         <datalist id="places">{#each locations.filter((l) => l !== 'All') as l}<option value={l}></option>{/each}</datalist>
+        <span class="muted hint">To say where inside, put a &gt; between the parts: room, then shelf, then bin. Then you can open a shelf and see what is in it.</span>
       </label>
     </fieldset>
 
     <fieldset>
       <legend>4. Dates and condition</legend>
+      {#if form.category === 'Food'}
+        <div class="pack">
+          <span class="muted">How is it packed? (changes how long it keeps)</span>
+          <div class="row packrow">
+            {#each packagingChoices as [code, text]}
+              <label class="check"><input type="checkbox" checked={hasPack(code)} onchange={() => togglePack(code)} /> {text}</label>
+            {/each}
+          </div>
+        </div>
+      {/if}
       <div class="row">
-        <label class="half">Bought or packed<input class="input" type="month" bind:value={form.bought} /></label>
+        <label class="half">Bought or packed<input class="input" type="month" bind:value={form.bought} oninput={() => { guess = null; }} /></label>
         <label class="half">Use by or replace by<input class="input" type="month" bind:value={form.use_by} /></label>
       </div>
+      {#if form.category === 'Food'}
+        <div class="row">
+          <button class="btn" type="button" onclick={suggestUseBy} title="Work out a use-by month from the item, how it is packed and when it was bought">Suggest a use-by date</button>
+          {#if guessNote}<span class="muted small">{guessNote}</span>{/if}
+        </div>
+        {#if guess}
+          <div class="ask">
+            <strong>{guess.food}{guess.use_by ? ': use by ' + guess.use_by : ''}</strong>
+            <div class="small">{guess.basis}{guess.assumed_today ? ' (No bought month was given, so this month was used.)' : ''}</div>
+            {#if guess.hint}<div class="small muted">{guess.hint}</div>{/if}
+            <div class="small muted">A guess to plan with. If the package has a date, use whichever comes first.</div>
+            {#if guess.use_by}<button class="btn primary" type="button" onclick={useGuess}>Use {guess.use_by}</button>{/if}
+          </div>
+        {/if}
+      {/if}
       <div class="row">
         <label class="half">Last looked at<input class="input" type="date" bind:value={form.checked} /></label>
         <label class="half">Condition
@@ -472,6 +570,13 @@
   .main { flex: 1 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
   .chips { gap: 6px; }
   .chip { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line2); background: var(--panel); font-size: 13px; color: #aab2bb; }
+  .chip.sub { border-style: dashed; }
+  .where { padding: 8px 12px; border-radius: 10px; background: var(--panel2); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; }
+  .wline { text-align: left; background: none; border: 0; padding: 2px 0; color: inherit; }
+  .pack { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+  .packrow { gap: 6px 16px; }
+  .check { display: flex !important; flex-direction: row !important; align-items: center; gap: 6px !important; font-size: 13px !important; color: inherit !important; }
+  .check input { width: 18px; height: 18px; accent-color: var(--blue); }
   .chip.on { background: var(--blue-soft); border-color: var(--blue-line); color: var(--blue); font-weight: 600; }
   .bar { padding: 8px 10px; border-radius: 10px; background: #241512; border: 1px solid #6b2a20; }
   .right { margin-left: auto; }

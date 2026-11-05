@@ -64,6 +64,12 @@
           "note": "All are DRAFTS until a clinician or qualified reviewer has signed them off. Not medical or legal advice."
         },
         {
+          "name": "Shelf-life table (content/shelf-life.csv)",
+          "license": "Facts adapted with credit; reuse for educational purposes is allowed by the publisher",
+          "status": "in this build",
+          "note": "Store-bought figures (lower end of each range) from Karen Blakeslee, Safe Food Storage: The Cupboard, Kansas State University Extension MF3131, June 2026. Long-term sealed figures from the Church of Jesus Christ of Latter-day Saints longer-term food storage chart. Planning guesses only; the date on the package comes first."
+        },
+        {
           "name": "Academy courses (Survival basics, 7 modules)",
           "license": "Written for this project, from public-domain US government manuals",
           "status": "in this build",

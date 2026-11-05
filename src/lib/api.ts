@@ -9,6 +9,8 @@ export type Item = {
   /** The extra questions. All are optional text or numbers; an old item simply has them empty. */
   brand?: string; size?: string; for_whom?: string; bought?: string; target?: number; condition?: string;
   checked?: string; cost?: number; source?: string; serial?: string;
+  /** How it is packed, codes separated by commas (mylar, o2, vacuum, sealed-can, jar, bucket, desiccant). */
+  packaging?: string;
   status?: string; days_left?: number | null;
 };
 export type Need = { category: string; name: string; unit: string; amount: number; why: string; basis: string };
@@ -297,6 +299,57 @@ export async function inventorySave(item: Item): Promise<Item[]> {
   const at = memItems.findIndex((i) => i.id === item.id);
   if (at >= 0) memItems[at] = item; else memItems.push(item);
   return memItems.map(decorate);
+}
+
+
+export type Place = { path: string; name: string; depth: number; here: number; inside: number };
+export type Found = { id: string; name: string; place: string; quantity: number; unit: string };
+export type ShelfGuess = { use_by: string; food: string; months: number | null; long_term: boolean; basis: string; hint: string; assumed_today: boolean };
+
+export function placeParts(p: string): string[] {
+  return p.split(/[>›→»]/).map((x) => x.split(/\s+/).filter(Boolean).join(' ')).filter(Boolean);
+}
+
+/** True when `place` is `inside` or somewhere within it (whole parts, ignoring capitals). */
+export function insidePlace(place: string, inside: string): boolean {
+  const a = placeParts(place).map((x) => x.toLowerCase());
+  const b = placeParts(inside).map((x) => x.toLowerCase());
+  return b.length > 0 && a.length >= b.length && b.every((x, n) => a[n] === x);
+}
+
+/** Every place named in the inventory, with how many lines are in each ("Garage > Shelf 2" is inside "Garage"). */
+export async function inventoryPlaces(): Promise<Place[]> {
+  if (inTauri) return call<Place[]>('inventory_places');
+  // browser preview only: the same idea as core/src/placepath.rs
+  const map = new Map<string, Place>();
+  for (const it of memItems) {
+    const parts = placeParts(it.location);
+    parts.forEach((_, n) => {
+      const trail = parts.slice(0, n + 1);
+      const key = trail.join(' > ').toLowerCase();
+      const e = map.get(key) ?? { path: trail.join(' > '), name: trail[n], depth: n, here: 0, inside: 0 };
+      e.inside++;
+      if (n === parts.length - 1) e.here++;
+      map.set(key, e);
+    });
+  }
+  return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([, v]) => v);
+}
+
+/** "Where is it?": inventory lines that match every word typed. */
+export async function inventoryWhere(query: string): Promise<Found[]> {
+  if (inTauri) return call<Found[]>('inventory_where', { query });
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  if (!words.length) return [];
+  return memItems
+    .filter((i) => { const h = `${i.name} ${i.brand ?? ''} ${i.notes} ${i.location}`.toLowerCase(); return words.every((w) => h.includes(w)); })
+    .map((i) => ({ id: i.id, name: i.name, place: placeParts(i.location).join(' > '), quantity: i.quantity, unit: i.unit }));
+}
+
+/** A use-by month guessed from the name, how it is packed and when it was bought. Nothing when there is no number for it. */
+export async function shelfLifeSuggest(name: string, packaging: string, bought: string): Promise<ShelfGuess | null> {
+  if (inTauri) return call<ShelfGuess | null>('shelf_life_suggest', { name, packaging, bought });
+  return null;
 }
 
 export interface ScanFile { name: string; from: string; adds: number; removes: number; modified: number }

@@ -43,6 +43,7 @@ their full text.
 | GeoNames places list (made by `get-maps.ps1`) | CC BY 4.0 | Credit GeoNames (shown on the Maps screen and in `ATTRIBUTION.md`) |
 | Street addresses (made by `get-addresses.ps1` from Overture Maps) | Mixed, per source (see docs.overturemaps.org/attribution) | Credit Overture Maps Foundation and its sources; the download writes `maps/addresses/<name>/SOURCE.txt`. DuckDB (MIT) is fetched by the script, not shipped. |
 | USGS aerial photos (made by `get-imagery.ps1`) | Public domain (US government) | Credit "USGS The National Map"; shown on the map and in each `.SOURCE.txt`. DuckDB (MIT) and pmtiles (BSD-3) are fetched by the script, not shipped. |
+| Shelf-life table (`content/shelf-life.csv`) | Kansas State University Extension MF3131 allows reuse for educational purposes with credit; long-term figures are facts from a public storage chart | Credit "Karen Blakeslee, Safe Food Storage: The Cupboard, Kansas State University, June 2026" (it adapts USDA FoodKeeper, University of Missouri and NDSU guidance); the table is a planning guess, not a food-safety rule |
 | Wikipedia, WikiMed, WikEM and similar archives | CC BY-SA 4.0 | Credit and link; share-alike for anything we change |
 | US government manuals and guides (Army, FEMA, CDC, FDA, USGS) | Public domain | Record edition and date |
 | Project Gutenberg titles | Public domain in the US | Check each title |

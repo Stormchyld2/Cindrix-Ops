@@ -2,7 +2,7 @@
 
 use std::fmt;
 
-pub const HEADER: &str = "id,category,name,location,quantity,unit,use_per_day,use_by,notes,brand,size,for_whom,bought,target,condition,checked,cost,source,serial,uid,changed,counts";
+pub const HEADER: &str = "id,category,name,location,quantity,unit,use_per_day,use_by,notes,brand,size,for_whom,bought,target,condition,checked,cost,source,serial,uid,changed,counts,packaging";
 /// The first nine columns are the original layout; files written before the extra columns are still read.
 const CORE_COLUMNS: usize = 9;
 
@@ -44,6 +44,8 @@ pub struct Item {
     pub changed: String,
     /// Each device's running totals of stock added and taken out of this line (see sync.rs). Filled in on save.
     pub counts: String,
+    /// How it is packed, as codes separated by commas (see shelflife::PACKAGING), for example "mylar,o2". Empty if not said.
+    pub packaging: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -135,6 +137,7 @@ pub fn parse(csv: &str) -> Result<Vec<Item>, ParseError> {
             uid: extra(10),
             changed: extra(11),
             counts: extra(12),
+            packaging: extra(13),
         });
     }
     Ok(items)
@@ -145,12 +148,12 @@ pub fn serialize(items: &[Item]) -> String {
     out.push('\n');
     for i in items {
         out.push_str(&format!(
-            "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}\n",
+            "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}\n",
             quote(&i.id), quote(&i.category), quote(&i.name), quote(&i.location), i.quantity,
             quote(&i.unit), i.use_per_day, quote(&i.use_by), quote(&i.notes),
             quote(&i.brand), quote(&i.size), quote(&i.for_whom), quote(&i.bought), i.target,
             quote(&i.condition), quote(&i.checked), i.cost, quote(&i.source), quote(&i.serial),
-            quote(&i.uid), quote(&i.changed), quote(&i.counts)
+            quote(&i.uid), quote(&i.changed), quote(&i.counts), quote(&i.packaging)
         ));
     }
     out
@@ -296,12 +299,23 @@ mod tests {
         i.cost = 18.5;
         i.source = "Costco".into();
         i.serial = "SN \"7\"".into();
+        i.packaging = "mylar,o2".into();
         assert_eq!(parse(&serialize(&[i.clone()])).unwrap(), vec![i]);
         // a file from before the extra columns
         let old = "id,category,name,location,quantity,unit,use_per_day,use_by,notes\n1,Water,Jug,Pantry,3,gal,1,,\n";
         let p = parse(old).unwrap();
         assert_eq!((p[0].quantity, p[0].target, p[0].brand.as_str()), (3.0, 0.0, ""));
         assert!(parse("id\n1,Water,Jug,Pantry,3,gal,1,,,,,,,abc\n").is_err());
+    }
+
+    #[test]
+    fn a_file_from_before_packaging_loads_and_gains_the_column_when_saved() {
+        let before = "id,category,name,location,quantity,unit,use_per_day,use_by,notes,brand,size,for_whom,bought,target,condition,checked,cost,source,serial,uid,changed,counts\n1,Food,Rice,Pantry,3,lb,0,2027-11,,,,,,0,,,0,,,u1,2026-11-01T00:00:00Z,\n";
+        let p = parse(before).unwrap();
+        assert_eq!((p[0].name.as_str(), p[0].packaging.as_str(), p[0].uid.as_str()), ("Rice", "", "u1"));
+        let again = serialize(&p);
+        assert!(again.lines().next().unwrap().ends_with(",counts,packaging"));
+        assert_eq!(parse(&again).unwrap(), p);
     }
 
     #[test]

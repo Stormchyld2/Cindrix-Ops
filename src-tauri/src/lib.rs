@@ -1,4 +1,5 @@
 use cindrix_core::inventory::{self, Item, Status};
+use cindrix_core::{placepath, shelflife};
 use cindrix_core::userdata::{self, UserDir};
 use cindrix_core::hardware::{self, Size};
 use cindrix_core::llama::LlamaModel;
@@ -1411,6 +1412,9 @@ struct ItemDto {
     source: String,
     #[serde(default)]
     serial: String,
+    /// How it is packed: codes such as "mylar,o2" (see shelflife::PACKAGING)
+    #[serde(default)]
+    packaging: String,
     /// "ok", "check" or "act" (filled in when listing)
     #[serde(default)]
     status: String,
@@ -1420,10 +1424,11 @@ struct ItemDto {
 
 impl From<ItemDto> for Item {
     fn from(d: ItemDto) -> Item {
-        Item { id: d.id, category: d.category, name: d.name, location: d.location, quantity: d.quantity,
+        Item { id: d.id, category: d.category, name: d.name, location: placepath::normalize(&d.location), quantity: d.quantity,
                unit: d.unit, use_per_day: d.use_per_day, use_by: d.use_by, notes: d.notes,
                brand: d.brand, size: d.size, for_whom: d.for_whom, bought: d.bought, target: d.target, condition: d.condition,
-               checked: d.checked, cost: d.cost, source: d.source, serial: d.serial, ..Default::default() }
+               checked: d.checked, cost: d.cost, source: d.source, serial: d.serial,
+               packaging: shelflife::normalize_packaging(&d.packaging), ..Default::default() }
     }
 }
 
@@ -1434,6 +1439,7 @@ fn to_dto(i: &Item, t: &inventory::Thresholds) -> ItemDto {
         quantity: i.quantity, unit: i.unit.clone(), use_per_day: i.use_per_day, use_by: i.use_by.clone(), notes: i.notes.clone(),
         brand: i.brand.clone(), size: i.size.clone(), for_whom: i.for_whom.clone(), bought: i.bought.clone(), target: i.target,
         condition: i.condition.clone(), checked: i.checked.clone(), cost: i.cost, source: i.source.clone(), serial: i.serial.clone(),
+        packaging: i.packaging.clone(),
         status: match inventory::status_with(i, y, m, t) { Status::Ok => "ok", Status::Check => "check", Status::ActNow => "act" }.to_string(),
         days_left: inventory::days_left(i),
     }
@@ -1472,6 +1478,73 @@ fn inventory_delete(ids: Vec<String>) -> Result<Vec<ItemDto>, String> {
     u.save_inventory(&items)?;
     let t = settings::thresholds();
     Ok(items.iter().map(|i| to_dto(i, &t)).collect())
+}
+
+
+// ---------- places inside places, and how long food lasts (docs/42) ----------
+
+#[derive(Serialize)]
+struct PlaceDto {
+    path: String,
+    name: String,
+    depth: usize,
+    here: usize,
+    inside: usize,
+}
+
+/// Every place named in the inventory ("Garage", "Garage > Shelf 2", ...), with how many lines are in each.
+#[tauri::command]
+fn inventory_places() -> Result<Vec<PlaceDto>, String> {
+    let items = user().load_inventory()?;
+    Ok(placepath::places(&items).into_iter()
+        .map(|p| PlaceDto { path: p.path, name: p.name, depth: p.depth, here: p.here, inside: p.inside })
+        .collect())
+}
+
+#[derive(Serialize)]
+struct FoundDto {
+    id: String,
+    name: String,
+    place: String,
+    quantity: f64,
+    unit: String,
+}
+
+/// "Where is it?": inventory lines that match every word typed.
+#[tauri::command]
+fn inventory_where(query: String) -> Result<Vec<FoundDto>, String> {
+    let items = user().load_inventory()?;
+    Ok(placepath::where_is(&items, &query).into_iter()
+        .map(|f| FoundDto { id: f.id, name: f.name, place: f.place, quantity: f.quantity, unit: f.unit })
+        .collect())
+}
+
+#[derive(Serialize)]
+struct ShelfGuessDto {
+    /// "YYYY-MM", or empty when there is no number to give
+    use_by: String,
+    food: String,
+    months: Option<u32>,
+    long_term: bool,
+    basis: String,
+    hint: String,
+    /// true when no bought month was given and this month was used
+    assumed_today: bool,
+}
+
+/// A use-by month guessed from the item's name, how it is packed and the month it was bought or packed.
+/// Returns nothing when the table has no row for this item.
+#[tauri::command]
+fn shelf_life_suggest(name: String, packaging: String, bought: String) -> Result<Option<ShelfGuessDto>, String> {
+    let Some(g) = shelflife::guess(&name, &packaging) else { return Ok(None) };
+    let (bought, assumed) = if shelflife::add_months(&bought, 0).is_some() {
+        (bought, false)
+    } else {
+        let (y, m) = calendar::today_ym();
+        (format!("{:04}-{:02}", y, m), true)
+    };
+    let use_by = g.months.and_then(|m| shelflife::add_months(&bought, m)).unwrap_or_default();
+    Ok(Some(ShelfGuessDto { use_by, food: g.food, months: g.months, long_term: g.long_term, basis: g.basis, hint: g.hint, assumed_today: assumed }))
 }
 
 // ---------- files waiting from Cindrix Scan (docs/39) ----------
@@ -2947,6 +3020,9 @@ pub fn run() {
             inventory_list,
             inventory_save_item,
             inventory_delete,
+            inventory_places,
+            inventory_where,
+            shelf_life_suggest,
             scan_inbox_list,
             scan_inbox_preview,
             scan_inbox_accept,
