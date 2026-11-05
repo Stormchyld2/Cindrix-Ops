@@ -14,7 +14,7 @@ use cindrix_core::maps::{self, MapStore};
 use cindrix_core::modelhost::ModelHost;
 use cindrix_core::product::Product;
 use cindrix_core::shelf::{Book, Mark, Marks, Shelf};
-use cindrix_core::{calendar, cards, cascade, pipeline, seeds, training};
+use cindrix_core::{calendar, cards, cascade, pipeline, rotation, seeds, training};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -2248,6 +2248,77 @@ fn seed_delete(ids: Vec<String>) -> Result<Vec<SeedDto>, String> {
     Ok(seed_dtos(seeds::Vault::new(&root().join("user")).delete(&ids)?))
 }
 
+
+// ---------- garden beds and crop rotation ----------
+#[derive(Serialize, Deserialize, Clone)]
+struct BedRowDto {
+    bed: String,
+    year: i32,
+    crop: String,
+    #[serde(default)]
+    notes: String,
+}
+
+#[derive(Serialize)]
+struct BedClashDto {
+    bed: String,
+    year: i32,
+    crop: String,
+    earlier_year: i32,
+    earlier_crop: String,
+    family: String,
+    wait_until: i32,
+}
+
+#[derive(Serialize)]
+struct BedHintDto {
+    bed: String,
+    /// What could go in next year, best first
+    next: Vec<String>,
+}
+
+#[derive(Serialize)]
+struct BedReviewDto {
+    rows: Vec<BedRowDto>,
+    clashes: Vec<BedClashDto>,
+    hints: Vec<BedHintDto>,
+}
+
+fn bed_rows(v: Vec<rotation::Planting>) -> Vec<BedRowDto> {
+    v.into_iter().map(|p| BedRowDto { bed: p.bed, year: p.year, crop: p.crop, notes: p.notes }).collect()
+}
+
+fn bed_review(rows: Vec<rotation::Planting>) -> BedReviewDto {
+    let clashes = rotation::check_all(&rows)
+        .into_iter()
+        .map(|c| BedClashDto { bed: c.bed, year: c.year, crop: c.crop, earlier_year: c.earlier_year, earlier_crop: c.earlier_crop, family: c.family.name().into(), wait_until: c.wait_until })
+        .collect();
+    let next_year = rows.iter().map(|p| p.year).max().map(|y| y + 1).unwrap_or(0);
+    let mut beds: Vec<String> = Vec::new();
+    for p in &rows {
+        if !beds.iter().any(|b| b.eq_ignore_ascii_case(&p.bed)) {
+            beds.push(p.bed.clone());
+        }
+    }
+    let hints = beds
+        .into_iter()
+        .map(|b| BedHintDto { next: rotation::suggest(&rows, &b, next_year).into_iter().take(3).map(|f| f.name().to_string()).collect(), bed: b })
+        .collect();
+    BedReviewDto { rows: bed_rows(rows), clashes, hints }
+}
+
+#[tauri::command]
+fn beds_list() -> Result<BedReviewDto, String> {
+    Ok(bed_review(rotation::Garden::new(&root().join("user")).list()?))
+}
+
+/// Replace the whole bed history, then report clashes and what could go in next.
+#[tauri::command]
+fn beds_save(rows: Vec<BedRowDto>) -> Result<BedReviewDto, String> {
+    let rows = rows.into_iter().map(|r| rotation::Planting { bed: r.bed, year: r.year, crop: r.crop, notes: r.notes }).collect::<Vec<_>>();
+    Ok(bed_review(rotation::Garden::new(&root().join("user")).save_all(&rows)?))
+}
+
 #[derive(Serialize)]
 struct SuggestedSeedDto {
     crop: String,
@@ -2890,6 +2961,8 @@ pub fn run() {
             training_reports,
             stock_needs,
             seeds_list,
+            beds_list,
+            beds_save,
             seed_save,
             seed_delete,
             seeds_suggested,

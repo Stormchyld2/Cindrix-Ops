@@ -910,6 +910,38 @@ export async function academySave(lesson: string, score: number, total: number, 
   memAcademy[lesson] = r;
 }
 
+
+// ---------- garden beds and crop rotation ----------
+export type BedRow = { bed: string; year: number; crop: string; notes: string };
+export type BedClash = { bed: string; year: number; crop: string; earlier_year: number; earlier_crop: string; family: string; wait_until: number };
+export type BedReview = { rows: BedRow[]; clashes: BedClash[]; hints: { bed: string; next: string[] }[] };
+let memBeds: BedRow[] = [
+  { bed: 'Bed 1', year: 2025, crop: 'Tomato', notes: '' },
+  { bed: 'Bed 1', year: 2026, crop: 'Pepper', notes: '' },
+  { bed: 'Bed 2', year: 2026, crop: 'Pole bean', notes: '' },
+];
+function memReview(): BedReview {
+  const clashes: BedClash[] = [];
+  const fam = (c: string) => (/tomato|pepper|potato|eggplant/i.test(c) ? 'nightshade' : /bean|pea/i.test(c) ? 'legume' : '');
+  const wait: Record<string, number> = { nightshade: 3, legume: 1 };
+  for (const r of memBeds) {
+    const f = fam(r.crop);
+    const e = memBeds.filter((x) => x.bed.toLowerCase() === r.bed.toLowerCase() && x.year < r.year && f && fam(x.crop) === f && r.year - x.year <= wait[f]).sort((a, b) => b.year - a.year)[0];
+    if (e) clashes.push({ bed: r.bed, year: r.year, crop: r.crop, earlier_year: e.year, earlier_crop: e.crop, family: f, wait_until: e.year + wait[f] + 1 });
+  }
+  const beds = [...new Set(memBeds.map((r) => r.bed))];
+  return { rows: memBeds, clashes, hints: beds.map((bed) => ({ bed, next: ['bean and pea family', 'leafy greens'] })) };
+}
+export async function bedsList(): Promise<BedReview> {
+  if (inTauri) return call<BedReview>('beds_list');
+  return memReview();
+}
+export async function bedsSave(rows: BedRow[]): Promise<BedReview> {
+  if (inTauri) return call<BedReview>('beds_save', { rows });
+  memBeds = rows.filter((r) => r.bed.trim() && r.crop.trim());
+  return memReview();
+}
+
 // ---------- seed vault ----------
 export type Seed = {
   id: string; crop: string; variety: string; kind: string; packets: number; seeds_per_packet: number; year_packed: number;

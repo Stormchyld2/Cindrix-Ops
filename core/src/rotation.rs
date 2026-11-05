@@ -8,7 +8,9 @@
 //!
 //! Stored as `user/beds.csv`: one row per bed per year.
 
+use crate::fsio;
 use crate::inventory::{quote, split_record};
+use std::path::{Path, PathBuf};
 
 pub const HEADER: &str = "bed,year,crop,notes";
 
@@ -181,6 +183,36 @@ pub fn to_csv(history: &[Planting]) -> String {
     s
 }
 
+/// The garden file, `user/beds.csv`.
+pub struct Garden {
+    path: PathBuf,
+}
+
+impl Garden {
+    pub fn new(user_dir: &Path) -> Garden {
+        Garden { path: user_dir.join("beds.csv") }
+    }
+
+    /// A missing file is an empty garden. An unreadable one is an error and is never overwritten.
+    pub fn list(&self) -> Result<Vec<Planting>, String> {
+        match std::fs::read_to_string(&self.path) {
+            Ok(t) => Ok(parse(&t)),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(vec![]),
+            Err(e) => Err(e.to_string()),
+        }
+    }
+
+    /// Replace the whole history. Rows with no bed or crop are dropped.
+    pub fn save_all(&self, rows: &[Planting]) -> Result<Vec<Planting>, String> {
+        let keep: Vec<Planting> = rows.iter().filter(|p| !p.bed.trim().is_empty() && !p.crop.trim().is_empty()).cloned().collect();
+        if let Some(dir) = self.path.parent() {
+            std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
+        }
+        fsio::write_atomic(&self.path, to_csv(&keep).as_bytes()).map_err(|e| e.to_string())?;
+        Ok(keep)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -254,5 +286,17 @@ mod tests {
     fn csv_round_trips() {
         let h = vec![p("A", 2024, "Tomato"), Planting { bed: "B, east".into(), year: 2025, crop: "Beans".into(), notes: "needs \"stakes\"".into() }];
         assert_eq!(parse(&to_csv(&h)), h);
+    }
+
+    #[test]
+    fn garden_file_saves_drops_blank_rows_and_reads_back() {
+        let d = std::env::temp_dir().join(format!("rot-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&d);
+        let g = Garden::new(&d);
+        assert!(g.list().unwrap().is_empty());
+        let saved = g.save_all(&[p("A", 2024, "Tomato"), p("", 2024, "Kale"), p("B", 2025, "")]).unwrap();
+        assert_eq!(saved.len(), 1);
+        assert_eq!(g.list().unwrap(), saved);
+        let _ = std::fs::remove_dir_all(&d);
     }
 }

@@ -21,6 +21,7 @@
   import Dashboard from './views/Dashboard.svelte';
   import Plans from './views/Plans.svelte';
   import SeedVault from './views/SeedVault.svelte';
+  import GardenBeds from './views/GardenBeds.svelte';
   import Music from './views/Music.svelte';
   import Guides from './views/Guides.svelte';
   import DrugLabels from './views/DrugLabels.svelte';
@@ -102,7 +103,7 @@
       return true;
     })
   );
-  const planTabs = ['Start', 'What next', 'Drills', 'Family', 'Binder', 'Seed vault', 'What fails'] as const;
+  const planTabs = ['Start', 'What next', 'Drills', 'Family', 'Binder', 'Seed vault', 'Garden beds', 'What fails'] as const;
 
   let group: Group = $state('Dashboard');
   // If the current screen is switched off for this product, move to the first one that is on.
@@ -222,7 +223,7 @@
         { label: 'Crop guides', tab: 'guide:crop-guides' }, { label: 'Planting calendar', tab: 'guide:planting-calendar' },
         { label: 'Food preservation', tab: 'guide:food-preservation' }, { label: 'Livestock', tab: 'guide:livestock' },
         { label: 'Soil and water', tab: 'guide:soil-and-water' }, { label: '', tab: '', rule: true },
-        { label: 'Seed vault', tab: 'Seed vault' } ] },
+        { label: 'Seed vault', tab: 'Seed vault' }, { label: 'Garden beds', tab: 'Garden beds' } ] },
       { id: 'Maps', cat: 'maps', tab: 'Maps', show: p ? p.maps : true },
       { id: 'Morale', cat: 'morale', show: true, entries: [
         { label: 'Reading Corner', tab: 'Corner', note: 'enjoyment books', show: p ? p.library : true },
@@ -242,7 +243,7 @@
       case 'Library': case 'Intel': case 'DrugLabels': return 'Intel';
       case 'Music': case 'Corner': case 'Journal': case 'Photos': return 'Morale';
       case 'CommsPlan': return 'Comms';
-      case 'Plan': return plan === 'Seed vault' ? 'Agro' : 'Operations';
+      case 'Plan': return plan === 'Seed vault' || plan === 'Garden beds' ? 'Agro' : 'Operations';
       case 'Inventory': case 'Todo': case 'Calendar': case 'Projects': return 'Operations';
       case 'Settings': return settingsFromComms ? 'Comms' : 'System';
       case 'Guides': {
@@ -362,6 +363,8 @@
         <Family />
       {:else if plan === 'Seed vault'}
         <SeedVault go={goTo} />
+      {:else if plan === 'Garden beds'}
+        <GardenBeds />
       {:else}
         <Cascade go={goTo} />
       {/if}
