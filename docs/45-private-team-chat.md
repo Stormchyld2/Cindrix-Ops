@@ -20,3 +20,36 @@
 
 ## Suggested path
 Start with level 1 for the Nightwolves now, learn what we actually miss, then decide whether level 2 is worth building.
+
+---
+
+# Verdict (2026-11-05): Cindrix Comms on Matrix, serverless, and a custom client
+
+Scope: text chat only. Group voice is out for now.
+
+## 1. Matrix as the base: viable. Do this.
+- Continuwuity (Rust Matrix server) plus Element / Element X is the base already chosen. **Check Continuwuity's licence in its own repo before shipping it** (I could not confirm it from its website; it descends from Conduit, which is permissive, but verify).
+- Federation can stay off; the group is invite-only. Messages and E2EE keys live on the members' devices, so the server mostly sees metadata.
+
+## 2. The "serverless" idea: not as one thing. Split it.
+**A true no-server Matrix does not exist in usable form** (the peer-to-peer Matrix experiments were never finished). Matrix rooms need one authoritative server per room to stay consistent.
+
+What *is* viable, in order of safety:
+1. **Failover, not serverless (recommended).** One Comms server name. The PC is primary. The Note10 Hub keeps a regularly copied snapshot of the database. If the internet or PC is down, the Note10 starts as that **same** server from the latest copy; members join its Wi-Fi hotspot and carry on. When the PC returns, copy the Note10's database **back** to it (one direction, one writer at a time) before the PC serves again. Never run both at once. Messages sent during the outage exist only on the Note10 until that copy-back, so back it up before handing over.
+2. **True serverless fallback: use Briar, do not build one.** Briar is an audited, off-grid, end-to-end encrypted messenger that syncs over Bluetooth, Wi-Fi and Tor and keeps data only on members' phones. It already does what "serverless" means. It is GPL-3.0 (Android) and AGPL (desktop), so we **run it beside Comms as a separate app** and may not copy its code into ours. Android and desktop only, no iPhone.
+3. **Our own serverless engine: not viable for now.** Discovery, offline delivery, group keys (MLS), history sync and key backup would all be ours to write and test. That is a multi-year, security-critical project for a four-person group, and the first rule is that we do not invent crypto.
+
+## 3. Your "both the phone and the server hold it, only one delivers" idea
+Matrix clients already queue unsent messages and the server stores sent ones, with unique event IDs, so a message is delivered once and duplicates are discarded. Test it rather than build it. The extra Cindrix piece is a **status line** ("on PC server / on Note10 / offline, queued").
+
+## 4. A custom Cindrix chat client: viable, but not first
+- Viable: matrix-rust-sdk (Apache-2.0, to be re-verified) does the hard parts: sync, rooms, E2EE (via vodozemac), the local send queue. Element X is itself built on it. A Tauri/Svelte client on it is realistic for desktop; Android is harder, because it means Rust through Tauri mobile or a separate Kotlin shell.
+- Cost: months, mostly UI: verification flows, key backup/recovery, notifications on Android (the awkward part with no Google push), media, read receipts.
+- Recommendation: **ship with Element / Element X first.** Put the Cindrix features around it: alert room, a download-links room with the Hub's address, a join-by-QR page served from the Note10, a bot for alerts. Build our own client only for the features Element cannot give us.
+
+## 5. Order of work
+1. Run Continuwuity on the PC; make an invite-only space with Alerts, General, Manuals and Downloads rooms.
+2. Put the same server on the Note10; script the snapshot copy and the one-way hand-back; test on the hotspot.
+3. Join-by-QR page on the Note10.
+4. Add Briar to the Hub's download list as the no-infrastructure fallback.
+5. Decide on a custom client after a month of real use.
