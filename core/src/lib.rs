@@ -41,6 +41,7 @@ pub mod share;
 pub mod sourcelink;
 pub mod prompt;
 pub mod retrieval;
+pub mod rotation;
 pub mod roadtiles;
 pub mod routing;
 pub mod shelf;
