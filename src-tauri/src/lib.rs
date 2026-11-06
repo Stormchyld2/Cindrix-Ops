@@ -1484,7 +1484,7 @@ fn inventory_delete(ids: Vec<String>) -> Result<Vec<ItemDto>, String> {
 // ---------- places inside places, and how long food lasts (docs/42) ----------
 
 #[derive(Serialize)]
-struct PlaceDto {
+struct InvPlaceDto {
     path: String,
     name: String,
     depth: usize,
@@ -1494,10 +1494,10 @@ struct PlaceDto {
 
 /// Every place named in the inventory ("Garage", "Garage > Shelf 2", ...), with how many lines are in each.
 #[tauri::command]
-fn inventory_places() -> Result<Vec<PlaceDto>, String> {
+fn inventory_places() -> Result<Vec<InvPlaceDto>, String> {
     let items = user().load_inventory()?;
     Ok(placepath::places(&items).into_iter()
-        .map(|p| PlaceDto { path: p.path, name: p.name, depth: p.depth, here: p.here, inside: p.inside })
+        .map(|p| InvPlaceDto { path: p.path, name: p.name, depth: p.depth, here: p.here, inside: p.inside })
         .collect())
 }
 
