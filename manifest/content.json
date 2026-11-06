@@ -131,27 +131,6 @@
       }
     },
     {
-      "id": "wikem",
-      "name": "WikEM emergency medicine (Kiwix ZIM)",
-      "category": "library",
-      "license": "CC BY-SA 4.0",
-      "size_estimate_gb": 1,
-      "required": true,
-      "tier": "all",
-      "source_url": null,
-      "sha256": null,
-      "editions": [
-        "go",
-        "vault"
-      ],
-      "source": {
-        "kind": "kiwix",
-        "dir": "other",
-        "prefix": "wikem_en_all_maxi_",
-        "dest": "library"
-      }
-    },
-    {
       "id": "appropedia",
       "name": "Appropedia (Kiwix ZIM)",
       "category": "library",

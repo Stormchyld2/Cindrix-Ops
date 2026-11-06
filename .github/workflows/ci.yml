@@ -265,13 +265,13 @@ jobs:
             curl -fsSL -o "$f" "https://download.kiwix.org/zim/$1/$f"
           }
           get zimit ready.gov_en_all_
-          get other wikem_en_all_maxi_
+          get wikipedia wikipedia_en_medicine_maxi_
           ls -l *.zim
       - name: Run the assistant's search against them
         shell: bash
         run: |
           cd "$RUNNER_TEMP"
-          ./kt/kiwix-serve --port 8097 --address 127.0.0.1 ready.gov*.zim wikem*.zim > serve.log 2>&1 &
+          ./kt/kiwix-serve --port 8097 --address 127.0.0.1 ready.gov*.zim wikipedia_en_medicine*.zim > serve.log 2>&1 &
           for i in $(seq 1 60); do curl -sf http://127.0.0.1:8097/catalog/v2/entries > /dev/null && break; sleep 1; done
           cd "$GITHUB_WORKSPACE/core"
           set +e
@@ -312,7 +312,7 @@ jobs:
             if ($code -ne 0) { Write-Host "::error::drive plan for $ed failed (exit $code): $text"; $fail = 1 }
           }
           # the short list used for a first real test (docs/22-real-test.md)
-          $out = & powershell -NoProfile -File scripts\build-drive.ps1 -Target "$env:RUNNER_TEMP\first-test" -Edition go -Only qwen35-2b,fema-guides,wikem -DryRun 2>&1 | Out-String
+          $out = & powershell -NoProfile -File scripts\build-drive.ps1 -Target "$env:RUNNER_TEMP\first-test" -Edition go -Only qwen35-2b,fema-guides,wikimed -DryRun 2>&1 | Out-String
           $code = $LASTEXITCODE
           Write-Host $out
           $text = ($out -split "`r?`n" | Where-Object { $_.Trim() } | ForEach-Object { $_.Trim() }) -join ' | '

@@ -4,7 +4,7 @@
 #   powershell -File scripts\build-drive.ps1 -Target D:\ -Edition go
 #   powershell -File scripts\build-drive.ps1 -Target E:\ -Edition vault -Optional
 #   powershell -File scripts\build-drive.ps1 -Target D:\ -Edition go -DryRun      (asks the servers for real sizes, downloads nothing)
-#   powershell -File scripts\build-drive.ps1 -Target C:\Cindrix -Edition go -Only qwen35-2b,fema-guides,wikem    (a small first test, about 2.5 GB)
+#   powershell -File scripts\build-drive.ps1 -Target C:\Cindrix -Edition go -Only qwen35-2b,fema-guides,wikimed    (a small first test, about 3 GB)
 #
 # What it does: makes the folders and the cindrix-drive.json marker, works out each item's real
 # download address and size, refuses to start if the total would pass the edition's size limit,
@@ -20,7 +20,7 @@ param(
   [string]$Name = '',
   [string]$Id = '',      # what the program remembers this drive by; by default the edition word (vault, go or hub)
   [switch]$Optional,     # also fetch items the manifest marks as not required
-  [string[]]$Only = @(), # fetch just these item ids, for example: -Only qwen35-2b,fema-guides,wikem
+  [string[]]$Only = @(), # fetch just these item ids, for example: -Only qwen35-2b,fema-guides,wikimed
   [switch]$DryRun,       # only work out sizes and print the plan
   [string]$Manifest = ''
 )

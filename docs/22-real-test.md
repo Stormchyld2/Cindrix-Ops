@@ -16,14 +16,14 @@ Nobody has done this yet. Everything below is what the code is *meant* to do; an
 
 If there is no `maps` folder, the map step failed in that build; the log of the Windows job says why. The rest of this test still works.
 
-## 2. Get the model and two small archives (about 2.5 GB)
+## 2. Get the model and two small archives (about 3 GB)
 Open **PowerShell** in that folder (in File Explorer: click the address bar, type `powershell`, press Enter), then run:
 
 ```
-powershell -ExecutionPolicy Bypass -File scripts\build-drive.ps1 -Target $PWD -Edition go -Only qwen35-2b,fema-guides,wikem
+powershell -ExecutionPolicy Bypass -File scripts\build-drive.ps1 -Target $PWD -Edition go -Only qwen35-2b,fema-guides,wikimed
 ```
 
-This downloads the Qwen3.5 2B model (about 1.3 GB, into `models`), the Ready.gov preparedness guides (about 0.2 GB) and WikEM emergency medicine (about 1 GB), both into `library`. It continues if you stop it and run it again, and it checks the files.
+This downloads the Qwen3.5 2B model (about 1.3 GB, into `models`), the Ready.gov preparedness guides (about 0.2 GB) and Wikipedia's medicine articles (about 1.7 GB), both into `library`. (WikEM was in this test until 2026-11: Kiwix no longer publishes it.) It continues if you stop it and run it again, and it checks the files.
 
 If it says it cannot find an item, copy the red text; it names the item.
 
