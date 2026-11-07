@@ -1,4 +1,4 @@
-# 43. Comms: lessons from WiFi Direct Cable and Meshenger (2026-11-05)
+# 46. Comms: lessons from WiFi Direct Cable and Meshenger (2026-11-05)
 
 Design reference only for the Hub, AirLink and Deploy work. Written from the projects' public READMEs and protocol notes.
 

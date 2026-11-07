@@ -1,4 +1,4 @@
-# 43. Status and open work (audit of 2026-11-07)
+# 49. Status and open work (audit of 2026-11-07)
 
 A read-through of the repo, docs and CI config. Nothing was built or run for this audit, so "built" below means
 "written and passing the automated checks", never "seen working by a person".
@@ -15,7 +15,7 @@ Safe backup mailbox, share server with PIN and invites, drive markers and librar
    `continue-on-error`, so a green build does not prove these.
 2. **Android Hub** not started. Needs a Tauri-on-Android test, the llama.cpp assistant on the Note 10, and a
    replacement for `kiwix-serve` (does not run on Android). Waits for item 1.
-3. **Canonleaf add-on** built 2026-11-07 (doc 44) but its app-side Rust and Svelte were not compiled; CI is the first check, then a real run.
+3. **Bible study (Canonleaf's files)**, doc 44: built and unit-tested, never run on the owner's real Canonleaf library, hotspot or hardware, and its Tauri and Svelte parts need a first CI check.
 4. **Academy**: the four security-school-style courses were written on 2026-11-07 (protective driving,
    noticing surveillance, home and residential security, safe and accurate shooting; 6 lessons each, all marked
    draft, and they pass the Academy load, quiz and no-dose tests). Still thin: the seven original courses have

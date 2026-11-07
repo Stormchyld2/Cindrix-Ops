@@ -4,7 +4,7 @@
 
 An offline survival library for Windows and Android: a local AI assistant that answers from the library on the drive and shows its sources, emergency cards, offline maps, drills, family information, and an inventory.
 
-**Status (2026-11-07): the Windows program is feature-built and passes its automated checks in CI, but no person has run it on real hardware yet. That first real test is the next milestone: docs/22-real-test.md. Android (the Hub phone) has not been started; it waits for the Windows test. What is still open is listed in docs/43-status-and-open-work.md.**
+**Status (2026-11-07): the Windows program is feature-built and passes its automated checks in CI, but no person has run it on real hardware yet. That first real test is the next milestone: docs/22-real-test.md. Android (the Hub phone) has not been started; it waits for the Windows test. What is still open is listed in docs/49-status-and-open-work.md.**
 
 What exists: the Dashboard, Ask (local assistant with chat history, source links, projects, calendar and to-do), Library and archive reader (ZIM files read directly), Intel, Academy (course folders), Plan and Seed vault, Inventory with shelf life and places, Maps (street, topo, aerial, drawing, directions, MGRS grid, phone map export), Music, Morale (Reading Corner, Journal, Photos), and the share server for other devices on the hotspot. The theme is charcoal and blue (docs/41-theme.md).
 

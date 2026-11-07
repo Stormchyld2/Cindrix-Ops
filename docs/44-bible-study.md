@@ -1,4 +1,4 @@
-# 39. Bible study (Canonleaf's files)
+# 44. Bible study (Canonleaf's files)
 
 Intel > Bible study reads the resource files that the separate **Canonleaf** program installs, so the
 Bible, commentaries, dictionaries and cross-references can be used from a Cindrix drive. Canonleaf stays

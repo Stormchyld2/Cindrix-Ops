@@ -46,7 +46,7 @@ cargo test
 - The real Windows test: [22](22-real-test.md).
 - Portable build check: copy the exe and `content/` to a USB folder and run it.
 - Android hello-world build (waits for the Windows test).
-- Everything else open: [43](43-status-and-open-work.md).
+- Everything else open: [49](49-status-and-open-work.md).
 
 
 ## Update: the chat engine

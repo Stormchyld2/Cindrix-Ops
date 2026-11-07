@@ -58,7 +58,7 @@ The map "did not load correctly" with the small test pack. Likely cause: the vie
 
 ## Still to do
 (Updated 2026-11-07: the topo layer, aerial packs, layer buttons, drawing tools, directions and MGRS grid have since been built; see docs 28 to 32.)
-Still open: fonts for place names, a warning when a route crosses a no-go area, GPS where hardware has it, whole-US street addresses, and a first run on real tiles. Full list: [43](43-status-and-open-work.md).
+Still open: fonts for place names, a warning when a route crosses a no-go area, GPS where hardware has it, whole-US street addresses, and a first run on real tiles. Full list: [49](49-status-and-open-work.md).
 
 
 ## Finding a place (2026-10-21)

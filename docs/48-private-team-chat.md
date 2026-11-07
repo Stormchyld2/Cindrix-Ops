@@ -1,4 +1,4 @@
-# 45. Our own encrypted "Discord": how to build it without inventing crypto (2026-11-05)
+# 48. Our own encrypted "Discord": how to build it without inventing crypto (2026-11-05)
 
 **Short answer: yes, it can be done, and the safe way is to assemble vetted parts, not to write your own encryption.**
 

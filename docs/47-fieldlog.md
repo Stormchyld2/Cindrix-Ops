@@ -1,4 +1,4 @@
-# 44. FieldLog: recording where you went and what you saw (2026-11-05)
+# 47. FieldLog: recording where you went and what you saw (2026-11-05)
 
 A design for a field notebook tied to the map viewer.
 

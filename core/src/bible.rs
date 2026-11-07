@@ -5,7 +5,7 @@
 //! a `manifest.json` (schema version 2). This module finds those folders, and reads them without
 //! Canonleaf running and without writing anything. Standard library only, like the rest of the core.
 //!
-//! Rules it keeps (see `docs/39-bible-study.md`):
+//! Rules it keeps (see `docs/44-bible-study.md`):
 //! - Read only. Nothing here changes a resource.
 //! - Text is shown exactly as the resource has it. A passage a resource does not have is reported
 //!   as missing, never filled in.

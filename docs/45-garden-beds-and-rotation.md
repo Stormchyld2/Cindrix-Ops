@@ -1,4 +1,4 @@
-# 42. Garden beds and crop rotation (2026-11-05)
+# 45. Garden beds and crop rotation (2026-11-05)
 
 **What:** `core/src/rotation.rs`. Each bed keeps a history of what grew in it (`user/beds.csv`: `bed,year,crop,notes`).
 The checker warns when a plant family would follow itself too soon and suggests what to plant next.
