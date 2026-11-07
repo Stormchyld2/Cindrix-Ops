@@ -41,3 +41,4 @@ Mockups of every screen are in [`../mockups`](../mockups).
 - [25. Testing Ask](25-ask-test.md): a 30-question check of the small models
 - [24. Hosts, libraries and browser clients](24-hosts-libraries-browser-clients.md): Vault and Hub as hosts for one drive, asking before reading a drive, browser tabs as clients
 - [43. The Hub's model also serves Cindrix Overwatch](43-hub-model-for-overwatch.md): planned fixed port 8089, same-phone by default
+- [43. Status and open work](43-status-and-open-work.md): audit of 2026-11-07, what is built and what is left
