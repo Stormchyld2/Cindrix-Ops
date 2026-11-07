@@ -57,7 +57,8 @@ The map "did not load correctly" with the small test pack. Likely cause: the vie
 3. Speed on the 8 GB laptop at zoom 12 to 15 (doc 6, risk 5).
 
 ## Still to do
-Topo layer (contours and shading from elevation data), satellite packs per county, fonts for place names, layer toggles, a warning when a route crosses a no-go area, GPS where hardware has it.
+(Updated 2026-11-07: the topo layer, aerial packs, layer buttons, drawing tools, directions and MGRS grid have since been built; see docs 28 to 32.)
+Still open: fonts for place names, a warning when a route crosses a no-go area, GPS where hardware has it, whole-US street addresses, and a first run on real tiles. Full list: [43](43-status-and-open-work.md).
 
 
 ## Finding a place (2026-10-21)

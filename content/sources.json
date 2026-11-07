@@ -88,6 +88,30 @@
           "note": "Based on the published Committee on Tactical Combat Casualty Care (CoTCCC) guidelines, Stop the Bleed (American College of Surgeons), the HHS CHEMM START triage algorithm, FEMA CERT Basic Training (public domain) and American Red Cross first aid guidance. Nothing is copied from any training school's course. No medicine doses. DRAFTS until a qualified reviewer signs them off; it does not replace a hands-on class."
         },
         {
+          "name": "Academy course: Protective driving (2 modules, 6 lessons)",
+          "license": "Written for this project in our own words from public guidance",
+          "status": "in this build",
+          "note": "Based on NHTSA and AAA public driving, winter and flood-safety guidance and public police and FBI personal-safety advice. Nothing is copied from any training school's course. DRAFTS until a qualified reviewer signs them off; it does not replace a hands-on class."
+        },
+        {
+          "name": "Academy course: Noticing surveillance (2 modules, 6 lessons)",
+          "license": "Written for this project in our own words from public guidance",
+          "status": "in this build",
+          "note": "Based on public awareness-level guidance (Cooper colour codes), FBI and police personal-safety and crime-prevention advice and FTC privacy guidance. For personal safety only. Nothing is copied from any training school's course. DRAFTS until a qualified reviewer signs them off; it does not replace a hands-on class."
+        },
+        {
+          "name": "Academy course: Home and residential security (2 modules, 6 lessons)",
+          "license": "Written for this project in our own words from public guidance",
+          "status": "in this build",
+          "note": "Based on DHS/CISA, US Fire Administration, Ready.gov and police crime-prevention guidance. Nothing is copied from any training school's course. DRAFTS until a qualified reviewer signs them off; it does not replace a hands-on class."
+        },
+        {
+          "name": "Academy course: Safe and accurate shooting (2 modules, 6 lessons)",
+          "license": "Written for this project in our own words from public guidance",
+          "status": "in this build",
+          "note": "Based on the universal firearm safety rules (NRA, NSSF, Project ChildSafe) and public marksmanship fundamentals. Laws differ by place; check yours. It does not replace a certified instructor. Nothing is copied from any training school's course. DRAFTS until a qualified reviewer signs them off; it does not replace a hands-on class."
+        },
+        {
           "name": "Academy course: Family medical care without a clinic (5 modules, 15 lessons)",
           "license": "Written for this project in our own words from public guidance",
           "status": "in this build",

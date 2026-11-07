@@ -42,9 +42,11 @@ cargo test
 ```
 
 ## Still to do in this slice
-- Connect llama.cpp (Windows first) behind the `Model` trait in `core/src/pipeline.rs`.
-- Android hello-world build.
+(Updated 2026-11-07. The llama.cpp connection was done long ago; see the "chat engine" update below.)
+- The real Windows test: [22](22-real-test.md).
 - Portable build check: copy the exe and `content/` to a USB folder and run it.
+- Android hello-world build (waits for the Windows test).
+- Everything else open: [43](43-status-and-open-work.md).
 
 
 ## Update: the chat engine

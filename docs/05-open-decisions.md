@@ -9,12 +9,13 @@
 | 5 | GitHub builds | Yes. Check Actions limits. |
 | 6 | Map coverage | US-wide street and topo maps are built into the drive. Satellite is the user's own state and county download from USGS (Settings). |
 | 7 | Stack | Decided: Rust, Tauri 2, Svelte, TypeScript. See doc 6. Android and llama.cpp are the main risks to test first. |
-| 8 | Accent color | Amber for the flame and OPS, a signal blue (#5aa9e6, already used on the mockup map) for interactive items, red for emergency cards. Default unless changed. |
+| 8 | Accent color | **Changed 2026-11-03:** charcoal surfaces and one blue accent to match the other Cindrix apps; amber stays only for warnings and the logo. See [41](41-theme.md). |
 | 9 | Hardware facts | Laptop reported as i7-8700 with 8 GB RAM. Drive not needed yet. |
 | 10 | Clinician for the Diabetes Pack | **Deferred (2026-10-20).** The Diabetes Pack comes later, with a herbal approach for when no medication is available. It still needs a qualified reviewer before it ships, and it must say plainly what herbs cannot replace (for example insulin for type 1 diabetes). The assistant keeps refusing medication doses. |
 | 11 | Legal | Closed. The author has checked the licensing and the name. |
 | 12 | SERE material | Author's own work, to be reviewed before it is included. |
 | 13 | Wikipedia tier | Text only (about 10 GB) or with pictures (about 55 GB). Decide after real sizes are measured. See doc 7. |
+| 14 | License of our own code | **OPEN.** The owner first said GPL-3.0, then said he really wants it limited to personal use with no commercial licenses, and accepts open source only reluctantly. There is no LICENSE file in the repo, so by default all rights are reserved and nobody else may reuse it. GPL-3.0 allows commercial use by anyone; a personal-use-only license is not open source and the shipped GPL/LGPL parts and credits (see `licenses/`) must still be honoured. Needs the owner's pick, and a lawyer's check before anything is sold. See [43](43-status-and-open-work.md). |
 
 ## Decided 2026-10-18
 - Three products from one code base: Cindrix Ops Go (128 GB stick, content up to 100 GB), Cindrix Ops Vault (4 TB drive, up to 3400 GB), Cindrix Ops Hub (own server for phones on its own Wi-Fi). Spelling: Cindrix. See [17](17-three-products.md).
