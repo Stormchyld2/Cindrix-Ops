@@ -39,6 +39,7 @@ pub const GUEST_COMMANDS: &[&str] = &[
     "drills_list",
     "shelf_list",
     "shelf_read",
+    "shelf_download",
     "sources_list",
     "settings_load",
     "dashboard_suggestions",
@@ -259,6 +260,31 @@ pub fn parse_range(h: &str, len: u64) -> Result<Option<(u64, u64)>, ()> {
     let end = if b.is_empty() { len - 1 } else { match b.parse::<u64>() { Ok(e) => e.min(len - 1), Err(_) => return Ok(None) } };
     if end < start { return Ok(None); }
     Ok(Some((start, end)))
+}
+
+/// The `Content-Disposition` header that makes a browser save a file under this name. The plain
+/// `filename` is a safe fallback; `filename*` carries the real name for any letters.
+pub fn content_disposition(name: &str) -> String {
+    let fallback: String = name.chars().map(|c| if c.is_ascii() && !c.is_ascii_control() && c != '"' && c != '\\' && c != '%' { c } else { '_' }).collect();
+    let mut encoded = String::new();
+    for b in name.bytes() {
+        if b.is_ascii_alphanumeric() || matches!(b, b'-' | b'.' | b'_' | b'~') { encoded.push(b as char); } else { encoded.push_str(&format!("%{:02X}", b)); }
+    }
+    format!("attachment; filename=\"{}\"; filename*=UTF-8''{}", fallback, encoded)
+}
+
+/// The reply for a file the person asked to save: the whole file, or the part a `Range` header asks
+/// for (so a long download over a weak hotspot can carry on where it stopped).
+pub fn download_reply(name: &str, mime: &str, bytes: Vec<u8>, range: Option<&str>) -> Response {
+    let len = bytes.len() as u64;
+    match range.map(|h| parse_range(h, len)) {
+        Some(Err(())) => Response::text(416, "That part of the file is not there.").with("Content-Range", &format!("bytes */{}", len)),
+        Some(Ok(Some((a, b)))) => Response::new(206, mime, bytes[a as usize..=b as usize].to_vec())
+            .with("Content-Range", &format!("bytes {}-{}/{}", a, b, len))
+            .with("Content-Disposition", &content_disposition(name))
+            .with("Accept-Ranges", "bytes"),
+        _ => Response::new(200, mime, bytes).with("Content-Disposition", &content_disposition(name)).with("Accept-Ranges", "bytes"),
+    }
 }
 
 // ---------- the PIN and signing in ----------
@@ -488,6 +514,44 @@ mod tests {
         assert_eq!(parse_range("bytes=100-", 100), Err(()));
         assert_eq!(parse_range("items=1-2", 100), Ok(None));
         assert_eq!(parse_range("bytes=9-3", 100), Ok(None));
+    }
+
+    #[test]
+    fn a_download_is_saved_under_its_own_name() {
+        assert_eq!(content_disposition("First Aid.pdf"), "attachment; filename=\"First Aid.pdf\"; filename*=UTF-8''First%20Aid.pdf");
+        let d = content_disposition("Café \"Guide\".pdf");
+        assert!(d.starts_with("attachment; filename=\"Caf_ _Guide_.pdf\""), "{}", d);
+        assert!(d.ends_with("filename*=UTF-8''Caf%C3%A9%20%22Guide%22.pdf"), "{}", d);
+        // nothing in the header can break out of its quotes or add a line
+        assert!(!content_disposition("a\r\nSet-Cookie: x=1").contains('\r'));
+    }
+
+    #[test]
+    fn the_whole_book_or_the_part_asked_for() {
+        let book: Vec<u8> = (0..100u8).collect();
+        let all = download_reply("a.pdf", "application/pdf", book.clone(), None);
+        assert_eq!(all.status, 200);
+        assert_eq!(all.body, book);
+        assert!(all.headers.iter().any(|(k, v)| k == "Content-Disposition" && v.starts_with("attachment;")));
+        assert!(all.headers.iter().any(|(k, v)| k == "Accept-Ranges" && v == "bytes"));
+        let part = download_reply("a.pdf", "application/pdf", book.clone(), Some("bytes=90-"));
+        assert_eq!(part.status, 206);
+        assert_eq!(part.body, book[90..].to_vec());
+        assert!(part.headers.iter().any(|(k, v)| k == "Content-Range" && v == "bytes 90-99/100"));
+        let past = download_reply("a.pdf", "application/pdf", book.clone(), Some("bytes=100-"));
+        assert_eq!(past.status, 416);
+        // a header that cannot be used sends the whole book
+        assert_eq!(download_reply("a.pdf", "application/pdf", book, Some("items=1-2")).status, 200);
+    }
+
+    #[test]
+    fn guests_may_download_books_and_manuals_but_nobody_without_the_pin() {
+        assert!(guest_allowed("shelf_download"));
+        assert!(command_allowed(&Role::Guest, "shelf_download"));
+        assert!(command_allowed(&Role::Person("Dana".into()), "shelf_download"));
+        assert!(!command_allowed(&Role::Nobody, "shelf_download"));
+        // still no way for a guest to put books on the shelf or take them off
+        assert!(!guest_allowed("shelf_add") && !guest_allowed("shelf_remove") && !guest_allowed("shelf_update"));
     }
 
     #[test]

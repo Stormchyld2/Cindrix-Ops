@@ -475,6 +475,20 @@ fn route(app: &tauri::AppHandle, req: &Request, who: &str, stream: &mut TcpStrea
         send(stream, &r);
         return;
     }
+    if req.path == "/api/shelf_download" {
+        // a plain file for the browser to save, so the book can be read later without this host (guests may, like reading)
+        let r = if !share::command_allowed(&role, "shelf_download") {
+            Response::text(403, "This can only be done on the host computer or phone.")
+        } else {
+            let id = req.query_value("id").unwrap_or("").to_string();
+            match crate::shelf_for(&id).download(&id) {
+                Ok(d) => share::download_reply(&d.name, d.mime, d.bytes, req.header("range")),
+                Err(e) => Response::text(404, &e),
+            }
+        };
+        send(stream, &r);
+        return;
+    }
     // maps, music and archive pages are answered by the same code the app's own windows use
     let media = if let Some(rest) = req.raw_path.strip_prefix("/tiles") {
         Some(("tiles", rest.to_string()))

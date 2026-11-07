@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { shelfList, shelfAdd, shelfUpdate, shelfRemove, shelfScanDrive, type Book } from '../lib/api';
+  import { shelfList, shelfAdd, shelfUpdate, shelfRemove, shelfScanDrive, shelfDownload, type Book } from '../lib/api';
   import Reader from './Reader.svelte';
   import { sourceRequest } from '../lib/chat.svelte';
   import { settings } from '../lib/settings.svelte';
@@ -125,6 +125,10 @@
     await refresh();
   }
   async function closeReader() { reading = null; await refresh(); }
+  /** A copy of the book as a plain file, to read without this library. */
+  async function download(b: Book) {
+    try { const m = await shelfDownload(b); if (m) message = m; } catch (e) { message = String(e); }
+  }
 </script>
 
 {#if reading}
@@ -195,7 +199,7 @@
       <div class="empty panel">
         <strong>{corner ? 'Your Reading Corner is empty.' : 'Your shelf is empty.'}</strong>
         {#if corner}<p class="muted">Drag a book here, or use “Add a book”. PDF, Markdown and text files in a folder called <b>leisure</b> on the drive are put here automatically. A folder inside it, like <b>leisure\Mystery</b>, becomes a genre button; press “Look for books on the drive” after adding some. You can also move a book here from the Shelf with “Move to Reading Corner”.</p>
-        {:else}<p class="muted">Drag a PDF here, or use “Add a book”. PDF, Markdown and text files in the drive's library, books or manuals folder are put on the shelf automatically; press “Look for books on the drive” after adding some. Books you add stay on this drive and never leave it. Books for enjoying go in a folder called <b>leisure</b> and show in the Reading Corner instead.</p>{/if}
+        {:else}<p class="muted">Drag a PDF here, or use “Add a book”. PDF, Markdown and text files in the drive's library, books or manuals folder are put on the shelf automatically; press “Look for books on the drive” after adding some. Books you add stay on this drive unless you download a copy with the arrow on a book. Books for enjoying go in a folder called <b>leisure</b> and show in the Reading Corner instead.</p>{/if}
       </div>
     {/if}
 
@@ -206,6 +210,9 @@
             <span class="spine"></span>
             <span class="t">{b.title}</span>
             <span class="k">{b.kind.toUpperCase()}{b.author ? ' · ' + b.author : ''}</span>
+          </button>
+          <button class="dl" onclick={() => download(b)} aria-label="Download {b.title} to read without this library" title="Download a copy to read offline, without this library">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 4v10m0 0-4-4m4 4 4-4M5 19h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
           </button>
           <div class="meta">{b.license}</div>
           {#if b.mine}
@@ -268,7 +275,10 @@
   .pill { padding: 7px 14px; border-radius: 999px; border: 1px solid var(--line2); background: transparent; color: #aab2bb; font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: .1em; }
   .pill.on { border-color: var(--blue); background: var(--blue-soft); color: var(--blue); }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 18px; }
-  .book { display: flex; flex-direction: column; gap: 8px; }
+  .book { position: relative; display: flex; flex-direction: column; gap: 8px; }
+  /* the download icon sits on the cover's top corner; big enough for a finger on a phone */
+  .dl { position: absolute; top: 8px; right: 8px; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid var(--line2); background: #0d0f0ecc; color: var(--text); padding: 0; cursor: pointer; }
+  .dl:hover, .dl:focus-visible { color: var(--blue); border-color: var(--blue); }
   .cover { position: relative; aspect-ratio: 3 / 4; border-radius: 10px; border: 1px solid var(--line2); padding: 14px 12px; display: flex; flex-direction: column; justify-content: space-between; text-align: left; color: var(--text); overflow: hidden; }
   .cover:hover { border-color: var(--blue); }
   .spine { position: absolute; left: 0; top: 0; bottom: 0; width: 8px; background: #00000055; }
