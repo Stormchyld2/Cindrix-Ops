@@ -779,6 +779,11 @@ impl Library {
                 out.push(p);
             }
         }
+        if refs.is_empty() {
+            if let Some(bible) = self.default_bible() {
+                out.extend(self.wording_passages(bible, question));
+            }
+        }
         if refs.is_empty() && looks_biblical(question) {
             // "What does the Bible say about forgiveness?": the topical index first (it lists the
             // passages), then the dictionaries. The words that only say "Bible question" are not looked up.
@@ -808,6 +813,59 @@ impl Library {
         }
         out.truncate(limit);
         out
+    }
+
+    /// Verses that hold the words of a question (the question quotes or half-quotes a verse:
+    /// "love your enemies"). Needs at least two words that are not just question filler. A verse
+    /// is kept when it holds the words in a row, or when the question already sounds like a
+    /// Bible question; so "how do I purify water" never brings in a verse that happens to hold
+    /// both words. Finds wording, not ideas: a question about a theme may find nothing.
+    fn wording_passages(&self, bible: &Module, question: &str) -> Vec<Passage> {
+        const STOP: &[&str] = &[
+            "the", "a", "an", "and", "or", "of", "to", "in", "on", "is", "are", "do", "does", "did", "how", "what", "i", "my", "me", "can", "should",
+            "for", "it", "with", "at", "be", "you", "we", "if", "when", "who", "why", "where", "which", "this", "that", "there", "say", "says",
+        ];
+        let words: Vec<String> = words_of(question).into_iter().filter(|w| !STOP.contains(&w.as_str()) && !FILLER.contains(&w.as_str())).collect();
+        if words.len() < 2 {
+            return Vec::new();
+        }
+        let phrase = words.join(" ");
+        let biblical = looks_biblical(question);
+        // the question as it was quoted: filler and a leading "what does" dropped, small words kept
+        // ("the lord is my shepherd"), so a verse that holds it whole comes before one that merely has the words
+        const LEAD: &[&str] = &["what", "does", "do", "did", "how", "why", "who", "where", "when", "can", "should", "is", "are", "tell", "me"];
+        let mut quoted: Vec<String> = words_of(question).into_iter().filter(|w| !FILLER.contains(&w.as_str())).collect();
+        while quoted.first().map_or(false, |w| LEAD.contains(&w.as_str())) {
+            quoted.remove(0);
+        }
+        let quoted = quoted.join(" ");
+        let Ok(hits) = self.search(&bible.id, &phrase, 300) else { return Vec::new() };
+        let mut ranked: Vec<(u8, Hit)> = hits
+            .into_iter()
+            .filter_map(|h| {
+                let flat = words_of(&h.text).join(" ");
+                let rank = if flat.contains(&quoted) { 2 } else if flat.contains(&phrase) { 1 } else { 0 };
+                if rank == 0 && !biblical {
+                    return None;
+                }
+                Some((rank, h))
+            })
+            .collect();
+        ranked.sort_by(|a, b| b.0.cmp(&a.0)); // stable: book order within a rank
+        ranked
+            .into_iter()
+            .take(3)
+            .filter_map(|(_, h)| {
+                let name = BOOKS.iter().find(|b| b.code == h.book)?.name;
+                Some(Passage {
+                    source: bible.title.clone(),
+                    heading: format!("{} {}:{}", name, h.chapter, h.verse),
+                    text: format!("{} {}", h.verse, h.text),
+                    score: 30.0,
+                    link: format!("bible:{}.{}.{}", h.book, h.chapter, h.verse),
+                })
+            })
+            .collect()
     }
 
     fn verse_passage(&self, bible: &Module, r: &Ref) -> Option<Passage> {
@@ -1616,6 +1674,26 @@ mod tests {
         assert!(lib.passages("summarise John 3", 4)[0].text.contains("18 He that believeth"));
         // a reference in a chapter that is not there brings nothing
         assert!(lib.passages("read John 9:1", 4).is_empty());
+    }
+
+    #[test]
+    fn a_quoted_phrase_finds_its_verse_but_other_questions_do_not() {
+        let lib = Library::open(&[sample()]);
+        // the words of a verse, in a row: found even though the question does not sound biblical
+        let p = lib.passages("gave his only begotten", 4);
+        assert_eq!(p.len(), 1);
+        assert_eq!((p[0].heading.as_str(), p[0].link.as_str(), p[0].score), ("John 3:16", "bible:JHN.3.16", 30.0));
+        // both words are in a verse but not in a row, and the question is not about the Bible: nothing
+        assert!(lib.passages("world condemn", 4).is_empty());
+        // the same words in a Bible question are kept
+        let b = lib.passages("What does the Bible say about the world and condemn?", 4);
+        assert!(b.iter().any(|x| x.heading == "John 3:17"), "{:?}", b.iter().map(|x| x.heading.clone()).collect::<Vec<_>>());
+        // the quoted words come first even when small words are in the way of a plain phrase match
+        let q = lib.passages("the world, that he gave", 4);
+        assert_eq!(q.first().map(|x| x.heading.as_str()), Some("John 3:16"));
+        // one real word is not enough, and survival questions stay clean
+        assert!(lib.passages("loved", 4).is_empty());
+        assert!(lib.passages("how do I purify water", 4).is_empty());
     }
 
     #[test]

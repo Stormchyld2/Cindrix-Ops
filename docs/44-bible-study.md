@@ -36,6 +36,13 @@ that verse (score 50) and the first commentary note (40). A Bible-flavoured ques
 topical or dictionary entries first (score 20). Sources open the Bible screen (`bible:JHN.3.16`,
 `bible:term:<Title>`).
 
+**Quoted wording (added 2026-11-07).** A question that quotes a verse with no reference ("love your enemies", "the Lord is my
+shepherd") brings in up to three verses that hold its words, the ones holding the whole quote first (score 30). It needs at least
+two real words, and a verse is kept only when it holds the words in a row, unless the question already sounds like a Bible
+question; so "how do I purify water" never brings in a verse. This finds wording, not ideas: a question about a theme may find
+nothing, and the assistant is never given a verse that is not there. Because the BSB file carries section headings inside the
+verse text, a heading such as "Love Your Enemies" can bring in the verse before it (Matthew 5:37 ahead of 5:44).
+
 ## Limits
 A dictionary word is found under another entry's alternative name even in another letter's file; those files are first read as plain text and only parsed if the word is written in them, so it stays quick. The search scans the whole Bible
 (about 85 ms). BSB text can carry section headings inside a verse (that is how Canonleaf's file is).
