@@ -22,6 +22,8 @@
   import Plans from './views/Plans.svelte';
   import SeedVault from './views/SeedVault.svelte';
   import Music from './views/Music.svelte';
+  import Podcasts from './views/Podcasts.svelte';
+  import PodMiniPlayer from './lib/PodMiniPlayer.svelte';
   import Guides from './views/Guides.svelte';
   import DrugLabels from './views/DrugLabels.svelte';
   import Journal from './views/Journal.svelte';
@@ -86,8 +88,8 @@
   $effect(() => { if (settings.loaded) void privacySetIdle(settings.values.privateLockMinutes); });
 
   // Intel is the offline internet: the archives read like web pages. It goes with the library.
-  type Group = 'Dashboard' | 'Ask' | 'Library' | 'Intel' | 'Academy' | 'Maps' | 'Music' | 'Plan' | 'Inventory' | 'Settings' | 'Corner' | 'Guides' | 'Journal' | 'Photos' | 'CommsPlan' | 'Todo' | 'Calendar' | 'Projects' | 'DrugLabels' | 'Soon';
-  const allGroups: Group[] = ['Dashboard', 'Ask', 'Library', 'Intel', 'Academy', 'Maps', 'Music', 'Plan', 'Inventory', 'Settings', 'Corner', 'Journal', 'Photos', 'CommsPlan', 'Todo', 'Calendar', 'Projects', 'DrugLabels'];
+  type Group = 'Dashboard' | 'Ask' | 'Library' | 'Intel' | 'Academy' | 'Maps' | 'Music' | 'Podcasts' | 'Plan' | 'Inventory' | 'Settings' | 'Corner' | 'Guides' | 'Journal' | 'Photos' | 'CommsPlan' | 'Todo' | 'Calendar' | 'Projects' | 'DrugLabels' | 'Soon';
+  const allGroups: Group[] = ['Dashboard', 'Ask', 'Library', 'Intel', 'Academy', 'Maps', 'Music', 'Podcasts', 'Plan', 'Inventory', 'Settings', 'Corner', 'Journal', 'Photos', 'CommsPlan', 'Todo', 'Calendar', 'Projects', 'DrugLabels'];
   // Each product switches parts of the program on or off (core/src/product.rs).
   const groups = $derived(
     allGroups.filter((g) => {
@@ -96,7 +98,7 @@
       if (g === 'Library' || g === 'Intel' || g === 'Corner') return product.library;
       if (g === 'DrugLabels') return product.library && !inShare;
       if (g === 'Maps') return product.maps;
-      if (g === 'Music') return product.music;
+      if (g === 'Music' || g === 'Podcasts') return product.music;
       if (g === 'Plan' || g === 'Inventory') return product.plan;
       if (g === 'Todo' || g === 'Calendar' || g === 'Projects') return !inShare;
       return true;
@@ -226,7 +228,7 @@
       { id: 'Maps', cat: 'maps', tab: 'Maps', show: p ? p.maps : true },
       { id: 'Morale', cat: 'morale', show: true, entries: [
         { label: 'Reading Corner', tab: 'Corner', note: 'enjoyment books', show: p ? p.library : true },
-        { label: 'Music', tab: 'Music', show: p ? p.music : true }, { label: '', tab: '', rule: true },
+        { label: 'Music', tab: 'Music', show: p ? p.music : true }, { label: 'Podcasts', tab: 'Podcasts', note: 'saved episodes', show: p ? p.music : true }, { label: '', tab: '', rule: true },
         { label: 'Journal', tab: 'Journal', note: 'private', show: !inShare }, { label: 'Photos', tab: 'Photos' } ] },
       { id: 'Comms', cat: 'comms', show: true, entries: [
         { label: 'Comms plan', tab: 'CommsPlan', note: 'private', show: !inShare }, { label: 'Radio reference', tab: 'guide:radio-reference' },
@@ -240,7 +242,7 @@
   const activeTop = $derived.by(() => {
     switch (group) {
       case 'Library': case 'Intel': case 'DrugLabels': return 'Intel';
-      case 'Music': case 'Corner': case 'Journal': case 'Photos': return 'Morale';
+      case 'Music': case 'Podcasts': case 'Corner': case 'Journal': case 'Photos': return 'Morale';
       case 'CommsPlan': return 'Comms';
       case 'Plan': return plan === 'Seed vault' ? 'Agro' : 'Operations';
       case 'Inventory': case 'Todo': case 'Calendar': case 'Projects': return 'Operations';
@@ -331,6 +333,8 @@
       <Maps />
     {:else if group === 'Music'}
       <Music />
+    {:else if group === 'Podcasts'}
+      <Podcasts />
     {:else if group === 'Guides'}
       <Guides section={guideSection} title={guideInfo[guideSection]?.title ?? 'Guides'} intro={guideInfo[guideSection]?.intro ?? ''} />
     {:else if group === 'DrugLabels'}
@@ -393,7 +397,7 @@
     </dialog>
   {/if}
 
-  {#if product?.music !== false && settings.values.showMiniPlayer}<MiniPlayer open={() => (group = 'Music')} />{/if}
+  {#if product?.music !== false && settings.values.showMiniPlayer}<MiniPlayer open={() => (group = 'Music')} /><PodMiniPlayer open={() => (group = 'Podcasts')} />{/if}
 
   {#if settings.values.showStatusBar}
   <footer class="no-print">

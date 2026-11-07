@@ -1164,6 +1164,51 @@ export async function musicSource(rel: string): Promise<string> {
   // The program hands back `t/<path in the music folder>` or `c/<name>` as plain text; convertFileSrc encodes it once.
   return convertFileSrc(path, 'cindrix-music');
 }
+// ---------- podcasts ----------
+export type PodEpisode = { rel: string; title: string; date: string; size: number };
+export type PodShow = { folder: string; name: string; episodes: PodEpisode[] };
+export type PodList = { folder_found: boolean; shows: PodShow[] };
+export type PodProgress = { rel: string; seconds: number; done: boolean };
+
+const samplePodcasts: PodList = {
+  folder_found: true,
+  shows: [
+    { folder: 'Sample Show', name: 'Sample Show', episodes: [
+      { rel: 'Sample Show/2026-11-02 - Second sample episode.mp3', title: 'Second sample episode', date: '2026-11-02', size: 4_000_000 },
+      { rel: 'Sample Show/2026-10-26 - First sample episode.mp3', title: 'First sample episode', date: '2026-10-26', size: 3_500_000 },
+    ] },
+  ],
+};
+let memPodProgress: PodProgress[] = [];
+
+/** Every show and episode in the podcasts folder (newest first). */
+export async function podcastsList(): Promise<PodList> {
+  if (inTauri) return call<PodList>('podcasts_list');
+  return samplePodcasts;
+}
+/** Where each episode was left off. Guests on the share server have no saved places (host-only). */
+export async function podcastsProgressLoad(): Promise<PodProgress[]> {
+  if (inShare) return [];
+  if (inTauri) return call<PodProgress[]>('podcasts_progress_load');
+  return memPodProgress;
+}
+export async function podcastsProgressSave(rel: string, seconds: number, done: boolean): Promise<void> {
+  if (inShare) return;
+  if (inTauri) return call<void>('podcasts_progress_save', { rel, seconds, done });
+  memPodProgress = [...memPodProgress.filter((p) => p.rel !== rel), { rel, seconds, done }];
+}
+/** An address the audio element can play for an episode. */
+export async function podcastSource(rel: string): Promise<string> {
+  if (!inTauri) {
+    let u = toneCache.get('pod:' + rel);
+    if (!u) { u = wavTone(330, 30); toneCache.set('pod:' + rel, u); }
+    return u;
+  }
+  if (inShare) return hostUrl('/pod/', 'e/' + rel);
+  const { convertFileSrc } = await import('@tauri-apps/api/core');
+  return convertFileSrc('e/' + rel, 'cindrix-pod');
+}
+
 /** The cover picture for a track (embedded or in its folder), or null in the browser preview. */
 export async function musicArtUrl(rel: string): Promise<string | null> {
   if (!inTauri) return null;

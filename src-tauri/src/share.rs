@@ -435,7 +435,7 @@ fn route(app: &tauri::AppHandle, req: &Request, who: &str, stream: &mut TcpStrea
     // everything else needs the sign-in
     let role = role_of(app, req);
     if role == Role::Nobody {
-        let api = req.path.starts_with("/api/") || req.path.starts_with("/tiles/") || req.path.starts_with("/music/");
+        let api = req.path.starts_with("/api/") || req.path.starts_with("/tiles/") || req.path.starts_with("/music/") || req.path.starts_with("/pod/");
         send(stream, &if api { json_err(401, "Type the PIN first.") } else { pin_page("") });
         return;
     }
@@ -480,6 +480,8 @@ fn route(app: &tauri::AppHandle, req: &Request, who: &str, stream: &mut TcpStrea
         Some(("tiles", rest.to_string()))
     } else if let Some(rest) = req.raw_path.strip_prefix("/music") {
         Some(("music", rest.to_string()))
+    } else if let Some(rest) = req.raw_path.strip_prefix("/pod") {
+        Some(("pod", rest.to_string()))
     } else if req.raw_path.starts_with("/content/") || req.raw_path == "/suggest" || req.raw_path == "/search" || req.raw_path.starts_with("/skin/") {
         Some(("zim", req.raw_path.clone()))
     } else {
@@ -552,6 +554,7 @@ fn dispatch(app: &tauri::AppHandle, cmd: &str, a: &Value, role: &Role) -> Result
         "music_query" => tv(crate::music::music_query(st, arg(a, "args")?, arg(a, "offset")?, arg(a, "limit")?)),
         "music_facets" => tv(crate::music::music_facets(st, arg(a, "kind")?, arg(a, "prefix")?)),
         "music_resolve" => tv(crate::music::music_resolve(st, arg(a, "rels")?)),
+        "podcasts_list" => tv(tauri::async_runtime::block_on(crate::podcasts::podcasts_list())),
         "music_prepare" => tv(tauri::async_runtime::block_on(crate::music::music_prepare(st, arg(a, "rel")?))?),
         "academy_list" => tv(crate::academy_list(arg(a, "person")?)?),
         "academy_lesson" => tv(crate::academy_lesson(arg(a, "id")?)?),
@@ -626,6 +629,7 @@ fn media_reply(app: &tauri::AppHandle, req: &Request, kind: &str, path: &str) ->
     let resp = match kind {
         "tiles" => crate::serve_tile(&hreq),
         "music" => crate::music::serve_music(&hreq),
+        "pod" => crate::podcasts::serve_podcast(&hreq),
         _ => crate::zimview::serve(app, &hreq),
     };
     let mut out = Response { status: resp.status().as_u16(), headers: vec![], body: resp.body().clone() };

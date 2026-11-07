@@ -26,6 +26,7 @@ mod druglabels;
 mod fetch;
 mod libs;
 mod music;
+mod podcasts;
 mod privacy;
 mod ops;
 mod settings;
@@ -2819,6 +2820,9 @@ pub fn run() {
         .register_asynchronous_uri_scheme_protocol("cindrix-music", |_ctx, request, responder| {
             std::thread::spawn(move || responder.respond(music::serve_music(&request)));
         })
+        .register_asynchronous_uri_scheme_protocol("cindrix-pod", |_ctx, request, responder| {
+            std::thread::spawn(move || responder.respond(podcasts::serve_podcast(&request)));
+        })
         .register_asynchronous_uri_scheme_protocol("cindrix-zim", |ctx, request, responder| {
             let app = ctx.app_handle().clone();
             std::thread::spawn(move || responder.respond(zimview::serve(&app, &request)));
@@ -2954,6 +2958,9 @@ pub fn run() {
             music::music_playlist_delete,
             music::music_state_load,
             music::music_state_save,
+            podcasts::podcasts_list,
+            podcasts::podcasts_progress_load,
+            podcasts::podcasts_progress_save,
             library_share,
             drive_rescan,
             academy_list,

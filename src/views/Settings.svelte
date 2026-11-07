@@ -113,6 +113,15 @@
       error = String(e);
     }
   }
+  async function choosePodcastsFolder() {
+    error = '';
+    try {
+      const p = await pickFolder();
+      if (p) settings.set('podcastsFolder', [p]);
+    } catch (e) {
+      error = String(e);
+    }
+  }
   async function chooseMusicFolder() {
     error = '';
     try {
@@ -301,7 +310,16 @@
         {#if settings.values.musicFolder.length}<button class="btn" onclick={() => settings.set('musicFolder', [])}>Use the drive's folder</button>{/if}
       </div>
     </div>
-    {@render reset(['showMiniPlayer', 'scanMusicOnStart', 'musicFolder'])}
+    <div class="panel">
+      <div class="label">PODCASTS FOLDER</div>
+      <p class="muted fine">Podcast episodes are read from the <b>podcasts</b> folder on the drive, one folder for each show. Choose another folder to play from there instead. Nothing is copied or changed.</p>
+      <div class="row">
+        <div class="grow path">{settings.values.podcastsFolder[0] ?? 'The podcasts folder on the drive'}</div>
+        <button class="btn" onclick={choosePodcastsFolder}>Choose a folder…</button>
+        {#if settings.values.podcastsFolder.length}<button class="btn" onclick={() => settings.set('podcastsFolder', [])}>Use the drive's folder</button>{/if}
+      </div>
+    </div>
+    {@render reset(['showMiniPlayer', 'scanMusicOnStart', 'musicFolder', 'podcastsFolder'])}
   {:else if tab === 'Maps'}
     <div class="panel">
       <div class="label">MAPS</div>
