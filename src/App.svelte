@@ -23,6 +23,7 @@
   import SeedVault from './views/SeedVault.svelte';
   import Music from './views/Music.svelte';
   import Guides from './views/Guides.svelte';
+  import Bible from './views/Bible.svelte';
   import DrugLabels from './views/DrugLabels.svelte';
   import Journal from './views/Journal.svelte';
   import Photos from './views/Photos.svelte';
@@ -30,7 +31,7 @@
   import MiniPlayer from './lib/MiniPlayer.svelte';
   import Splash from './lib/Splash.svelte';
   import { onMount } from 'svelte';
-  import { intelRequest, sourceRequest, viewRequest } from './lib/chat.svelte';
+  import { intelRequest, sourceRequest, viewRequest, bibleRequest } from './lib/chat.svelte';
   import { inShare, modelStatus, libraryStatus, productInfo, librariesList, libraryAnswer, privacySetIdle, type ModelStatus, type ProductInfo, type LibraryEntry } from './lib/api';
   import { settings, applyUiScale } from './lib/settings.svelte';
   import { installTooltips, removeTooltips } from './lib/tooltips';
@@ -86,14 +87,14 @@
   $effect(() => { if (settings.loaded) void privacySetIdle(settings.values.privateLockMinutes); });
 
   // Intel is the offline internet: the archives read like web pages. It goes with the library.
-  type Group = 'Dashboard' | 'Ask' | 'Library' | 'Intel' | 'Academy' | 'Maps' | 'Music' | 'Plan' | 'Inventory' | 'Settings' | 'Corner' | 'Guides' | 'Journal' | 'Photos' | 'CommsPlan' | 'Todo' | 'Calendar' | 'Projects' | 'DrugLabels' | 'Soon';
-  const allGroups: Group[] = ['Dashboard', 'Ask', 'Library', 'Intel', 'Academy', 'Maps', 'Music', 'Plan', 'Inventory', 'Settings', 'Corner', 'Journal', 'Photos', 'CommsPlan', 'Todo', 'Calendar', 'Projects', 'DrugLabels'];
+  type Group = 'Dashboard' | 'Ask' | 'Library' | 'Intel' | 'Academy' | 'Maps' | 'Music' | 'Plan' | 'Inventory' | 'Settings' | 'Corner' | 'Guides' | 'Journal' | 'Photos' | 'CommsPlan' | 'Todo' | 'Calendar' | 'Projects' | 'DrugLabels' | 'Bible' | 'Soon';
+  const allGroups: Group[] = ['Dashboard', 'Ask', 'Library', 'Intel', 'Academy', 'Maps', 'Music', 'Plan', 'Inventory', 'Settings', 'Corner', 'Journal', 'Photos', 'CommsPlan', 'Todo', 'Calendar', 'Projects', 'DrugLabels', 'Bible'];
   // Each product switches parts of the program on or off (core/src/product.rs).
   const groups = $derived(
     allGroups.filter((g) => {
       if (!product) return true;
       if (g === 'Ask') return product.assistant;
-      if (g === 'Library' || g === 'Intel' || g === 'Corner') return product.library;
+      if (g === 'Library' || g === 'Intel' || g === 'Corner' || g === 'Bible') return product.library;
       if (g === 'DrugLabels') return product.library && !inShare;
       if (g === 'Maps') return product.maps;
       if (g === 'Music') return product.music;
@@ -125,6 +126,12 @@
   function openSource(link: string) {
     if (link.startsWith('card:')) { openCard(link.slice(5)); return; }
     if (link.startsWith('/content/')) { intelRequest.path = link; group = 'Intel'; return; }
+    if (link.startsWith('bible:')) {
+      const r = link.slice(6);
+      if (r.startsWith('term:')) bibleRequest.term = r.slice(5); else bibleRequest.ref = r;
+      group = 'Bible';
+      return;
+    }
     if (link.startsWith('academy:')) { sourceRequest.lesson = link.slice(8); group = 'Academy'; return; }
     if (link.startsWith('guide:')) { guideSection = link.slice(6).split('/')[0]; group = 'Guides'; return; }
     if (link.startsWith('plan:')) {
@@ -214,7 +221,7 @@
         { label: 'Projects', tab: 'Projects', show: !inShare } ] },
       { id: 'Intel', cat: 'intel', show: lib_, entries: [
         { label: 'Offline browser', tab: 'Intel', note: 'archives' }, { label: 'Shelf', tab: 'Shelf', note: 'manuals' },
-        { label: 'Archives', tab: 'Archives' }, { label: 'Emergency cards', tab: 'Cards' },
+        { label: 'Archives', tab: 'Archives' }, { label: 'Emergency cards', tab: 'Cards' }, { label: 'Bible study', tab: 'Bible', note: 'Canonleaf' },
         { label: 'Home remedies', tab: 'guide:home-remedies' }, { label: 'Drug labels', tab: 'DrugLabels', note: 'FDA', show: !inShare } ] },
       { id: 'Academy', cat: 'academy', show: true, entries: [
         { label: 'Courses', tab: 'Academy' }, { label: 'Training sign-off', tab: 'training' } ] },
@@ -239,7 +246,7 @@
   /** Which word in the top bar the current screen belongs under. */
   const activeTop = $derived.by(() => {
     switch (group) {
-      case 'Library': case 'Intel': case 'DrugLabels': return 'Intel';
+      case 'Library': case 'Intel': case 'DrugLabels': case 'Bible': return 'Intel';
       case 'Music': case 'Corner': case 'Journal': case 'Photos': return 'Morale';
       case 'CommsPlan': return 'Comms';
       case 'Plan': return plan === 'Seed vault' ? 'Agro' : 'Operations';
@@ -310,7 +317,7 @@
     <div class="warn libnote" role="status">{libNote} <button class="btn" onclick={() => (libNote = '')}>OK</button></div>
   {/if}
 
-  <main class:wide={group === 'Intel' || group === 'Calendar' || group === 'Ask'}>
+  <main class:wide={group === 'Intel' || group === 'Bible' || group === 'Calendar' || group === 'Ask'}>
     {#if group === 'Dashboard'}
       <Dashboard go={goTo} />
     {:else if group === 'Ask'}
@@ -333,6 +340,8 @@
       <Music />
     {:else if group === 'Guides'}
       <Guides section={guideSection} title={guideInfo[guideSection]?.title ?? 'Guides'} intro={guideInfo[guideSection]?.intro ?? ''} />
+    {:else if group === 'Bible'}
+      <Bible />
     {:else if group === 'DrugLabels'}
       <DrugLabels />
     {:else if group === 'Journal'}
