@@ -5,7 +5,7 @@ where: at home
 summary: Make water safe, store it, and set up a clean-water routine.
 status: draft
 ---
-Draft checklist.
+
 - Fill clean containers with tap water before it is shut off if you have warning
 - Bring water to a rolling boil for 1 minute (3 minutes above about 6,500 feet), then let it cool
 - Store boiled water in clean, covered containers and label them with the date

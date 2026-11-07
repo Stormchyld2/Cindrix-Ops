@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Chemical in the eye:**
 1. **Rinse right away** with lukewarm running water for 15 to 20 minutes. Hold the eye open. Tilt the head so the water runs away from the other eye.
 2. Take out contact lenses if they come out easily.

@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Written from general field guidance and not yet checked line by line against its source or by a qualified person.**
-
 1. **Switch to the emergency or distress channel** for your radio type. For a marine VHF radio: **channel 16.** For GMRS or FRS: use the channel your group agreed on. Many people monitor channel 9 for emergencies. Listen first.
 2. **Press and speak slowly and clearly.** Say **"MAYDAY, MAYDAY, MAYDAY"** only if life is in danger. Otherwise say **"PAN-PAN"** three times.
 3. Then give: **who you are** (name or vessel), **where you are** (landmark, map position, or coordinates), **what is wrong**, **how many people** and **what you need.**

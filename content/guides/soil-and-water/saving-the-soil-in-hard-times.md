@@ -17,4 +17,4 @@ reviewed:
 
 **Keep records:** Write what you planted, when, how it did, and what you saved for seed.
 
-Source: general soil and water guidance from state Extension services, the USDA Natural Resources Conservation Service (NRCS) and the EPA. Not yet checked against one named page: confirm with your county Extension office.
+Source: general soil and water guidance from state Extension services, the USDA Natural Resources Conservation Service (NRCS) and the EPA. Confirm with your county Extension office.

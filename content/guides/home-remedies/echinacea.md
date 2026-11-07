@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Echinacea is primarily marketed for the common cold and upper respiratory tract infections, based on the idea that it may support immune system function.**
 
 **What the evidence says:** Studies indicate that taking echinacea may slightly reduce the chances of catching a cold, though evidence regarding whether it shortens cold duration is inconclusive. Evidence for other conditions, including eczema, is unclear.

@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **During: Drop, Cover, Hold On.**
 
 1. **Drop** to your hands and knees. **Cover** your head and neck with your arms and get under a sturdy table or desk if there is one. **Hold on** until the shaking stops.

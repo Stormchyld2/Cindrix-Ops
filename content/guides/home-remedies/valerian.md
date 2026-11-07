@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Valerian is promoted for insomnia, anxiety, stress, and depression; historically, it was also used for migraine, fatigue, and stomach issues.**
 
 **What people do:** Valerian is taken orally as a dietary supplement; clinical studies have used doses of 300 to 600 mg daily for up to 6 weeks. Follow the product label and consult a healthcare provider before use, particularly if combining with sedatives or alcohol.

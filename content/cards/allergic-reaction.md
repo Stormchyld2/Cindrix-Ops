@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 Signs soon after a food, sting or medicine: hives, swelling of lips, face, tongue or throat, trouble breathing or wheezing, vomiting, dizzy or faint, a feeling something is badly wrong.
 
 1. **Use the person's epinephrine auto-injector right away**, exactly as printed on the device (usually into the outer thigh, through clothing is allowed). Do not wait for it to get worse.

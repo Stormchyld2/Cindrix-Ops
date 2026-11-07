@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 1. Rest the stomach for 15 to 30 minutes. Then give small sips of clear fluid: water, or an oral rehydration drink.
 2. Take a sip every few minutes. Build up slowly. A child can have a teaspoon at a time.
 3. Once vomiting stops for several hours, offer plain foods: rice, bread, bananas, toast. Avoid greasy and sugary food at first.

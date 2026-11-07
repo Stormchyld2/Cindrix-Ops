@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Applying ice wrapped in cloth to a strained muscle, sprain, or bite site — combined with rest, compression, and elevation of the injured area — reduces swelling and pain. Ice should be applied for 10–15 minutes every 1–3 hours during the first few days of injury.**
 
 **What people do:** Wrap ice in a cloth or towel and apply to the injured area for 10–15 minutes at a time. Rest the area, wrap it snugly with a bandage to reduce swelling, and elevate it above heart level when possible.

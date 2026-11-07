@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Getting plenty of rest and drinking adequate fluids (water, clear broths, juice, or sports drinks) supports recovery from colds, fever, diarrhea, and nausea. Adults with diarrhea should drink water, fruit juices, sports drinks, sodas without caffeine, and salty broths.**
 
 **What people do:** Get plenty of rest and drink plenty of fluids. If keeping liquids down is difficult, take small sips of water or suck on ice chips frequently rather than trying to drink large amounts at once.

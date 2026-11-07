@@ -5,7 +5,7 @@ where: at home
 summary: Light, water, food, phones, medications and a plan for the first three days.
 status: draft
 ---
-Draft checklist. Walk through the house and actually look, do not just tick.
+Walk through the house and actually look, do not just tick.
 - Find flashlights, lanterns and spare batteries. Test each one.
 - Count drinking water for everyone, for three days (about 1 gallon per person per day)
 - Charge phones and battery banks, then switch phones to low-power mode

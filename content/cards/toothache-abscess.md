@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 1. Rinse your mouth with warm salt water (a half teaspoon of salt in a cup of warm water). Spit it out. Repeat a few times a day.
 2. Floss gently around the sore tooth to clear stuck food. Keep your head raised when you lie down.
 3. A cold pack on the outside of the cheek, 15 minutes at a time, eases pain and swelling.

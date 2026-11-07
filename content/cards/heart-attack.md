@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 Signs (men and women): chest pain or pressure in the center or left side that lasts more than a few minutes or comes and goes; weak, light-headed or faint; cold sweat; pain in the jaw, neck, back, one or both arms or shoulders; shortness of breath. Women are more likely to have nausea or vomiting and unusual tiredness.
 
 1. **Call 911 right away.** Do not drive yourself or wait to see if it passes. Earlier treatment saves heart muscle.

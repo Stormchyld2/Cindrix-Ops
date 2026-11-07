@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 Use when a person does not respond and is not breathing, or is only gasping.
 
 1. Check the scene is safe. Shout and tap the person.

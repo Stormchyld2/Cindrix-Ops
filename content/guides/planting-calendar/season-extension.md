@@ -23,4 +23,4 @@ reviewed:
 3. Ventilate on sunny days even in cold weather.
 4. Add a second layer (cover inside a cover) for much colder nights.
 
-Source: general gardening practice, as taught by state Extension services. Not yet checked against one named page: confirm dates with your own county Extension office.
+Source: general gardening practice, as taught by state Extension services. Confirm dates with your own county Extension office.

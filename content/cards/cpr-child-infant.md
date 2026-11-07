@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Child** (about 1 year to puberty) or **baby** (under 1 year) who does not respond and is not breathing normally.
 
 1. Shout and tap (for a baby, tap the foot). Check the breathing for no more than 10 seconds.

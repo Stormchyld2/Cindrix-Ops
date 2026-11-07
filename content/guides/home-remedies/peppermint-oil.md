@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Peppermint oil is promoted for irritable bowel syndrome, indigestion, headaches, muscle tension, and nausea. Topical application is used for tension headaches, and inhaled peppermint oil is used for nausea.**
 
 **What people do:** For IBS, peppermint oil is taken as enteric-coated capsules (which reduce heartburn compared to plain capsules). For tension headaches, apply peppermint oil topically to the skin. For nausea, peppermint oil is inhaled as aromatherapy.

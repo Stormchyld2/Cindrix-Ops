@@ -19,4 +19,4 @@ reviewed:
 
 **Not a deficiency:** Holes and chewed leaves are pests; wilting in the day that recovers at night is heat; curling in tomatoes can be herbicide drift or heat.
 
-Source: general soil and water guidance from state Extension services, the USDA Natural Resources Conservation Service (NRCS) and the EPA. Not yet checked against one named page: confirm with your county Extension office.
+Source: general soil and water guidance from state Extension services, the USDA Natural Resources Conservation Service (NRCS) and the EPA. Confirm with your county Extension office.

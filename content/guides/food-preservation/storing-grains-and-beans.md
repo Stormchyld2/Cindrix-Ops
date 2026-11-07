@@ -31,4 +31,4 @@ reviewed:
 - Don't store anything that smells musty or shows moisture.
 - **Never store dry beans or grain that is not completely dry**; mould and botulism risk rise with moisture.
 
-Source: general food-storage guidance from Utah State and Brigham Young University Extension and USDA, paraphrased. Not yet reviewed.
+Source: general food-storage guidance from Utah State and Brigham Young University Extension and USDA, paraphrased.

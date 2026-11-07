@@ -15,4 +15,4 @@ reviewed:
 
 **Plants that like acid soil:** Blueberries (4.5 to 5.5), potatoes (5.0 to 6.0), strawberries and raspberries (5.5 to 6.5). Most vegetables, beans and brassicas like 6.0 to 7.0.
 
-Source: general soil and water guidance from state Extension services, the USDA Natural Resources Conservation Service (NRCS) and the EPA. Not yet checked against one named page: confirm with your county Extension office.
+Source: general soil and water guidance from state Extension services, the USDA Natural Resources Conservation Service (NRCS) and the EPA. Confirm with your county Extension office.

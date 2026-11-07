@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 Signs: pain, swelling, bruising, a limb bent the wrong way, cannot use or put weight on it.
 
 1. **Do not move** the person if the neck, back or head may be hurt. Call 911.

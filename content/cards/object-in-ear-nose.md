@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 1. Stay calm and keep the person still. Do not poke with cotton swabs, tweezers or fingers: this pushes the object deeper.
 2. **Nose:** have the person breathe through the mouth. If the object is easy to see and loose, a gentle blow out of the other nostril may move it.
 3. **Ear:** tilt the head so the ear points down and shake gently. Do not flush with water if the object is a seed or bean (it swells) or if the eardrum may be hurt.

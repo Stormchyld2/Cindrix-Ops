@@ -26,4 +26,4 @@ reviewed:
 
 **Not a replacement** for a plan: a warning is useful only if you know where to go. See the plans in the Plan screen.
 
-Source: NOAA National Weather Service (weather.gov/nwr), paraphrased. Frequencies are the seven NOAA channels. Not yet reviewed.
+Source: NOAA National Weather Service (weather.gov/nwr), paraphrased. Frequencies are the seven NOAA channels.

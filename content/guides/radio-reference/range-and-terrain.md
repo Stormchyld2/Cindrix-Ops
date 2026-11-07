@@ -28,4 +28,4 @@ reviewed:
 
 **Plan around the weakest link:** test the real range between your home and the places you expect to go (work, school, relatives), and write the results into the Comms plan.
 
-Source: Standard VHF/UHF propagation practice (line of sight) and ARRL guidance; real ranges vary widely. Not yet reviewed.
+Source: Standard VHF/UHF propagation practice (line of sight) and ARRL guidance; real ranges vary widely.

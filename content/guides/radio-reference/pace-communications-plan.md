@@ -27,4 +27,4 @@ reviewed:
 
 Use the **Comms plan** screen to record your family's plan.
 
-Source: Military and emergency-management communications planning practice (Primary, Alternate, Contingency, Emergency), widely taught by FEMA and emergency-management programs. Not yet reviewed.
+Source: Military and emergency-management communications planning practice (Primary, Alternate, Contingency, Emergency), widely taught by FEMA and emergency-management programs.

@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Written from general field guidance and not yet checked line by line against its source or by a qualified person.**
-
 1. **Rule of threes:** you can last about 3 days without water, so look early.
 2. **Water runs downhill.** Follow valleys, gullies and animal trails downhill. Green plants often mean water nearby.
 3. **Streams, rivers and lakes** are the best bet. Take water from moving water, not still pools, and from the middle of a stream rather than the edge.

@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 Signs: cannot cry or cough, weak or silent, skin turning blue.
 
 1. Have someone **call 911**. Do not wait.

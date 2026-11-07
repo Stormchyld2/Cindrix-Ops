@@ -15,4 +15,4 @@ reviewed:
 
 **Cook them safely:** never eat raw or undercooked beans, especially red kidney beans. They contain a natural poison that is destroyed by soaking and then **boiling hard for at least 10 minutes**. Slow cookers on a low setting may not get hot enough.
 
-Source: general home-gardening practice, as taught by state Extension services. Not yet checked against one named page: check planting times with your own Extension office.
+Source: general home-gardening practice, as taught by state Extension services. Check planting times with your own Extension office.

@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Tea tree oil is marketed for external use including acne, athlete's foot, toenail fungus, and lice. Traditional Aboriginal uses included treating wounds, burns, and insect bites.**
 
 **What people do:** Apply tea tree oil topically to the affected skin area only — for acne or athlete's foot, use a product containing tea tree oil as directed on the label. Never swallow tea tree oil; oral ingestion can cause serious symptoms including confusion, unsteadiness, and coma.

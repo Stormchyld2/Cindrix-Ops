@@ -33,4 +33,4 @@ reviewed:
 
 **Don't breed** animals that are sick, too young, too thin, or older than their productive life.
 
-Source: general small-farm practice, as taught by state Extension services. Not yet reviewed: ask a local vet or Extension office. This page gives no medicine amounts.
+Source: general small-farm practice, as taught by state Extension services. Ask a local vet or Extension office. This page gives no medicine amounts.

@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Before:** know your evacuation zone. Sign up for local alerts. Have several days of food, water and medicines, papers in a waterproof box, and a plan that uses text messages. Bring in or tie down outdoor things. Cover windows with shutters or boards.
 
 **If told to evacuate, go.** Take the go-bag, papers, medicines and pets. Follow the official route. Never drive around barricades.

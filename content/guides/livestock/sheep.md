@@ -23,4 +23,4 @@ reviewed:
 
 **Parasites:** Worms are the chief problem on wet pasture. Rotate grazing, do not overstock, and learn the eye-colour check (FAMACHA) and egg counts with your vet. Treatment choices and amounts are for a vet to give you.
 
-Source: general livestock practice as taught by state Extension services and the USDA (for example Penn State, Oregon State and Cornell small-farm guides). Not yet checked against one named page: confirm feed amounts, housing and health care with your county Extension office and a large-animal vet.
+Source: general livestock practice as taught by state Extension services and the USDA (for example Penn State, Oregon State and Cornell small-farm guides). Confirm feed amounts, housing and health care with your county Extension office and a large-animal vet.

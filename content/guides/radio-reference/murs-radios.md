@@ -18,4 +18,4 @@ reviewed:
 
 **Weakness:** fewer family-use models are sold, and your neighbours may not own one. Pick the same radio for everybody.
 
-Source: FCC rules (47 CFR Parts 95 and 97) and FCC consumer guides, paraphrased, as understood in the United States. Rules change: check fcc.gov before you rely on a number. Not yet reviewed.
+Source: FCC rules (47 CFR Parts 95 and 97) and FCC consumer guides, paraphrased, as understood in the United States. Rules change: check fcc.gov before you rely on a number.

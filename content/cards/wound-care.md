@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 1. Wash your hands. Stop bleeding with firm pressure on clean cloth.
 2. Rinse the wound well with clean running water. Wash around it with soap. Pick out dirt with clean tweezers.
 3. Cover with a clean bandage. Change it every day or when it is wet or dirty.

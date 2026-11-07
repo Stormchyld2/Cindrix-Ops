@@ -26,4 +26,4 @@ reviewed:
 
 **Seed saving:** onions are biennial. They flower in their second year, and need a cool winter between. Save seed only from your best bulbs.
 
-Source: general home-gardening practice, as taught by state Extension services (university garden guides). Not yet checked against one named page: confirm planting times and varieties with your own county Extension office.
+Source: general home-gardening practice, as taught by state Extension services (university garden guides). Confirm planting times and varieties with your own county Extension office.

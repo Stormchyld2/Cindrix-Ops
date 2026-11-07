@@ -28,4 +28,4 @@ reviewed:
 
 **Hooves** need trimming every 6 to 8 weeks.
 
-Source: general small-farm practice, as taught by state Extension services. Not yet reviewed: ask a local vet or Extension office. This page gives no medicine amounts.
+Source: general small-farm practice, as taught by state Extension services. Ask a local vet or Extension office. This page gives no medicine amounts.

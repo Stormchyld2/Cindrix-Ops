@@ -30,4 +30,4 @@ reviewed:
 
 **Seed saving:** most heirloom tomatoes come true from seed. Scoop out the seeds with their gel, ferment in a cup for 2 to 3 days, rinse, and dry on a plate. Hybrid ("F1") seed will not come true.
 
-Source: general home-gardening practice, as taught by state Extension services (university garden guides). Not yet checked against one named page: confirm planting times and varieties with your own county Extension office.
+Source: general home-gardening practice, as taught by state Extension services (university garden guides). Confirm planting times and varieties with your own county Extension office.

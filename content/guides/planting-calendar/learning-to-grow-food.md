@@ -37,4 +37,4 @@ reviewed:
 
 **Use this program:** the Academy has courses, the Seed vault holds your seed inventory, and the Plan pages can include growing and preserving.
 
-Source: general gardening practice, as taught by state Extension services and Master Gardener programs. Not yet reviewed.
+Source: general gardening practice, as taught by state Extension services and Master Gardener programs.

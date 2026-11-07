@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Written from general field guidance and not yet checked line by line against its source or by a qualified person.**
-
 1. **Stop.** Sit down. Do not run or keep walking in a panic.
 2. **Think.** What do you know? Where did you last know your place? Which way did you come? What do you have?
 3. **Observe.** Look around: landmarks, water, hills, roads, the sun, the weather, how much light is left.

@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 Think of it after a fall, a car crash, a diving accident or a hard blow to the head. Signs: neck or back pain, numbness or tingling, weakness, cannot move a limb.
 
 1. **Call 911. Do not move the person.**

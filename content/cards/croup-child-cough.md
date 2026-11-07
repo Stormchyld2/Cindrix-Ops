@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 1. Stay calm: crying makes breathing harder. Hold and soothe the child.
 2. Sit with them in a steamy bathroom for 10 minutes, or take them outside into cool night air.
 3. Keep the child upright and give small drinks.

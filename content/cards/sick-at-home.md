@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 1. Keep the sick person in **one room**, with their own bathroom if possible. Have one person look after them.
 2. **Wash hands** with soap after any contact. Wear a mask around them and open a window for fresh air when you can.
 3. Keep them drinking fluids and resting. Use separate cups and towels. Clean touched surfaces every day.

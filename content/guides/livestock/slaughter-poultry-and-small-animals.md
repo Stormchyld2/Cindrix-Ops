@@ -17,4 +17,4 @@ reviewed:
 
 **Safety:** Cook poultry to **165 degrees F** inside and rabbit to 160. Wash hands after handling raw meat. Never eat an animal that was sick, had a fever or acted strangely when it died.
 
-Source: USDA Food Safety and Inspection Service guidance on poultry and meat handling, and home-processing guides from state Extension services. Not yet checked line by line: confirm with your Extension office or an experienced neighbour.
+Source: USDA Food Safety and Inspection Service guidance on poultry and meat handling, and home-processing guides from state Extension services. Confirm with your Extension office or an experienced neighbour.

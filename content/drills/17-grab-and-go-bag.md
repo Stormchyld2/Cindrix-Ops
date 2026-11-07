@@ -5,7 +5,7 @@ where: at home
 summary: Pick up the bag and walk out the door.
 status: draft
 ---
-Draft checklist. Walk through and actually look, do not just tick.
+Walk through and actually look, do not just tick.
 - Pick up the bag and carry it for five minutes
 - Check water, food, a flashlight, batteries, a radio and a phone charger
 - Check copies of papers, cash in small bills and a list of contacts

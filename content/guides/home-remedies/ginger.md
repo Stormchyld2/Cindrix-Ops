@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Ginger is traditionally and commonly used for nausea and vomiting, indigestion, menstrual cramps, and osteoarthritis.**
 
 **What the evidence says:** Research shows ginger may be helpful for nausea and vomiting associated with pregnancy. Studies suggest ginger dietary supplements might be helpful for reducing the severity of menstrual cramps and for knee osteoarthritis symptoms; effectiveness for chemotherapy- or post-surgery-related nausea remains uncertain.

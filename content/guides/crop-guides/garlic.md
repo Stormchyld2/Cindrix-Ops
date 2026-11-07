@@ -13,4 +13,4 @@ reviewed:
 4. **Harvest:** in early to mid summer, when the lower third to half of the leaves have turned brown. Lift the bulbs with a fork. Do not pull them.
 5. **Cure and store:** hang them in a shady, airy place for 2 to 4 weeks. Store cool and dry. **Keep your best bulbs for planting next autumn.**
 
-Source: general home-gardening practice, as taught by state Extension services. Not yet checked against one named page: check planting times with your own Extension office.
+Source: general home-gardening practice, as taught by state Extension services. Check planting times with your own Extension office.

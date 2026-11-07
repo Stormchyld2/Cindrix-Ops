@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Raising the head of the bed 4–6 inches (using blocks under the bed frame or a wedge support) prevents stomach acid from backing up into the esophagus during sleep, reducing nighttime heartburn and GERD symptoms.**
 
 **What people do:** Place blocks under the legs at the head of the bed frame, or use a foam wedge under the mattress, to raise the sleeping surface about 6 inches. Using extra pillows under only the head is less effective because it bends the body at the waist rather than tilting the whole torso.

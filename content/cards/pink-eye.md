@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Signs:** red or swollen eye, watery eyes, a gritty feeling, itching or burning, discharge, and crusts on the lids or lashes. Viruses and bacteria cause pink eye that spreads. Pollen, smoke and dust cause pink eye that does **not** spread.
 
 1. **Do not touch or rub your eyes.** It can make it worse or spread it to the other eye.

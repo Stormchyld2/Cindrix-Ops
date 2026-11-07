@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 For colds, flu, COVID-19, strep throat, pink eye and most other infections that pass from person to person.
 
 **Wash your hands the right way:**

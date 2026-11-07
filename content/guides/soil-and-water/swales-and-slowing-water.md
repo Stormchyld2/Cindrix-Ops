@@ -15,4 +15,4 @@ reviewed:
 
 **Gully control:** Fill an eroding gully with brush, logs and stones laid across, so silt builds up and water slows.
 
-Source: general soil and water guidance from state Extension services, the USDA Natural Resources Conservation Service (NRCS) and the EPA. Not yet checked against one named page: confirm with your county Extension office.
+Source: general soil and water guidance from state Extension services, the USDA Natural Resources Conservation Service (NRCS) and the EPA. Confirm with your county Extension office.

@@ -22,4 +22,4 @@ reviewed:
 
 **Check your stored food** every week or two: onions, potatoes, squash and apples. Remove anything soft or sprouting before it spoils its neighbours.
 
-Source: general gardening practice, as taught by state Extension services. Not yet checked against one named page: confirm dates with your own county Extension office.
+Source: general gardening practice, as taught by state Extension services. Confirm dates with your own county Extension office.

@@ -17,4 +17,4 @@ reviewed:
 
 **Testing:** Test for bacteria and nitrates at least yearly. If unsure, boil or treat water before drinking (see the Water emergency plan).
 
-Source: general soil and water guidance from state Extension services, the USDA Natural Resources Conservation Service (NRCS) and the EPA. Not yet checked against one named page: confirm with your county Extension office.
+Source: general soil and water guidance from state Extension services, the USDA Natural Resources Conservation Service (NRCS) and the EPA. Confirm with your county Extension office.

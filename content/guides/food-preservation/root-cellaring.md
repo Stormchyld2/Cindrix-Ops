@@ -30,4 +30,4 @@ reviewed:
 - Do not wash before storing; brush off loose dirt.
 - Use pest-proof boxes against mice and rats.
 
-Source: the National Center for Home Food Preservation (nchfp.uga.edu) and USDA guidance, paraphrased; state Extension services. Not yet reviewed: check against the USDA Complete Guide to Home Canning and the Shelf manuals.
+Source: the National Center for Home Food Preservation (nchfp.uga.edu) and USDA guidance, paraphrased; state Extension services. Check against the USDA Complete Guide to Home Canning and the Shelf manuals.

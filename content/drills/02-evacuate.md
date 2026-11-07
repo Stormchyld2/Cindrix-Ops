@@ -5,7 +5,7 @@ where: at home
 summary: Go-bag, documents, medications, pets and a route out.
 status: draft
 ---
-Draft checklist. Set a timer and see how far you get.
+Set a timer and see how far you get.
 - Everyone gets to the door with shoes and a jacket
 - Grab the go-bags (water, food, flashlight, first aid, phone chargers)
 - Take medications, glucose supplies and your written medical plans

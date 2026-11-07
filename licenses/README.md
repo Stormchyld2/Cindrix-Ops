@@ -32,7 +32,7 @@ their full text.
 | pdf.js (pdfjs-dist) | Reads PDF books | Apache-2.0 | Keep license and notice |
 | Project NOMAD (list of archives, answer-style numbers, golden-question idea) | `content/library-catalog.json` is adapted from its `collections/kiwix-categories.json`; the rest is our own code | Apache-2.0 | Say where it came from (here and in the file's note); its own creator-pack videos are NOT used (a separate license that bars copying) |
 | FDA drug labels (openFDA, `scripts/get-druglabels.ps1`) | The label text for medicines, read in Intel > Drug labels | U.S. government information; openFDA terms (https://open.fda.gov/terms/) | Show it as published, say it is not advice and not endorsed by the FDA; the program never downloads it itself |
-| Home remedies pages (`content/guides/home-remedies`) | Reworded from NOMAD's `home_remedies.json` and `natural_remedies.json`, which summarize CDC, MedlinePlus and NCCIH pages | Public domain (U.S. government), NOMAD Apache-2.0 | Keep each page's `Source:` line; keep them marked draft until a qualified person has checked them |
+| Home remedies pages (`content/guides/home-remedies`) | Reworded from NOMAD's `home_remedies.json` and `natural_remedies.json`, which summarize CDC, MedlinePlus and NCCIH pages | Public domain (U.S. government), NOMAD Apache-2.0 | Keep each page's `Source:` line |
 | ffmpeg (LGPL build) | Plays WMA by converting for a moment | LGPL-2.1-or-later | Keep license; offer the ffmpeg source (link below); we run it as a separate program |
 | Our own code in `core/` and `crypto/` | All the logic, including our own zstd and xz readers | The project's license (see "Our own license") | |
 
@@ -47,7 +47,7 @@ their full text.
 | Wikipedia, WikiMed, WikEM and similar archives | CC BY-SA 4.0 | Credit and link; share-alike for anything we change |
 | US government manuals and guides (Army, FEMA, CDC, FDA, USGS) | Public domain | Record edition and date |
 | Project Gutenberg titles | Public domain in the US | Check each title |
-| Academy lessons we wrote (Survival basics, Seed vault, Map reading and land navigation, Casualty care in a crisis, Family medical care without a clinic, Building your stash, Protective driving, Noticing surveillance, Home and residential security, Safe and accurate shooting) | Ours, from public-domain US government manuals where noted | Drafts until reviewed by a qualified person |
+| Academy lessons we wrote (Survival basics, Seed vault, Map reading and land navigation, Casualty care in a crisis, Family medical care without a clinic, Building your stash, Protective driving, Noticing surveillance, Home and residential security, Safe and accurate shooting) | Ours, from public-domain US government manuals where noted | Our own, see the license above |
 | Academy courses someone else wrote | Set by the author in `course.md` (`license:`) | The Academy shows the author; do not ship a course with no license |
 | Music and books you add yourself | Yours | Not part of what we ship |
 
@@ -61,12 +61,7 @@ and any copyrighted book (see doc 3).
 - llama.cpp: https://github.com/ggml-org/llama.cpp
 
 ## Our own license
-**Not decided yet.** The owner wants our own code limited to personal use with no commercial use.
-That cannot be done under the GPL (the GPL forbids such limits) and is not "open source" by the usual
-definition; it is a "source-available" or proprietary license. It looks possible here because Kiwix
-and ffmpeg run as separate programs and the libraries inside the program are MIT, BSD or Apache, but a
-lawyer should confirm that before the first drive is sold. Until a `LICENSE` file is added, nobody else
-has permission to reuse the code. This is not legal advice.
+Our own code, and the version that is sold, are under the Cindrix Personal-Use License (owner: Jason Williams): one copy for your own personal, non-commercial use and your household; no copying for others, selling, renting, hosting for others or business use. The text is in `LICENSE` at the top of the project and in `licenses/PERSONAL-USE-LICENSE.md`. This is not an open-source license. Parts that are not ours keep their own licenses, listed in this folder.
 
 ## Before you sell a drive
 1. Open `content/sources.json` and `manifest/content.json`: every item on the drive needs a source, an edition and a license.
@@ -74,13 +69,13 @@ has permission to reuse the code. This is not legal advice.
 3. Put `LICENSES/` on the drive next to the program, and keep "Licenses and sources" reachable from the app.
 
 ## Seed vault guides and course
-Written for this project. Facts are paraphrased in our own words from university extension guidance (Purdue, University of Wisconsin-Madison, Oregon State, Penn State) and USDA pages. Nothing is copied. Drafts, not yet reviewed.
+Written for this project. Facts are paraphrased in our own words from university extension guidance (Purdue, University of Wisconsin-Madison, Oregon State, Penn State) and USDA pages. Nothing is copied.
 
 ## Agro guides and radio reference
-Written for this project (`content/guides`; 128 agro pages and 55 radio pages; the planting calendar's month-by-month pages are generated from week offsets published by Extension services, and the suggested seed list is in `core/src/seedlist.rs`). Facts are paraphrased in our own words from general home-gardening and livestock practice (state Extension services), USDA, NOAA, USDA FSIS / FoodSafety.gov, EPA, the FCC (47 CFR Part 95), ITU and ICAO. US government material is public domain. Nothing is copied. Drafts, not yet reviewed. Home canning processing times are left out on purpose: see the USDA Complete Guide to Home Canning.
+Written for this project (`content/guides`; 128 agro pages and 55 radio pages; the planting calendar's month-by-month pages are generated from week offsets published by Extension services, and the suggested seed list is in `core/src/seedlist.rs`). Facts are paraphrased in our own words from general home-gardening and livestock practice (state Extension services), USDA, NOAA, USDA FSIS / FoodSafety.gov, EPA, the FCC (47 CFR Part 95), ITU and ICAO. US government material is public domain. Nothing is copied. Home canning processing times are left out on purpose: see the USDA Complete Guide to Home Canning.
 
 ## Courses added 2026-11-05
-Cold-weather living, Backup supply caches, Basic building and repair, Home damage control and Electricity and batteries are written in our own words from US government works, which are public domain: Army FM 31-70, TC 31-29A, FM 5-426, FM 5-428, and Navy NAVEDTRA 14057 and NEETS Module 1. Nothing is copied. Drafts, not yet reviewed.
+Cold-weather living, Backup supply caches, Basic building and repair, Home damage control and Electricity and batteries are written in our own words from US government works, which are public domain: Army FM 31-70, TC 31-29A, FM 5-426, FM 5-428, and Navy NAVEDTRA 14057 and NEETS Module 1. Nothing is copied.
 
 ## Survival-Data (pr0m3th3an/survival-data): do not bundle
 Its README says MIT, but it has no LICENSE file and it is a collection of about 243 PDFs written by other people. An MIT label on the collection does not give anyone the right to redistribute those works. We use it only to **find** US government manuals (public domain) and read them. Copy a document only after checking that it is a government work or otherwise licensed.

@@ -18,4 +18,4 @@ reviewed:
 
 **Quick check without a thermometer:** if the soil is cold and wet in your hand it is not ready. Wait for it to crumble.
 
-Source: Soil temperature guides from state Extension services (for example the University of Maryland Extension and Oregon State). Not yet checked against one named table: confirm with your county Extension office.
+Source: Soil temperature guides from state Extension services (for example the University of Maryland Extension and Oregon State). Confirm with your county Extension office.

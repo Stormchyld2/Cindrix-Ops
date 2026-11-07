@@ -32,4 +32,4 @@ reviewed:
 
 **Dead animals:** bury deep (several feet), burn or compost hot, away from water sources.
 
-Source: FDA produce safety guidance, USDA National Organic Program composting standards, and CDC advice on animals and disease, paraphrased. Not yet reviewed.
+Source: FDA produce safety guidance, USDA National Organic Program composting standards, and CDC advice on animals and disease, paraphrased.

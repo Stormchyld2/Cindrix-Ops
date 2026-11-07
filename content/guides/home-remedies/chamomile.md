@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Chamomile is promoted for insomnia, indigestion, anxiety, the common cold, and infant colic; it is also used topically for skin conditions and as a mouthwash for oral inflammation.**
 
 **What people do:** Chamomile is commonly consumed as a tea (considered safe in amounts typically found in teas), taken as an oral supplement, applied topically to skin, or used as a mouthwash for oral inflammation. Consult a healthcare provider before using oral supplements rather than tea.

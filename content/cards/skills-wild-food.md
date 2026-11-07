@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Written from general field guidance and not yet checked line by line against its source or by a qualified person.**
-
 **You can survive about 3 weeks without food. Water and shelter come first.** Wild plants are a risk when you are weak.
 
 1. **Do not eat a plant you cannot identify with 100 percent certainty.** Some are deadly, and a few mouthfuls can kill. Look-alikes are common.

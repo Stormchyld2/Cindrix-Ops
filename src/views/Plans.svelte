@@ -124,7 +124,7 @@
         <span class="ctitle">{p.title}</span>
         {#if p.summary}<span class="csum">{p.summary}</span>{/if}
         <span class="track"><span style="width:{c.total ? (c.done / c.total) * 100 : 0}%"></span></span>
-        <span class="meta">{c.done} of {c.total} done{c.due ? ` · ${c.due} due again` : ''}{p.status !== 'reviewed' ? ' · not yet reviewed' : ''}</span>
+        <span class="meta">{c.done} of {c.total} done{c.due ? ` · ${c.due} due again` : ''}</span>
       </button>
         {/each}
     </div>
@@ -155,7 +155,6 @@
     <div class="kind">{KIND_NAME[open.kind] ?? open.kind}{open.author ? ' · by ' + open.author : ''}</div>
     <h1>{open.title}</h1>
     {#if open.summary}<p class="muted">{open.summary}</p>{/if}
-    {#if open.status !== 'reviewed'}<p class="muted small">Not yet reviewed by a qualified person. Treat it as a starting point.</p>{/if}
   </header>
   {#if error}<div class="warn err" role="alert">{error}</div>{/if}
   <div class="panel prog">

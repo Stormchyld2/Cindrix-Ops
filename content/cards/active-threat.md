@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 1. **Run** if there is a safe way out. Leave your things. Help others if you can but do not wait. Keep your hands where police can see them.
 2. If you cannot run, **hide**: out of sight, door locked or blocked with furniture, lights off, phone silent. Stay low and quiet, behind something solid.
 3. **Fight only as a last resort** and only if your life is in danger: act together, use anything as a weapon, and commit.

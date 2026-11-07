@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **For minor burns, immediately run cool (not cold) water slowly over the burned area for 10–15 minutes to stop the burning process and reduce pain. After cooling, cover the burn with a clean, dry cloth or sterile bandage.**
 
 **What people do:** Run cool water slowly over the burned area for several minutes, then cover with a clean, dry cloth or bandage. Do not apply ice, butter, or any creams — these can worsen tissue damage.

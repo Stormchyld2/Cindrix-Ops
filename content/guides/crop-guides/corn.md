@@ -24,4 +24,4 @@ reviewed:
 
 **Companion planting:** the "three sisters" method plants corn, pole beans (climbing the stalks) and squash (shading the soil) together. It works best once the corn is knee-high before beans are sown.
 
-Source: general home-gardening practice, as taught by state Extension services (university garden guides). Not yet checked against one named page: confirm planting times and varieties with your own county Extension office.
+Source: general home-gardening practice, as taught by state Extension services (university garden guides). Confirm planting times and varieties with your own county Extension office.

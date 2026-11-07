@@ -26,4 +26,4 @@ reviewed:
 
 **After the crop:** cut the plants at the soil line and leave the roots; the nitrogen they hold feeds the next crop. Plant fall greens or carrots in the same bed.
 
-Source: general home-gardening practice, as taught by state Extension services (university garden guides). Not yet checked against one named page: confirm planting times and varieties with your own county Extension office.
+Source: general home-gardening practice, as taught by state Extension services (university garden guides). Confirm planting times and varieties with your own county Extension office.

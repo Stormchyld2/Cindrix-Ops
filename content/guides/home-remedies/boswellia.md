@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Boswellia resin extract is traditionally used to reduce inflammation and pain, and is promoted as a dietary supplement to support joint health and mobility, particularly for osteoarthritis.**
 
 **What people do:** Boswellia is taken orally as a dietary supplement. Clinical trials have used doses up to 1,000 mg daily for up to 6 months; follow the product label and consult a healthcare provider before starting.

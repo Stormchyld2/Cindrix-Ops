@@ -17,4 +17,4 @@ reviewed:
 
 **Mulch and shade:** Mulch cuts water use by half. Shade cloth in hot afternoons helps leafy crops.
 
-Source: general soil and water guidance from state Extension services, the USDA Natural Resources Conservation Service (NRCS) and the EPA. Not yet checked against one named page: confirm with your county Extension office.
+Source: general soil and water guidance from state Extension services, the USDA Natural Resources Conservation Service (NRCS) and the EPA. Confirm with your county Extension office.

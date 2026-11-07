@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Written from general field guidance and not yet checked line by line against its source or by a qualified person.**
-
 1. **Rest in shade** during the hottest part of the day and travel in the early morning and evening.
 2. **Drink small amounts often.** Do not wait until you are thirsty. Pale urine is a good sign.
 3. **Wear light, loose, light-coloured clothes** and a wide hat. Cover skin.

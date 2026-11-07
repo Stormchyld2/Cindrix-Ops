@@ -5,7 +5,7 @@ where: in the car
 summary: Be ready if you are stuck in the car in snow.
 status: draft
 ---
-Draft checklist. Walk through and actually look, do not just tick.
+Walk through and actually look, do not just tick.
 - Check blankets, a hat, gloves, boots and a warm coat are in the car
 - Check a shovel, ice scraper, sand or cat litter and a flashlight
 - Check water, snacks and a phone charger

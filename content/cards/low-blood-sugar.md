@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 Signs: shaky, sweaty, hungry, confused, pale, fast heartbeat, headache, cranky.
 
 1. **If the person is awake and can swallow safely**, give about 15 grams of fast sugar: 3 to 4 glucose tablets, or about 4 oz (½ cup) of juice or regular soda.

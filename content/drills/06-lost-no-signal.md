@@ -5,7 +5,7 @@ where: on the map
 summary: Stay put or move, signal for help, and use the offline map.
 status: draft
 ---
-Draft checklist. Practice somewhere safe with a map and compass.
+Practice somewhere safe with a map and compass.
 - Stop. Sit down, drink water, and think before moving
 - Tell yourself the last place you knew where you were, and how long ago
 - Decide: stay put (usually best, you are easier to find) or move to a clearly better spot

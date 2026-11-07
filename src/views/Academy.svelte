@@ -72,7 +72,7 @@
   const openCourse = $derived(courseId ? courses.find((c) => c.id === courseId) : undefined);
   function stats(c: { modules: AcademyModule[] }) {
     const ls = c.modules.flatMap((m) => m.lessons);
-    return { lessons: ls.length, done: ls.filter((l) => l.tries > 0).length, hours: Math.round((ls.reduce((a, l) => a + l.minutes, 0) / 60) * 10) / 10, draft: ls.some((l) => l.status !== 'reviewed') };
+    return { lessons: ls.length, done: ls.filter((l) => l.tries > 0).length, hours: Math.round((ls.reduce((a, l) => a + l.minutes, 0) / 60) * 10) / 10 };
   }
   const allLessons = $derived(modules.flatMap((m) => m.lessons));
   const finished = $derived(allLessons.filter((l) => l.tries > 0).length);
@@ -170,7 +170,7 @@
             {#if c.author}<span class="muted small">By {c.author}</span>{/if}
             <span class="meta">{c.modules.length} module{c.modules.length === 1 ? '' : 's'} · {st.lessons} lesson{st.lessons === 1 ? '' : 's'} · about {st.hours} hour{st.hours === 1 ? '' : 's'}</span>
             <span class="track"><span style="width:{st.lessons ? (st.done / st.lessons) * 100 : 0}%"></span></span>
-            <span class="meta">{st.done} of {st.lessons} done{st.draft ? ' · not yet reviewed' : ''}</span>
+            <span class="meta">{st.done} of {st.lessons} done</span>
           </button>
         {/each}
       </div>
@@ -202,7 +202,7 @@
                   <span class="mark" class:done={l.tries > 0}>{l.tries > 0 ? '✓' : '○'}</span>
                   <span class="grow">
                     <span class="title">{l.title}</span>
-                    <span class="muted small">{l.minutes} min{l.questions ? ` · ${l.questions} question${l.questions === 1 ? '' : 's'}` : ''}{l.status !== 'reviewed' ? ' · draft' : ''}</span>
+                    <span class="muted small">{l.minutes} min{l.questions ? ` · ${l.questions} question${l.questions === 1 ? '' : 's'}` : ''}</span>
                   </span>
                   {#if l.tries > 0}<span class="best">Best {l.best_score}/{l.total}</span>{/if}
                 </button>
@@ -222,7 +222,6 @@
     </div>
     <article class="panel lesson">
       <h1>{lesson.title}</h1>
-      {#if lesson.status !== 'reviewed'}<div class="warn">Draft lesson. It has not been reviewed by a qualified person yet. Check it against your own situation and training.</div>{/if}
       {#each lesson.blocks as b}
         {#if b.kind === 'heading'}
           <h2>{b.text}</h2>

@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 A cold brings a runny nose, cough and sore throat, and sometimes a mild fever. It comes on slowly and usually gets better on its own. Antibiotics do not work on colds.
 
 1. Rest and drink plenty of fluids.

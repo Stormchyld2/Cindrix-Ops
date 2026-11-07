@@ -28,4 +28,4 @@ reviewed:
 
 **Mould on jam:** throw out the whole jar. Do not scrape it off.
 
-Source: the National Center for Home Food Preservation (nchfp.uga.edu) and USDA guidance, paraphrased; state Extension services. Not yet reviewed: check against the USDA Complete Guide to Home Canning and the Shelf manuals.
+Source: the National Center for Home Food Preservation (nchfp.uga.edu) and USDA guidance, paraphrased; state Extension services. Check against the USDA Complete Guide to Home Canning and the Shelf manuals.

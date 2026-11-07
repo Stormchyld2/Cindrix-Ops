@@ -11,13 +11,13 @@ What exists: the Dashboard, Ask (local assistant with chat history, source links
 ## Rules for this project
 - Shipped content is open-source and free (public domain, CC BY / CC BY-SA, Apache 2.0, MIT, GPL where required). The owner's private drive may hold other material by his own choice; only the version for sale is stripped to freely licensed and public-domain material (docs/05-open-decisions.md).
 - Every source and license is listed in the app and in a LICENSES folder.
-- The assistant never gives prescription-drug or insulin doses (herbal, home-remedy and kitchen amounts are allowed). Medical cards are drafts until a clinician reviews them.
+- The assistant never gives prescription-drug or insulin doses (herbal, home-remedy and kitchen amounts are allowed).
 - Everything runs offline. Satellite photos (USGS NAIP) are an optional per-county download in Settings.
 
 ## Layout
 - `core/`: Rust core logic (safety check, cards, inventory, library search, the Go/Vault/Hub product setup). No outside dependencies. `cd core && cargo test`
 - `src/`, `src-tauri/`: Svelte 5 + TypeScript interface and Tauri 2 shell (built in CI; Windows build is the portable download; see docs/13 and docs/22)
-- `content/`: shipped cards, drills, guides, plans, Academy courses and seed guides (mostly drafts pending review)
+- `content/`: shipped cards, drills, guides, plans, Academy courses and seed guides
 - `crypto/`: passphrase lock
 - `tests/safety/`, `core/tests/safety/`: medication safety test cases
 - `docs/`: architecture docs

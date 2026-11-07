@@ -29,4 +29,4 @@ reviewed:
 
 **Direction finding:** a transmitting radio can be located. In a situation where staying hidden matters, keep transmissions few and brief, and move afterwards.
 
-Source: Standard radio-operating practice taught in amateur radio, public safety and military training; FCC rules. Not yet reviewed.
+Source: Standard radio-operating practice taught in amateur radio, public safety and military training; FCC rules.

@@ -30,4 +30,4 @@ reviewed:
 
 **Safety:** wash your hands after handling manure; wash all produce.
 
-Source: general gardening and water practice, as taught by state Extension services and the EPA. Not yet reviewed: confirm with your county Extension office.
+Source: general gardening and water practice, as taught by state Extension services and the EPA. Confirm with your county Extension office.

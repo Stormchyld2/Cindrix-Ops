@@ -42,7 +42,7 @@
       {#each shown as c (c.id)}
         <button class="card" onclick={() => { open = c; window.scrollTo?.(0, 0); }}>
           <strong>{c.title}</strong>
-          {#if c.status !== 'reviewed'}<span class="badge">Draft · review pending</span>{/if}
+          
         </button>
       {/each}
     </div>

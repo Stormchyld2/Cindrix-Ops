@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 1. Wash skin with soap and cool water as soon as you can, within the first hour if possible. Wash clothes, tools and pet fur that touched the plant.
 2. Do not scratch. Cool compresses and cool baths ease the itch. Calamine lotion or a hydrocortisone cream used as the label says can help.
 3. Do not burn these plants: the smoke can inflame the lungs.

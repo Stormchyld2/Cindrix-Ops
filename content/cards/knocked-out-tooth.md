@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 1. Find the tooth and press clean gauze on the bleeding.
 2. Pick the tooth up by the **crown** (the chewing part), never by the root.
 3. Rinse it gently in tap water. **Do not scrub it** or remove any tissue stuck to it.

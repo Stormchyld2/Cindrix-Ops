@@ -21,4 +21,4 @@ reviewed:
 
 Treat corn that is eaten as the main food with care: whole corn needs "nixtamalisation" (soaking in lime or wood-ash water) to give its niacin, otherwise pellagra can result. See the grain pages in the food stores guides.
 
-Source: general home-gardening practice, as taught by state Extension services (university garden guides). Not yet checked against one named page: confirm planting times and varieties with your own county Extension office.
+Source: general home-gardening practice, as taught by state Extension services (university garden guides). Confirm planting times and varieties with your own county Extension office.

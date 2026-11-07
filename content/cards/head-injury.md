@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 After a blow to the head, **call 911 at once** for: being knocked out, cannot be woken, one pupil bigger than the other, a headache that gets worse, repeated vomiting, a seizure, slurred speech, weakness or numbness, or growing confusion or restlessness.
 
 1. Keep the person still and calm. If the neck may be hurt, **do not move them**.

@@ -32,4 +32,4 @@ reviewed:
 
 **Do not use** household chemicals or mixes you are unsure of: they can poison you, soil, or pollinators. If using any product, read and follow the label exactly. A mild **soap spray** (a few drops of plain soap per quart of water) helps against soft-bodied insects, but test on a few leaves first.
 
-Source: general gardening and water practice, as taught by state Extension services and the EPA. Not yet reviewed: confirm with your county Extension office.
+Source: general gardening and water practice, as taught by state Extension services and the EPA. Confirm with your county Extension office.

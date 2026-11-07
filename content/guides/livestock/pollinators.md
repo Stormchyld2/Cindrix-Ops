@@ -32,4 +32,4 @@ reviewed:
 
 **Fruit trees too early to bloom?** A late frost during bloom kills the crop. Plant on slopes, not in low spots, and choose later-blooming varieties.
 
-Source: general gardening and orchard practice, as taught by state Extension services. Not yet reviewed.
+Source: general gardening and orchard practice, as taught by state Extension services.

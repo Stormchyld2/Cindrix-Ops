@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Written from general field guidance and not yet checked line by line against its source or by a qualified person.**
-
 1. **Orient the map.** Turn it so north on the map points to north on the ground, using a compass or a landmark you know.
 2. **Find the legend** (the key). It explains the colours and symbols. Usually: **blue** water, **green** woods, **brown** contour lines and hills, **black** buildings and roads, **white** open ground.
 3. **Contour lines** join points of equal height. Lines close together mean a **steep** slope. Lines far apart mean **gentle** ground. Circles of lines are hilltops. V-shaped lines point **uphill** along a valley, and the stream runs in it.

@@ -26,4 +26,4 @@ reviewed:
 
 **Watering by hand:** a watering can or bucket with a rose spout gives deep, gentle water. A clay pot buried in the bed ("olla") releases water slowly to roots. A plastic bottle with small holes upside down in the soil does the same.
 
-Source: EPA and state Extension guidance on rainwater harvesting, paraphrased. Not yet reviewed: check local rules on collection, and treat water before drinking.
+Source: EPA and state Extension guidance on rainwater harvesting, paraphrased. Check local rules on collection, and treat water before drinking.

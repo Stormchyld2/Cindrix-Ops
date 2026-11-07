@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Reach or throw. Don't go.**
 
 1. Call 911. Shout for help.

@@ -20,4 +20,4 @@ reviewed:
 
 **Late frost plan:** keep sheets, buckets, row cover or straw near the garden. Cover tender plants before dark when frost is forecast; remove in the morning.
 
-Source: general gardening practice, as taught by state Extension services. Not yet checked against one named page: confirm dates with your own county Extension office.
+Source: general gardening practice, as taught by state Extension services. Confirm dates with your own county Extension office.

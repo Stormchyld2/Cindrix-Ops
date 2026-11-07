@@ -5,7 +5,7 @@ where: at home
 summary: Move to the safest place in under a minute.
 status: draft
 ---
-Draft checklist. Walk through and actually look, do not just tick.
+Walk through and actually look, do not just tick.
 - Choose the safest place: lowest floor, interior room, away from windows
 - Walk everyone to it and time how long it takes
 - Keep helmets, shoes, a flashlight and a radio there

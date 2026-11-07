@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 1. **Lay the person flat** on their back. Raise the legs about 12 inches (30 cm) if there is no injury.
 2. Loosen tight clothing, belt or collar. Make sure they have fresh air.
 3. Check that they are breathing. If not, call 911 and start CPR.

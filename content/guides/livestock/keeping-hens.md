@@ -17,4 +17,4 @@ reviewed:
 
 **If a bird is ill:** keep her apart, and ask a vet or an experienced keeper. This program gives no medicine amounts.
 
-Source: general backyard-poultry practice from state Extension services. Not yet checked against one named page.
+Source: general backyard-poultry practice from state Extension services.

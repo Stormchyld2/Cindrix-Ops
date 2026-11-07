@@ -5,7 +5,7 @@ where: at home
 summary: Know what to do before the alarm sounds.
 status: draft
 ---
-Draft checklist. Walk through and actually look, do not just tick.
+Walk through and actually look, do not just tick.
 - Check there is a carbon monoxide alarm on every level and near bedrooms, and test each one
 - Check its replace-by date
 - Agree that when it sounds, everyone goes outdoors into fresh air at once

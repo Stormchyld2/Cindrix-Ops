@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Poison Help line, free, 24 hours: 1-800-222-1222** (United States). You can also use poison.org.
 
 **Call 911 first** if the person collapses, has a seizure, has trouble breathing or cannot be woken.

@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Keeping the feet clean, dry, and cool — including washing daily with soap and water, drying carefully between the toes, wearing clean cotton socks, and not walking barefoot in public showers or locker rooms — supports treatment and prevents spread of athlete's foot and other tinea infections.**
 
 **What people do:** Keep feet clean, dry, and cool; wear clean socks and avoid walking barefoot in public areas such as locker room showers (use flip-flops instead). Apply an over-the-counter antifungal cream as directed on the package for most cases of athlete's foot.

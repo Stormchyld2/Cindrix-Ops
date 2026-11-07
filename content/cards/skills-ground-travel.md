@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Written from general field guidance and not yet checked line by line against its source or by a qualified person.**
-
 1. **Plan the route** before you leave. Tell someone your route, your group and when you expect to be back.
 2. **Move at the pace of the slowest** person. Rest for 10 minutes every hour.
 3. **Keep together.** Use the buddy system. Count heads at every stop.

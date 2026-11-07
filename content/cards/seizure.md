@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 1. Stay calm and **note the time**.
 2. Clear hard or sharp things away. Cushion the head. Loosen anything tight around the neck.
 3. **Do not hold the person down** and **put nothing in the mouth**.

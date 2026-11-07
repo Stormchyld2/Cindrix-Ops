@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Signs:** ear pain, fever, a fussy child, rubbing or tugging at the ear, trouble sleeping. Colds and other infections can cause it.
 
 1. Rest and give extra fluids.

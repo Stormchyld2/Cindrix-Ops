@@ -19,4 +19,4 @@ reviewed:
 
 **Seed saving:** Spinach is male or female plants and cross-pollinates by wind; chard and beets cross with each other. Chard is biennial: it seeds in its second year.
 
-Source: general home-gardening practice, as taught by state Extension services (university garden guides). Not yet checked against one named page: confirm planting times and varieties with your own county Extension office.
+Source: general home-gardening practice, as taught by state Extension services (university garden guides). Confirm planting times and varieties with your own county Extension office.

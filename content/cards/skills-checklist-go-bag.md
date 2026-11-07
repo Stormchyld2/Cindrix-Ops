@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Written from general field guidance and not yet checked line by line against its source or by a qualified person.**
-
 1. **Navigation:** map, compass and a way to use them.
 2. **Light:** headlamp or flashlight and spare batteries.
 3. **Sun protection:** hat, sunscreen, sunglasses.

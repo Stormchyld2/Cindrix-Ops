@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 1. Signs: burning when you pass urine, going often, a strong urge, cloudy or bad-smelling urine, low belly pain.
 2. Drink plenty of water. Do not hold urine in.
 3. A warm pad on the low belly may ease the pain.

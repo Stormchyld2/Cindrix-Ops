@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 Pneumonia is an infection of the lungs. It can follow a cold, the flu or COVID-19, and it needs a health care provider.
 
 **Common signs:** cough, fever or chills, shortness of breath, chest pain when breathing or coughing, tiredness, nausea, vomiting or diarrhea, and confusion (most of all in older people).

@@ -26,4 +26,4 @@ reviewed:
 - Do not mount antennas during thunderstorms. Disconnect the antenna cable during storms, or use a lightning arrestor and ground.
 - Never transmit with the antenna disconnected: it can damage the radio.
 
-Source: ARRL Antenna Book and standard amateur radio practice, simplified. Not yet reviewed.
+Source: ARRL Antenna Book and standard amateur radio practice, simplified.

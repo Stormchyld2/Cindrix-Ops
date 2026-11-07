@@ -21,4 +21,4 @@ reviewed:
 
 **Timing:** count back from your last frost date using the numbers on the spring page.
 
-Source: general gardening practice, as taught by state Extension services. Not yet checked against one named page: confirm dates with your own county Extension office.
+Source: general gardening practice, as taught by state Extension services. Confirm dates with your own county Extension office.

@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Eating more fruits, vegetables, and whole grains (which are high in fiber) and drinking plenty of water each day are the foundational self-care steps for preventing and relieving constipation and reducing hemorrhoid discomfort.**
 
 **What people do:** Eat more fruits, vegetables, and whole grains each day and drink plenty of fluids. Increase fiber gradually to avoid gas and bloating.

@@ -25,4 +25,4 @@ reviewed:
 
 **Seed saving:** peppers cross easily between types in the same species if close together. Isolate by 50 feet or more, or bag blossoms. Save seed from fully ripe fruit.
 
-Source: general home-gardening practice, as taught by state Extension services (university garden guides). Not yet checked against one named page: confirm planting times and varieties with your own county Extension office.
+Source: general home-gardening practice, as taught by state Extension services (university garden guides). Confirm planting times and varieties with your own county Extension office.

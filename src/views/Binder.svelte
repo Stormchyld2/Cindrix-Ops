@@ -132,7 +132,6 @@
     ...chosenPlans.map((p) => 'Plan: ' + p.title), ...chosenCards.map((c) => c.title), ...chosenDrills.map((d) => 'Checklist: ' + d.title),
     ...chosenMaps.map((m) => 'Map: ' + m.name), ...chosenGuides.map((g) => 'Guide: ' + g.c.title), notePages > 0 && `Notes (${notePages} page${notePages === 1 ? '' : 's'})`,
   ].filter(Boolean) as string[]);
-  let anyDraft = $derived(chosenCards.some((c) => c.status !== 'reviewed') || chosenDrills.some((d) => d.status !== 'reviewed') || chosenPlans.some((p) => p.status !== 'reviewed') || chosenGuides.some((g) => g.c.status !== 'reviewed'));
   let people = $derived((family?.people ?? []).filter((p) => p.name.trim() || p.conditions.trim() || p.medicines.trim() || p.allergies.trim() || p.doctor.trim()));
 
   // Plain rendering of a card's Markdown (bold, numbered and bullet lines) without any HTML injection.
@@ -220,7 +219,7 @@
         <h1>FAMILY EMERGENCY BINDER</h1>
         <div>Updated {today}</div>
       </header>
-      <p class="rule">In an emergency, call 911. This binder is reference only, not medical advice.{anyDraft ? ' Cards and checklists marked DRAFT have not been reviewed by a clinician: check them against your doctor’s written plans.' : ''}</p>
+      <p class="rule">In an emergency, call 911. This binder is reference only, not medical advice.</p>
 
       {#if contents.length}
         <section class="toc">
@@ -318,7 +317,7 @@
 
       {#each chosenPlans as p (p.id)}
         <section class="card">
-          <h2>Plan: {p.title}{p.status !== 'reviewed' ? ' (DRAFT)' : ''}</h2>
+          <h2>Plan: {p.title}</h2>
           <p class="muted">{p.summary}</p>
           {#each p.steps as st (st.id)}
             <div class="step">
@@ -331,14 +330,14 @@
 
       {#each chosenCards as c (c.id)}
         <section class="card">
-          <h2>{c.title}{c.status !== 'reviewed' ? ' (DRAFT)' : ''}</h2>
+          <h2>{c.title}</h2>
           {#each lines(c.body) as l}<p class:li={l.list}>{l.text}</p>{/each}
         </section>
       {/each}
 
       {#each chosenDrills as d (d.id)}
         <section class="card">
-          <h2>Checklist: {d.title}{d.status !== 'reviewed' ? ' (DRAFT)' : ''}</h2>
+          <h2>Checklist: {d.title}</h2>
           <p class="muted">{d.summary}</p>
           <ul class="boxes">{#each d.steps as s}<li><span class="box"></span> {s}</li>{/each}</ul>
         </section>
@@ -353,7 +352,7 @@
 
       {#each chosenGuides as g (g.k)}
         <section class="card">
-          <h2>{g.c.title}{g.c.status !== 'reviewed' ? ' (DRAFT)' : ''}</h2>
+          <h2>{g.c.title}</h2>
           {#each lines(g.c.body) as l}<p class:li={l.list}>{l.text}</p>{/each}
         </section>
       {/each}

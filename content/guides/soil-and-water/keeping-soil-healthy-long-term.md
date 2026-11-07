@@ -27,4 +27,4 @@ reviewed:
 
 **Plan for a long time without shops:** keep a compost system running, save seed, and record which crops did best on your soil.
 
-Source: general gardening and water practice, as taught by state Extension services and the EPA. Not yet reviewed: confirm with your county Extension office.
+Source: general gardening and water practice, as taught by state Extension services and the EPA. Confirm with your county Extension office.

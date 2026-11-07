@@ -33,4 +33,4 @@ reviewed:
 
 **Effort:** the work is mostly by hand. Plan for many hours per 1,000 square feet.
 
-Source: general small-grain practice, as taught by state Extension services; USDA. Yields vary widely with weather, soil and variety. Not yet reviewed.
+Source: general small-grain practice, as taught by state Extension services; USDA. Yields vary widely with weather, soil and variety.

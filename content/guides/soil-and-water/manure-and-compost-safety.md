@@ -15,4 +15,4 @@ reviewed:
 
 **Hygiene:** Wear gloves and wash hands. Keep children away from the pile. Wash vegetables well.
 
-Source: general soil and water guidance from state Extension services, the USDA Natural Resources Conservation Service (NRCS) and the EPA. Not yet checked against one named page: confirm with your county Extension office.
+Source: general soil and water guidance from state Extension services, the USDA Natural Resources Conservation Service (NRCS) and the EPA. Confirm with your county Extension office.

@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **First, get inside, stay inside, stay tuned.** See the card "Nuclear blast or radiation". Do not leave shelter to look for care or medicine unless officials say it is safe, or a life is in danger.
 
 **What it is:** radiation sickness happens only after a very high dose of penetrating radiation to the whole body (or most of it) in a short time, such as very close to a blast. Many people near a radiation event will not get it.

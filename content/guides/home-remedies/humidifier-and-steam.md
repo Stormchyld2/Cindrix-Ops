@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Using a clean humidifier or cool-mist vaporizer adds moisture to the air and can help relieve nasal congestion and cough. Breathing steam from a bowl of hot water or a running shower 2–4 times daily also loosens nasal secretions.**
 
 **What people do:** Fill a clean cool-mist humidifier or vaporizer with water and run it in the room. Clean the device daily per the manufacturer's instructions to prevent mold and bacteria buildup.

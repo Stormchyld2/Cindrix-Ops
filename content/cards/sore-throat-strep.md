@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 Viruses cause most sore throats. **Cough, runny nose, hoarseness and pink eye point to a virus.** Only about 1 in 10 adults and 3 in 10 children with a sore throat have strep, which is caused by bacteria.
 
 **Signs that may mean strep:** a sore throat that starts fast, pain when swallowing, fever, red swollen tonsils, white patches or pus on the tonsils, tiny red spots on the roof of the mouth, swollen glands at the front of the neck. Headache, stomach pain, vomiting and a rash can also happen, mostly in children.

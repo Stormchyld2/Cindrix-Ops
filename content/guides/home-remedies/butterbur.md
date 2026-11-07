@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Butterbur root extract is used for migraine prevention and for reducing symptoms of allergic rhinitis (hay fever). It has been studied for reducing migraine frequency in both adults and children.**
 
 **What people do:** Butterbur is taken orally as a root extract for migraine prevention or as a leaf extract for allergic rhinitis symptoms. Use only products that are certified and labeled as free of pyrrolizidine alkaloids (PA-free), as the untreated plant contains compounds that can damage the liver.

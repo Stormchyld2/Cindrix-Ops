@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 1. Do not try to push the joint back in. Moving it can hurt nerves and blood vessels.
 2. Keep the joint still in the position you find it. Support it with a sling, pillows or padding.
 3. Apply a cold pack wrapped in cloth for 15 minutes at a time.

@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Turmeric is promoted for osteoarthritis, itching, depression, allergies, and high cholesterol; topical applications target joint pain. Historically, it was used in traditional medicine for indigestion, colds, skin infections, and liver disease.**
 
 **What people do:** Turmeric is taken orally as a dietary supplement or applied topically to the skin. Conventionally formulated oral turmeric or curcumin supplements are considered likely safe in recommended amounts for up to 2 to 3 months; follow the product label and consult a healthcare provider before use.

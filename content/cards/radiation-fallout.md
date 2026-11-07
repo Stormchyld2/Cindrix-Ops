@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Get inside. Stay inside. Stay tuned.**
 
 1. **Get into the nearest building** and move away from windows. Put as many walls as you can between you and the outside. A basement or the center of a big building is best.

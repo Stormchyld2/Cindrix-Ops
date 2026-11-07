@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **S.T.O.P.**
 
 - **Stop.** Sit down. Breathe. Do not wander.

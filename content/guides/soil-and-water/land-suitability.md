@@ -35,4 +35,4 @@ reviewed:
 
 **Score it:** a site that fails on sun, drainage or contamination should be fixed or avoided. Weeds are a clue: dock and moss mean wet or acid soil; clover and plantain mean compact soil.
 
-Source: general gardening and farm practice, as taught by state Extension services, USDA and the EPA. Not yet reviewed: confirm with your county Extension office.
+Source: general gardening and farm practice, as taught by state Extension services, USDA and the EPA. Confirm with your county Extension office.

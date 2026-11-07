@@ -5,7 +5,7 @@ where: at home
 summary: Open it, look at everything and fix what is missing or old.
 status: draft
 ---
-Draft checklist. Walk through and actually look, do not just tick.
+Walk through and actually look, do not just tick.
 - Open the kit and lay everything out
 - Check expiry dates, and replace anything old or damaged
 - Check you have bandages, gauze, tape, gloves, a thermometer, scissors and tweezers

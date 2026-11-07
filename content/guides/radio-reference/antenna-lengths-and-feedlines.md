@@ -19,4 +19,4 @@ reviewed:
 
 **SWR:** A meter that reads "standing wave ratio" shows if the antenna matches the radio. Aim for 1.5 or below, under 2.0 at worst. A high reading means a fault or the wrong length.
 
-Source: Published United States radio rules and guidance (FCC Parts 95 and 97, NOAA, U.S. Coast Guard, FAA, ARRL). Frequencies and rules change and differ by country: check a current FCC or ARRL chart before relying on a number. Not yet checked line by line.
+Source: Published United States radio rules and guidance (FCC Parts 95 and 97, NOAA, U.S. Coast Guard, FAA, ARRL). Frequencies and rules change and differ by country: check a current FCC or ARRL chart before relying on a number.

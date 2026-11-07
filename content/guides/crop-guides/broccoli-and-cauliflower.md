@@ -19,4 +19,4 @@ reviewed:
 
 **Seed saving:** Biennial (Brussels sprouts, cauliflower) or needs cold to flower; broccoli can set seed in the first year. They cross freely with cabbage, kale and each other, so save seed from one type at a time.
 
-Source: general home-gardening practice, as taught by state Extension services (university garden guides). Not yet checked against one named page: confirm planting times and varieties with your own county Extension office.
+Source: general home-gardening practice, as taught by state Extension services (university garden guides). Confirm planting times and varieties with your own county Extension office.

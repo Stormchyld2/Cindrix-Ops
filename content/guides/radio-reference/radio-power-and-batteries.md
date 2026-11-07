@@ -29,4 +29,4 @@ reviewed:
 - **Do not mix** old and new batteries or different brands in one radio.
 - Keep batteries away from heat and metal objects (coins in a pocket can short them).
 
-Source: Standard battery guidance (NiMH, lithium) and radio operating practice; manufacturer manuals. Not yet reviewed.
+Source: Standard battery guidance (NiMH, lithium) and radio operating practice; manufacturer manuals.

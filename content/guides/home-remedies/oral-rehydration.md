@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Oral rehydration solutions replace fluids and electrolytes lost through diarrhea or other causes of dehydration. For mild to moderate dehydration, drinking water is the first step; sports drinks or oral rehydration solutions (such as Pedialyte) are recommended when electrolytes are also depleted, especially for children.**
 
 **What people do:** Use a commercially prepared oral rehydration solution (available without a prescription) and follow the package directions. For adults with electrolyte losses, sports drinks can help; if liquids are hard to keep down, take small sips frequently or suck on ice chips rather than drinking large amounts at once.

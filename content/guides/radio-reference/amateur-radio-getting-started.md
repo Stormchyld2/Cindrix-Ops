@@ -27,4 +27,4 @@ reviewed:
 
 **For a family plan:** every licensed member should keep their call sign card and a radio ready. An unlicensed family member can use a ham radio only in a real emergency to save life and property.
 
-Source: FCC rules (47 CFR Parts 95 and 97) and FCC consumer guides, paraphrased, as understood in the United States. Rules change: check fcc.gov before you rely on a number. Not yet reviewed. ARRL (American Radio Relay League) beginner guidance.
+Source: FCC rules (47 CFR Parts 95 and 97) and FCC consumer guides, paraphrased, as understood in the United States. Rules change: check fcc.gov before you rely on a number. ARRL (American Radio Relay League) beginner guidance.

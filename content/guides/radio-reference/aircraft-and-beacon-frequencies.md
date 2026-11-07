@@ -13,4 +13,4 @@ reviewed:
 
 **Registration:** Register your PLB so rescuers know who you are. Test it only as the instructions say.
 
-Source: Published United States radio rules and guidance (FCC Parts 95 and 97, NOAA, U.S. Coast Guard, FAA, ARRL). Frequencies and rules change and differ by country: check a current FCC or ARRL chart before relying on a number. Not yet checked line by line.
+Source: Published United States radio rules and guidance (FCC Parts 95 and 97, NOAA, U.S. Coast Guard, FAA, ARRL). Frequencies and rules change and differ by country: check a current FCC or ARRL chart before relying on a number.

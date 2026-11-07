@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Written from general field guidance and not yet checked line by line against its source or by a qualified person.**
-
 1. **Stop heavy bleeding first** (see the severe bleeding card).
 2. **Clean the wound** once the bleeding is controlled: rinse with plenty of clean, safe water. Remove dirt gently.
 3. **Cover** with a clean dressing. Change it daily, or when wet or dirty.

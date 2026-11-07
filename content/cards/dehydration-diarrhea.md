@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 Signs of dehydration: very thirsty, dry mouth, little or dark urine, dizzy, tired, sunken eyes. In babies: no wet diaper for 3 hours or more, no tears.
 
 1. Give **small sips often** of safe water or oral rehydration solution. Start again slowly if vomiting.

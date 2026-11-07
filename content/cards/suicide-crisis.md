@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 1. **If someone is in danger now, call 911.** In the US you can also call or text 988 (Suicide and Crisis Lifeline), any time.
 2. Stay with the person. Ask directly and calmly: "Are you thinking about killing yourself?" Asking does not plant the idea.
 3. Listen without judging. Let them talk. Say you care and that you want to help.

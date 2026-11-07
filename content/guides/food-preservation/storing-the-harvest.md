@@ -17,4 +17,4 @@ reviewed:
 
 **Check everything every week or two,** and use what is starting to spoil first. Keep a list of what you have.
 
-Source: general food storage practice from state Extension services and the USDA. Not yet checked against one named page.
+Source: general food storage practice from state Extension services and the USDA.

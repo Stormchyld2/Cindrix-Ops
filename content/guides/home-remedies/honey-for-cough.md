@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Honey may be used to relieve cough in adults and children at least 1 year old. One to two teaspoons can be taken directly or stirred into a warm (not hot) beverage.**
 
 **What people do:** Give one to two teaspoons of honey directly by mouth, or stir it into a warm (not hot) drink. The CDC recommends this as a home measure for cough associated with the common cold.

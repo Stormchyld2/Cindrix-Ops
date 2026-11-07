@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 1. Rest in a dark, quiet room. Put a cool cloth on the forehead or neck.
 2. Drink water and eat something light if you can. Dehydration and hunger can bring on headaches.
 3. For pain, use the medicine your doctor has told you to use, or an over-the-counter pain reliever exactly as the label says.

@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 1. **Listen to officials** and go when told. Leaving early beats leaving late.
 2. Grab the **go-bag**, medicines, glasses, phones and chargers, papers, cash, and pets with their carriers.
 3. Wear sturdy shoes and clothing for the weather.

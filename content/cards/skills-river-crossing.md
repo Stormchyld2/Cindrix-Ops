@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Written from general field guidance and not yet checked line by line against its source or by a qualified person.**
-
 1. **Do not cross if you do not have to.** Look for a bridge, a shallow wide stretch, or wait until the water drops.
 2. **Look upstream and downstream.** Choose a wide, shallow section, not a narrow chute, a bend or a place just above rapids or a waterfall.
 3. **Fast water is dangerous at only knee depth.** Six inches (15 cm) of fast water can knock a person down.

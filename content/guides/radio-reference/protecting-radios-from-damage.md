@@ -25,4 +25,4 @@ reviewed:
 
 **Physical protection:** use a case or pouch. Replace antennas that are bent or damaged. Keep a **spare** of the cheapest radio you rely on.
 
-Source: NOAA lightning safety, ARRL guidance on grounding and surge protection, and manufacturer advice. Claims about electromagnetic pulses (EMP) are uncertain and are not covered by proof here. Not yet reviewed.
+Source: NOAA lightning safety, ARRL guidance on grounding and surge protection, and manufacturer advice. Claims about electromagnetic pulses (EMP) are uncertain and are not covered by proof here.

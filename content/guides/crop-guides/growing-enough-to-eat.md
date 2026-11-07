@@ -35,4 +35,4 @@ reviewed:
 
 **Be honest about yields:** beginners often get half of a book's figures. Plan for a bad year, and keep records.
 
-Source: USDA food composition data and Extension yield estimates, rounded. These are rough planning figures, not promises. Not yet reviewed.
+Source: USDA food composition data and Extension yield estimates, rounded. These are rough planning figures, not promises.

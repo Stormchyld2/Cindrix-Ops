@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Natural warnings:** a strong or long earthquake, a loud roar from the ocean, or the sea pulling far back. **Do not wait for a siren.**
 
 1. **Go to high ground or inland right away**, on foot if possible. Official guidance is often at least 100 feet above sea level or 2 miles inland; follow local signs.

@@ -27,4 +27,4 @@ reviewed:
 
 **Keep a map.** Draw the beds each year and write on it what grew where. Memory is not good enough three years later.
 
-Source: general gardening practice, as taught by state Extension services. Not yet checked against one named page: confirm dates with your own county Extension office.
+Source: general gardening practice, as taught by state Extension services. Confirm dates with your own county Extension office.

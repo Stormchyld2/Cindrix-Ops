@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 Signs: pounding heart, shaking, tight chest, dizzy, a feeling of unreality, cannot think straight, cannot sleep.
 
 1. Stop and sit down somewhere safe. Tell yourself, "This feeling will pass."

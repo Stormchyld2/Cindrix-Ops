@@ -11,7 +11,7 @@ Top of the file (between two lines of three dashes):
 | `title:` | The plan's name (required) |
 | `summary:` | One sentence for the plan's card |
 | `kind:` | `checks` (repeat on a schedule), `learning` (things to study), `scenario` (one kind of emergency), `prevent` (keep one supply from failing: what to do and how) or `planning` (how much to have) |
-| `author:`, `version:`, `status:` | Who wrote it; a bigger version replaces an older copy; `draft` until a qualified person has read it |
+| `author:`, `version:`, `status:` | Who wrote it; a bigger version replaces an older copy; `draft` or `reviewed` |
 
 Each step starts with `## Title`. The lines straight after it can be:
 

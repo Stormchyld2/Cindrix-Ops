@@ -5,7 +5,7 @@ where: at home
 summary: Cook and eat a full meal using a safe outdoor stove.
 status: draft
 ---
-Draft checklist. Walk through and actually look, do not just tick.
+Walk through and actually look, do not just tick.
 - Set up a camp stove or grill outdoors, away from the house, tents and anything that burns
 - Never use it indoors, in a garage or near a window
 - Cook a real meal from stored food and time it

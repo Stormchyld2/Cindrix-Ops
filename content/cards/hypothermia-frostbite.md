@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Hypothermia** (body temperature under 95°F): shivering, tired, confused, clumsy, slurred speech, drowsy. In a baby: cold bright-red skin and very low energy. When shivering stops and the person is very sleepy, it is serious: **call 911**.
 
 1. Move to a warm, dry place. Handle gently.

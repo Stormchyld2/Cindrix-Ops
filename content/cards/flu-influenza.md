@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Signs:** they come on **suddenly**: fever or chills (not everyone gets a fever), cough, sore throat, runny or stuffy nose, body aches, headache, tiredness. Vomiting and diarrhea are more common in children. A cold comes on slowly and rarely brings a fever or strong aches. A flu fever often lasts 3 to 4 days.
 
 1. **Stay home** and away from others. Rest and drink plenty of fluids.

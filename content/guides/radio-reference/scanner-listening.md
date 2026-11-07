@@ -26,4 +26,4 @@ reviewed:
 
 **Batteries:** handheld scanners use AA batteries or a rechargeable pack. Keep spares.
 
-Source: FCC and state law summaries; the Electronic Communications Privacy Act. State and local rules differ, so check yours. Not yet reviewed.
+Source: FCC and state law summaries; the Electronic Communications Privacy Act. State and local rules differ, so check yours.

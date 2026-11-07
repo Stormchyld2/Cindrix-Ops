@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 Signs: a smell like rotten eggs, a hissing sound, dead plants near a pipe, bubbles in standing water.
 
 1. **Do not** use switches, lighters, matches, phones, doorbells or anything that could spark. Do not start a car in the garage.

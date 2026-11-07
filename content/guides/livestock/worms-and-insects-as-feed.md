@@ -15,4 +15,4 @@ reviewed:
 
 **Maggots and flies:** Do not leave rotting meat or carcasses open. Compost carcasses deep in a hot pile or bury them at least 3 feet deep.
 
-Source: general livestock practice as taught by state Extension services and the USDA (for example Penn State, Oregon State and Cornell small-farm guides). Not yet checked against one named page: confirm feed amounts, housing and health care with your county Extension office and a large-animal vet.
+Source: general livestock practice as taught by state Extension services and the USDA (for example Penn State, Oregon State and Cornell small-farm guides). Confirm feed amounts, housing and health care with your county Extension office and a large-animal vet.

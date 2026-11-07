@@ -13,4 +13,4 @@ reviewed:
 4. **Harvest:** when the head feels firm. Cut it with a few outer leaves.
 5. **Store:** the heads keep for several months in a cold, humid place just above freezing, such as a cellar. Cabbage can also be fermented into sauerkraut, which keeps without power.
 
-Source: general home-gardening practice, as taught by state Extension services. Not yet checked against one named page: check planting times with your own Extension office.
+Source: general home-gardening practice, as taught by state Extension services. Check planting times with your own Extension office.

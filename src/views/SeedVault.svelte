@@ -132,7 +132,7 @@
       <div class="label gh">{g.title}</div>
       <div class="list">
         {#each g.list as c (c.id)}
-          <button class="card" onclick={() => { openGuide = c; window.scrollTo?.(0, 0); }}><strong>{c.title}</strong>{#if c.status !== 'reviewed'}<span class="badge">Draft · review pending</span>{/if}</button>
+          <button class="card" onclick={() => { openGuide = c; window.scrollTo?.(0, 0); }}><strong>{c.title}</strong></button>
         {/each}
       </div>
     {/each}

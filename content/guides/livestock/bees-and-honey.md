@@ -28,4 +28,4 @@ reviewed:
 
 **Smoke** calms bees by hiding alarm signals. Work on warm, sunny days, calmly, and slowly.
 
-Source: general small-farm practice, as taught by state Extension services. Not yet reviewed: ask a local vet or Extension office. This page gives no medicine amounts.
+Source: general small-farm practice, as taught by state Extension services. Ask a local vet or Extension office. This page gives no medicine amounts.

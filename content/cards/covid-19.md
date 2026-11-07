@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Signs:** fever or chills, cough, shortness of breath, sore throat, stuffy or runny nose, new loss of taste or smell, tiredness, body aches, headache, nausea or vomiting, diarrhea. They show up 2 to 14 days after contact. Signs alone cannot tell COVID-19 from the flu, so test if you can.
 
 1. **Stay home and away from others**, including people in the house who are well, while you have signs.

@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 1. **Drink water** often, even if you do not feel thirsty. Avoid alcohol and sugary drinks.
 2. Stay in the coolest place you have. If you have no cooling, go to a **cooling center**, library or store. **Do not rely on a fan** as your main cooling.
 3. Take cool showers or baths. Wear loose, light-colored clothing.
