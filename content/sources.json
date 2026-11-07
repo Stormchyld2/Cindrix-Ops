@@ -206,6 +206,65 @@
           "note": "Allowed (owner, 2026-10-27), for example U.S. Army field manuals and Gutenberg military science. Check each title's license. The shipped lists and download scripts do not include build manuals for explosives, booby traps or improvised munitions; you can add your own files to the Shelf."
         }
       ]
+    },
+    {
+      "title": "Added 2026-11-05 (new courses and design references)",
+      "items": [
+        {
+          "name": "Cold-weather living course",
+          "license": "Public domain source",
+          "status": "in this build",
+          "note": "Written in our own words from US Army FM 31-70 Basic Cold Weather Manual."
+        },
+        {
+          "name": "Backup supply caches course",
+          "license": "Public domain source",
+          "status": "in this build",
+          "note": "Written in our own words from US Army TC 31-29A (adapted for home preparedness)."
+        },
+        {
+          "name": "Basic building and repair course",
+          "license": "Public domain source",
+          "status": "in this build",
+          "note": "Written in our own words from US Army FM 5-426 Carpentry and FM 5-428 Concrete and Masonry."
+        },
+        {
+          "name": "Home damage control course",
+          "license": "Public domain source",
+          "status": "in this build",
+          "note": "Written in our own words from US Navy NAVEDTRA 14057 Damage Controlman."
+        },
+        {
+          "name": "Electricity and batteries course",
+          "license": "Public domain source",
+          "status": "in this build",
+          "note": "Written in our own words from US Navy NEETS Module 1."
+        },
+        {
+          "name": "Garden bed rotation (rotation.rs)",
+          "license": "Our own code",
+          "status": "in this build",
+          "note": "Inspired by the Brinjel feature list (AGPL-3.0); no Brinjel code or text used."
+        },
+        {
+          "name": "WiFi Direct Cable (design reference)",
+          "license": "MIT",
+          "status": "reference only",
+          "note": "Protocol ideas for comms; read the repo before borrowing any code."
+        },
+        {
+          "name": "Meshenger (design reference)",
+          "license": "GPL-3.0",
+          "status": "reference only",
+          "note": "Ideas only, no code."
+        },
+        {
+          "name": "Trackbook / JPSTrack (design reference)",
+          "license": "MIT / BSD",
+          "status": "reference only",
+          "note": "Ideas for FieldLog."
+        }
+      ]
     }
   ]
 }

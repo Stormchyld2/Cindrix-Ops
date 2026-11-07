@@ -78,3 +78,12 @@ Written for this project. Facts are paraphrased in our own words from university
 
 ## Agro guides and radio reference
 Written for this project (`content/guides`; 128 agro pages and 55 radio pages; the planting calendar's month-by-month pages are generated from week offsets published by Extension services, and the suggested seed list is in `core/src/seedlist.rs`). Facts are paraphrased in our own words from general home-gardening and livestock practice (state Extension services), USDA, NOAA, USDA FSIS / FoodSafety.gov, EPA, the FCC (47 CFR Part 95), ITU and ICAO. US government material is public domain. Nothing is copied. Drafts, not yet reviewed. Home canning processing times are left out on purpose: see the USDA Complete Guide to Home Canning.
+
+## Courses added 2026-11-05
+Cold-weather living, Backup supply caches, Basic building and repair, Home damage control and Electricity and batteries are written in our own words from US government works, which are public domain: Army FM 31-70, TC 31-29A, FM 5-426, FM 5-428, and Navy NAVEDTRA 14057 and NEETS Module 1. Nothing is copied. Drafts, not yet reviewed.
+
+## Survival-Data (pr0m3th3an/survival-data): do not bundle
+Its README says MIT, but it has no LICENSE file and it is a collection of about 243 PDFs written by other people. An MIT label on the collection does not give anyone the right to redistribute those works. We use it only to **find** US government manuals (public domain) and read them. Copy a document only after checking that it is a government work or otherwise licensed.
+
+## Brinjel
+AGPL-3.0. We use its feature list as inspiration for `core/src/rotation.rs` only. No code or text is copied, and none may be, because the AGPL would reach our code.
