@@ -48,6 +48,7 @@ their full text.
 | US government manuals and guides (Army, FEMA, CDC, FDA, USGS) | Public domain | Record edition and date |
 | Project Gutenberg titles | Public domain in the US | Check each title |
 | Academy lessons we wrote (Survival basics, Seed vault, Map reading and land navigation, Casualty care in a crisis, Family medical care without a clinic, Building your stash, Protective driving, Noticing surveillance, Home and residential security, Safe and accurate shooting) | Ours, from public-domain US government manuals where noted | Drafts until reviewed by a qualified person |
+| Canonleaf Bible text (read from the owner's own Canonleaf folder, not shipped by us) | Whatever Canonleaf records in each edition's manifest (BSB, ASV and KJV are public domain there) | Cindrix Ops only reads it; Canonleaf's own licensing notes apply |
 | Academy courses someone else wrote | Set by the author in `course.md` (`license:`) | The Academy shows the author; do not ship a course with no license |
 | Music and books you add yourself | Yours | Not part of what we ship |
 

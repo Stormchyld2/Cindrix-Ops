@@ -68,3 +68,6 @@ export const sourceRequest: { lesson: string; book: { id: string; page: number }
 
 // The top bar's menus open a tab inside Settings, or the Training sign-off inside the Academy.
 export const viewRequest: { settingsTab: string; training: boolean } = $state({ settingsTab: '', training: false });
+
+// A Bible verse link from an Ask source ("JHN.3.16") that asks the Bible screen to open there.
+export const bibleRequest: { ref: string } = $state({ ref: '' });

@@ -22,6 +22,7 @@ export type Settings = {
   searchArchives: boolean;
   searchFiles: boolean;
   searchSavedSites: boolean;
+  searchCanonleaf: boolean;
   shareAuto: boolean;
   answerSources: number;
   answerLength: 'short' | 'normal' | 'long';
@@ -31,6 +32,7 @@ export type Settings = {
   searchSpeed: 'quick' | 'normal' | 'thorough';
   showSourceChips: boolean;
   extraFolders: string[];
+  canonleafFolder: string[];
   // Library
   autoScanShelf: boolean;
   autoRestartLibrary: boolean;
@@ -69,6 +71,7 @@ export const DEFAULTS: Settings = {
   searchArchives: true,
   searchFiles: true,
   searchSavedSites: true,
+  searchCanonleaf: true,
   shareAuto: true,
   answerSources: 3,
   answerLength: 'normal',
@@ -78,6 +81,7 @@ export const DEFAULTS: Settings = {
   searchSpeed: 'normal',
   showSourceChips: true,
   extraFolders: [],
+  canonleafFolder: [],
   autoScanShelf: true,
   autoRestartLibrary: true,
   intelStart: 'archives',
@@ -138,7 +142,7 @@ export function sanitize(raw: unknown): Settings {
     const d = (DEFAULTS as Record<string, unknown>)[key];
     const v = r[key];
     if (Array.isArray(d)) {
-      out[key] = Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string').map((x) => x.trim()).filter((x) => x !== '').slice(0, key === 'musicFolder' ? 1 : 30) : [];
+      out[key] = Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string').map((x) => x.trim()).filter((x) => x !== '').slice(0, key === 'musicFolder' || key === 'canonleafFolder' ? 1 : 30) : [];
     } else if (typeof d === 'boolean') {
       out[key] = typeof v === 'boolean' ? v : d;
     } else if (typeof d === 'number') {

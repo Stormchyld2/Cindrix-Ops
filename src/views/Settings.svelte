@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import {
-    modelStatus, listModels, selectModel, libraryStatus, sourcesList, pickFolder,
+    modelStatus, listModels, selectModel, libraryStatus, sourcesList, pickFolder, canonleafStatus, type CanonleafStatus,
     librariesList, libraryAnswer, libraryForget, ownContent, openOwnFolder, type OwnFolder,
     type ModelStatus, type ModelChoice, type LibraryStatus, type Sources, type LibraryEntry,
   } from '../lib/api';
@@ -84,6 +84,7 @@
     ask: 'Waiting for your answer.',
   };
   onMount(async () => {
+    refreshCanon();
     await refresh();
     models = await listModels();
     sources = await sourcesList();
@@ -118,6 +119,17 @@
     try {
       const p = await pickFolder();
       if (p) settings.set('musicFolder', [p]);
+    } catch (e) {
+      error = String(e);
+    }
+  }
+  let canon: CanonleafStatus = $state({ folder: '', found: false, editions: [], message: '' });
+  async function refreshCanon() { try { canon = await canonleafStatus(); } catch (e) { error = String(e); } }
+  async function chooseCanonleaf() {
+    error = '';
+    try {
+      const p = await pickFolder();
+      if (p) { settings.set('canonleafFolder', [p]); await refreshCanon(); }
     } catch (e) {
       error = String(e);
     }
@@ -235,6 +247,17 @@
       {@render toggle('searchArchives', 'The archives (Wikipedia, guides, saved websites as archives)', 'Every .zim file on the drive, searched by title, and by full text when the library server is running.')}
       {@render toggle('searchFiles', 'Files and folders on the drive', 'Text, Markdown and web page files anywhere on the drive and in the folders you add below. PDFs are read through the Shelf.')}
       {@render toggle('searchSavedSites', 'Websites you saved with the website saver', 'The plain-text copies made when a site is saved.')}
+      {@render toggle('searchCanonleaf', 'Bible text from Canonleaf', 'Verses from the Bible study program Canonleaf, quoted with the name of the edition. Needs the Canonleaf folder below.')}
+    </div>
+    <div class="panel">
+      <div class="label">CANONLEAF (BIBLE STUDY ADD-ON)</div>
+      <p class="muted fine">Canonleaf is a separate program. Point this at its main folder (the one that holds a "resources" folder) and Ask can quote its Bible text. Nothing in that folder is changed.</p>
+      <div class="row">
+        <div class="grow path">{settings.values.canonleafFolder[0] ?? 'No folder chosen'}</div>
+        <button class="btn" title="Choose the Canonleaf folder" onclick={chooseCanonleaf}>Browse…</button>
+        {#if settings.values.canonleafFolder.length}<button class="btn" onclick={() => { settings.set('canonleafFolder', []); refreshCanon(); }}>Clear</button>{/if}
+      </div>
+      <p class="muted fine">{canon.message}{#if canon.found} ({canon.editions.join(', ')}){/if}</p>
     </div>
     <div class="panel">
       <div class="label">HOW IT ANSWERS</div>
@@ -257,7 +280,7 @@
       {/if}
       <div class="row"><button class="btn" onclick={addFolder}>Add a folder…</button></div>
     </div>
-    {@render reset(['searchBooks', 'searchArchives', 'searchFiles', 'searchSavedSites', 'answerSources', 'answerLength', 'answerStyle', 'followUpMemory', 'searchSpeed', 'showSourceChips', 'extraFolders'])}
+    {@render reset(['searchBooks', 'searchArchives', 'searchFiles', 'searchSavedSites', 'answerSources', 'answerLength', 'answerStyle', 'followUpMemory', 'searchSpeed', 'showSourceChips', 'extraFolders', 'searchCanonleaf', 'canonleafFolder'])}
   {:else if tab === 'My details'}
     <MyDetails />
   {:else if tab === 'Safe backups'}

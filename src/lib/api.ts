@@ -1516,3 +1516,22 @@ export async function drugLabelsGet(id: string): Promise<DrugLabel> {
   if (tauriHost) return call<DrugLabel>('druglabels_get', { id });
   return { id, brand: 'Sample Tablets', generic: 'SAMPLE', maker: 'Sample Maker', parts: [['What it is for', 'A sample so this screen can be looked at in a browser.'], ['Dosage and how to give it (as the FDA published it)', 'Sample text only.']] };
 }
+
+
+// ---------- Canonleaf add-on (the owner's Bible text, read-only; docs/44-canonleaf-addon.md) ----------
+export interface CanonleafStatus { folder: string; found: boolean; editions: string[]; message: string }
+export interface BibleBook { code: string; name: string }
+export interface BibleChapter { book: string; name: string; chapter: number; chapters: number; edition: string; verses: { number: string; text: string }[] }
+
+export async function canonleafStatus(): Promise<CanonleafStatus> {
+  if (inTauri) return call<CanonleafStatus>('canonleaf_status');
+  return { folder: '', found: false, editions: [], message: 'The Canonleaf add-on works in the desktop app, not in the browser preview.' };
+}
+export async function canonleafBooks(): Promise<BibleBook[]> {
+  if (inTauri) return call<BibleBook[]>('canonleaf_books');
+  return [];
+}
+export async function canonleafChapter(book: string, chapter: number): Promise<BibleChapter> {
+  if (!inTauri) throw 'The Bible reader works in the desktop app, not in the browser preview.';
+  return call<BibleChapter>('canonleaf_chapter', { book, chapter });
+}

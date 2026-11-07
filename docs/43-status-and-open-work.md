@@ -26,7 +26,7 @@ Safe backup mailbox, share server with PIN and invites, drive markers and librar
    Ranger Handbook-style skills).
 6. **Map data**: street addresses for the whole US not done (doc 28); Cheatham and Robertson counties are not in
    the Tennessee aerial/topo box; Maps "Still to do" in doc 18 (place-name fonts, no-go-area route warnings, GPS).
-7. **License of our own code**: undecided (doc 05, row 14). No LICENSE file.
+7. **License of our own code**: owner leans to a private repo and a custom personal-use license (doc 05, row 14). A draft is in `licenses/PERSONAL-USE-LICENSE-DRAFT.md`; it needs a lawyer, and the repo must be switched to private by the owner. There is deliberately still no LICENSE file at the root.
 8. **Installer and signing**: builds are unsigned (SmartScreen warns); signing postponed by the owner.
 9. **Standalone map viewer (`.cmap`)** is a separate project; spec only (`CINDRIXOPS_CMAP_VIEWER_ARCHITECTURE.md`).
 10. **Placeholder screen** `Soon.svelte` still shows for planned tabs.

@@ -27,6 +27,8 @@ pub const GUEST_COMMANDS: &[&str] = &[
     "directions",
     "route_stats",
     "zim_books",
+    "canonleaf_chapter",
+    "canonleaf_books",
     "zim_search_all",
     "music_status",
     "music_query",

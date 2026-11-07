@@ -24,20 +24,28 @@
   import Music from './views/Music.svelte';
   import Guides from './views/Guides.svelte';
   import DrugLabels from './views/DrugLabels.svelte';
+  import Bible from './views/Bible.svelte';
   import Journal from './views/Journal.svelte';
   import Photos from './views/Photos.svelte';
   import CommsPlan from './views/CommsPlan.svelte';
   import MiniPlayer from './lib/MiniPlayer.svelte';
   import Splash from './lib/Splash.svelte';
   import { onMount } from 'svelte';
-  import { intelRequest, sourceRequest, viewRequest } from './lib/chat.svelte';
-  import { inShare, modelStatus, libraryStatus, productInfo, librariesList, libraryAnswer, privacySetIdle, type ModelStatus, type ProductInfo, type LibraryEntry } from './lib/api';
+  import { intelRequest, sourceRequest, viewRequest, bibleRequest } from './lib/chat.svelte';
+  import { inShare, modelStatus, libraryStatus, productInfo, librariesList, libraryAnswer, privacySetIdle, canonleafChapter, type ModelStatus, type ProductInfo, type LibraryEntry } from './lib/api';
   import { settings, applyUiScale } from './lib/settings.svelte';
   import { installTooltips, removeTooltips } from './lib/tooltips';
   let ms: ModelStatus | null = $state(null);
   let sharing = $state(false);
   let online = $state(false);
   let product: ProductInfo | null = $state(null);
+  // The Bible screen shows only when the Canonleaf add-on has Bible text to read (checked by opening one chapter;
+  // guests cannot ask for the folder's path, so both use the same check). Looked at again when the screen changes.
+  let bibleReady = $state(false);
+  $effect(() => {
+    void group;
+    canonleafChapter('GEN', 1).then(() => { bibleReady = true; }, () => { bibleReady = false; });
+  });
   // The Cindrix drives plugged in. A drive nobody has answered for is asked about before anything is read from it.
   let libs: LibraryEntry[] = $state([]);
   let dismissed: string[] = $state([]);
@@ -86,8 +94,8 @@
   $effect(() => { if (settings.loaded) void privacySetIdle(settings.values.privateLockMinutes); });
 
   // Intel is the offline internet: the archives read like web pages. It goes with the library.
-  type Group = 'Dashboard' | 'Ask' | 'Library' | 'Intel' | 'Academy' | 'Maps' | 'Music' | 'Plan' | 'Inventory' | 'Settings' | 'Corner' | 'Guides' | 'Journal' | 'Photos' | 'CommsPlan' | 'Todo' | 'Calendar' | 'Projects' | 'DrugLabels' | 'Soon';
-  const allGroups: Group[] = ['Dashboard', 'Ask', 'Library', 'Intel', 'Academy', 'Maps', 'Music', 'Plan', 'Inventory', 'Settings', 'Corner', 'Journal', 'Photos', 'CommsPlan', 'Todo', 'Calendar', 'Projects', 'DrugLabels'];
+  type Group = 'Dashboard' | 'Ask' | 'Library' | 'Intel' | 'Academy' | 'Maps' | 'Music' | 'Plan' | 'Inventory' | 'Settings' | 'Corner' | 'Guides' | 'Journal' | 'Photos' | 'CommsPlan' | 'Todo' | 'Calendar' | 'Projects' | 'DrugLabels' | 'Bible' | 'Soon';
+  const allGroups: Group[] = ['Dashboard', 'Ask', 'Library', 'Intel', 'Academy', 'Maps', 'Music', 'Plan', 'Inventory', 'Settings', 'Corner', 'Journal', 'Photos', 'CommsPlan', 'Todo', 'Calendar', 'Projects', 'DrugLabels', 'Bible'];
   // Each product switches parts of the program on or off (core/src/product.rs).
   const groups = $derived(
     allGroups.filter((g) => {
@@ -95,6 +103,7 @@
       if (g === 'Ask') return product.assistant;
       if (g === 'Library' || g === 'Intel' || g === 'Corner') return product.library;
       if (g === 'DrugLabels') return product.library && !inShare;
+      if (g === 'Bible') return product.library && bibleReady;
       if (g === 'Maps') return product.maps;
       if (g === 'Music') return product.music;
       if (g === 'Plan' || g === 'Inventory') return product.plan;
@@ -124,6 +133,7 @@
   /** An Ask source: an emergency card, or a page in an archive (opened in Intel). */
   function openSource(link: string) {
     if (link.startsWith('card:')) { openCard(link.slice(5)); return; }
+    if (link.startsWith('canonleaf:')) { bibleRequest.ref = link.slice(10); group = 'Bible'; return; }
     if (link.startsWith('/content/')) { intelRequest.path = link; group = 'Intel'; return; }
     if (link.startsWith('academy:')) { sourceRequest.lesson = link.slice(8); group = 'Academy'; return; }
     if (link.startsWith('guide:')) { guideSection = link.slice(6).split('/')[0]; group = 'Guides'; return; }
@@ -215,7 +225,8 @@
       { id: 'Intel', cat: 'intel', show: lib_, entries: [
         { label: 'Offline browser', tab: 'Intel', note: 'archives' }, { label: 'Shelf', tab: 'Shelf', note: 'manuals' },
         { label: 'Archives', tab: 'Archives' }, { label: 'Emergency cards', tab: 'Cards' },
-        { label: 'Home remedies', tab: 'guide:home-remedies' }, { label: 'Drug labels', tab: 'DrugLabels', note: 'FDA', show: !inShare } ] },
+        { label: 'Home remedies', tab: 'guide:home-remedies' }, { label: 'Drug labels', tab: 'DrugLabels', note: 'FDA', show: !inShare },
+        { label: 'Bible', tab: 'Bible', note: 'Canonleaf', show: bibleReady } ] },
       { id: 'Academy', cat: 'academy', show: true, entries: [
         { label: 'Courses', tab: 'Academy' }, { label: 'Training sign-off', tab: 'training' } ] },
       { id: 'Agro', cat: 'agro', show: plan_, entries: [
@@ -239,7 +250,7 @@
   /** Which word in the top bar the current screen belongs under. */
   const activeTop = $derived.by(() => {
     switch (group) {
-      case 'Library': case 'Intel': case 'DrugLabels': return 'Intel';
+      case 'Library': case 'Intel': case 'DrugLabels': case 'Bible': return 'Intel';
       case 'Music': case 'Corner': case 'Journal': case 'Photos': return 'Morale';
       case 'CommsPlan': return 'Comms';
       case 'Plan': return plan === 'Seed vault' ? 'Agro' : 'Operations';
@@ -335,6 +346,8 @@
       <Guides section={guideSection} title={guideInfo[guideSection]?.title ?? 'Guides'} intro={guideInfo[guideSection]?.intro ?? ''} />
     {:else if group === 'DrugLabels'}
       <DrugLabels />
+    {:else if group === 'Bible'}
+      <Bible />
     {:else if group === 'Journal'}
       <Journal />
     {:else if group === 'Photos'}

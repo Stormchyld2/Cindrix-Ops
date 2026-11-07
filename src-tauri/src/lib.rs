@@ -22,6 +22,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use tauri_plugin_dialog::DialogExt;
 
+mod canonleaf;
 mod druglabels;
 mod fetch;
 mod libs;
@@ -1134,6 +1135,8 @@ fn ask_run(app: &tauri::AppHandle, question: String, history: Vec<String>, guest
                     }
                 }
             }
+            // the owner's Bible text from the Canonleaf add-on (Settings > Assistant); quoted with its edition
+            p.extend(canonleaf::passages(&search, 3));
             if use_books {
                 p.extend(bundled_shelf().search(&search, 2));
                 p.extend(user_shelf().search(&search, 2));
@@ -2935,6 +2938,9 @@ pub fn run() {
             place_search,
             directions,
             zimview::zim_books,
+            canonleaf::canonleaf_status,
+            canonleaf::canonleaf_books,
+            canonleaf::canonleaf_chapter,
             zimview::zim_bookmarks_load,
             zimview::zim_bookmarks_save,
             zimview::zim_search_all,
