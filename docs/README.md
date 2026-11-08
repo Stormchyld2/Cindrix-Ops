@@ -40,4 +40,11 @@ Mockups of every screen are in [`../mockups`](../mockups).
 - [36. Morale, Comms and Agro pages, and a folder for each person](36-people-and-morale.md)
 - [25. Testing Ask](25-ask-test.md): a 30-question check of the small models
 - [24. Hosts, libraries and browser clients](24-hosts-libraries-browser-clients.md): Vault and Hub as hosts for one drive, asking before reading a drive, browser tabs as clients
+- [37. The connecting layer](37-connecting-layer.md): to-do list, calendar, projects, one search
+- [38. Assistant follow-ups](38-assistant-follow-ups.md)
+- [39. Scan inbox](39-scan-inbox.md): files waiting from the phone
+- [40. Safe backups](40-safe-backups.md): the phone's document vault, kept at base camp
+- [41. Theme](41-theme.md): charcoal and blue
+- [42. Shelf life, places and packaging](42-shelf-life-and-places.md)
 - [43. The Hub's model also serves Cindrix Overwatch](43-hub-model-for-overwatch.md): planned fixed port 8089, same-phone by default
+- [44. Security Operations architecture](44-security-operations-architecture.md): one parent tab with six subtabs (Command, Security, Operations, Planning, Personnel, Records), site postures, Operational Response. Design only, not built yet

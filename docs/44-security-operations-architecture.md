@@ -1,9 +1,9 @@
 # 44. Security Operations Architecture
 
-**Product:** CindrixOps Vault (Windows) and Hub (Android)  
+**Product:** CindrixOps (Windows host first; which editions get which parts is an open decision, section 15)  
 **Status:** Approved scope and architectural design; implementation pending  
-**Revision:** 1.2 — 2026-11-07  
-**Related documents:** 01 Architecture; 02 Files and folders; 03 Safety and licenses; 09 Passphrase lock; 11 Navigation; 18 Maps; 21 Academy; 26 Plans; 27 Emergency cards and plans; 30 Map drawing; 34 Sharing server; 37 Connecting layer; 43 Hub/Overwatch model.
+**Revision:** 1.3 — 2026-11-08 (1.2 of 2026-11-07 plus the carried-over requirements in section 14 and the open decisions in section 15; the separate earlier draft `44-security-operations.md` was merged into this file and removed)  
+**Related documents:** 01 Architecture; 02 Files and folders; 03 Safety and licenses; 09 Passphrase lock; 11 Navigation; 18 Maps; 21 Academy; 26 Plans; 27 Emergency cards and plans; 30 Map drawing; 34 Sharing server; 35 Top bar and Dashboard; 37 Connecting layer; 43 Hub/Overwatch model.
 
 > **Owner-approved product decision:** Security Operations is an integrated CindrixOps workspace, not a standalone Predator application. The separately named **Cindrix Predictor** repository is not changed. The exact name **Operational Response** replaces “Offensive Plans” in the UI and documentation.
 
@@ -194,3 +194,33 @@ Protective decisions remain with people. The product must not automatically actu
 **Phase 5 — Optional connectivity:** Overwatch alert import and locally authenticated Vault–Hub field status synchronization after privacy/security and conflict-recovery review.
 
 **Implementation authority:** This document captures approved architecture and requirements, **not a claim of code implementation**. Developers must reconcile it with current runtime code and existing documents before migration or UI modification. The existing numbered architecture and file-format constraints remain authoritative except where this document explicitly adds the approved Security Operations workspace.
+
+## 14. Requirements carried over from the earlier draft (merged 2026-11-08)
+
+An earlier draft (`44-security-operations.md`) put Security under Operations with about 14 tabs. The approved navigation in sections 2 and 3 replaced that layout. These requirements from it still apply:
+
+- **Activating Operational Response.** Activation is always an explicit human action. It pins a snapshot of the exact plan revision and links it to the current incident. Editing the master plan later never rewrites a live incident's history.
+- **Incident timeline.** Entries are append-only, each with its own ID, the time the event happened and the time it was recorded. Each entry says where it came from: direct observation, secondhand report, imported alert, or later correction. A correction is a new entry that supersedes the old one; the original stays.
+- **Handover.** A watch handover needs the receiving person's acknowledgment, and a missed handover stays open as a gap. A handover done on paper or by radio can be entered later, keeping the real event time and the entry time apart.
+- **Zero-power fallback.** A printable watchbill, patrol sheet, handover log and response checklists must work without the app.
+- **Guests.** No security command goes on the share server's guest allowlist (`GUEST_COMMANDS`). A guest PIN is not an operator identity. A test must show every security read and write is refused for guests.
+- **Untrusted input.** Treat imported text, image metadata, attachments and outside alerts as untrusted: check record types, sizes, IDs, timestamps, symlinks and path traversal. Attachments are size-limited, checked by file signature, never executed, and kept inside their record's own folder. No media stored as data URLs inside text records.
+- **No outside traffic.** A test must show routine Security workflows make no network calls.
+- **Encryption.** Plain files are not encrypted at rest. Do not describe security records as encrypted until the passphrase lock (doc 9) has been checked against them (open decision, section 15).
+- **Suggested code layout** (not existing code; it follows the repository's flat layout and `CLAUDE.md` rules):
+  - `core/src/security.rs`, `security_schedule.rs`, `security_incident.rs`, `security_store.rs`: validation, schedules and coverage, incident lifecycle, versioned file storage. Standard library only.
+  - `src-tauri/src/security.rs`: thin, host-only command adapter. Screens reach it only through `src/lib/api.ts`.
+  - `src/views/Security*.svelte`: the six subtabs and the dashboard summary.
+  - `content/security/`: shipped templates (example plans, SOP and drill templates), each with a `Source:` line like the cards.
+  - `core/tests/security_*.rs`: the acceptance tests in section 12.
+  - Editions switch these screens on or off through `Features` in `core/src/product.rs`.
+
+## 15. Open implementation decisions (do not assume)
+
+- Which editions (Go, Vault, Hub) get which Security features, and whether Hub may write records.
+- Whether sensitive records (site layouts, personal details, incidents) need a separate encrypted area, and whether the existing passphrase lock can cover them.
+- File format: this document says JSON, Markdown and CSV, while existing user files such as `tasks.txt` and `events.txt` are plain text written by `ops.rs`. Settle one convention before writing `security_store.rs`.
+- The real ID formats of Family, Inventory, Academy and Maps records, and the adapter names for each.
+- Roles (section 11) need an identity for each person, and today there is only the host, an anonymous guest and trusted family devices. How roles are enforced, and how future multi-device check-ins are authenticated, is undecided.
+- The exact Overwatch interchange format and what the importer may do.
+- Whether watch and patrol schedules may generate reminders. The connecting layer (doc 37) has no notifications yet.
