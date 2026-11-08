@@ -5,7 +5,7 @@
   import {
     securityOverview, securityWatchStrip, securitySiteSave, securityPostureSet,
     securityIncidentOpen, securityIncidentEntry, securityIncidentList,
-    securityPocketList, securityPocketAccept, securityPocketSetAside, type PocketReport,
+    securityPocketList, securityPocketAccept, securityPocketSetAside, securityPocketSheet, type PocketReport, type CountSheet,
     type SecurityOverview, type WatchStrip, type SecurityIncident, type SecuritySite,
   } from '../lib/api';
 
@@ -15,6 +15,7 @@
   let incidents: SecurityIncident[] = $state([]);
   let note = $state('');
   let reports: PocketReport[] = $state([]);
+  let sheets: Record<string, CountSheet> = $state({}); // count sheets the host has opened to look at
   let timer: ReturnType<typeof setInterval> | undefined;
 
   function rememberMe() { try { localStorage.setItem('securityName', me); } catch { /* a private window: just ask each time */ } }
@@ -53,6 +54,17 @@
   // ---- reports waiting from Pocket phones ----
   async function acceptReport(r: PocketReport) {
     try { const n = await securityPocketAccept(r.name); note = n ? `Added ${n} line${n === 1 ? '' : 's'} from ${r.person}'s phone to the records.` : 'Those lines were already in the records.'; await refresh(); } catch (e) { note = String(e); }
+  }
+  async function lookAtSheet(r: PocketReport) {
+    if (sheets[r.name]) { const { [r.name]: _gone, ...rest } = sheets; sheets = rest; return; }
+    try { sheets = { ...sheets, [r.name]: await securityPocketSheet(r.name) }; } catch (e) { note = String(e); }
+  }
+  async function acceptSheet(r: PocketReport) {
+    try {
+      const n = await securityPocketAccept(r.name, r.changed > 0);
+      note = n ? `Changed ${n} number${n === 1 ? '' : 's'} in the Inventory from ${r.person}'s count.` : 'The Inventory already had those numbers.';
+      await refresh();
+    } catch (e) { note = String(e); }
   }
   async function asideReport(r: PocketReport) {
     try { await securityPocketSetAside(r.name); note = 'Set aside. It is kept in the set-aside folder, not deleted.'; await refresh(); } catch (e) { note = String(e); }
@@ -162,13 +174,28 @@
 
   {#if reports.length}
     <div class="panel reports">
-      <h2>Reports waiting from phones</h2>
-      <p class="muted">Sent by a Pocket phone when it reached this computer. Nothing goes into the records until you accept it. Reports can add notes and new incidents, never change an incident's status.</p>
+      <h2>Waiting from phones</h2>
+      <p class="muted">Sent by a Pocket phone when it reached this computer. Nothing goes into the records until you accept it. Reports can add notes and new incidents, never change an incident's status. A count sheet only sets the numbers on items you already have; it never adds or deletes one.</p>
       {#each reports as r (r.name)}
         <div class="rep">
           {#if r.problem}
             <div><b>{r.name}</b> <span class="badge due">Cannot be used</span><div class="muted small">{r.problem}</div></div>
             <button class="btn" onclick={() => asideReport(r)}>Set aside</button>
+          {:else if r.kind === 'count-sheet'}
+            <div><b>{r.person}</b>'s phone, <b>inventory count</b>, {r.entries} item{r.entries === 1 ? '' : 's'}, counted {when(r.created)}
+              {#if r.changed > 0}<div class="small"><span class="badge due">{r.changed} number{r.changed === 1 ? '' : 's'} changed here since the phone looked</span></div>{/if}</div>
+            <div class="acts">
+              <button class="btn" onclick={() => lookAtSheet(r)}>{sheets[r.name] ? 'Hide the numbers' : 'Look at the numbers'}</button>
+              <button class="btn primary" onclick={() => acceptSheet(r)} title="Change the Inventory to the counted numbers. Nothing is deleted.">{r.changed > 0 ? 'Accept anyway' : 'Accept the counts'}</button>
+              <button class="btn" onclick={() => asideReport(r)}>Set aside</button>
+            </div>
+            {#if sheets[r.name]}
+              <table class="sheet"><thead><tr><th>Item</th><th>Where</th><th>Phone saw</th><th>Here now</th><th>Counted</th></tr></thead><tbody>
+                {#each sheets[r.name].lines as ln}
+                  <tr class:moved={ln.standing === 'moved'}><td>{ln.name || '(not in the Inventory)'}</td><td>{ln.location}</td><td>{ln.was}</td><td>{ln.now} {ln.unit}</td><td><b>{ln.counted}</b></td></tr>
+                {/each}
+              </tbody></table>
+            {/if}
           {:else}
             <div><b>{r.person}</b>'s phone, {r.entries} line{r.entries === 1 ? '' : 's'}, written {when(r.created)}</div>
             <div class="acts"><button class="btn primary" onclick={() => acceptReport(r)}>Accept</button> <button class="btn" onclick={() => asideReport(r)}>Set aside</button></div>
@@ -299,4 +326,7 @@
   .check-row { display: flex; gap: 8px; align-items: center; }
   .first { max-width: 640px; }
   .rep { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 8px 0; border-top: 1px solid var(--line); }
+  .sheet { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
+  .sheet th, .sheet td { text-align: left; padding: 4px 8px; border-top: 1px solid var(--line); }
+  .sheet tr.moved td { background: var(--danger-bg, transparent); }
 </style>

@@ -9,6 +9,7 @@ pub mod coords;
 pub mod coursepack;
 pub mod crawl;
 pub mod drills;
+pub mod countsheet;
 pub mod devices;
 pub mod drive;
 pub mod drivecheck;

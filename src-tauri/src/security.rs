@@ -90,8 +90,13 @@ pub fn security_pocket_list() -> Result<Value, String> {
 }
 
 #[tauri::command]
-pub fn security_pocket_accept(name: String) -> Result<usize, String> {
-    api::pocket_accept(&user_root(), &name)
+pub fn security_pocket_accept(name: String, allow_moved: Option<bool>) -> Result<usize, String> {
+    api::pocket_accept(&user_root(), &name, allow_moved.unwrap_or(false))
+}
+
+#[tauri::command]
+pub fn security_pocket_sheet(name: String) -> Result<Value, String> {
+    json(api::pocket_sheet(&user_root(), &name))
 }
 
 #[tauri::command]

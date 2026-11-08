@@ -2893,6 +2893,7 @@ pub fn run() {
             security::security_watch_discard,
             security::security_watch_schedule_all,
             security::security_pocket_list,
+            security::security_pocket_sheet,
             security::security_pocket_accept,
             security::security_pocket_set_aside,
             ops::ops_load,

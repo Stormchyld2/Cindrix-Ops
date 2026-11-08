@@ -117,13 +117,22 @@ Pocket never shows a tab it cannot fill. A hidden tab is not greyed out; it is s
   internet. GPS on the phone is the one thing that costs battery, so it is only on while a track is being recorded, and the
   person chooses how often it samples. Not built; to be designed when Pocket starts.
 
-## Inventory counts from phones
+## Inventory counts from phones (built on the Hub side, 2026-11-08)
 
 Phones may scan barcodes (Cindrix Scan already does this for the Hub's Inventory) and enter weekly counts. **Decided (owner,
 2026-11-08):** counts use the same waiting mailbox as the reports and must be accepted before any count changes. The "Pocket
-writes only logs" rule still holds: a count is sent as a **count sheet** in the outbox, like a report. The Hub lists it,
-the host accepts it, and only then do the Inventory numbers change. A sheet never deletes an item. Not built; the mailbox
-for it will copy `security_pocket.rs`.
+writes only logs" rule still holds: a count goes out as a **count sheet** in the outbox, like a report.
+
+`core/src/countsheet.rs`. A sheet (`# format: count-sheet 1`, device, person, date, then `item uid, number the phone saw,
+number counted` per line) lands in `user/inbox/pocket/` beside the reports and is handed in the same way (`pocket_upload`; the
+phone's code must match its sign-in). Command's "Waiting from phones" lists it with **Look at the numbers** (item, where, what
+the phone saw, what the Hub has now, what was counted) and **Accept the counts**.
+- A sheet only sets the number on items that already exist. It never adds, renames or deletes a line, and it stamps the day it
+  was counted.
+- All lines or none. If any item is no longer in the Inventory, nothing changes and the host is told to set the sheet aside.
+- If a Hub number moved since the phone looked, the sheet is flagged and the button becomes **Accept anyway**.
+- The same sheet twice changes nothing. Sheets and reports share one accepted-ledger, so the phone clears both.
+- Not built: new items from a scanned barcode that is not in the Inventory (it needs a way to name the item), and Pocket's side.
 
 ## What the Hub mailbox does now (built)
 
@@ -159,7 +168,7 @@ accepted names and fingerprints go in `user/security/pocket-accepted.txt` for th
 - **Pocket's side (when it is built):** on "erase" it deletes its cards, outbox, saved maps and sign-in, then sends
   `device_erased`. It must do this before showing anything else.
 
-Not built: the bundle, count sheets, GPS tracks, and Pocket itself.
+Not built: the bundle, GPS tracks, new items from scans, and Pocket itself.
 
 ## Still open
 

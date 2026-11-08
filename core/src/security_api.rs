@@ -31,6 +31,7 @@ pub const SECURITY_COMMANDS: &[&str] = &[
     "security_watch_discard",
     "security_watch_schedule_all",
     "security_pocket_list",
+    "security_pocket_sheet",
     "security_pocket_accept",
     "security_pocket_set_aside",
 ];
@@ -440,14 +441,19 @@ pub fn watch_schedule_all(user_root: &Path, site: &str) -> Result<usize, String>
 pub fn pocket_list(user_root: &Path) -> Result<String, String> {
     let rows: Vec<String> = crate::security_pocket::waiting(user_root)
         .iter()
-        .map(|w| format!("{{\"name\":{},\"size\":{},\"device\":{},\"person\":{},\"created\":{},\"entries\":{},\"problem\":{}}}", q(&w.name), w.size, q(&w.device), q(&w.person), q(&w.created), w.entries, q(&w.problem)))
+        .map(|w| format!("{{\"name\":{},\"size\":{},\"device\":{},\"person\":{},\"created\":{},\"entries\":{},\"kind\":{},\"changed\":{},\"problem\":{}}}", q(&w.name), w.size, q(&w.device), q(&w.person), q(&w.created), w.entries, q(&w.kind), w.changed, q(&w.problem)))
         .collect();
     Ok(format!("{{\"waiting\":[{}]}}", rows.join(",")))
 }
 
 /// The host accepts a report into the records. Returns how many entries were added.
-pub fn pocket_accept(user_root: &Path, name: &str) -> Result<usize, String> {
-    crate::security_pocket::accept(user_root, name)
+pub fn pocket_accept(user_root: &Path, name: &str, allow_moved: bool) -> Result<usize, String> {
+    crate::security_pocket::accept_any(user_root, name, allow_moved)
+}
+
+/// A waiting count sheet line by line, so the host can see what each number was, is, and was counted as.
+pub fn pocket_sheet(user_root: &Path, name: &str) -> Result<String, String> {
+    crate::countsheet::detail_json(user_root, name)
 }
 
 /// The host sets a report aside without using it. It is kept, not deleted.
@@ -698,7 +704,7 @@ mod tests {
         let j = overview(&r, 0).unwrap();
         assert!(j.contains("\"pocket_waiting\":1") && j.contains("\"needs_a_look\":1"), "{}", j);
         assert!(pocket_list(&r).unwrap().contains("\"person\":\"Sam\""));
-        assert_eq!(pocket_accept(&r, "n10-0001.txt").unwrap(), 1);
+        assert_eq!(pocket_accept(&r, "n10-0001.txt", false).unwrap(), 1);
         assert!(overview(&r, 0).unwrap().contains("\"pocket_waiting\":0"));
         assert!(incident_list(&r).unwrap().contains("\"source\":\"reported\""));
         let _ = fs::remove_dir_all(&r);

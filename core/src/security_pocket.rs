@@ -27,14 +27,14 @@ use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-const MAX_FILE: u64 = 256 * 1024;
+pub(crate) const MAX_FILE: u64 = 256 * 1024;
 const MAX_FILES: usize = 200;
 const MAX_ENTRIES: usize = 500;
 
 pub fn inbox_dir(user_root: &Path) -> PathBuf {
     user_root.join("inbox").join("pocket")
 }
-fn done_dir(user_root: &Path) -> PathBuf {
+pub(crate) fn done_dir(user_root: &Path) -> PathBuf {
     inbox_dir(user_root).join("done")
 }
 fn aside_dir(user_root: &Path) -> PathBuf {
@@ -62,6 +62,10 @@ pub struct Waiting {
     pub person: String,
     pub created: String,
     pub entries: usize,
+    /// "report" or "count-sheet".
+    pub kind: String,
+    /// For a count sheet: how many numbers in the Inventory moved since the phone looked (0 for a report).
+    pub changed: usize,
     /// Empty when the file can be accepted; otherwise a plain-words reason it cannot.
     pub problem: String,
 }
@@ -74,7 +78,7 @@ struct Report {
     fingerprint: String,
 }
 
-fn fingerprint(data: &[u8]) -> String {
+pub(crate) fn fingerprint(data: &[u8]) -> String {
     let mut m = Md5::new();
     m.update(data);
     hex(&m.finish())
@@ -165,11 +169,22 @@ pub fn waiting(user_root: &Path) -> Vec<Waiting> {
             let path = inbox_dir(user_root).join(&name);
             let size = fs::symlink_metadata(&path).map(|m| m.len()).unwrap_or(0);
             if !safe_name(&name) {
-                return Waiting { name, size, device: String::new(), person: String::new(), created: String::new(), entries: 0, problem: "The file name is not one Pocket would make, so it was left alone.".to_string() };
+                return Waiting { name, size, device: String::new(), person: String::new(), created: String::new(), entries: 0, kind: "report".into(), changed: 0, problem: "The file name is not one Pocket would make, so it was left alone.".to_string() };
+            }
+            if is_sheet_file(&path) {
+                return match crate::countsheet::read(&path) {
+                    Ok(sh) => {
+                        let items = crate::userdata::UserDir::new(user_root).load_inventory().unwrap_or_default();
+                        let (moved, missing) = crate::countsheet::tally(&items, &sh);
+                        let problem = if missing > 0 { format!("{} item{} on this sheet {} no longer in the Inventory. Set it aside and count again.", missing, if missing == 1 { "" } else { "s" }, if missing == 1 { "is" } else { "are" }) } else { String::new() };
+                        Waiting { name, size, device: sh.device, person: sh.person, created: sh.created, entries: sh.lines.len(), kind: "count-sheet".into(), changed: moved, problem }
+                    }
+                    Err(problem) => Waiting { name, size, device: String::new(), person: String::new(), created: String::new(), entries: 0, kind: "count-sheet".into(), changed: 0, problem },
+                };
             }
             match read_report(&path) {
-                Ok(r) => Waiting { name, size, device: r.device, person: r.person, created: r.created, entries: r.entries.len(), problem: String::new() },
-                Err(problem) => Waiting { name, size, device: String::new(), person: String::new(), created: String::new(), entries: 0, problem },
+                Ok(r) => Waiting { name, size, device: r.device, person: r.person, created: r.created, entries: r.entries.len(), kind: "report".into(), changed: 0, problem: String::new() },
+                Err(problem) => Waiting { name, size, device: String::new(), person: String::new(), created: String::new(), entries: 0, kind: "report".into(), changed: 0, problem },
             }
         })
         .collect()
@@ -180,7 +195,7 @@ pub fn waiting_count(user_root: &Path) -> usize {
     fs::read_dir(inbox_dir(user_root)).map(|rd| rd.filter_map(|e| e.ok()).filter(|e| e.file_type().map(|t| !t.is_dir()).unwrap_or(false)).count()).unwrap_or(0)
 }
 
-fn move_into(dir: &Path, from: &Path, name: &str) -> Result<(), String> {
+pub(crate) fn move_into(dir: &Path, from: &Path, name: &str) -> Result<(), String> {
     fs::create_dir_all(dir).map_err(|_| "The folder for finished reports could not be made.".to_string())?;
     let mut to = dir.join(name);
     if to.exists() {
@@ -233,6 +248,24 @@ pub fn accept(user_root: &Path, name: &str) -> Result<usize, String> {
     f.write_all(line.as_bytes()).and_then(|_| f.sync_all()).map_err(|_| "The ledger could not be written.".to_string())?;
     move_into(&done_dir(user_root), &path, name)?;
     Ok(fresh.len())
+}
+
+/// True when an ordinary small file starts as a count sheet. Reads only the top of the file.
+fn is_sheet_file(path: &Path) -> bool {
+    use std::io::Read;
+    let mut buf = [0u8; 256];
+    let n = fs::File::open(path).and_then(|mut f| f.read(&mut buf)).unwrap_or(0);
+    crate::countsheet::is_sheet(&String::from_utf8_lossy(&buf[..n]))
+}
+
+/// Accept whatever kind of file this is. A report adds its entries; a count sheet sets the counted numbers (and, if
+/// `allow_moved`, also on lines whose Hub number moved since the phone looked). Returns how many things changed.
+pub fn accept_any(user_root: &Path, name: &str, allow_moved: bool) -> Result<usize, String> {
+    if safe_name(name) && is_sheet_file(&inbox_dir(user_root).join(name)) {
+        crate::countsheet::accept(user_root, name, allow_moved)
+    } else {
+        accept(user_root, name)
+    }
 }
 
 /// Put a file aside without using it (it stays in `set-aside/`, never deleted).
@@ -291,6 +324,19 @@ pub fn upload(user_root: &Path, device: &str, name: &str, text: &str) -> Result<
     }
     fs::create_dir_all(inbox_dir(user_root)).map_err(|_| "The mailbox could not be opened.".to_string())?;
     fsio::write_atomic(&target, text.as_bytes()).map_err(|_| "The report could not be saved.".to_string())?;
+    if is_sheet_file(&target) {
+        return match crate::countsheet::read(&target) {
+            Ok(sh) if sh.device == device => Ok(()),
+            Ok(_) => {
+                let _ = fs::remove_file(&target);
+                Err("The count sheet names a different phone than the one that sent it.".to_string())
+            }
+            Err(e) => {
+                let _ = fs::remove_file(&target);
+                Err(e)
+            }
+        };
+    }
     match read_report(&target) {
         Ok(r) if r.device == device => Ok(()),
         Ok(_) => {

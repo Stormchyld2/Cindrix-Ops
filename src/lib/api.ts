@@ -1630,13 +1630,19 @@ export async function securityWatchScheduleAll(site: string): Promise<number> {
   throw new Error('The watchbill is saved in the program, not in the browser preview.');
 }
 
-export type PocketReport = { name: string; size: number; device: string; person: string; created: string; entries: number; problem: string };
+export type PocketReport = { name: string; size: number; device: string; person: string; created: string; entries: number; kind: 'report' | 'count-sheet'; changed: number; problem: string };
+export type SheetLine = { name: string; location: string; unit: string; was: number; now: number; counted: number; standing: 'matches' | 'moved' | 'already' | 'missing' };
+export type CountSheet = { person: string; created: string; lines: SheetLine[] };
+export async function securityPocketSheet(name: string): Promise<CountSheet> {
+  if (tauriHost) return call<CountSheet>('security_pocket_sheet', { name });
+  throw new Error('Count sheets are read in the program, not in the browser preview.');
+}
 export async function securityPocketList(): Promise<PocketReport[]> {
   if (tauriHost) return (await call<{ waiting: PocketReport[] }>('security_pocket_list')).waiting;
   return [];
 }
-export async function securityPocketAccept(name: string): Promise<number> {
-  if (tauriHost) return call<number>('security_pocket_accept', { name });
+export async function securityPocketAccept(name: string, allowMoved = false): Promise<number> {
+  if (tauriHost) return call<number>('security_pocket_accept', { name, allowMoved });
   throw new Error('Reports are accepted in the program, not in the browser preview.');
 }
 export async function securityPocketSetAside(name: string): Promise<void> {
