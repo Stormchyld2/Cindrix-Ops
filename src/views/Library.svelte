@@ -20,6 +20,7 @@
   const GROUPS: [string, string][] = [
     ['medical', 'FIRST AID AND HEALTH'],
     ['disaster', 'WEATHER AND DISASTERS'],
+    ['response', 'SECURITY AND SITUATION RESPONSE'],
     ['home', 'AT HOME: FIRE, GAS, POWER, WATER'],
     ['skills', 'SKILLS: FIND YOUR WAY, WATER, SHELTER, FIRE, SIGNALS'],
   ];

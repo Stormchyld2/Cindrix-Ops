@@ -33,7 +33,7 @@ Windows comes first; Android and iPhone wrap it later.
 - Go carries program and content on one stick. Vault and Hub are one exFAT drive of content; the program
   runs on a host (Windows laptop for Vault, Android phone for Hub). The drive also holds a rescue copy of
   the portable Windows build and the Android app.
-- Other devices use a browser tab, never a client app. Keep `src/lib/api.ts` the only place the interface
+- Other devices use a browser tab, never a client app, with one deliberate exception: the Cindrix Pocket companion (`docs/45-pocket-companion.md`, not built), which joins the Hub by the invite QR as a trusted device and writes only logs, kept in an outbox until it reaches the host. Keep `src/lib/api.ts` the only place the interface
   reaches the backend, and put new logic in `core/` so a second (HTTP) transport can use it too.
 - Only drives with `cindrix-drive.json` count as libraries, are remembered by the marker's `id` (the
   edition word: `vault`, `go`, `hub`; not the drive letter), and the person is asked before one is read.
@@ -62,5 +62,5 @@ Windows comes first; Android and iPhone wrap it later.
 - Add a test in `core/` for every new piece of logic, and keep `docs/` in step with what is built.
 - Anything new that is shipped or downloaded needs a line in `content/sources.json` and `licenses/README.md`.
 - `core/src/seeds.rs` is the Seed vault (Plan > Seed vault); its guides are `content/seed-guides`, its course `content/academy/seed-vault`.
-- New cards, plans and categories need no code: a `.md` file in `content/cards` or `content/plans` (templates: `_template-card.md`, `_template-plan.md`, `_template-keep-it-from-failing.md`). Every card needs a `Source:` line.
+- New cards, plans and categories need no code: a `.md` file in `content/cards` or `content/plans` (templates: `_template-card.md`, `_template-plan.md`, `_template-keep-it-from-failing.md`). Every card needs a `Source:` line. Card groups (`kind:`) are medical, disaster, response (security and situation response), home and skills.
 - The program opens on the Dashboard. New buttons get hover text automatically; give important ones their own `title`.
