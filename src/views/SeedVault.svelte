@@ -265,8 +265,10 @@
   .head { justify-content: space-between; flex-wrap: nowrap; }
   .grow { flex: 1 1 200px; }
   .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 12px; }
-  .tabs button { padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line2); background: var(--panel); color: #aab2bb; }
-  .tabs button.on { background: var(--blue-soft); border-color: var(--blue-line); color: var(--blue); font-weight: 600; }
+  /* the same tab look as Security Operations (docs/41-theme.md) */
+  .tabs button { padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel2); color: var(--muted); font-family: var(--mono); text-transform: uppercase; letter-spacing: .1em; font-size: 12px; font-weight: 500; }
+  .tabs button:hover { color: var(--text); border-color: var(--line2); }
+  .tabs button.on { background: var(--blue-soft); border-color: var(--blue-line); color: var(--blue); font-weight: 600; box-shadow: inset 0 -2px 0 var(--blue); }
   .intro { max-width: 760px; }
   .sugbar { margin: 10px 0 0; flex-wrap: wrap; }
   .sug { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 6px 14px; margin: 6px 0; }

@@ -412,7 +412,7 @@
   .tiles { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 12px; }
   @media (max-width: 1100px) { .tiles { grid-template-columns: repeat(3, 1fr); } }
   @media (max-width: 560px) { .tiles { grid-template-columns: repeat(2, 1fr); } }
-  .tile { display: flex; flex-direction: column; justify-content: space-between; gap: 8px; min-height: 84px; padding: 14px; text-align: left; background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--c, var(--line)); border-radius: 12px; }
+  .tile { display: flex; flex-direction: column; justify-content: space-between; gap: 8px; min-height: 84px; padding: 14px; text-align: left; background: linear-gradient(180deg, color-mix(in srgb, var(--c, var(--line)) 9%, var(--panel)), var(--panel) 70%); border: 1px solid var(--line); border-left: 3px solid var(--c, var(--line)); border-radius: 12px; }
   .tile:hover { border-color: var(--blue-line); }
   .big { font-size: 24px; font-weight: 600; margin-top: 2px; }
   /* every block has one set size, and shows only the most important lines; the rest scrolls inside it */

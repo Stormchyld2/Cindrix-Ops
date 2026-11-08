@@ -525,8 +525,10 @@
 
 <style>
   .subtabs { display: flex; flex-wrap: wrap; gap: 4px; }
-  .subtabs button { padding: 7px 14px; background: transparent; border: 0; border-bottom: 2px solid transparent; color: var(--muted); font-family: var(--mono); text-transform: uppercase; letter-spacing: .1em; font-size: 12px; }
-  .subtabs button.on { color: var(--blue); border-bottom-color: var(--blue); font-weight: 600; }
+  /* the same tab look as Security Operations (docs/41-theme.md) */
+  .subtabs button { padding: 8px 14px; background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; color: var(--muted); font-family: var(--mono); text-transform: uppercase; letter-spacing: .1em; font-size: 12px; font-weight: 500; }
+  .subtabs button:hover { color: var(--text); border-color: var(--line2); }
+  .subtabs button.on { background: var(--blue-soft); color: var(--blue); border-color: var(--blue-line); font-weight: 600; box-shadow: inset 0 -2px 0 var(--blue); }
   .panel { display: flex; flex-direction: column; gap: 12px; }
   .grow { flex: 1 1 220px; min-width: 0; }
   .modes { display: flex; gap: 2px; }
