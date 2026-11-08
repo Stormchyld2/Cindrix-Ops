@@ -83,3 +83,18 @@ pub fn security_watch_discard(id: String) -> Result<(), String> {
 pub fn security_watch_schedule_all(site: String) -> Result<usize, String> {
     api::watch_schedule_all(&user_root(), &site)
 }
+
+#[tauri::command]
+pub fn security_pocket_list() -> Result<Value, String> {
+    json(api::pocket_list(&user_root()))
+}
+
+#[tauri::command]
+pub fn security_pocket_accept(name: String) -> Result<usize, String> {
+    api::pocket_accept(&user_root(), &name)
+}
+
+#[tauri::command]
+pub fn security_pocket_set_aside(name: String) -> Result<(), String> {
+    api::pocket_set_aside(&user_root(), &name)
+}

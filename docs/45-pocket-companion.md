@@ -65,10 +65,65 @@ host:   user/inbox/pocket/                   files arrive here
 3. The **mailbox**: `user/inbox/pocket/`, a checker, and a "reports waiting" count on Command and Settings.
 4. `Features` flags so Pocket's build switches parts on and off (Ask only when connected) through `product.rs`.
 
-## Open questions for the owner
+## Answers from the owner (2026-11-08, second round)
 
-- Does each phone belong to one person (picked from the family list when it is set up), or can a phone be shared?
-  Reports need a "who wrote it".
-- Should Pocket keep a read-only copy of the watchbill and posture so they can be seen offline?
-- The whole map pack, or one small area chosen for camp and the route?
-- Which book formats must the reader open on day one?
+- **The mailbox waits.** Reports from a phone wait in the Hub's mailbox until the host accepts them. Built:
+  `core/src/security_pocket.rs` (see below).
+- **The QR links a phone to the Hub as before** and gives better permissions than a browser. Browsers that were
+  trusted before stay trusted. Pocket is the full CindrixOps program, just faster because it does not run in a
+  browser, and starts with only the core parts (**field view**). Once connected to the Hub it shows everything the
+  Hub has (**hub view**).
+- **No stale posture.** In field view Pocket shows no posture, watchbill or incident list, because after days away they
+  would be out of date. They appear when connected.
+- **Battery.** In field view Pocket sends no requests and runs no refresh timers. It makes one attempt to reach the
+  Hub when the app opens and when the phone joins a network (a network-change event, not polling), and keeps a light
+  link only while connected.
+- **Direct connect.** When the phone joins the Hub's Wi-Fi, Pocket notices, sends the outbox, and when the Hub confirms
+  each file it clears that file from the outbox and switches to hub view (Ask and the rest appear). The AirLink relay
+  between phones also works, because reports are plain files.
+- **Map.** One small area chosen in camp, like the offline map reader. See below.
+
+## Field view and hub view
+
+| | Field view (not connected) | Hub view (connected) |
+|---|---|---|
+| Emergency cards and situation-response cards | yes | yes |
+| Academy | yes (downloaded courses) | yes, all of it |
+| Plans and checklists | yes, read-only copies | yes, with progress |
+| Security | printable checklists and response procedures; **write a log or report** (goes to the outbox) | the full Security screen: posture, watchbill, incidents, Operations |
+| Maps | the saved small area(s) | the whole map pack and directions |
+| Books (Shelf) | only the ones marked for download | the whole library |
+| Radio reference and comms plan guides | yes | yes |
+| **Ask** | **hidden** | shown (only if the host's assistant is running) |
+| Dashboard | a small "field" page: cards, saved map, outbox count | the full Dashboard |
+| Inventory, Calendar, To-do, Projects, Family, Journal | hidden (they would be stale, and are private) | shown, as the person's permissions allow |
+| Archives, offline browser, drug labels | hidden (too big) | shown |
+| Music | hidden | shown if the host has it |
+| Sharing, Settings | a short Settings page (outbox, storage, connect) | the full Settings |
+
+Pocket never shows a tab it cannot fill. A hidden tab is not greyed out; it is simply not there.
+
+## Map area (suggestion)
+
+Use the existing phone map cutter (`core/src/phonepack.rs`, doc 32): pick a rectangle and a zoom range in camp, show the
+size before saving, and keep a small number of named areas. Tie each area to a **security site**: Home, Campsite and
+the evacuation destination each have a map id in Security already, so Pocket can carry "Camp" and "Route" as separate
+areas and the site screen can open its own map. Start with one area per site, a modest zoom range, and a size warning.
+
+## What the Hub mailbox does now (built)
+
+`core/src/security_pocket.rs`: files arrive as plain text in `user/inbox/pocket/`. Each is checked (name, size, text, header,
+every line). Nothing enters the records until the host accepts. Accepted entries are always marked **reported**: they can
+add notes, decisions, tasks and a new incident, never change a status or activate a plan. All entries or none are
+added; the same file twice changes nothing; every file is kept (moved to `done/` or `set-aside/`, never deleted);
+accepted names and fingerprints go in `user/security/pocket-accepted.txt` for the phone to read. Command shows
+"Reports waiting from phones" with Accept and Set aside, and counts waiting reports under "Needs a look".
+
+Not built: the upload path (a trusted device putting files in the mailbox over the share server), the trusted-device
+permission list, the bundle, and Pocket itself.
+
+## Still open
+
+- Does each phone belong to one person (picked from the family list when it is set up)? A report names who wrote it.
+- A trimmed emergency-contact card on the phone (the Family page is private and host-only today).
+- Which book formats the reader must open on day one.

@@ -1530,7 +1530,7 @@ export type SecuritySite = {
 export type SecurityOverview = {
   now: string; headline: SecuritySite['posture']; unknown: number; check_due: number;
   all_normal_confirmed: boolean; live_incidents: number; unreadable_lines: number;
-  needs_a_look: number; sites_on_watch: number; sites: SecuritySite[];
+  pocket_waiting: number; needs_a_look: number; sites_on_watch: number; sites: SecuritySite[];
 };
 export type WatchSegment = { from: string; to: string; cover: 'confirmed' | 'planned' | 'gap' };
 export type WatchStrip = {
@@ -1555,7 +1555,7 @@ const clockOffset = () => -new Date().getTimezoneOffset();
 export async function securityOverview(): Promise<SecurityOverview> {
   if (tauriHost) return call<SecurityOverview>('security_overview', { offsetMinutes: clockOffset() });
   // Browser preview: nothing is stored, and nothing is assessed, so the honest answer is "unknown".
-  return { now: new Date().toISOString(), headline: 'unknown', unknown: 0, check_due: 0, all_normal_confirmed: false, live_incidents: 0, unreadable_lines: 0, needs_a_look: 0, sites_on_watch: 0, sites: [] };
+  return { now: new Date().toISOString(), headline: 'unknown', unknown: 0, check_due: 0, all_normal_confirmed: false, live_incidents: 0, unreadable_lines: 0, pocket_waiting: 0, needs_a_look: 0, sites_on_watch: 0, sites: [] };
 }
 export async function securityWatchStrip(site: string): Promise<WatchStrip> {
   if (tauriHost) return call<WatchStrip>('security_watch_strip', { site, offsetMinutes: clockOffset() });
@@ -1614,4 +1614,18 @@ export async function securityWatchDiscard(id: string): Promise<void> {
 export async function securityWatchScheduleAll(site: string): Promise<number> {
   if (tauriHost) return call<number>('security_watch_schedule_all', { site });
   throw new Error('The watchbill is saved in the program, not in the browser preview.');
+}
+
+export type PocketReport = { name: string; size: number; device: string; person: string; created: string; entries: number; problem: string };
+export async function securityPocketList(): Promise<PocketReport[]> {
+  if (tauriHost) return (await call<{ waiting: PocketReport[] }>('security_pocket_list')).waiting;
+  return [];
+}
+export async function securityPocketAccept(name: string): Promise<number> {
+  if (tauriHost) return call<number>('security_pocket_accept', { name });
+  throw new Error('Reports are accepted in the program, not in the browser preview.');
+}
+export async function securityPocketSetAside(name: string): Promise<void> {
+  if (tauriHost) return call<void>('security_pocket_set_aside', { name });
+  throw new Error('Reports are handled in the program, not in the browser preview.');
 }

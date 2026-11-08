@@ -5,6 +5,7 @@
   import {
     securityOverview, securityWatchStrip, securitySiteSave, securityPostureSet,
     securityIncidentOpen, securityIncidentEntry, securityIncidentList,
+    securityPocketList, securityPocketAccept, securityPocketSetAside, type PocketReport,
     type SecurityOverview, type WatchStrip, type SecurityIncident, type SecuritySite,
   } from '../lib/api';
 
@@ -13,6 +14,7 @@
   let strip: WatchStrip | null = $state(null);
   let incidents: SecurityIncident[] = $state([]);
   let note = $state('');
+  let reports: PocketReport[] = $state([]);
   let timer: ReturnType<typeof setInterval> | undefined;
 
   function rememberMe() { try { localStorage.setItem('securityName', me); } catch { /* a private window: just ask each time */ } }
@@ -23,6 +25,7 @@
       if (!ov.sites.some((s) => s.id === site)) site = ov.sites[0]?.id ?? '';
       strip = site ? await securityWatchStrip(site) : null;
       incidents = (await securityIncidentList()).incidents;
+      reports = ov.pocket_waiting > 0 ? await securityPocketList() : [];
     } catch (e) { note = String(e); }
   }
   onMount(() => { refresh(); timer = setInterval(refresh, 30000); });
@@ -45,7 +48,15 @@
 
   // What needs a look comes from the program itself, so this list and the Dashboard count always agree.
   const looks = $derived(cur?.looks ?? []);
-  const extra = $derived(ov && ov.unreadable_lines > 0 ? ['Some lines in the security files could not be read. They were left exactly as they are.'] : []);
+  const extra = $derived([...(ov && ov.unreadable_lines > 0 ? ['Some lines in the security files could not be read. They were left exactly as they are.'] : []), ...(ov && ov.pocket_waiting > 0 ? [`${ov.pocket_waiting} report${ov.pocket_waiting === 1 ? '' : 's'} from phones ${ov.pocket_waiting === 1 ? 'is' : 'are'} waiting for you.`] : [])]);
+
+  // ---- reports waiting from Pocket phones ----
+  async function acceptReport(r: PocketReport) {
+    try { const n = await securityPocketAccept(r.name); note = n ? `Added ${n} line${n === 1 ? '' : 's'} from ${r.person}'s phone to the records.` : 'Those lines were already in the records.'; await refresh(); } catch (e) { note = String(e); }
+  }
+  async function asideReport(r: PocketReport) {
+    try { await securityPocketSetAside(r.name); note = 'Set aside. It is kept in the set-aside folder, not deleted.'; await refresh(); } catch (e) { note = String(e); }
+  }
 
   // ---- adding a site ----
   let newName = $state('');
@@ -148,6 +159,24 @@
       {/if}
     {/if}
   </div>
+
+  {#if reports.length}
+    <div class="panel reports">
+      <h2>Reports waiting from phones</h2>
+      <p class="muted">Sent by a Pocket phone when it reached this computer. Nothing goes into the records until you accept it. Reports can add notes and new incidents, never change an incident's status.</p>
+      {#each reports as r (r.name)}
+        <div class="rep">
+          {#if r.problem}
+            <div><b>{r.name}</b> <span class="badge due">Cannot be used</span><div class="muted small">{r.problem}</div></div>
+            <button class="btn" onclick={() => asideReport(r)}>Set aside</button>
+          {:else}
+            <div><b>{r.person}</b>'s phone, {r.entries} line{r.entries === 1 ? '' : 's'}, written {when(r.created)}</div>
+            <div class="acts"><button class="btn primary" onclick={() => acceptReport(r)}>Accept</button> <button class="btn" onclick={() => asideReport(r)}>Set aside</button></div>
+          {/if}
+        </div>
+      {/each}
+    </div>
+  {/if}
 
   <div class="panel">
     <h2>Needs a look</h2>
@@ -269,4 +298,5 @@
   .dlg { padding: 18px; display: flex; flex-direction: column; gap: 8px; }
   .check-row { display: flex; gap: 8px; align-items: center; }
   .first { max-width: 640px; }
+  .rep { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 8px 0; border-top: 1px solid var(--line); }
 </style>

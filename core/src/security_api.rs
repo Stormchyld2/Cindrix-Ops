@@ -30,6 +30,9 @@ pub const SECURITY_COMMANDS: &[&str] = &[
     "security_watch_ack",
     "security_watch_discard",
     "security_watch_schedule_all",
+    "security_pocket_list",
+    "security_pocket_accept",
+    "security_pocket_set_aside",
 ];
 
 /// Now, in minutes since 1970 UTC, from the system clock.
@@ -78,9 +81,13 @@ pub fn overview_at(user_root: &Path, off: i64, now: i64) -> Result<String, Strin
     if rejected > 0 {
         look_total += 1;
     }
+    let pocket = crate::security_pocket::waiting_count(user_root);
+    if pocket > 0 {
+        look_total += 1;
+    }
     Ok(format!(
-        "{{\"now\":{},\"headline\":{},\"unknown\":{},\"check_due\":{},\"all_normal_confirmed\":{},\"live_incidents\":{},\"unreadable_lines\":{},\"needs_a_look\":{},\"sites_on_watch\":{},\"sites\":[{}]}}",
-        q(&format_instant(now, off)), q(ov.headline.word()), ov.unknown, ov.check_due, ov.all_normal_confirmed, incident::live_open(&built).len(), rejected, look_total, sites_on_watch, rows.join(",")
+        "{{\"now\":{},\"headline\":{},\"unknown\":{},\"check_due\":{},\"all_normal_confirmed\":{},\"live_incidents\":{},\"unreadable_lines\":{},\"pocket_waiting\":{},\"needs_a_look\":{},\"sites_on_watch\":{},\"sites\":[{}]}}",
+        q(&format_instant(now, off)), q(ov.headline.word()), ov.unknown, ov.check_due, ov.all_normal_confirmed, incident::live_open(&built).len(), rejected, pocket, look_total, sites_on_watch, rows.join(",")
     ))
 }
 
@@ -427,6 +434,27 @@ pub fn watch_schedule_all(user_root: &Path, site: &str) -> Result<usize, String>
     Ok(n)
 }
 
+// ---------- reports from Pocket phones ----------
+
+/// Reports waiting in the Pocket mailbox, each with the reason it cannot be used if it cannot.
+pub fn pocket_list(user_root: &Path) -> Result<String, String> {
+    let rows: Vec<String> = crate::security_pocket::waiting(user_root)
+        .iter()
+        .map(|w| format!("{{\"name\":{},\"size\":{},\"device\":{},\"person\":{},\"created\":{},\"entries\":{},\"problem\":{}}}", q(&w.name), w.size, q(&w.device), q(&w.person), q(&w.created), w.entries, q(&w.problem)))
+        .collect();
+    Ok(format!("{{\"waiting\":[{}]}}", rows.join(",")))
+}
+
+/// The host accepts a report into the records. Returns how many entries were added.
+pub fn pocket_accept(user_root: &Path, name: &str) -> Result<usize, String> {
+    crate::security_pocket::accept(user_root, name)
+}
+
+/// The host sets a report aside without using it. It is kept, not deleted.
+pub fn pocket_set_aside(user_root: &Path, name: &str) -> Result<(), String> {
+    crate::security_pocket::set_aside(user_root, name)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -655,6 +683,24 @@ mod tests {
         watch_add(&r, "camp", "Dad", "", "2026-11-08T00:00", "2026-11-08T06:00", 0).unwrap();
         watch_move(&r, "w1", "missed").unwrap();
         assert!(fs::read_to_string(store::watch_path(&r)).unwrap().contains(bad));
+        let _ = fs::remove_dir_all(&r);
+    }
+
+    #[test]
+    fn waiting_pocket_reports_show_on_the_overview_and_through_the_api() {
+        let r = tmp("pocketapi");
+        site_save(&r, "", "Camp", "", "", "").unwrap();
+        posture_set(&r, "camp", "normal", "Dad", "", 0, 0).unwrap();
+        assert!(overview(&r, 0).unwrap().contains("\"pocket_waiting\":0"));
+        let t = "2026-11-08T10:00Z";
+        let o = incident::Entry { id: "n10-e1".into(), incident: "n10-i1".into(), kind: incident::Kind::Open, happened_at: t.into(), recorded_at: t.into(), by: "x".into(), source: incident::Source::Observed, arg1: "camp".into(), arg2: "2".into(), arg3: "live".into(), text: "Noise".into(), supersedes: String::new() };
+        crate::security_pocket::drop_file(&r, "n10-0001.txt", &crate::security_pocket::render_report("n10", "Sam", t, &[o])).unwrap();
+        let j = overview(&r, 0).unwrap();
+        assert!(j.contains("\"pocket_waiting\":1") && j.contains("\"needs_a_look\":1"), "{}", j);
+        assert!(pocket_list(&r).unwrap().contains("\"person\":\"Sam\""));
+        assert_eq!(pocket_accept(&r, "n10-0001.txt").unwrap(), 1);
+        assert!(overview(&r, 0).unwrap().contains("\"pocket_waiting\":0"));
+        assert!(incident_list(&r).unwrap().contains("\"source\":\"reported\""));
         let _ = fs::remove_dir_all(&r);
     }
 }
