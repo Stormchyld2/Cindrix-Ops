@@ -19,6 +19,7 @@
   import Binder from './views/Binder.svelte';
   import Settings from './views/Settings.svelte';
   import Dashboard from './views/Dashboard.svelte';
+  import SecurityOps from './views/SecurityOps.svelte';
   import Plans from './views/Plans.svelte';
   import SeedVault from './views/SeedVault.svelte';
   import Music from './views/Music.svelte';
@@ -86,8 +87,8 @@
   $effect(() => { if (settings.loaded) void privacySetIdle(settings.values.privateLockMinutes); });
 
   // Intel is the offline internet: the archives read like web pages. It goes with the library.
-  type Group = 'Dashboard' | 'Ask' | 'Library' | 'Intel' | 'Academy' | 'Maps' | 'Music' | 'Plan' | 'Inventory' | 'Settings' | 'Corner' | 'Guides' | 'Journal' | 'Photos' | 'CommsPlan' | 'Todo' | 'Calendar' | 'Projects' | 'DrugLabels' | 'Soon';
-  const allGroups: Group[] = ['Dashboard', 'Ask', 'Library', 'Intel', 'Academy', 'Maps', 'Music', 'Plan', 'Inventory', 'Settings', 'Corner', 'Journal', 'Photos', 'CommsPlan', 'Todo', 'Calendar', 'Projects', 'DrugLabels'];
+  type Group = 'Dashboard' | 'Ask' | 'Library' | 'Intel' | 'Academy' | 'Maps' | 'Music' | 'Plan' | 'Inventory' | 'Settings' | 'Corner' | 'Guides' | 'Journal' | 'Photos' | 'CommsPlan' | 'Todo' | 'Calendar' | 'Projects' | 'DrugLabels' | 'Security' | 'Soon';
+  const allGroups: Group[] = ['Dashboard', 'Ask', 'Library', 'Intel', 'Academy', 'Maps', 'Music', 'Plan', 'Inventory', 'Settings', 'Corner', 'Journal', 'Photos', 'CommsPlan', 'Todo', 'Calendar', 'Projects', 'DrugLabels', 'Security'];
   // Each product switches parts of the program on or off (core/src/product.rs).
   const groups = $derived(
     allGroups.filter((g) => {
@@ -97,6 +98,7 @@
       if (g === 'DrugLabels') return product.library && !inShare;
       if (g === 'Maps') return product.maps;
       if (g === 'Music') return product.music;
+      if (g === 'Security') return product.security && !inShare;
       if (g === 'Plan' || g === 'Inventory') return product.plan;
       if (g === 'Todo' || g === 'Calendar' || g === 'Projects') return !inShare;
       return true;
@@ -224,6 +226,7 @@
         { label: 'Soil and water', tab: 'guide:soil-and-water' }, { label: '', tab: '', rule: true },
         { label: 'Seed vault', tab: 'Seed vault' } ] },
       { id: 'Maps', cat: 'maps', tab: 'Maps', show: p ? p.maps : true },
+      { id: 'Security', cat: 'security', tab: 'Security', show: !inShare && (p ? p.security : true) },
       { id: 'Morale', cat: 'morale', show: true, entries: [
         { label: 'Reading Corner', tab: 'Corner', note: 'enjoyment books', show: p ? p.library : true },
         { label: 'Music', tab: 'Music', show: p ? p.music : true }, { label: '', tab: '', rule: true },
@@ -313,6 +316,8 @@
   <main class:wide={group === 'Intel' || group === 'Calendar' || group === 'Ask'}>
     {#if group === 'Dashboard'}
       <Dashboard go={goTo} />
+    {:else if group === 'Security'}
+      <SecurityOps />
     {:else if group === 'Ask'}
       <Ask {openCard} {openSource} />
     {:else if group === 'Library'}

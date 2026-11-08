@@ -34,6 +34,9 @@ pub struct Features {
     pub serve_archives: bool,
     /// Music player (the owner's own music in `music/`, not counted in the size budget).
     pub music: bool,
+    /// Security Operations (docs/44). Off for the Hub until the owner decides what a phone host may do
+    /// (doc 44 section 15); switching it on there is this one line.
+    pub security: bool,
 }
 
 impl Product {
@@ -84,6 +87,7 @@ impl Product {
                 web_saver: true,
                 serve_archives: false,
                 music: true,
+                security: true,
             },
             // The Hub is the same program run as a server on a phone, tablet or small computer.
             // The assistant is on by default (confirmed by the owner); it still needs a model file
@@ -96,6 +100,7 @@ impl Product {
                 web_saver: true,
                 serve_archives: true,
                 music: true,
+                security: false,
             },
         }
     }
@@ -172,5 +177,11 @@ mod tests {
             assert!(p.features().music);
         }
         assert!(Product::Hub.features().library);
+    }
+
+    #[test]
+    fn security_is_on_for_go_and_vault_and_off_for_the_hub_until_the_owner_decides() {
+        assert!(Product::Go.features().security && Product::Vault.features().security);
+        assert!(!Product::Hub.features().security);
     }
 }

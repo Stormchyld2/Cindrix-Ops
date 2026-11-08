@@ -421,6 +421,7 @@ struct ProductDto {
     web_saver: bool,
     serve_archives: bool,
     music: bool,
+    security: bool,
 }
 
 /// Which product this is, from the drive marker. No marker (for example a dev run) counts as Go.
@@ -439,6 +440,7 @@ fn product_info(state: tauri::State<'_, AppState>) -> ProductDto {
         web_saver: f.web_saver,
         serve_archives: f.serve_archives,
         music: f.music,
+        security: f.security,
     }
 }
 

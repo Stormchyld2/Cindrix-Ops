@@ -767,12 +767,13 @@ export type ProductInfo = {
   web_saver: boolean;
   serve_archives: boolean;
   music: boolean;
+  security: boolean;
 };
 
 export async function productInfo(): Promise<ProductInfo> {
   if (inTauri) return call<ProductInfo>('product_info');
   // Browser preview and screenshots: show the full app as Go.
-  return { id: 'go', name: 'Cindrix Ops Go', budget_gb: 100, assistant: true, library: true, maps: true, plan: true, web_saver: true, serve_archives: false, music: true };
+  return { id: 'go', name: 'Cindrix Ops Go', budget_gb: 100, assistant: true, library: true, maps: true, plan: true, web_saver: true, serve_archives: false, music: true, security: true };
 }
 
 export async function driveRescan(): Promise<void> {
