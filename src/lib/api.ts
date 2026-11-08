@@ -1333,6 +1333,20 @@ export async function shareRevoke(id: string): Promise<TrustedDevice[]> {
   return [];
 }
 
+// ---------- connected devices, erase orders (core/src/devices.rs, docs/45) ----------
+// Host only. Trust follows the device's own code, never the person who owns it.
+export type DeviceState = 'trusted' | 'erase-ordered' | 'erased' | 'revoked';
+export type DeviceRow = { id: string; kind: 'browser' | 'pocket'; state: DeviceState; since: number; last_seen: number; state_at: number; person: string; label: string };
+export async function devicesList(): Promise<DeviceRow[]> {
+  if (tauriHost) return (await call<{ devices: DeviceRow[] }>('devices_list')).devices;
+  return [];
+}
+/** erase = order an erase for when the device next connects; cancel = take that order back; lock = shut it out now. */
+export async function devicesAction(id: string, action: 'erase' | 'cancel' | 'lock'): Promise<DeviceRow[]> {
+  if (tauriHost) return (await call<{ devices: DeviceRow[] }>('devices_action', { id, action })).devices;
+  throw 'Devices are managed on the host computer.';
+}
+
 // ---------- the connecting layer: to-do list, calendar, projects, one search (core/src/ops.rs) ----------
 // These are the person's own notes, so they work only in the app itself (not for a guest on the hotspot).
 export type Link = { kind: string; id: string };

@@ -96,19 +96,33 @@ host:   user/inbox/pocket/                   files arrive here
 | Radio reference and comms plan guides | yes | yes |
 | **Ask** | **hidden** | shown (only if the host's assistant is running) |
 | Dashboard | a small "field" page: cards, saved map, outbox count | the full Dashboard |
-| Inventory, Calendar, To-do, Projects, Family, Journal | hidden (they would be stale, and are private) | shown, as the person's permissions allow |
+| Inventory | **shown (owner, 2026-11-08):** scan barcodes and enter weekly counts; the counts wait in the outbox as a count sheet and the host accepts them (see below) | shown, as the person's permissions allow |
+| Calendar, To-do, Projects, Family, Journal | hidden (they would be stale, and are private) | shown, as the person's permissions allow |
+| Evacuation plans and protocols | yes, read-only copies, with the evacuation destination's map | yes |
 | Archives, offline browser, drug labels | hidden (too big) | shown |
 | Music | hidden | shown if the host has it |
 | Sharing, Settings | a short Settings page (outbox, storage, connect) | the full Settings |
 
 Pocket never shows a tab it cannot fill. A hidden tab is not greyed out; it is simply not there.
 
-## Map area (suggestion)
+## Maps and tracking (owner, 2026-11-08)
 
-Use the existing phone map cutter (`core/src/phonepack.rs`, doc 32): pick a rectangle and a zoom range in camp, show the
-size before saving, and keep a small number of named areas. Tie each area to a **security site**: Home, Campsite and
-the evacuation destination each have a map id in Security already, so Pocket can carry "Camp" and "Route" as separate
-areas and the site screen can open its own map. Start with one area per site, a modest zoom range, and a size warning.
+- **Small areas per site, agreed.** Use the phone map cutter (`core/src/phonepack.rs`, doc 32). One named area per security
+  site, and the owner wants **West Virginia and Tennessee** maps kept in the same place: each site carries its own area, and
+  the evacuation destination carries the Tennessee one. Show the file size before saving.
+- **Reuse the standalone Cindrix map viewer's code** (`docs/CINDRIXOPS_CMAP_VIEWER_ARCHITECTURE.md`) for the map in Pocket.
+- **Full-screen map for navigation.**
+- **Track your own movement with GPS,** the way a wrist navigator does: distance, elevation (gain and loss), time, and a
+  line on the map. The track is a log: it is kept on the phone, sent through the outbox as a file, and never needs the
+  internet. GPS on the phone is the one thing that costs battery, so it is only on while a track is being recorded, and the
+  person chooses how often it samples. Not built; to be designed when Pocket starts.
+
+## Inventory counts from phones
+
+Phones may scan barcodes (Cindrix Scan already does this for the Hub's Inventory) and enter weekly counts. The "Pocket
+writes only logs" rule still holds: a count is sent as a **count sheet** in the outbox, like a report. The Hub lists it,
+the host accepts it, and only then do the Inventory numbers change. A sheet never deletes an item. Not built; the mailbox
+for it will copy `security_pocket.rs`.
 
 ## What the Hub mailbox does now (built)
 
@@ -119,11 +133,35 @@ added; the same file twice changes nothing; every file is kept (moved to `done/`
 accepted names and fingerprints go in `user/security/pocket-accepted.txt` for the phone to read. Command shows
 "Reports waiting from phones" with Accept and Set aside, and counts waiting reports under "Needs a look".
 
-Not built: the upload path (a trusted device putting files in the mailbox over the share server), the trusted-device
-permission list, the bundle, and Pocket itself.
+## Trusted devices, handing in reports, and erasing a lost phone (built, 2026-11-08)
+
+- **Trust follows the device, not the person.** A phone is known by its own short code, made when its invite QR was used.
+  The person's name is only a label; two phones for one person are two devices (`core/src/devices.rs`,
+  `user/devices.txt`, an append-only `user/devices-log.txt`).
+- **What a trusted device may do** beyond a guest: say hello and learn what is waiting for it (`device_check_in`), say it has
+  erased itself (`device_erased`), hand a report to the mailbox (`pocket_upload`), and the picture commands it already had.
+  It may not run any host screen. Guests get none of these. `core/tests/security_rules.rs` proves both.
+- **Hand-in rules.** The Hub takes the phone's code from its sign-in, never from what it sends. The file name must start with
+  that code, the report's own `# device:` line must match it, and the report goes through every check an accept makes; one that
+  fails is removed again. The same report twice changes nothing; a different one under the same name is refused.
+  When the host accepts a report, the next hello returns the names accepted, so the phone may clear exactly those.
+- **Settings > Devices** lists every device (kind, person, code, when it joined, when it last reached the Hub) with
+  **Erase this device**, **Lock out**, and **Found it: cancel the erase**.
+- **Erase is an order that waits.** The Hub cannot reach a phone that is off. The device stays known; until it connects it can
+  do nothing but ask what is waiting and answer. When it connects it is told to erase; when it says it has, or the host
+  locks it out by hand, its sign-in is removed for good and it needs a new invite. A device that is locked out is refused
+  everything. Every step is logged.
+- **What erase cannot do (said plainly on the screen).** An app can erase only its own data and sign-in: saved cards, unsent
+  reports, saved maps. It cannot wipe the rest of a phone. A browser can only be locked out. It does not keep a phone off the
+  Wi-Fi or hotspot; changing the hotspot password does that, and a new PIN signs out anyone who knew the old one. If the lost
+  phone is never switched on again the order never arrives, but lock-out still stops it signing in to the Hub.
+- **Pocket's side (when it is built):** on "erase" it deletes its cards, outbox, saved maps and sign-in, then sends
+  `device_erased`. It must do this before showing anything else.
+
+Not built: the bundle, count sheets, GPS tracks, and Pocket itself.
 
 ## Still open
 
-- Does each phone belong to one person (picked from the family list when it is set up)? A report names who wrote it.
+- ~~Does each phone belong to one person?~~ Answered: yes, each phone has its own owner, and trust is by device code.
 - A trimmed emergency-contact card on the phone (the Family page is private and host-only today).
 - Which book formats the reader must open on day one.

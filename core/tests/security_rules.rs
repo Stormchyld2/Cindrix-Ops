@@ -70,3 +70,43 @@ fn security_files_stay_inside_the_security_folder() {
     }
     let _ = fs::remove_dir_all(&r);
 }
+
+#[test]
+fn guests_cannot_reach_the_device_list_erase_orders_or_the_phone_mailbox() {
+    use cindrix_core::share::{command_allowed, Role, PERSON_COMMANDS};
+    for c in ["device_check_in", "device_erased", "pocket_upload", "devices_list", "devices_action", "security_pocket_accept"] {
+        assert!(!guest_allowed(c), "{} must not be open to guests", c);
+        assert!(!command_allowed(&Role::Guest, c), "{} must not be open to a guest's browser", c);
+        assert!(!command_allowed(&Role::Nobody, c));
+    }
+    // a trusted phone may say hello, say it has erased itself and hand in a report; it may not run the host's screens
+    let phone = Role::Person("Dana".into());
+    for c in ["device_check_in", "device_erased", "pocket_upload"] {
+        assert!(command_allowed(&phone, c) && PERSON_COMMANDS.contains(&c));
+    }
+    for c in ["devices_list", "devices_action", "security_pocket_accept", "security_pocket_list", "security_overview", "security_posture_set"] {
+        assert!(!command_allowed(&phone, c), "{} is for the host only", c);
+    }
+}
+
+#[test]
+fn the_server_checks_a_devices_state_before_it_answers_anything() {
+    let s = fs::read_to_string(repo("src-tauri/src/share.rs")).unwrap();
+    let gate = s.find("device_gate(app, req)").expect("the server must call device_gate");
+    let api = s.find("send(stream, &api_call(app, cmd").expect("api_call is where commands run");
+    assert!(gate < api, "the device check must come before any command runs");
+    assert!(s.contains("pub fn devices_list") && s.contains("pub fn devices_action"));
+    let lib = fs::read_to_string(repo("src-tauri/src/lib.rs")).unwrap();
+    assert!(lib.contains("share::devices_list,") && lib.contains("share::devices_action,"));
+}
+
+#[test]
+fn device_and_mailbox_code_make_no_network_calls() {
+    for f in ["devices.rs", "security_pocket.rs"] {
+        let src = fs::read_to_string(repo("core/src").join(f)).unwrap();
+        let code: String = src.split("#[cfg(test)]").next().unwrap().to_string();
+        for banned in ["std::net", "TcpStream", "UdpSocket", "TcpListener", "http://", "https://", "std::process", "Command::new"] {
+            assert!(!code.contains(banned), "{} must not use {}", f, banned);
+        }
+    }
+}

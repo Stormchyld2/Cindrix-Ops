@@ -7,6 +7,7 @@
   } from '../lib/api';
   import MyDetails from './MyDetails.svelte';
   import Sharing from './Sharing.svelte';
+  import Devices from './Devices.svelte';
   import SafeBackups from './SafeBackups.svelte';
   import { viewRequest } from '../lib/chat.svelte';
   import { settings, RANGES, SCREENS, type Settings } from '../lib/settings.svelte';
@@ -28,11 +29,11 @@
     }
   }
 
-  const tabs = ['General', 'Assistant', 'My details', 'Sharing', 'Safe backups', 'Library', 'Intel', 'Music', 'Maps', 'Plan', 'Calendar', 'Your own cards and plans', 'Drive', 'Sources and licenses', 'About'] as const;
+  const tabs = ['General', 'Assistant', 'My details', 'Sharing', 'Devices', 'Safe backups', 'Library', 'Intel', 'Music', 'Maps', 'Plan', 'Calendar', 'Your own cards and plans', 'Drive', 'Sources and licenses', 'About'] as const;
   let tab: (typeof tabs)[number] = $state('General');
   // the tabs, in groups, down the left side (the short names stay the same; only what is shown changes)
   const tabGroups: { title: string; tabs: (typeof tabs)[number][] }[] = [
-    { title: 'YOU', tabs: ['General', 'My details', 'Sharing', 'Safe backups'] },
+    { title: 'YOU', tabs: ['General', 'My details', 'Sharing', 'Devices', 'Safe backups'] },
     { title: 'THE SCREENS', tabs: ['Assistant', 'Library', 'Intel', 'Music', 'Maps', 'Plan', 'Calendar'] },
     { title: 'THE DRIVE', tabs: ['Drive', 'Your own cards and plans', 'Sources and licenses', 'About'] },
   ];
@@ -262,6 +263,8 @@
     <MyDetails />
   {:else if tab === 'Safe backups'}
     <SafeBackups />
+  {:else if tab === 'Devices'}
+    <Devices />
   {:else if tab === 'Sharing'}
     <Sharing />
     <div class="panel">

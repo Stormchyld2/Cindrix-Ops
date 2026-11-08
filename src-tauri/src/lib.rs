@@ -2926,6 +2926,8 @@ pub fn run() {
             share::share_invite,
             share::share_trusted,
             share::share_revoke,
+            share::devices_list,
+            share::devices_action,
             profile_load,
             profile_save,
             phone_estimate,

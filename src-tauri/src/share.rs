@@ -243,6 +243,102 @@ pub fn share_set_pin(pin: String, app: tauri::AppHandle) -> Result<ShareInfo, St
     Ok(info(&app))
 }
 
+// ---------- the device list, erase orders and the phone mailbox (docs/45) ----------
+
+fn user_dir() -> std::path::PathBuf {
+    crate::root().join("user")
+}
+
+/// The id of the device a request comes from, and the sign-in list as the device file wants it.
+fn device_of(app: &tauri::AppHandle, req: &Request) -> (Option<String>, Vec<(String, String, u64)>) {
+    let st = app.state::<AppState>();
+    let a = st.share.auth();
+    (a.device_id(&req.cookie("cx").unwrap_or_default()), a.trusted_ids())
+}
+
+/// Stops a device that is waiting to be erased (or is locked out) from doing anything but asking what is waiting.
+/// A device that is not on the list yet is left alone: asking `device_check_in` puts it there.
+fn device_gate(app: &tauri::AppHandle, req: &Request) -> Option<Response> {
+    let (id, _) = device_of(app, req);
+    let id = id?;
+    let list = cindrix_core::devices::load(&user_dir()).ok()?.items;
+    let state = cindrix_core::devices::state_of(&list, &id);
+    let cmd = req.path.strip_prefix("/api/").unwrap_or("");
+    if state == cindrix_core::devices::State::Trusted || (req.method == "POST" && cindrix_core::devices::may_ask(state, cmd)) {
+        return None;
+    }
+    let erase = state == cindrix_core::devices::State::EraseOrdered;
+    Some(Response::json(403, &json!({ "error": "This device is not allowed to use the Hub.", "erase": erase }).to_string()))
+}
+
+/// What a trusted device may say to the Hub: hello (and learn what is waiting for it), "I have erased myself", and
+/// a report for the phone mailbox. The device's own code comes from its sign-in, never from what it sends.
+fn device_call(app: &tauri::AppHandle, req: &Request, cmd: &str, role: &Role) -> Response {
+    if !share::command_allowed(role, cmd) {
+        return json_err(403, "Only a phone that joined with an invite can do this.");
+    }
+    let (id, trusted) = device_of(app, req);
+    let Some(id) = id else { return json_err(403, "This device is not on the trusted list.") };
+    let root = user_dir();
+    match cmd {
+        "device_check_in" => {
+            let body: Value = serde_json::from_slice(&req.body).unwrap_or_else(|_| json!({}));
+            let kind = match body.get("kind").and_then(|k| k.as_str()) {
+                Some("pocket") => Some(cindrix_core::devices::Kind::Pocket),
+                Some("browser") => Some(cindrix_core::devices::Kind::Browser),
+                _ => None,
+            };
+            let label = body.get("label").and_then(|k| k.as_str()).unwrap_or("").to_string();
+            match cindrix_core::devices::device_check_in(&root, &trusted, &id, kind, &label, now()) {
+                Ok((j, _)) => Response::json(200, &j),
+                Err(e) => json_err(500, &e),
+            }
+        }
+        "device_erased" => match cindrix_core::devices::device_erased(&root, &trusted, &id, now()) {
+            Ok(_) => {
+                let st = app.state::<AppState>();
+                let mut a = st.share.auth();
+                if a.revoke(&id) {
+                    save_trusted(&a);
+                }
+                Response::json(200, "{\"ok\":true}")
+            }
+            Err(e) => json_err(400, &e),
+        },
+        _ => {
+            let name = share::url_decode(req.header("x-file-name").unwrap_or(""));
+            let text = String::from_utf8_lossy(&req.body).to_string();
+            match cindrix_core::security_pocket::upload(&root, &id, &name, &text) {
+                Ok(()) => Response::json(200, "{\"ok\":true}"),
+                Err(e) => json_err(400, &e),
+            }
+        }
+    }
+}
+
+#[tauri::command]
+pub fn devices_list(app: tauri::AppHandle) -> Result<Value, String> {
+    let trusted = app.state::<AppState>().share.auth().trusted_ids();
+    let text = cindrix_core::devices::host_list(&user_dir(), &trusted, now())?;
+    serde_json::from_str(&text).map_err(|_| "The device list could not be read.".to_string())
+}
+
+/// `erase` orders an erase that is carried out when the device next reaches the Hub, `cancel` takes that order back,
+/// and `lock` shuts the device out at once. Host only.
+#[tauri::command]
+pub fn devices_action(id: String, action: String, app: tauri::AppHandle) -> Result<Value, String> {
+    let trusted = app.state::<AppState>().share.auth().trusted_ids();
+    let revoke = cindrix_core::devices::host_action(&user_dir(), &trusted, &id, &action, now())?;
+    if revoke {
+        let st = app.state::<AppState>();
+        let mut a = st.share.auth();
+        if a.revoke(&id) {
+            save_trusted(&a);
+        }
+    }
+    devices_list(app)
+}
+
 // ---------- invites and trusted devices ----------
 
 #[derive(Serialize)]
@@ -440,9 +536,17 @@ fn route(app: &tauri::AppHandle, req: &Request, who: &str, stream: &mut TcpStrea
         return;
     }
 
+    // a device the host has ordered erased, or locked out, may do nothing but ask what is waiting for it
+    if let Some(r) = device_gate(app, req) {
+        send(stream, &r);
+        return;
+    }
+
     if req.method == "POST" {
         if let Some(cmd) = req.path.strip_prefix("/api/") {
-            if cmd == "ask_stream" {
+            if matches!(cmd, "device_check_in" | "device_erased" | "pocket_upload") {
+                send(stream, &device_call(app, req, cmd, &role));
+            } else if cmd == "ask_stream" {
                 ask_sse(app, req, stream);
             } else if cmd == "photo_add" {
                 send(stream, &photo_add_call(req, &role));

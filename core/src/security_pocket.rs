@@ -268,6 +268,56 @@ pub fn render_report(device: &str, person: &str, created: &str, entries: &[incid
     o
 }
 
+/// A trusted phone hands in a report over the Hub's network. `device` is the id the Hub knows the phone by (taken
+/// from its sign-in, never from what it says), so a phone can only hand in reports that carry its own code.
+/// The file goes through every check an accept would make, and is removed again if any fails. Handing in the same
+/// report twice is fine (nothing changes); a different report under the same name is refused.
+pub fn upload(user_root: &Path, device: &str, name: &str, text: &str) -> Result<(), String> {
+    if !valid_id(device) || !safe_name(name) || !name.starts_with(&format!("{}-", device)) {
+        return Err("That is not a report file name this phone may use.".to_string());
+    }
+    if text.len() as u64 > MAX_FILE {
+        return Err("This report is much bigger than any report should be.".to_string());
+    }
+    if accepted(user_root).iter().any(|(n, _)| n == name) {
+        return Ok(());
+    }
+    let target = inbox_dir(user_root).join(name);
+    if let Ok(old) = fs::read(&target) {
+        return if old == text.as_bytes() { Ok(()) } else { Err("A different report with this name is already waiting.".to_string()) };
+    }
+    if waiting_count(user_root) >= MAX_FILES {
+        return Err("The mailbox is full. The host needs to look at the waiting reports first.".to_string());
+    }
+    fs::create_dir_all(inbox_dir(user_root)).map_err(|_| "The mailbox could not be opened.".to_string())?;
+    fsio::write_atomic(&target, text.as_bytes()).map_err(|_| "The report could not be saved.".to_string())?;
+    match read_report(&target) {
+        Ok(r) if r.device == device => Ok(()),
+        Ok(_) => {
+            let _ = fs::remove_file(&target);
+            Err("The report names a different phone than the one that sent it.".to_string())
+        }
+        Err(e) => {
+            let _ = fs::remove_file(&target);
+            Err(e)
+        }
+    }
+}
+
+/// The names of this phone's reports the host has accepted. The phone may clear exactly these from its outbox.
+pub fn accepted_for(user_root: &Path, device: &str) -> Vec<String> {
+    fs::read_to_string(ledger_path(user_root))
+        .map(|t| {
+            t.lines()
+                .filter_map(|l| {
+                    let f: Vec<&str> = l.split('\t').collect();
+                    if f.len() >= 3 && f[2] == device { Some(f[0].to_string()) } else { None }
+                })
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
 /// Used by the tests and by anything that needs to put a file in the mailbox safely.
 pub fn drop_file(user_root: &Path, name: &str, text: &str) -> Result<(), String> {
     if !safe_name(name) {
@@ -474,6 +524,44 @@ mod tests {
         fs::write(store::incident_path(&r), "# format: security-incidents 1\nthis line is damaged\n").unwrap();
         assert!(accept(&r, "n10-0001.txt").is_err());
         assert!(inbox_dir(&r).join("n10-0001.txt").exists());
+        let _ = fs::remove_dir_all(&r);
+    }
+
+    #[test]
+    fn a_phone_can_only_hand_in_reports_that_carry_its_own_code() {
+        let r = tmp("upload");
+        let ok = render_report("n10", "Sam", T, &[open("n10-0001", "n10-inc1")]);
+        upload(&r, "n10", "n10-0001.txt", &ok).unwrap();
+        upload(&r, "n10", "n10-0001.txt", &ok).unwrap(); // again: nothing changes
+        assert_eq!(waiting_count(&r), 1);
+        // another phone's code, a name that is not its own, a changed report under the same name
+        assert!(upload(&r, "zz99", "n10-0002.txt", &ok).is_err());
+        assert!(upload(&r, "n10", "other-0002.txt", &ok).is_err());
+        assert!(upload(&r, "n10", "../n10-0003.txt", &ok).is_err());
+        let other = render_report("n10", "Sam", T, &[open("n10-0009", "n10-inc9")]);
+        assert!(upload(&r, "n10", "n10-0001.txt", &other).is_err());
+        // a report that says it is from another phone is refused and leaves nothing behind
+        let liar = render_report("zz99", "Sam", T, &[open("zz99-0001", "zz99-inc1")]);
+        assert!(upload(&r, "n10", "n10-0004.txt", &liar).is_err());
+        assert!(!inbox_dir(&r).join("n10-0004.txt").exists());
+        assert!(upload(&r, "n10", "n10-0005.txt", "not a report").is_err());
+        assert!(!inbox_dir(&r).join("n10-0005.txt").exists());
+        assert!(upload(&r, "n10", "n10-0006.txt", &"x".repeat(300_000)).is_err());
+        let _ = fs::remove_dir_all(&r);
+    }
+
+    #[test]
+    fn the_phone_learns_what_was_accepted_and_only_its_own() {
+        let r = tmp("syncd");
+        let ok = render_report("n10", "Sam", T, &[open("n10-0001", "n10-inc1")]);
+        upload(&r, "n10", "n10-0001.txt", &ok).unwrap();
+        assert!(accepted_for(&r, "n10").is_empty());
+        accept(&r, "n10-0001.txt").unwrap();
+        assert_eq!(accepted_for(&r, "n10"), vec!["n10-0001.txt".to_string()]);
+        assert!(accepted_for(&r, "zz99").is_empty());
+        // handing it in again after it was accepted changes nothing and adds nothing to the mailbox
+        upload(&r, "n10", "n10-0001.txt", &ok).unwrap();
+        assert_eq!(waiting_count(&r), 0);
         let _ = fs::remove_dir_all(&r);
     }
 }
