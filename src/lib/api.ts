@@ -1525,11 +1525,12 @@ export type SecuritySite = {
   posture: 'normal' | 'elevated' | 'emergency' | 'unknown';
   check_due: boolean; never_assessed: boolean;
   set_by: string; reason: string; at: string; review_by: string;
-  on_watch: string[]; live_incidents: number;
+  on_watch: string[]; live_incidents: number; looks: string[];
 };
 export type SecurityOverview = {
   now: string; headline: SecuritySite['posture']; unknown: number; check_due: number;
-  all_normal_confirmed: boolean; live_incidents: number; unreadable_lines: number; sites: SecuritySite[];
+  all_normal_confirmed: boolean; live_incidents: number; unreadable_lines: number;
+  needs_a_look: number; sites_on_watch: number; sites: SecuritySite[];
 };
 export type WatchSegment = { from: string; to: string; cover: 'confirmed' | 'planned' | 'gap' };
 export type WatchStrip = {
@@ -1554,7 +1555,7 @@ const clockOffset = () => -new Date().getTimezoneOffset();
 export async function securityOverview(): Promise<SecurityOverview> {
   if (tauriHost) return call<SecurityOverview>('security_overview', { offsetMinutes: clockOffset() });
   // Browser preview: nothing is stored, and nothing is assessed, so the honest answer is "unknown".
-  return { now: new Date().toISOString(), headline: 'unknown', unknown: 0, check_due: 0, all_normal_confirmed: false, live_incidents: 0, unreadable_lines: 0, sites: [] };
+  return { now: new Date().toISOString(), headline: 'unknown', unknown: 0, check_due: 0, all_normal_confirmed: false, live_incidents: 0, unreadable_lines: 0, needs_a_look: 0, sites_on_watch: 0, sites: [] };
 }
 export async function securityWatchStrip(site: string): Promise<WatchStrip> {
   if (tauriHost) return call<WatchStrip>('security_watch_strip', { site, offsetMinutes: clockOffset() });
@@ -1580,4 +1581,37 @@ export async function securityIncidentEntry(e: { incident: string; kind: 'note' 
 export async function securityIncidentList(): Promise<{ unreadable_lines: number; incidents: SecurityIncident[] }> {
   if (tauriHost) return call('security_incident_list');
   return { unreadable_lines: 0, incidents: [] };
+}
+
+export type WatchRow = { id: string; person: string; role: string; start: string; end: string; state: 'proposed' | 'scheduled' | 'acknowledged' | 'on-duty' | 'completed' | 'missed'; ack_at: string; entered_at: string; notes: string };
+export type WatchList = { site: string; watches: WatchRow[]; warnings: string[]; unreadable_lines: number };
+
+export async function securityWatchList(site: string): Promise<WatchList> {
+  if (tauriHost) return call<WatchList>('security_watch_list', { site });
+  return { site, watches: [], warnings: [], unreadable_lines: 0 };
+}
+// Times below are local, like "2026-11-08T06:00" (what a date-and-time box gives). The program adds the offset.
+export async function securityWatchDraft(site: string, people: string[], startLocal: string, hours: number, count: number): Promise<number> {
+  if (tauriHost) return call<number>('security_watch_draft', { site, people, startLocal, hours, count, offsetMinutes: clockOffset() });
+  throw new Error('The watchbill is saved in the program, not in the browser preview.');
+}
+export async function securityWatchAdd(site: string, person: string, role: string, startLocal: string, endLocal: string): Promise<string> {
+  if (tauriHost) return call<string>('security_watch_add', { site, person, role, startLocal, endLocal, offsetMinutes: clockOffset() });
+  throw new Error('The watchbill is saved in the program, not in the browser preview.');
+}
+export async function securityWatchMove(id: string, to: 'scheduled' | 'on-duty' | 'completed' | 'missed'): Promise<void> {
+  if (tauriHost) return call<void>('security_watch_move', { id, to });
+  throw new Error('The watchbill is saved in the program, not in the browser preview.');
+}
+export async function securityWatchAck(id: string, atLocal = ''): Promise<void> {
+  if (tauriHost) return call<void>('security_watch_ack', { id, atLocal, offsetMinutes: clockOffset() });
+  throw new Error('The watchbill is saved in the program, not in the browser preview.');
+}
+export async function securityWatchDiscard(id: string): Promise<void> {
+  if (tauriHost) return call<void>('security_watch_discard', { id });
+  throw new Error('The watchbill is saved in the program, not in the browser preview.');
+}
+export async function securityWatchScheduleAll(site: string): Promise<number> {
+  if (tauriHost) return call<number>('security_watch_schedule_all', { site });
+  throw new Error('The watchbill is saved in the program, not in the browser preview.');
 }

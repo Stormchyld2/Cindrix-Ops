@@ -23,6 +23,13 @@ pub const SECURITY_COMMANDS: &[&str] = &[
     "security_incident_open",
     "security_incident_entry",
     "security_incident_list",
+    "security_watch_list",
+    "security_watch_draft",
+    "security_watch_add",
+    "security_watch_move",
+    "security_watch_ack",
+    "security_watch_discard",
+    "security_watch_schedule_all",
 ];
 
 /// Now, in minutes since 1970 UTC, from the system clock.
@@ -52,22 +59,59 @@ pub fn overview_at(user_root: &Path, off: i64, now: i64) -> Result<String, Strin
     let built = incident::build(&incidents.items);
     let ov = security::overview(&sites.items, &log.items, now);
     let mut rows = Vec::new();
+    let mut look_total = 0usize;
     for (s, st) in sites.items.iter().zip(ov.sites.iter()) {
         let cur = security::current_entry(&log.items, &s.id);
         let on: Vec<String> = sched::on_watch_now(&watches.items, &s.id, now).iter().map(|w| q(&w.person)).collect();
         let live = incident::live_open(&built).iter().filter(|i| i.site == s.id).count();
+        let looks = site_looks(&s.id, st, cur, &watches.items, off, now);
+        look_total += looks.len();
         rows.push(format!(
-            "{{\"id\":{},\"name\":{},\"tz\":{},\"posture\":{},\"check_due\":{},\"never_assessed\":{},\"set_by\":{},\"reason\":{},\"at\":{},\"review_by\":{},\"on_watch\":[{}],\"live_incidents\":{}}}",
+            "{{\"id\":{},\"name\":{},\"tz\":{},\"posture\":{},\"check_due\":{},\"never_assessed\":{},\"set_by\":{},\"reason\":{},\"at\":{},\"review_by\":{},\"on_watch\":[{}],\"live_incidents\":{},\"looks\":[{}]}}",
             q(&s.id), q(&s.name), q(&s.tz), q(st.posture.word()), st.check_due, st.never_assessed,
             q(cur.map(|e| e.set_by.as_str()).unwrap_or("")), q(cur.map(|e| e.reason.as_str()).unwrap_or("")), q(cur.map(|e| e.at.as_str()).unwrap_or("")), q(cur.map(|e| e.review_by.as_str()).unwrap_or("")),
-            on.join(","), live
+            on.join(","), live, looks.iter().map(|l| q(l)).collect::<Vec<_>>().join(",")
         ));
     }
+    let sites_on_watch = sites.items.iter().filter(|s| !sched::on_watch_now(&watches.items, &s.id, now).is_empty()).count();
     let rejected = sites.rejected.len() + log.rejected.len() + watches.rejected.len() + incidents.rejected.len();
+    if rejected > 0 {
+        look_total += 1;
+    }
     Ok(format!(
-        "{{\"now\":{},\"headline\":{},\"unknown\":{},\"check_due\":{},\"all_normal_confirmed\":{},\"live_incidents\":{},\"unreadable_lines\":{},\"sites\":[{}]}}",
-        q(&format_instant(now, off)), q(ov.headline.word()), ov.unknown, ov.check_due, ov.all_normal_confirmed, incident::live_open(&built).len(), rejected, rows.join(",")
+        "{{\"now\":{},\"headline\":{},\"unknown\":{},\"check_due\":{},\"all_normal_confirmed\":{},\"live_incidents\":{},\"unreadable_lines\":{},\"needs_a_look\":{},\"sites_on_watch\":{},\"sites\":[{}]}}",
+        q(&format_instant(now, off)), q(ov.headline.word()), ov.unknown, ov.check_due, ov.all_normal_confirmed, incident::live_open(&built).len(), rejected, look_total, sites_on_watch, rows.join(",")
     ))
+}
+
+/// The plain-words "needs a look" lines for one site. One place makes them, so the Dashboard count and the
+/// Command list can never disagree.
+fn site_looks(site: &str, st: &security::SiteStatus, cur: Option<&PostureEntry>, watches: &[sched::Watch], off: i64, now: i64) -> Vec<String> {
+    let mut out = Vec::new();
+    if st.never_assessed {
+        out.push("No posture has been set for this site yet. It shows Unknown.".to_string());
+    } else if st.check_due {
+        let who = cur.map(|e| e.set_by.as_str()).filter(|w| !w.is_empty()).unwrap_or("someone");
+        out.push(format!("The {} posture is due for a check (set by {}). It has not been lowered.", st.posture.word(), who));
+    }
+    let mine: Vec<&sched::Watch> = watches.iter().filter(|w| w.site == site).collect();
+    for (id, kind) in sched::needs_a_look(watches, now) {
+        if let Some(w) = mine.iter().find(|w| w.id == id) {
+            out.push(match kind {
+                Attention::NotAcknowledged => format!("{} has not acknowledged a watch that has started.", w.person),
+                Attention::HandoverOpen => format!("{}'s watch has ended and no handover is written down.", w.person),
+            });
+        }
+    }
+    let from = (now + off).div_euclid(1440) * 1440 - off;
+    let owned: Vec<sched::Watch> = mine.iter().map(|w| (*w).clone()).collect();
+    let segs = sched::coverage(&owned, site, from, from + 1440);
+    let has_cover = segs.iter().any(|s| s.cover != Cover::Gap);
+    let gap = sched::gap_minutes(&segs);
+    if has_cover && gap > 0 {
+        out.push(format!("Nobody is covering {} of today.", if gap % 60 == 0 { format!("{} hours", gap / 60) } else { format!("{} h {} min", gap / 60, gap % 60) }));
+    }
+    out
 }
 
 /// Add a site, or change a site's name, time zone, map or notes. The code (id) of an existing site never changes.
@@ -238,6 +282,151 @@ pub fn incident_list(user_root: &Path) -> Result<String, String> {
     Ok(format!("{{\"unreadable_lines\":{},\"incidents\":[{}]}}", log.rejected.len(), rows.join(",")))
 }
 
+// ---------- watch editing ----------
+
+/// A time typed on a screen (`2026-11-08T06:00`, local) written with this computer's offset.
+fn local_instant(local: &str, off: i64) -> Result<String, String> {
+    let l = local.trim();
+    let utc = security::parse_instant(&format!("{}Z", if l.len() == 16 { l.to_string() } else { format!("{:.16}", l) })).filter(|_| l.len() >= 16 && l.is_ascii()).ok_or("The time needs a date and a time.")?;
+    Ok(format_instant(utc - off, off))
+}
+
+fn load_all(user_root: &Path) -> Result<security::Parsed<sched::Watch>, String> {
+    store::load_watches(user_root)
+}
+
+fn put(user_root: &Path, all: &security::Parsed<sched::Watch>) -> Result<(), String> {
+    store::save_watches(user_root, &all.items, &all.rejected)
+}
+
+/// Every watch at a site (soonest first) and the plain-words warnings about them.
+pub fn watch_list(user_root: &Path, site: &str) -> Result<String, String> {
+    let all = load_all(user_root)?;
+    let mut mine: Vec<sched::Watch> = all.items.iter().filter(|w| w.site == site).cloned().collect();
+    mine.sort_by_key(|w| w.span().map(|(a, _)| a).unwrap_or(0));
+    let name = |id: &str| all.items.iter().find(|w| w.id == id).map(|w| w.person.clone()).unwrap_or_default();
+    let mut warnings: Vec<String> = Vec::new();
+    for (a, b, len) in sched::overlaps(&mine, 15) {
+        warnings.push(format!("{} and {} overlap by {} minutes.", name(&a), name(&b), len));
+    }
+    for (a, b) in sched::double_booked(&all.items) {
+        if mine.iter().any(|w| w.id == a || w.id == b) {
+            warnings.push(format!("{} is on two watches at the same time.", name(&a)));
+        }
+    }
+    for (who, _, _, rest) in sched::short_rest(&mine, 6) {
+        warnings.push(format!("{} gets only {} between watches.", who, if rest % 60 == 0 { format!("{} hours", rest / 60) } else { format!("{} h {} min", rest / 60, rest % 60) }));
+    }
+    let rows: Vec<String> = mine
+        .iter()
+        .map(|w| format!("{{\"id\":{},\"person\":{},\"role\":{},\"start\":{},\"end\":{},\"state\":{},\"ack_at\":{},\"entered_at\":{},\"notes\":{}}}", q(&w.id), q(&w.person), q(&w.role), q(&w.start), q(&w.end), q(w.state.word()), q(&w.ack_at), q(&w.entered_at), q(&w.notes)))
+        .collect();
+    Ok(format!("{{\"site\":{},\"watches\":[{}],\"warnings\":[{}],\"unreadable_lines\":{}}}", q(site), rows.join(","), warnings.iter().map(|w| q(w)).collect::<Vec<_>>().join(","), all.rejected.len()))
+}
+
+fn known_site(user_root: &Path, site: &str) -> Result<(), String> {
+    if store::load_sites(user_root)?.items.iter().any(|s| s.id == site) { Ok(()) } else { Err("That site is not on the list.".to_string()) }
+}
+
+/// Draft a watchbill: back-to-back watches handed round the people in order. Saved as `proposed`: they cover
+/// nothing until a person schedules them. Returns how many were made.
+pub fn watch_draft(user_root: &Path, site: &str, people: &[String], start_local: &str, hours: u32, count: u32, offset_minutes: i64) -> Result<usize, String> {
+    let off = offset_ok(offset_minutes)?;
+    known_site(user_root, site)?;
+    let people: Vec<String> = people.iter().map(|p| p.trim().to_string()).filter(|p| !p.is_empty()).collect();
+    let mut all = load_all(user_root)?;
+    let start = local_instant(start_local, off)?;
+    let drafts = sched::draft_watchbill(site, &people, &start, hours, count, &all.items)?;
+    let n = drafts.len();
+    all.items.extend(drafts);
+    put(user_root, &all)?;
+    Ok(n)
+}
+
+/// A person writes one watch in by hand. Entering it is the person's approval, so it starts as `scheduled`.
+pub fn watch_add(user_root: &Path, site: &str, person: &str, role: &str, start_local: &str, end_local: &str, offset_minutes: i64) -> Result<String, String> {
+    let off = offset_ok(offset_minutes)?;
+    known_site(user_root, site)?;
+    if person.trim().is_empty() {
+        return Err("Say who is on watch.".to_string());
+    }
+    let mut all = load_all(user_root)?;
+    let w = sched::Watch {
+        id: crate::ops::next_id('w', all.items.iter().map(|w| w.id.clone())),
+        site: site.to_string(),
+        person: person.trim().to_string(),
+        role: if role.trim().is_empty() { "watch".to_string() } else { role.trim().to_string() },
+        start: local_instant(start_local, off)?,
+        end: local_instant(end_local, off)?,
+        state: sched::WatchState::Scheduled,
+        ack_at: String::new(),
+        entered_at: format_instant(now_minutes(), off),
+        notes: String::new(),
+    };
+    if w.span().is_none() {
+        return Err("The watch has to end after it starts.".to_string());
+    }
+    let id = w.id.clone();
+    all.items.push(w);
+    put(user_root, &all)?;
+    Ok(id)
+}
+
+fn find_mut<'a>(all: &'a mut security::Parsed<sched::Watch>, id: &str) -> Result<&'a mut sched::Watch, String> {
+    all.items.iter_mut().find(|w| w.id == id).ok_or_else(|| "That watch is not on the list.".to_string())
+}
+
+/// Move a watch along: scheduled, on-duty, completed or missed. (Acknowledging has its own command so the time is kept.)
+pub fn watch_move(user_root: &Path, id: &str, to: &str) -> Result<(), String> {
+    let to = sched::WatchState::from_word(to).ok_or("That is not a watch state.")?;
+    let mut all = load_all(user_root)?;
+    let w = find_mut(&mut all, id)?;
+    *w = sched::change_state(w, to)?;
+    put(user_root, &all)
+}
+
+/// The person says they have the watch. `at_local` empty means now; a handover that really happened earlier (by
+/// radio, or on paper) passes its real time, and the entry time is still now.
+pub fn watch_ack(user_root: &Path, id: &str, at_local: &str, offset_minutes: i64) -> Result<(), String> {
+    let off = offset_ok(offset_minutes)?;
+    let now = now_minutes();
+    let entered = format_instant(now, off);
+    let at = if at_local.trim().is_empty() { entered.clone() } else { local_instant(at_local, off)? };
+    if security::parse_instant(&at).map(|t| t > now + 5).unwrap_or(true) {
+        return Err("That time is in the future.".to_string());
+    }
+    let mut all = load_all(user_root)?;
+    let w = find_mut(&mut all, id)?;
+    *w = sched::acknowledge(w, &at, &entered)?;
+    put(user_root, &all)
+}
+
+/// Throw away a draft that was never scheduled. Anything a person has agreed to stays in the record (use
+/// "missed" instead), so history is never quietly removed.
+pub fn watch_discard(user_root: &Path, id: &str) -> Result<(), String> {
+    let mut all = load_all(user_root)?;
+    let w = all.items.iter().find(|w| w.id == id).ok_or("That watch is not on the list.")?;
+    if w.state != sched::WatchState::Proposed {
+        return Err("Only a draft can be thrown away. Mark this one missed instead, so the record stays.".to_string());
+    }
+    all.items.retain(|w| w.id != id);
+    put(user_root, &all)
+}
+
+/// Schedule every draft at a site in one step: the person has read the roster and agrees to it.
+pub fn watch_schedule_all(user_root: &Path, site: &str) -> Result<usize, String> {
+    let mut all = load_all(user_root)?;
+    let mut n = 0;
+    for w in all.items.iter_mut().filter(|w| w.site == site && w.state == sched::WatchState::Proposed) {
+        *w = sched::change_state(w, sched::WatchState::Scheduled)?;
+        n += 1;
+    }
+    if n > 0 {
+        put(user_root, &all)?;
+    }
+    Ok(n)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -354,6 +543,118 @@ mod tests {
         incident_open(&r, "home", "He said \"stop\"\nthen left\\", 2, false, "Dad", 0).unwrap();
         let j = incident_list(&r).unwrap();
         assert!(j.contains("He said \\\"stop\\\"\\nthen left\\\\"));
+        let _ = fs::remove_dir_all(&r);
+    }
+
+    #[test]
+    fn overview_looks_are_one_list_for_dashboard_and_command() {
+        let r = tmp("looks");
+        site_save(&r, "", "Home", "", "", "").unwrap();
+        let j = overview(&r, 0).unwrap();
+        assert!(j.contains("\"needs_a_look\":1") && j.contains("No posture has been set"));
+        posture_set(&r, "home", "normal", "Dad", "", 0, 0).unwrap();
+        let j = overview(&r, 0).unwrap();
+        assert!(j.contains("\"needs_a_look\":0") && j.contains("\"looks\":[]"));
+        // a site with no watchbill at all is not flagged for gaps; one with a watch and a hole is
+        let day = now_minutes().div_euclid(1440) * 1440; // a watch inside today, whatever time the test runs
+        watch_add(&r, "home", "Dad", "", &local_for(day + 60), &local_for(day + 120), 0).unwrap();
+        let j = overview(&r, 0).unwrap();
+        assert!(j.contains("Nobody is covering"));
+        assert!(j.contains("\"sites_on_watch\":0"));
+        let _ = fs::remove_dir_all(&r);
+    }
+
+    fn local_for(utc_min: i64) -> String {
+        format_instant(utc_min, 0)[..16].to_string()
+    }
+
+    #[test]
+    fn local_times_become_offset_times() {
+        assert_eq!(local_instant("2026-11-08T06:00", -300).unwrap(), "2026-11-08T06:00-05:00");
+        assert_eq!(local_instant("2026-11-08T06:00", 0).unwrap(), "2026-11-08T06:00Z");
+        assert!(local_instant("tomorrow", 0).is_err());
+        assert!(local_instant("2026-13-08T06:00", 0).is_err());
+        assert!(local_instant("2026-11-08T06:00:00", 0).is_ok(), "seconds are ignored, not trusted");
+    }
+
+    #[test]
+    fn drafting_then_scheduling_then_acknowledging() {
+        let r = tmp("draft");
+        site_save(&r, "", "Camp", "", "", "").unwrap();
+        let people: Vec<String> = ["Dad", "Mom", " ", "Sam", "Lee"].iter().map(|s| s.to_string()).collect();
+        assert!(watch_draft(&r, "nowhere", &people, "2026-11-08T00:00", 6, 4, -300).is_err());
+        assert_eq!(watch_draft(&r, "camp", &people, "2026-11-08T00:00", 6, 4, -300).unwrap(), 4);
+        let j = watch_list(&r, "camp").unwrap();
+        assert!(j.contains("\"state\":\"proposed\"") && !j.contains("\"state\":\"scheduled\""));
+        // a draft covers nothing
+        let strip = watch_strip_at(&r, "camp", -300, security::parse_instant("2026-11-08T12:00-05:00").unwrap()).unwrap();
+        assert!(strip.contains("\"gap_minutes\":1440"));
+        assert_eq!(watch_schedule_all(&r, "camp").unwrap(), 4);
+        assert_eq!(watch_schedule_all(&r, "camp").unwrap(), 0);
+        let strip = watch_strip_at(&r, "camp", -300, security::parse_instant("2026-11-08T12:00-05:00").unwrap()).unwrap();
+        assert!(strip.contains("\"gap_minutes\":0") && strip.contains("planned"));
+        // acknowledging w1: needs scheduled, and not in the future
+        assert!(watch_ack(&r, "w9", "", 0).is_err());
+        watch_ack(&r, "w1", "", -300).unwrap();
+        assert!(watch_ack(&r, "w1", "", -300).is_err(), "only once");
+        assert!(watch_ack(&r, "w2", "2999-01-01T00:00", -300).is_err());
+        let all = store::load_watches(&r).unwrap().items;
+        let w1 = all.iter().find(|w| w.id == "w1").unwrap();
+        assert_eq!(w1.state, sched::WatchState::Acknowledged);
+        assert!(!w1.ack_at.is_empty() && !w1.entered_at.is_empty());
+        // a late entry keeps the real time apart from the entry time
+        let earlier = local_for(now_minutes() - 90);
+        watch_ack(&r, "w2", &earlier, 0).unwrap();
+        let all = store::load_watches(&r).unwrap().items;
+        let w2 = all.iter().find(|w| w.id == "w2").unwrap();
+        assert!(security::parse_instant(&w2.ack_at).unwrap() < security::parse_instant(&w2.entered_at).unwrap());
+        let _ = fs::remove_dir_all(&r);
+    }
+
+    #[test]
+    fn manual_watches_moves_and_discards_follow_the_rules() {
+        let r = tmp("manual");
+        site_save(&r, "", "Camp", "", "", "").unwrap();
+        assert!(watch_add(&r, "camp", "", "", "2026-11-08T00:00", "2026-11-08T06:00", 0).is_err());
+        assert!(watch_add(&r, "camp", "Dad", "", "2026-11-08T06:00", "2026-11-08T00:00", 0).is_err());
+        let id = watch_add(&r, "camp", "Dad", "", "2026-11-08T00:00", "2026-11-08T06:00", 0).unwrap();
+        assert_eq!(id, "w1");
+        // scheduled work cannot be deleted, only marked missed
+        assert!(watch_discard(&r, "w1").is_err());
+        assert!(watch_move(&r, "w1", "completed").is_err());
+        assert!(watch_move(&r, "w1", "nonsense").is_err());
+        watch_move(&r, "w1", "missed").unwrap();
+        watch_move(&r, "w1", "scheduled").unwrap();
+        // a draft can be thrown away
+        watch_draft(&r, "camp", &["Mom".to_string()], "2026-11-09T00:00", 6, 1, 0).unwrap();
+        watch_discard(&r, "w2").unwrap();
+        assert_eq!(store::load_watches(&r).unwrap().items.len(), 1);
+        let _ = fs::remove_dir_all(&r);
+    }
+
+    #[test]
+    fn warnings_say_what_is_wrong_in_plain_words() {
+        let r = tmp("warn");
+        site_save(&r, "", "Camp", "", "", "").unwrap();
+        watch_add(&r, "camp", "Dad", "", "2026-11-08T00:00", "2026-11-08T06:00", 0).unwrap();
+        watch_add(&r, "camp", "Mom", "", "2026-11-08T03:00", "2026-11-08T09:00", 0).unwrap();
+        watch_add(&r, "camp", "Dad", "", "2026-11-08T08:00", "2026-11-08T12:00", 0).unwrap();
+        let j = watch_list(&r, "camp").unwrap();
+        assert!(j.contains("Dad and Mom overlap by 180 minutes."), "{}", j);
+        assert!(j.contains("Dad gets only") || j.contains("dad gets only"), "{}", j);
+        let _ = fs::remove_dir_all(&r);
+    }
+
+    #[test]
+    fn unreadable_watch_lines_survive_every_edit() {
+        let r = tmp("keep");
+        site_save(&r, "", "Camp", "", "", "").unwrap();
+        let bad = "w7\tcamp\tMom\twatch\tnot a time\tx\tscheduled\t\t\t";
+        fs::create_dir_all(store::dir(&r)).unwrap();
+        fs::write(store::watch_path(&r), format!("{}\n", bad)).unwrap();
+        watch_add(&r, "camp", "Dad", "", "2026-11-08T00:00", "2026-11-08T06:00", 0).unwrap();
+        watch_move(&r, "w1", "missed").unwrap();
+        assert!(fs::read_to_string(store::watch_path(&r)).unwrap().contains(bad));
         let _ = fs::remove_dir_all(&r);
     }
 }

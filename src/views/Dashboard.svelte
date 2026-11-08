@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { inShare, whatFailsNext, inventoryList, drillsList, mapPacks, modelStatus, listModels, libraryStatus, shareInfo, shareSet, dashboardSuggestions, agendaGet, changesRecent, type AgendaItem, type Change, plansList, academyList, familyStatus, productInfo, type ProductInfo, type ShareInfo, type Cascade, type Suggestion, type PlanInfo, type AcademyModule } from '../lib/api';
+  import { inShare, whatFailsNext, inventoryList, drillsList, mapPacks, modelStatus, listModels, libraryStatus, shareInfo, shareSet, dashboardSuggestions, agendaGet, changesRecent, securityOverview, type SecurityOverview, type AgendaItem, type Change, plansList, academyList, familyStatus, productInfo, type ProductInfo, type ShareInfo, type Cascade, type Suggestion, type PlanInfo, type AcademyModule } from '../lib/api';
   import { gatherFacts, planCounts, nextStep, stepStatus, KIND_NAME, type PlanFacts } from '../lib/planfacts';
   import { categories } from '../lib/categories';
   import { settings } from '../lib/settings.svelte';
@@ -15,6 +15,7 @@
   let error = $state('');
   let loaded = $state(false);
   let product: ProductInfo | null = $state(null);
+  let sec: SecurityOverview | null = $state(null);
   let sharing: ShareInfo = $state({ on: false, auto: true, reason: '', pin: '', port: 8765, addresses: [], hotspot_up: false, signed_in: 0, trusted: 0 });
   // the Sharing panel follows the real state, so it changes by itself when a hotspot starts
   let shareBusy = $state(false);
@@ -67,6 +68,8 @@
       error = String(e);
     }
     try { product = await productInfo(); } catch { /* every tile is shown */ }
+    // Security Operations summary: host-only and only where this edition has it. Read from the same records as the Security screen.
+    if (!inShare && product?.security) { try { sec = await securityOverview(); } catch { sec = null; } }
     // These never block the rest of the page: a failure just leaves that panel empty.
     try { plans = await plansList(); facts = await gatherFacts(); } catch { /* no plans panel content */ }
     try { academy = await academyList(); } catch { /* none */ }
@@ -196,6 +199,16 @@
     <button class="tile" style="--c: var(--cat-ops)" onclick={() => openDetail('date')} aria-haspopup="dialog"><div class="label">PAST OR NEAR DATE</div><div class="big {past ? 'act' : data.expiring.length ? 'check' : 'ok'}">{data.expiring.length} item{data.expiring.length === 1 ? '' : 's'}</div></button>
     <button class="tile" style="--c: var(--cat-ops)" onclick={() => openDetail('checks')} aria-haspopup="dialog"><div class="label">PLAN CHECKS DUE</div><div class="big {checksDue ? 'check' : followed.length ? 'ok' : ''}">{followed.length ? checksDue : 'None'}</div></button>
     <button class="tile" style="--c: var(--cat-ops)" onclick={() => openDetail('drills')} aria-haspopup="dialog"><div class="label">DRILLS DONE</div><div class="big {drillsDone ? 'ok' : 'check'}">{drillsDone} of {drillsTotal}</div></button>
+  </div>
+{/if}
+
+{#if sec}
+  {@const unset = sec.headline === 'unknown'}
+  <div class="tiles sec" aria-label="Security">
+    <button class="tile" style="--c: var(--cat-security)" onclick={() => go('Security')} title="Open Security Operations"><div class="label">SECURITY POSTURE</div><div class="big {sec.headline === 'normal' ? 'ok' : sec.headline === 'emergency' ? 'act' : 'check'}">{sec.sites.length === 0 ? 'No site yet' : sec.headline === 'unknown' ? 'Unknown' : sec.headline === 'normal' && !sec.all_normal_confirmed ? 'Normal' : sec.headline[0].toUpperCase() + sec.headline.slice(1)}</div>{#if unset && sec.sites.length}<div class="muted small">{sec.unknown ? sec.unknown + ' not set' : 'Check due'}. Unknown is not safe.</div>{:else if sec.sites.length > 1}<div class="muted small">{sec.sites.length} sites</div>{/if}</button>
+    <button class="tile" style="--c: var(--cat-security)" onclick={() => go('Security')} title="Open Security Operations"><div class="label">ON WATCH NOW</div><div class="big {sec.sites_on_watch ? 'ok' : 'check'}">{sec.sites_on_watch} of {sec.sites.length}</div><div class="muted small">sites with someone on watch</div></button>
+    <button class="tile" style="--c: var(--cat-security)" onclick={() => go('Security')} title="Open Security Operations"><div class="label">SECURITY NEEDS A LOOK</div><div class="big {sec.needs_a_look ? 'check' : 'ok'}">{sec.needs_a_look}</div></button>
+    <button class="tile" style="--c: var(--cat-security)" onclick={() => go('Security')} title="Open Security Operations"><div class="label">LIVE INCIDENTS</div><div class="big {sec.live_incidents ? 'act' : 'ok'}">{sec.live_incidents}</div><div class="muted small">practice drills not counted</div></button>
   </div>
 {/if}
 
@@ -410,7 +423,8 @@
   .dotmark { flex: 0 0 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line2); color: var(--accent); font-size: 12px; }
   .dotmark.ok { background: var(--ok-bg); border-color: var(--ok-line); color: var(--ok); }
   .tiles { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 12px; }
-  @media (max-width: 1100px) { .tiles { grid-template-columns: repeat(3, 1fr); } }
+  .tiles.sec { grid-template-columns: repeat(4, 1fr); }
+  @media (max-width: 1100px) { .tiles { grid-template-columns: repeat(3, 1fr); } .tiles.sec { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 560px) { .tiles { grid-template-columns: repeat(2, 1fr); } }
   .tile { display: flex; flex-direction: column; justify-content: space-between; gap: 8px; min-height: 84px; padding: 14px; text-align: left; background: linear-gradient(180deg, color-mix(in srgb, var(--c, var(--line)) 9%, var(--panel)), var(--panel) 70%); border: 1px solid var(--line); border-left: 3px solid var(--c, var(--line)); border-radius: 12px; }
   .tile:hover { border-color: var(--blue-line); }

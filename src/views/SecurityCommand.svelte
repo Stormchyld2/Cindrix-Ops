@@ -8,16 +8,14 @@
     type SecurityOverview, type WatchStrip, type SecurityIncident, type SecuritySite,
   } from '../lib/api';
 
+  let { site = $bindable(''), me = $bindable('') }: { site: string; me: string } = $props();
   let ov: SecurityOverview | null = $state(null);
-  let site = $state('');
   let strip: WatchStrip | null = $state(null);
   let incidents: SecurityIncident[] = $state([]);
   let note = $state('');
-  let me = $state('');
   let timer: ReturnType<typeof setInterval> | undefined;
 
-  try { me = localStorage.getItem('securityName') ?? ''; } catch { /* a private window: just ask each time */ }
-  function rememberMe() { try { localStorage.setItem('securityName', me); } catch { /* fine */ } }
+  function rememberMe() { try { localStorage.setItem('securityName', me); } catch { /* a private window: just ask each time */ } }
 
   async function refresh() {
     try {
@@ -44,21 +42,10 @@
   };
   const time = (iso: string) => { const d = new Date(iso); return isNaN(+d) ? '' : d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); };
   const when = (iso: string) => { const d = new Date(iso); return isNaN(+d) ? '' : d.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }); };
-  const hours = (m: number) => (m % 60 === 0 ? `${m / 60} hours` : `${Math.floor(m / 60)} h ${m % 60} min`);
 
-  // ---- what needs a look ----
-  const looks = $derived.by(() => {
-    const out: string[] = [];
-    if (!cur) return out;
-    if (cur.never_assessed) out.push('No posture has been set for this site yet. It shows Unknown.');
-    else if (cur.check_due) out.push(`The ${WORDS[cur.posture].toLowerCase()} posture is due for a check (set by ${cur.set_by || 'someone'}). It has not been lowered.`);
-    for (const n of strip?.needs_a_look ?? []) {
-      out.push(n.kind === 'not-acknowledged' ? `${n.person} has not acknowledged a watch that has started.` : `${n.person}'s watch has ended and no handover is written down.`);
-    }
-    if (strip && strip.gap_minutes > 0 && strip.segments.length) out.push(`Nobody is covering ${hours(strip.gap_minutes)} of today.`);
-    if (ov && ov.unreadable_lines > 0) out.push('Some lines in the security files could not be read. They were left exactly as they are.');
-    return out;
-  });
+  // What needs a look comes from the program itself, so this list and the Dashboard count always agree.
+  const looks = $derived(cur?.looks ?? []);
+  const extra = $derived(ov && ov.unreadable_lines > 0 ? ['Some lines in the security files could not be read. They were left exactly as they are.'] : []);
 
   // ---- adding a site ----
   let newName = $state('');
@@ -119,7 +106,6 @@
     <select id="site" class="input" value={site} onchange={(e) => pickSite(e.currentTarget.value)}>
       {#each ov.sites as s (s.id)}<option value={s.id}>{s.name}</option>{/each}
     </select>
-    <input class="input who" placeholder="Your name" bind:value={me} onchange={rememberMe} aria-label="Your name" />
     <span class="grow"></span>
     <details class="addsite"><summary class="btn">Add a site</summary>
       <div class="row"><input class="input" placeholder="Name" bind:value={newName} onkeydown={(e) => e.key === 'Enter' && addSite()} /><button class="btn" onclick={addSite}>Add</button></div>
@@ -138,7 +124,7 @@
 
   <div class="tiles">
     <div class="tile" style="--c: var(--cat-security)"><div class="label">On watch now</div><div class="num">{cur.on_watch.length ? cur.on_watch.join(', ') : 'No one'}</div><div class="small muted">{cur.on_watch.length ? 'Acknowledged and on duty' : 'Nobody has acknowledged a watch right now'}</div></div>
-    <div class="tile" style="--c: var(--cat-ops)"><div class="label">Needs a look</div><div class="num">{looks.length}</div><div class="small muted">{looks.length ? 'See the list below' : 'Nothing waiting'}</div></div>
+    <div class="tile" style="--c: var(--cat-ops)"><div class="label">Needs a look</div><div class="num">{looks.length + extra.length}</div><div class="small muted">{looks.length + extra.length ? 'See the list below' : 'Nothing waiting'}</div></div>
     <div class="tile" style="--c: var(--cat-comms)"><div class="label">Live incidents here</div><div class="num">{liveHere.length}</div><div class="small muted">Practice drills are not counted</div></div>
     <div class="tile" style="--c: var(--cat-intel)"><div class="label">All sites</div><div class="num">{WORDS[ov.headline]}</div><div class="small muted">{ov.all_normal_confirmed ? 'Every site is set to normal' : ov.unknown ? `${ov.unknown} not set` : 'Worst case across sites'}</div></div>
   </div>
@@ -165,7 +151,7 @@
 
   <div class="panel">
     <h2>Needs a look</h2>
-    {#if looks.length}<ul class="plain look">{#each looks as l}<li>{l}</li>{/each}</ul>{:else}<p class="muted">Nothing is waiting at this site.</p>{/if}
+    {#if looks.length || extra.length}<ul class="plain look">{#each [...looks, ...extra] as l}<li>{l}</li>{/each}</ul>{:else}<p class="muted">Nothing is waiting at this site.</p>{/if}
   </div>
 
   <div class="panel">

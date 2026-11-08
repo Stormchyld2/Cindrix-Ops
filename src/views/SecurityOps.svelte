@@ -1,22 +1,32 @@
 <script lang="ts">
   // Security Operations: one screen with six subtabs (docs/44). Only Command is built so far; the others say so.
   import SecurityCommand from './SecurityCommand.svelte';
+  import SecurityOperations from './SecurityOperations.svelte';
 
   const tabs = [
     { id: 'Command', c: 'var(--cat-security)', built: true, about: 'Where every site stands, who is on watch, and what needs a look.' },
     { id: 'Security', c: 'var(--cat-intel)', built: false, about: 'Zones, barriers, alarms and inspections for each site.' },
-    { id: 'Operations', c: 'var(--cat-ops)', built: false, about: 'The watchbill, patrols and the day\'s tasks.' },
+    { id: 'Operations', c: 'var(--cat-ops)', built: true, about: 'The watchbill, patrols and the day\'s tasks.' },
     { id: 'Planning', c: 'var(--cat-academy)', built: false, about: 'Defensive and Operational Response plans, with their revisions.' },
     { id: 'Personnel', c: 'var(--cat-morale)', built: false, about: 'Who is available, qualifications and rest.' },
     { id: 'Records', c: 'var(--cat-system)', built: false, about: 'Incident history, logs, reviews and exports.' },
   ] as const;
   let tab: (typeof tabs)[number]['id'] = $state('Command');
   const current = $derived(tabs.find((t) => t.id === tab)!);
+  // The site being looked at and the name written on records are shared by every subtab.
+  let site = $state('');
+  let me = $state('');
+  try { me = localStorage.getItem('securityName') ?? ''; } catch { /* a private window: just ask each time */ }
+  function rememberMe() { try { localStorage.setItem('securityName', me); } catch { /* fine */ } }
 </script>
 
 <div class="head">
   <h1>Security Operations</h1>
   <p class="sub">Keep watch over your sites, plan for trouble, and keep a clear record. Everything here stays on this computer.</p>
+  <div class="row who">
+    <label class="label" for="me">Your name</label>
+    <input id="me" class="input" placeholder="Written on every record you make" bind:value={me} onchange={rememberMe} />
+  </div>
 </div>
 
 <div class="subtabs" role="tablist" aria-label="Security Operations">
@@ -27,8 +37,12 @@
   {/each}
 </div>
 
-{#if current.built}
-  <SecurityCommand />
+{#if tab === 'Command'}
+  <SecurityCommand bind:site bind:me />
+{:else if tab === 'Operations'}
+  <SecurityOperations bind:site {me} />
+{:else if current.built}
+  <SecurityCommand bind:site bind:me />
 {:else}
   <div class="panel soon">
     <h2>{current.id}</h2>
@@ -40,6 +54,8 @@
 
 <style>
   .head { margin-bottom: 12px; }
+  .who { margin-top: 10px; }
+  .who .input { width: 280px; max-width: 100%; }
   .subtabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 16px; }
   .subtabs button { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; color: var(--muted); font-family: var(--mono); text-transform: uppercase; letter-spacing: .1em; font-size: 12px; font-weight: 500; }
   .subtabs button i { width: 9px; height: 9px; border-radius: 50%; background: var(--c); display: inline-block; }

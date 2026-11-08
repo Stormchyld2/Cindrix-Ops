@@ -48,3 +48,38 @@ pub fn security_incident_entry(incident: String, kind: String, arg1: String, tex
 pub fn security_incident_list() -> Result<Value, String> {
     json(api::incident_list(&user_root()))
 }
+
+#[tauri::command]
+pub fn security_watch_list(site: String) -> Result<Value, String> {
+    json(api::watch_list(&user_root(), &site))
+}
+
+#[tauri::command]
+pub fn security_watch_draft(site: String, people: Vec<String>, start_local: String, hours: u32, count: u32, offset_minutes: i64) -> Result<usize, String> {
+    api::watch_draft(&user_root(), &site, &people, &start_local, hours, count, offset_minutes)
+}
+
+#[tauri::command]
+pub fn security_watch_add(site: String, person: String, role: String, start_local: String, end_local: String, offset_minutes: i64) -> Result<String, String> {
+    api::watch_add(&user_root(), &site, &person, &role, &start_local, &end_local, offset_minutes)
+}
+
+#[tauri::command]
+pub fn security_watch_move(id: String, to: String) -> Result<(), String> {
+    api::watch_move(&user_root(), &id, &to)
+}
+
+#[tauri::command]
+pub fn security_watch_ack(id: String, at_local: String, offset_minutes: i64) -> Result<(), String> {
+    api::watch_ack(&user_root(), &id, &at_local, offset_minutes)
+}
+
+#[tauri::command]
+pub fn security_watch_discard(id: String) -> Result<(), String> {
+    api::watch_discard(&user_root(), &id)
+}
+
+#[tauri::command]
+pub fn security_watch_schedule_all(site: String) -> Result<usize, String> {
+    api::watch_schedule_all(&user_root(), &site)
+}
