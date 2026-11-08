@@ -174,8 +174,8 @@ Not built: the bundle, GPS tracks, new items from scans, and Pocket itself.
 ## Still open
 
 - ~~Does each phone belong to one person?~~ Answered: yes, each phone has its own owner, and trust is by device code.
-- A trimmed emergency-contact card on the phone (the Family page is private and host-only today).
-- Which book formats the reader must open on day one.
+- ~~A trimmed emergency-contact card on the phone~~ Answered (owner, 2026-11-08): the phone carries the **full** emergency contact card, not a trimmed one. The Family page is host-only today, so the bundle the host builds for a trusted phone must include the card and the phone must keep it on the phone only (never in a guest-readable place); it is wiped by the erase order like everything else Cindrix keeps there.
+- ~~Which book formats the reader must open on day one~~ Answered (owner, 2026-11-08): **the same as the Windows version**. Today that is PDF, Markdown (.md) and plain text (.txt) (`core/src/shelf.rs`). If the Windows Shelf gains a format, Pocket gains it too; the reader must not have its own list.
 
 ## Check-ins and patrols from the phone (later)
 
