@@ -28,6 +28,7 @@ mod libs;
 mod music;
 mod privacy;
 mod ops;
+mod security;
 mod settings;
 mod share;
 mod zimview;
@@ -2875,6 +2876,13 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            security::security_overview,
+            security::security_watch_strip,
+            security::security_site_save,
+            security::security_posture_set,
+            security::security_incident_open,
+            security::security_incident_entry,
+            security::security_incident_list,
             ops::ops_load,
             ops::task_save,
             ops::task_delete,

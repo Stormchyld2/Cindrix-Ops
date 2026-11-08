@@ -1516,3 +1516,67 @@ export async function drugLabelsGet(id: string): Promise<DrugLabel> {
   if (tauriHost) return call<DrugLabel>('druglabels_get', { id });
   return { id, brand: 'Sample Tablets', generic: 'SAMPLE', maker: 'Sample Maker', parts: [['What it is for', 'A sample so this screen can be looked at in a browser.'], ['Dosage and how to give it (as the FDA published it)', 'Sample text only.']] };
 }
+
+// ---------- Security Operations (host-only; docs/44) ----------
+
+export type SecuritySite = {
+  id: string; name: string; tz: string;
+  posture: 'normal' | 'elevated' | 'emergency' | 'unknown';
+  check_due: boolean; never_assessed: boolean;
+  set_by: string; reason: string; at: string; review_by: string;
+  on_watch: string[]; live_incidents: number;
+};
+export type SecurityOverview = {
+  now: string; headline: SecuritySite['posture']; unknown: number; check_due: number;
+  all_normal_confirmed: boolean; live_incidents: number; unreadable_lines: number; sites: SecuritySite[];
+};
+export type WatchSegment = { from: string; to: string; cover: 'confirmed' | 'planned' | 'gap' };
+export type WatchStrip = {
+  site: string; from: string; to: string; gap_minutes: number; segments: WatchSegment[];
+  needs_a_look: { id: string; person: string; kind: 'not-acknowledged' | 'handover-open' }[];
+  watches: { id: string; person: string; role: string; start: string; end: string; state: string }[];
+};
+export type IncidentLine = {
+  id: string; kind: string; happened_at: string; recorded_at: string; by: string; source: string;
+  arg1: string; text: string; supersedes: string; superseded_by: string;
+};
+export type SecurityIncident = {
+  id: string; site: string; title: string; priority: number; exercise: boolean;
+  status: 'draft' | 'active' | 'stabilized' | 'closed'; opened_at: string; opened_by: string; reopened: number;
+  plans: { plan: string; revision: string; fingerprint: string; by: string; at: string }[];
+  timeline: IncidentLine[];
+};
+
+// Minutes east of UTC on this computer right now. The program uses its own clock for "now"; this only says how to write it.
+const clockOffset = () => -new Date().getTimezoneOffset();
+
+export async function securityOverview(): Promise<SecurityOverview> {
+  if (tauriHost) return call<SecurityOverview>('security_overview', { offsetMinutes: clockOffset() });
+  // Browser preview: nothing is stored, and nothing is assessed, so the honest answer is "unknown".
+  return { now: new Date().toISOString(), headline: 'unknown', unknown: 0, check_due: 0, all_normal_confirmed: false, live_incidents: 0, unreadable_lines: 0, sites: [] };
+}
+export async function securityWatchStrip(site: string): Promise<WatchStrip> {
+  if (tauriHost) return call<WatchStrip>('security_watch_strip', { site, offsetMinutes: clockOffset() });
+  const d = new Date().toISOString();
+  return { site, from: d, to: d, gap_minutes: 1440, segments: [], needs_a_look: [], watches: [] };
+}
+export async function securitySiteSave(site: { id?: string; name: string; tz?: string; mapId?: string; notes?: string }): Promise<string> {
+  if (tauriHost) return call<string>('security_site_save', { id: site.id ?? '', name: site.name, tz: site.tz ?? '', mapId: site.mapId ?? '', notes: site.notes ?? '' });
+  throw new Error('Sites are saved in the program, not in the browser preview.');
+}
+export async function securityPostureSet(site: string, posture: SecuritySite['posture'], by: string, reason: string, reviewHours: number): Promise<void> {
+  if (tauriHost) return call<void>('security_posture_set', { site, posture, by, reason, reviewHours, offsetMinutes: clockOffset() });
+  throw new Error('Posture is saved in the program, not in the browser preview.');
+}
+export async function securityIncidentOpen(site: string, title: string, priority: number, exercise: boolean, by: string): Promise<string> {
+  if (tauriHost) return call<string>('security_incident_open', { site, title, priority, exercise, by, offsetMinutes: clockOffset() });
+  throw new Error('Incidents are saved in the program, not in the browser preview.');
+}
+export async function securityIncidentEntry(e: { incident: string; kind: 'note' | 'decision' | 'task' | 'status' | 'correction'; arg1?: string; text: string; source: 'observed' | 'reported' | 'imported' | 'corrected'; by: string; supersedes?: string; happenedAt?: string }): Promise<string> {
+  if (tauriHost) return call<string>('security_incident_entry', { incident: e.incident, kind: e.kind, arg1: e.arg1 ?? '', text: e.text, source: e.source, by: e.by, supersedes: e.supersedes ?? '', happenedAt: e.happenedAt ?? '', offsetMinutes: clockOffset() });
+  throw new Error('Incidents are saved in the program, not in the browser preview.');
+}
+export async function securityIncidentList(): Promise<{ unreadable_lines: number; incidents: SecurityIncident[] }> {
+  if (tauriHost) return call('security_incident_list');
+  return { unreadable_lines: 0, incidents: [] };
+}
