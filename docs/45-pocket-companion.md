@@ -119,7 +119,8 @@ Pocket never shows a tab it cannot fill. A hidden tab is not greyed out; it is s
 
 ## Inventory counts from phones
 
-Phones may scan barcodes (Cindrix Scan already does this for the Hub's Inventory) and enter weekly counts. The "Pocket
+Phones may scan barcodes (Cindrix Scan already does this for the Hub's Inventory) and enter weekly counts. **Decided (owner,
+2026-11-08):** counts use the same waiting mailbox as the reports and must be accepted before any count changes. The "Pocket
 writes only logs" rule still holds: a count is sent as a **count sheet** in the outbox, like a report. The Hub lists it,
 the host accepts it, and only then do the Inventory numbers change. A sheet never deletes an item. Not built; the mailbox
 for it will copy `security_pocket.rs`.
