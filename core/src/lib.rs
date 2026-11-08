@@ -35,6 +35,7 @@ pub mod guides;
 pub mod hotspot;
 pub mod ops;
 pub mod security;
+pub mod security_incident;
 pub mod security_schedule;
 pub mod security_store;
 pub mod people;

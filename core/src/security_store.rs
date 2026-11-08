@@ -14,6 +14,7 @@
 
 use crate::fsio;
 use crate::security::{self, Parsed, PostureEntry, Site};
+use crate::security_incident as incident;
 use crate::security_schedule::{self, Watch};
 use std::fs::{self, OpenOptions};
 use std::io::Write;
@@ -73,21 +74,76 @@ pub fn append_posture(user_root: &Path, entry: &PostureEntry) -> Result<(), Stri
     if let Some(problem) = security::check_new_entry(&sites, entry) {
         return Err(problem);
     }
-    let path = posture_path(user_root);
-    // read first so a newer-format or damaged file stops us before we add anything
-    let existing = read(&path)?;
-    security::parse_posture_log(&existing)?;
+    append_line(user_root, &posture_path(user_root), &security::posture_log_header(), &security::posture_line(entry), |t| security::parse_posture_log(t).map(|_| ()))
+}
+
+/// Add one line to the end of a log file. `check` reads what is already there first, so a damaged or newer file
+/// stops the write before anything is added. A half line left by a power cut is ended, kept, and reported by the
+/// reader; it is never removed.
+fn append_line(user_root: &Path, path: &Path, header: &str, line: &str, check: impl Fn(&str) -> Result<(), String>) -> Result<(), String> {
+    let existing = read(path)?;
+    check(&existing)?;
     fs::create_dir_all(dir(user_root)).map_err(|_| "The security folder could not be made.".to_string())?;
-    let mut f = OpenOptions::new().create(true).append(true).open(&path).map_err(|_| "The posture log could not be opened.".to_string())?;
+    let mut f = OpenOptions::new().create(true).append(true).open(path).map_err(|_| "The log could not be opened.".to_string())?;
     let mut out = String::new();
     if existing.is_empty() {
-        out.push_str(&security::posture_log_header());
+        out.push_str(header);
     } else if !existing.ends_with('\n') {
-        // an interrupted write left a half line: end it, so our line starts clean (the half line is kept and reported)
         out.push('\n');
     }
-    out.push_str(&security::posture_line(entry));
-    f.write_all(out.as_bytes()).and_then(|_| f.sync_all()).map_err(|_| "The posture change could not be saved.".to_string())
+    out.push_str(line);
+    f.write_all(out.as_bytes()).and_then(|_| f.sync_all()).map_err(|_| "The change could not be saved.".to_string())
+}
+
+pub fn incident_path(user_root: &Path) -> PathBuf {
+    dir(user_root).join("incident-log.txt")
+}
+/// Where the exact text of a plan is kept when a person activates it during an incident.
+pub fn plan_copy_path(user_root: &Path, incident: &str, entry: &str) -> PathBuf {
+    dir(user_root).join("incident-plans").join(format!("{}-{}.md", incident, entry))
+}
+
+pub fn load_incident_log(user_root: &Path) -> Result<Parsed<incident::Entry>, String> {
+    incident::parse(&read(&incident_path(user_root))?)
+}
+
+/// Add one line to the incident log after checking it against everything already there.
+pub fn append_incident(user_root: &Path, entry: &incident::Entry) -> Result<(), String> {
+    let sites: Vec<String> = load_sites(user_root)?.items.into_iter().map(|s| s.id).collect();
+    let log = load_incident_log(user_root)?.items;
+    if let Some(problem) = incident::check_entry(&log, &sites, entry) {
+        return Err(problem);
+    }
+    append_line(user_root, &incident_path(user_root), &incident::header(), &incident::line(entry), |t| incident::parse(t).map(|_| ()))
+}
+
+/// A person activates an Operational Response plan during an incident. The plan's exact text is saved first
+/// next to the log (never overwritten), then the log line that points at it is added. If the line is refused,
+/// the copy is removed again so nothing is left half done.
+pub fn activate_plan(user_root: &Path, mut entry: incident::Entry, plan_text: &str) -> Result<(), String> {
+    if entry.kind != incident::Kind::Plan {
+        return Err("That is not a plan activation.".to_string());
+    }
+    entry.arg3 = incident::fingerprint(plan_text);
+    let copy = plan_copy_path(user_root, &entry.incident, &entry.id);
+    if !security::valid_id(&entry.incident) || !security::valid_id(&entry.id) {
+        return Err("That entry number is not valid.".to_string());
+    }
+    if copy.exists() {
+        return Err("A saved copy with that number already exists. Nothing was changed.".to_string());
+    }
+    // check before writing anything
+    let sites: Vec<String> = load_sites(user_root)?.items.into_iter().map(|s| s.id).collect();
+    let log = load_incident_log(user_root)?.items;
+    if let Some(problem) = incident::check_entry(&log, &sites, &entry) {
+        return Err(problem);
+    }
+    fsio::write_atomic(&copy, plan_text.as_bytes()).map_err(|_| "The copy of the plan could not be saved. Nothing was changed.".to_string())?;
+    if let Err(e) = append_incident(user_root, &entry) {
+        let _ = fs::remove_file(&copy);
+        return Err(e);
+    }
+    Ok(())
 }
 
 pub fn load_watches(user_root: &Path) -> Result<Parsed<Watch>, String> {
@@ -209,6 +265,72 @@ mod tests {
         let after = fs::read_to_string(watch_path(&r)).unwrap();
         assert!(after.contains(bad) && after.contains("w1"));
         assert_eq!(fs::read_dir(backups(&r)).unwrap().count(), 1);
+        let _ = fs::remove_dir_all(&r);
+    }
+
+    fn inc_entry(id: &str, inc: &str, kind: incident::Kind, arg1: &str, text: &str) -> incident::Entry {
+        let at = "2026-11-08T10:00-05:00".to_string();
+        incident::Entry { id: id.into(), incident: inc.into(), kind, happened_at: at.clone(), recorded_at: at, by: "Dad".into(), source: incident::Source::Observed, arg1: arg1.into(), arg2: String::new(), arg3: String::new(), text: text.into(), supersedes: String::new() }
+    }
+
+    #[test]
+    fn incident_log_grows_and_refuses_bad_lines() {
+        let r = tmp("incident");
+        save_sites(&r, &[site("home")]).unwrap();
+        let mut open = inc_entry("e1", "i1", incident::Kind::Open, "home", "Car at the gate");
+        open.arg2 = "2".into();
+        open.arg3 = "live".into();
+        append_incident(&r, &open).unwrap();
+        let first = fs::read_to_string(incident_path(&r)).unwrap();
+        append_incident(&r, &inc_entry("e2", "i1", incident::Kind::Note, "", "Two men")).unwrap();
+        assert!(fs::read_to_string(incident_path(&r)).unwrap().starts_with(&first));
+        let before = fs::read_to_string(incident_path(&r)).unwrap();
+        // refused: unknown incident, reused number, closing without a reason
+        assert!(append_incident(&r, &inc_entry("e3", "i9", incident::Kind::Note, "", "x")).is_err());
+        assert!(append_incident(&r, &inc_entry("e2", "i1", incident::Kind::Note, "", "x")).is_err());
+        assert!(append_incident(&r, &inc_entry("e3", "i1", incident::Kind::Status, "closed", "")).is_err());
+        assert_eq!(fs::read_to_string(incident_path(&r)).unwrap(), before);
+        assert_eq!(incident::build(&load_incident_log(&r).unwrap().items).len(), 1);
+        let _ = fs::remove_dir_all(&r);
+    }
+
+    #[test]
+    fn plan_activation_keeps_a_copy_of_the_exact_text() {
+        let r = tmp("plan");
+        save_sites(&r, &[site("home")]).unwrap();
+        let mut open = inc_entry("e1", "i1", incident::Kind::Open, "home", "Smoke smell");
+        open.arg2 = "1".into();
+        open.arg3 = "live".into();
+        append_incident(&r, &open).unwrap();
+        let mut plan = inc_entry("e2", "i1", incident::Kind::Plan, "evacuate", "");
+        plan.arg2 = "4".into();
+        // not allowed while the incident is only a draft: no copy is left behind
+        assert!(activate_plan(&r, plan.clone(), "Step 1: go to the car").is_err());
+        assert!(!plan_copy_path(&r, "i1", "e2").exists());
+        append_incident(&r, &inc_entry("e3", "i1", incident::Kind::Status, "active", "confirmed")).unwrap();
+        plan.id = "e4".into();
+        activate_plan(&r, plan.clone(), "Step 1: go to the car").unwrap();
+        let copy = fs::read_to_string(plan_copy_path(&r, "i1", "e4")).unwrap();
+        assert_eq!(copy, "Step 1: go to the car");
+        let log = load_incident_log(&r).unwrap().items;
+        let pinned = &incident::build(&log)[0].plans[0];
+        assert_eq!(pinned.fingerprint, incident::fingerprint(&copy));
+        // the same entry number cannot overwrite the saved copy
+        assert!(activate_plan(&r, plan, "Step 1: something else").is_err());
+        assert_eq!(fs::read_to_string(plan_copy_path(&r, "i1", "e4")).unwrap(), "Step 1: go to the car");
+        let _ = fs::remove_dir_all(&r);
+    }
+
+    #[test]
+    fn damaged_incident_log_blocks_new_lines() {
+        let r = tmp("badinc");
+        save_sites(&r, &[site("home")]).unwrap();
+        fs::write(incident_path(&r), "# format: security-incidents 9\n").unwrap();
+        let mut open = inc_entry("e1", "i1", incident::Kind::Open, "home", "x");
+        open.arg2 = "2".into();
+        open.arg3 = "live".into();
+        assert!(append_incident(&r, &open).is_err());
+        assert_eq!(fs::read_to_string(incident_path(&r)).unwrap(), "# format: security-incidents 9\n");
         let _ = fs::remove_dir_all(&r);
     }
 }
