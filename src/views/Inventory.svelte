@@ -569,7 +569,7 @@
   .cat.on { background: var(--blue-soft); border-color: var(--blue-line); color: var(--blue); font-weight: 600; }
   .main { flex: 1 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
   .chips { gap: 6px; }
-  .chip { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line2); background: var(--panel); font-size: 13px; color: #aab2bb; }
+  .chip { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line2); background: var(--panel); font-size: 13px; color: var(--muted); }
   .chip.sub { border-style: dashed; }
   .where { padding: 8px 12px; border-radius: 10px; background: var(--panel2); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; }
   .wline { text-align: left; background: none; border: 0; padding: 2px 0; color: inherit; }
@@ -578,7 +578,7 @@
   .check { display: flex !important; flex-direction: row !important; align-items: center; gap: 6px !important; font-size: 13px !important; color: inherit !important; }
   .check input { width: 18px; height: 18px; accent-color: var(--blue); }
   .chip.on { background: var(--blue-soft); border-color: var(--blue-line); color: var(--blue); font-weight: 600; }
-  .bar { padding: 8px 10px; border-radius: 10px; background: #241512; border: 1px solid #6b2a20; }
+  .bar { padding: 8px 10px; border-radius: 10px; background: var(--danger-bg); border: 1px solid var(--danger-line); }
   .right { margin-left: auto; }
   .item { display: grid; grid-template-columns: 24px minmax(0, 1fr) 150px 80px 70px 80px; gap: 6px 14px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
   .item input[type='checkbox'], .bar input[type='checkbox'] { width: 20px; height: 20px; accent-color: var(--blue); }

@@ -475,7 +475,7 @@
   .side { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; font-size: 12px; }
   .lic { font-family: var(--mono); }
   .st { padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line2); }
-  .st.ok { color: #7bd88f; border-color: #2f6b3d; }
-  .st.later { color: var(--blue); border-color: #2c5b86; }
-  .st.no { color: #f08a7a; border-color: #8a3b30; }
+  .st.ok { color: var(--ok); border-color: var(--ok-line); }
+  .st.later { color: var(--blue); border-color: var(--blue-line); }
+  .st.no { color: var(--danger-text); border-color: var(--danger-line); }
 </style>

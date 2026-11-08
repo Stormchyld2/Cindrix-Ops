@@ -377,7 +377,7 @@
   .opt.off { opacity: .55; }
   .sp { margin-top: 12px; }
   .fine { font-size: 12px; }
-  .bad { color: #f08a7a; margin: 6px 0 0; }
+  .bad { color: var(--danger-text); margin: 6px 0 0; }
   .lock { padding: 8px 0; }
 
   /* The paper */

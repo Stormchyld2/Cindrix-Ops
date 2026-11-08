@@ -21,6 +21,9 @@
   --warn: #f0b35a;
   --warn-soft: #f0b35a1f;
   --warn-line: #f0b35a66;
+  /* status boxes and chips: one set of colours for good and for bad, so screens do not each invent their own */
+  --ok-bg: #1f2a1d; --ok-line: #34502f; --ok-text: #9fd18f;
+  --danger-bg: #241512; --danger-line: #6b2a20; --danger-text: #ff9a86;
   --brand: #ff9a1f;
   /* one colour per group in the top bar, reused for the stripes on the Dashboard */
   --cat-home: #ece7de; --cat-ops: #e0a030; --cat-intel: #4a90d0; --cat-academy: #c47a5a; --cat-agro: #8fb866;
@@ -56,9 +59,9 @@ h2 { margin: 0; text-transform: uppercase; font-family: var(--display); letter-s
 .input, select.input, textarea.input { padding: 9px 10px; border-radius: 8px; border: 1px solid var(--line2); background: var(--panel2); color: var(--text); font: inherit; }
 .input:focus { outline: 1px solid var(--blue); border-color: var(--blue); }
 textarea.input { width: 100%; min-height: 70px; resize: vertical; }
-.badge { text-transform: uppercase; letter-spacing: .08em; font-family: var(--mono); padding: 2px 8px; border-radius: 999px; border: 1px solid #6b4a1c; background: #2a1f10; color: #f0b35a; font-size: 11px; }
-.ok { color: var(--ok); } .check { color: #f0b35a; } .act { color: var(--danger); }
-.warn { padding: 10px 12px; border-radius: 8px; background: #211b12; border: 1px solid #5a4219; font-size: 13px; color: #d8c9a8; }
+.badge { text-transform: uppercase; letter-spacing: .08em; font-family: var(--mono); padding: 2px 8px; border-radius: 999px; border: 1px solid var(--warn-line); background: var(--warn-soft); color: var(--warn); font-size: 11px; }
+.ok { color: var(--ok); } .check { color: var(--warn); } .act { color: var(--danger); }
+.warn { padding: 10px 12px; border-radius: 8px; background: var(--warn-soft); border: 1px solid var(--warn-line); font-size: 13px; color: var(--text); }
 dialog { background: var(--panel); color: var(--text); border: 1px solid var(--line2); border-top: 2px solid var(--blue); border-radius: 14px; padding: 0; width: min(520px, 94vw); }
 dialog::backdrop { background: #000a; }
 .sr { position: absolute; left: -9999px; }

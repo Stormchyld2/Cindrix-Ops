@@ -312,7 +312,7 @@
   .title span { font-size: 12px; }
   .spacer { flex: 1; }
   .btn.on { border-color: var(--blue); background: var(--blue-soft); color: var(--blue); }
-  .notice { margin: 0; padding: 10px 12px; border-radius: 8px; background: #241512; border: 1px solid #6b2a20; }
+  .notice { margin: 0; padding: 10px 12px; border-radius: 8px; background: var(--danger-bg); border: 1px solid var(--danger-line); }
   .body { display: flex; gap: 14px; align-items: stretch; flex: 1; min-height: 0; }
   .page { flex: 999 1 420px; min-width: 0; min-height: 0; background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 10px; overflow: auto; text-align: center; }
   .spread { display: inline-flex; gap: 6px; align-items: flex-start; justify-content: center; min-width: 100%; perspective: 1400px; }

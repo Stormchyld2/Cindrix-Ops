@@ -265,7 +265,7 @@
   .sortpick { display: inline-flex; gap: 8px; align-items: center; color: var(--muted); font-size: 13px; }
   .sortpick .input { min-width: 160px; }
   .pills { display: flex; flex-wrap: wrap; gap: 8px; }
-  .pill { padding: 7px 14px; border-radius: 999px; border: 1px solid var(--line2); background: transparent; color: #aab2bb; font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: .1em; }
+  .pill { padding: 7px 14px; border-radius: 999px; border: 1px solid var(--line2); background: transparent; color: var(--muted); font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: .1em; }
   .pill.on { border-color: var(--blue); background: var(--blue-soft); color: var(--blue); }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 18px; }
   .book { display: flex; flex-direction: column; gap: 8px; }

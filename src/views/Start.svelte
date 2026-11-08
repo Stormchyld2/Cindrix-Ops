@@ -178,7 +178,7 @@
   .track span { display: block; height: 100%; background: var(--blue); }
   .step { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 14px 0; border-top: 1px solid var(--line); margin-top: 6px; }
   .mark { flex: 0 0 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line2); color: var(--muted); font-size: 13px; }
-  .mark.done { background: #1f2a1d; border-color: #34502f; color: var(--ok); }
+  .mark.done { background: var(--ok-bg); border-color: var(--ok-line); color: var(--ok); }
   .grow { flex: 1 1 260px; }
   .stepcard { margin-top: 12px; }
   .steptop { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }

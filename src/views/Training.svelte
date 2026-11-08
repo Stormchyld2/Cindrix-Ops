@@ -230,7 +230,7 @@
   .title { font-weight: 600; }
   .mark { width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--line2); display: grid; place-items: center; flex: none; font-size: 13px; }
   .mark.passed { background: var(--blue); color: #000; border-color: var(--blue); }
-  .mark.tried { border-color: #d9a441; color: #d9a441; }
+  .mark.tried { border-color: var(--warn); color: var(--warn); }
   .signed { padding: 10px 12px; border: 1px solid var(--blue-line); background: var(--blue-soft); border-radius: 8px; margin: 8px 0; }
   .sign { gap: 8px; margin: 8px 0; }
 </style>

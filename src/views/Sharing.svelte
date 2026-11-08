@@ -149,7 +149,7 @@
 </div>
 
 <style>
-  .on { color: #6fcf8d; }
+  .on { color: var(--ok); }
   .how { margin-top: 14px; }
   .join { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
   .qr { width: 190px; height: 190px; border-radius: 8px; background: #fff; flex: none; }
