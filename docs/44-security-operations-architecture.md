@@ -219,8 +219,21 @@ An earlier draft (`44-security-operations.md`) put Security under Operations wit
 
 - Which editions (Go, Vault, Hub) get which Security features, and whether Hub may write records.
 - Whether sensitive records (site layouts, personal details, incidents) need a separate encrypted area, and whether the existing passphrase lock can cover them.
-- File format: this document says JSON, Markdown and CSV, while existing user files such as `tasks.txt` and `events.txt` are plain text written by `ops.rs`. Settle one convention before writing `security_store.rs`.
+- ~~File format~~ **Decided 2026-11-08 (owner):** plain text in the same style as `tasks.txt` and `events.txt` (tab-separated lines, a `# format: <kind> <n>` first line, `\t` and `\n` escaped), so the records match the rest of the program. JSON or CSV may be used for a particular record type when plain text does not fit. The one requirement is that the data outlives the program: readable in any text editor, no hidden database. This replaces the JSON file layout in section 10 for what is built; section 10's rules (atomic writes, backups, never overwrite damaged files, version-aware readers) still apply.
 - The real ID formats of Family, Inventory, Academy and Maps records, and the adapter names for each.
 - Roles (section 11) need an identity for each person, and today there is only the host, an anonymous guest and trusted family devices. How roles are enforced, and how future multi-device check-ins are authenticated, is undecided.
 - The exact Overwatch interchange format and what the importer may do.
 - Whether watch and patrol schedules may generate reminders. The connecting layer (doc 37) has no notifications yet.
+
+## 16. Camp defaults (owner, 2026-11-08)
+
+Starting values for the Campsite site profile. They are defaults to edit, not rules the program enforces.
+
+- **Four-person group.** One person stays in camp; the other three may leave. The watchbill template should work for four people first.
+- **Pairs leave camp.** People go out in groups of two, so never all of them at once. Coverage should warn when a planned outing would leave fewer than two in camp or send someone out alone.
+- **Perimeter alerts before cameras.** Power is limited (a 300 W solar generator and power banks), so the first camp measures are passive, low-power perimeter alerts. Cameras are an option, not the default; home cameras stay in Overwatch.
+- **Every camp alert starts a verification task**, as in section 9, never a presumption of intrusion.
+
+## 17. Built so far (2026-11-08)
+
+Core logic only, with tests, in `core/`: `security.rs` (sites, posture, overview, instants with offsets), `security_schedule.rs` (watchbill, drafts, coverage, overlaps, short rest, handover "needs a look") and `security_store.rs` (files under `user/security/`, backup before replacing, append-only posture log, damaged files never overwritten). Not built yet: incidents, patrols, plans, training, the Tauri commands, the screens and the guest-refusal test (it needs the commands to exist).

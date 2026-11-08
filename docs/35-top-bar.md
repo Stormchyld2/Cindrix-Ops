@@ -4,13 +4,13 @@ Mockup: `mockups/Navigation.html` (approved by the owner, 2026-10-23). Only the 
 
 ## The top bar
 
-Ten words, each with a small coloured diamond. (Security Operations, approved 2026-11-07 and not built yet, will be an eleventh; see the row below and doc 44.) A word with a menu opens it on a click; a click anywhere else, or Escape, closes it. Under 900 pixels wide the bar folds into a ☰ button.
+Ten words, each with a small coloured diamond. (Security, approved 2026-11-07 and not built yet, will be an eleventh; see the row below and doc 44. The bar says just "Security" so eleven words fit on one line; the screen's own title stays "Security Operations".) A word with a menu opens it on a click; a click anywhere else, or Escape, closes it. Under 900 pixels wide the bar folds into a ☰ button.
 
 | Word | Opens |
 |---|---|
 | Dashboard, Ask, Maps | the screen itself |
 | Operations | Get ready, Plans, Drills, Inventory, Family, Binder, What fails next, Calendar, To-do list, Projects (doc 37) |
-| Security Operations (planned) | Like Dashboard, Ask and Maps, the word opens the screen itself, with six subtabs along its top: Command (opens first), Security, Operations, Planning, Personnel, Records (doc 44). Its "Operations" subtab is inside this screen and is not the Operations menu above. Colour to be chosen when it is built. |
+| Security (planned; screen title "Security Operations") | Like Dashboard, Ask and Maps, the word opens the screen itself, with six subtabs along its top: Command (opens first), Security, Operations, Planning, Personnel, Records (doc 44). Its "Operations" subtab is inside this screen and is not the Operations menu above. Colour to be chosen when it is built. |
 | Intel | Offline browser, Shelf, Archives, Emergency cards |
 | Academy | Courses, Training sign-off |
 | Agro | Crop guides, Planting calendar, Food preservation, Livestock, Soil and water (62 pages, `content/guides`; widened 2026-10-23 from 13 starter pages, now with farm safety, sanitation, flood and contaminated ground, land suitability, breeding, pollinators, wheat-to-flour and a growing-enough-to-eat page), Seed vault |
