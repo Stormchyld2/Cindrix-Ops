@@ -2,13 +2,16 @@
   // Security Operations > Operations: who is out of camp and who is on patrol (docs/46, core/src/security_outing.rs).
   // Lateness only adds a line to "needs a look". It never opens an incident, and only a person closes an outing.
   import { onMount } from 'svelte';
-  import { securityOutingList, securityOutingStart, securityOutingEvent, type OutingList, type OutingRow } from '../lib/api';
+  import { securityOutingList, securityOutingStart, securityOutingEvent, securityRoutesGet, type RouteRow, type OutingList, type OutingRow } from '../lib/api';
 
   let { site = '', me = '' }: { site: string; me: string } = $props();
   let data: OutingList | null = $state(null);
   let note = $state('');
 
-  async function load() { try { data = site ? await securityOutingList(site) : null; } catch (e) { note = String(e); } }
+  let routes: RouteRow[] = $state([]);
+  // Suggest the checkpoints of the route a patrol was started on; if its name matches none, all of the site's.
+  const cpChoices = (o: OutingRow) => routes.find((r) => r.name === o.task)?.checkpoints ?? routes.flatMap((r) => r.checkpoints);
+  async function load() { try { data = site ? await securityOutingList(site) : null; routes = site ? (await securityRoutesGet(site)).routes : []; } catch (e) { note = String(e); } }
   onMount(load);
   $effect(() => { site; load(); });
 
@@ -92,7 +95,8 @@
         {#if acting && acting.id === o.id}
           <div class="form">
             {#if acting.what === 'contact' || acting.what === 'checkpoint'}
-              {#if acting.what === 'checkpoint'}<label>Checkpoint <input bind:value={cpName} placeholder="North gate" /></label>{/if}
+              {#if acting.what === 'checkpoint'}<label>Checkpoint <input bind:value={cpName} placeholder="North gate" list="cps" /></label>
+              <datalist id="cps">{#each cpChoices(o) as c}<option value={c}></option>{/each}</datalist>{/if}
               <label>How are they <select bind:value={status}><option value="ok">All well</option><option value="delayed">Delayed</option><option value="help">Need help</option></select></label>
               <label>Note <input bind:value={text} placeholder="What they said" /></label>
               <label>Next contact (leave empty if none) <input type="datetime-local" bind:value={nextAt} /></label>
@@ -115,7 +119,8 @@
     <div class="form row">
       <label>What <select bind:value={kind}><option value="outing">Outing (a task)</option><option value="patrol">Patrol (a route with checkpoints)</option></select></label>
       <label>Who is going (names, with commas) <input bind:value={people} placeholder="Sam, Dana" /></label>
-      <label>Task or route <input bind:value={task} placeholder="Water run to the creek" /></label>
+      <label>Task or route <input bind:value={task} placeholder="Water run to the creek" list="routes" /></label>
+      <datalist id="routes">{#each routes as r}<option value={r.name}></option>{/each}</datalist>
       <label>Expected back <input type="datetime-local" bind:value={back} /></label>
       <label>First check-in (optional) <input type="datetime-local" bind:value={next} /></label>
       <label>Staying in touch by <select bind:value={method}><option value="radio">Radio</option><option value="runner">Runner</option><option value="none">Not in touch</option></select></label>

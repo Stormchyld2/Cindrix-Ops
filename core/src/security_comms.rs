@@ -44,11 +44,11 @@ pub struct CommsEntry {
     pub closes: String,
 }
 
-fn clean(s: &str, max: usize) -> String {
+pub(crate) fn clean(s: &str, max: usize) -> String {
     s.chars().filter(|c| !c.is_control() || *c == '\n').take(max).collect::<String>().trim().to_string()
 }
 
-fn rows(text: &str, kind: &str, cols: usize) -> Result<(Vec<Vec<String>>, Vec<String>), String> {
+pub(crate) fn rows(text: &str, kind: &str, cols: usize) -> Result<(Vec<Vec<String>>, Vec<String>), String> {
     check_format(text, kind, 1)?;
     let (mut ok, mut bad) = (Vec::new(), Vec::new());
     for l in text.lines().filter(|l| !l.trim().is_empty() && !l.starts_with('#')) {
@@ -58,7 +58,7 @@ fn rows(text: &str, kind: &str, cols: usize) -> Result<(Vec<Vec<String>>, Vec<St
     Ok((ok, bad))
 }
 
-fn read_text(p: &Path) -> Result<String, String> {
+pub(crate) fn read_text(p: &Path) -> Result<String, String> {
     match fs::read_to_string(p) {
         Ok(t) => Ok(t),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(String::new()),
@@ -311,7 +311,7 @@ pub struct Channel {
     pub site: String,
     pub channel: String,
     pub code: String,
-    /// primary, alternate, work or other
+    /// primary, alternate, work, weather or other
     pub role: String,
     pub purpose: String,
 }
@@ -331,7 +331,7 @@ pub fn parse_channels(text: &str) -> Result<Parsed<Channel>, String> {
     let mut p = Parsed::default();
     for l in text.lines().filter(|l| !l.trim().is_empty() && !l.starts_with('#')) {
         let f: Vec<&str> = l.split('\t').collect();
-        let c = (f.len() == 5 && valid_id(f[0]) && !f[1].is_empty() && f[1].len() <= 8 && f[2].len() <= 8 && matches!(f[3], "primary" | "alternate" | "work" | "other")).then(|| Channel { site: f[0].into(), channel: f[1].into(), code: f[2].into(), role: f[3].into(), purpose: unesc(f[4]) });
+        let c = (f.len() == 5 && valid_id(f[0]) && !f[1].is_empty() && f[1].len() <= 8 && f[2].len() <= 8 && matches!(f[3], "primary" | "alternate" | "work" | "weather" | "other")).then(|| Channel { site: f[0].into(), channel: f[1].into(), code: f[2].into(), role: f[3].into(), purpose: unesc(f[4]) });
         match c { Some(c) => p.items.push(c), None => p.rejected.push(l.to_string()) }
     }
     Ok(p)
@@ -344,17 +344,41 @@ pub fn channels_for(all: &[Channel], site: &str) -> (Vec<Channel>, bool) {
     let mine: Vec<Channel> = all.iter().filter(|c| c.site == site).cloned().collect();
     if mine.is_empty() { (default_channels(site), true) } else { (mine, false) }
 }
+/// NOAA Weather Radio stations for the places we have checked: (call sign, MHz, place). The plan (section 11) lists only
+/// West Virginia; Tennessee has to be looked up and tested on a real radio once the place is known, so none is guessed.
+pub const NOAA_STATIONS: &[(&str, &str, &str)] = &[
+    ("WXJ85", "162.550", "Clarksburg, WV"),
+    ("KWN35", "162.475", "Morgantown, WV"),
+    ("KWN36", "162.500", "Greggs Knob, WV"),
+    ("WXM74", "162.450", "Sutton, WV"),
+];
+pub const NOAA_TENNESSEE_NOTE: &str = "Tennessee stations are not listed yet. Look up the station for the place on the NOAA Weather Radio site while you still have internet, then test it on the radio you will really use.";
+
+/// Choose a site's weather station (empty `call_sign` = none). Replaces the site's earlier weather line; every other
+/// channel is kept as it is.
+pub fn set_weather(r: &Path, site: &str, call_sign: &str) -> Result<(), String> {
+    let file = load_channels(r)?;
+    let (mut list, _) = channels_for(&file.items, site);
+    list.retain(|c| c.role != "weather");
+    if !call_sign.is_empty() {
+        let (cs, mhz, place) = NOAA_STATIONS.iter().find(|s| s.0 == call_sign).ok_or("That station is not on the list.")?;
+        list.push(Channel { site: site.into(), channel: mhz.to_string(), code: "off".into(), role: "weather".into(), purpose: format!("NOAA Weather Radio {} {} (listen only)", cs, place) });
+    }
+    save_channels(r, site, &list)
+}
+
 /// Save one site's channels, keeping every other site's. At least one primary, at most one primary and one alternate.
 pub fn save_channels(r: &Path, site: &str, list: &[Channel]) -> Result<(), String> {
     let sites: Vec<String> = store::load_sites(r)?.items.into_iter().map(|s| s.id).collect();
     if !sites.iter().any(|s| s == site) { return Err("That site is not on the list.".to_string()); }
     if list.iter().filter(|c| c.role == "primary").count() != 1 { return Err("Every site needs exactly one primary channel.".to_string()); }
     if list.iter().filter(|c| c.role == "alternate").count() > 1 { return Err("A site can have only one alternate channel.".to_string()); }
+    if list.iter().filter(|c| c.role == "weather").count() > 1 { return Err("A site can have only one weather station.".to_string()); }
     let cur = load_channels(r)?;
     if !cur.rejected.is_empty() { return Err("Some lines in the channel plan could not be read, so nothing was changed.".to_string()); }
     let mut t = String::from("# format: security-channels 1\n# site, channel, privacy code, role, purpose\n");
     for c in cur.items.iter().filter(|c| c.site != site).chain(list.iter()) {
-        if !valid_id(&c.site) || c.channel.trim().is_empty() || c.channel.len() > 8 || c.code.len() > 8 || !matches!(c.role.as_str(), "primary" | "alternate" | "work" | "other") { return Err("A channel line could not be used.".to_string()); }
+        if !valid_id(&c.site) || c.channel.trim().is_empty() || c.channel.len() > 8 || c.code.len() > 8 || !matches!(c.role.as_str(), "primary" | "alternate" | "work" | "weather" | "other") { return Err("A channel line could not be used.".to_string()); }
         t.push_str(&format!("{}\t{}\t{}\t{}\t{}\n", c.site, c.channel.trim(), c.code.trim(), c.role, esc(&clean(&c.purpose, 200))));
     }
     fsio::backup_then_write(&channels_path(r), &store::dir(r).join("backups"), t.as_bytes()).map_err(|_| "The channel plan could not be saved.".to_string())
@@ -414,6 +438,26 @@ mod tests {
     fn log(r: &Path, cat: &str, event: &str, status: &str, closes: &str) -> Result<(), String> {
         let ex = load_comms(r)?.items;
         append_comms(r, &new_entry(&ex, "camp", T, T, "Bravo", "Base", cat, event, "Radio checked", status, closes))
+    }
+
+    #[test]
+    fn a_weather_station_is_picked_per_site_and_replaces_the_last_one() {
+        let r = std::env::temp_dir().join(format!("cindrix-wx-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&r);
+        std::fs::create_dir_all(&r).unwrap();
+        store::save_sites(&r, &[crate::security::Site { id: "camp".into(), name: "Camp".into(), ..Default::default() }]).unwrap();
+        set_weather(&r, "camp", "KWN35").unwrap();
+        set_weather(&r, "camp", "WXM74").unwrap();
+        let f = load_channels(&r).unwrap();
+        let (l, d) = channels_for(&f.items, "camp");
+        assert!(!d);
+        let wx: Vec<_> = l.iter().filter(|c| c.role == "weather").collect();
+        assert_eq!((wx.len(), wx[0].channel.as_str()), (1, "162.450"));
+        assert_eq!(l.iter().filter(|c| c.role == "primary").count(), 1, "the radio channels stay");
+        assert!(set_weather(&r, "camp", "WXX99").is_err());
+        set_weather(&r, "camp", "").unwrap();
+        assert!(channels_for(&load_channels(&r).unwrap().items, "camp").0.iter().all(|c| c.role != "weather"));
+        let _ = std::fs::remove_dir_all(&r);
     }
 
     #[test]

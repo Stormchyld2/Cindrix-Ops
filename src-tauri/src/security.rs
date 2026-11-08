@@ -4,6 +4,7 @@
 
 use cindrix_core::security_api as api;
 use cindrix_core::security_comms::Channel;
+use cindrix_core::security_site::Route;
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -170,3 +171,80 @@ pub fn security_training_record(person: String, skill: u8, result: String, by: S
     api::training_record(&user_root(), &person, skill, &result, &by, &note, offset_minutes)
 }
 
+
+#[tauri::command]
+pub fn security_assets_list(site: String, offset_minutes: i64) -> Result<Value, String> {
+    json(api::assets_list(&user_root(), &site, offset_minutes))
+}
+
+#[tauri::command]
+pub fn security_asset_save(site: String, id: String, kind: String, name: String, every_days: u32, notes: String) -> Result<String, String> {
+    api::asset_save(&user_root(), &site, &id, &kind, &name, every_days, &notes)
+}
+
+#[tauri::command]
+pub fn security_asset_inspect(asset: String, result: String, by: String, note: String, offset_minutes: i64) -> Result<String, String> {
+    api::asset_inspect(&user_root(), &asset, &result, &by, &note, offset_minutes)
+}
+
+#[derive(Deserialize)]
+pub struct RouteDto {
+    name: String,
+    checkpoints: Vec<String>,
+}
+
+#[tauri::command]
+pub fn security_routes_get(site: String) -> Result<Value, String> {
+    json(api::routes_get(&user_root(), &site))
+}
+
+#[tauri::command]
+pub fn security_routes_save(site: String, routes: Vec<RouteDto>) -> Result<(), String> {
+    let list: Vec<Route> = routes.into_iter().map(|r| Route { site: site.clone(), name: r.name, checkpoints: r.checkpoints }).collect();
+    api::routes_save(&user_root(), &site, &list)
+}
+
+#[tauri::command]
+pub fn security_availability_list(offset_minutes: i64) -> Result<Value, String> {
+    json(api::availability_list(&user_root(), offset_minutes))
+}
+
+#[tauri::command]
+pub fn security_availability_set(person: String, status: String, until_local: String, reason: String, by: String, offset_minutes: i64) -> Result<String, String> {
+    api::availability_set(&user_root(), &person, &status, &until_local, &reason, &by, offset_minutes)
+}
+
+#[tauri::command]
+pub fn security_plans_list() -> Result<Value, String> {
+    json(api::plans_list(&user_root()))
+}
+
+#[tauri::command]
+pub fn security_plan_read(id: String, revision: u32) -> Result<Value, String> {
+    json(api::plan_read(&user_root(), &id, revision))
+}
+
+#[tauri::command]
+pub fn security_plan_save(id: String, text: String) -> Result<u32, String> {
+    api::plan_save(&user_root(), &id, &text)
+}
+
+#[tauri::command]
+pub fn security_plan_activate(incident: String, plan: String, revision: u32, by: String, offset_minutes: i64) -> Result<String, String> {
+    api::plan_activate(&user_root(), &incident, &plan, revision, &by, offset_minutes)
+}
+
+#[tauri::command]
+pub fn security_weather_list() -> Result<Value, String> {
+    json(Ok(api::weather_list()))
+}
+
+#[tauri::command]
+pub fn security_weather_set(site: String, call_sign: String) -> Result<(), String> {
+    api::weather_set(&user_root(), &site, &call_sign)
+}
+
+#[tauri::command]
+pub fn security_export_records(offset_minutes: i64) -> Result<String, String> {
+    api::export_records(&user_root(), offset_minutes)
+}

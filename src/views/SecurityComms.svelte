@@ -5,7 +5,8 @@
   import { onMount } from 'svelte';
   import {
     securityOverview, securityChannelsGet, securityChannelsSave, securityCoverageList, securityCoverageAdd,
-    securityTrainingList, securityTrainingRecord, securityCommsList, securityCommsAdd,
+    securityTrainingList, securityTrainingRecord, securityCommsList, securityCommsAdd, securityWeatherList, securityWeatherSet, securityExportRecords,
+    type WeatherList,
     type ChannelRow, type CoverageList, type TrainingList, type CommsList, type CommsEntry,
   } from '../lib/api';
 
@@ -18,6 +19,7 @@
   let channels: ChannelRow[] = $state([]);
   let isDefault = $state(true);
   let cov: CoverageList | null = $state(null);
+  let wx: WeatherList | null = $state(null);
   // ---- personnel ----
   let train: TrainingList | null = $state(null);
   // ---- records ----
@@ -31,6 +33,7 @@
       if (part === 'planning' && site) {
         const c = await securityChannelsGet(site); channels = c.channels; isDefault = c.is_default;
         cov = await securityCoverageList(site);
+        wx = await securityWeatherList();
       }
       if (part === 'personnel') train = await securityTrainingList();
       if (part === 'records') log = await securityCommsList(site);
@@ -43,7 +46,10 @@
   const when = (iso: string) => { const d = new Date(iso); return isNaN(+d) ? iso : d.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); };
 
   // planning: channel plan
-  const ROLE: Record<string, string> = { primary: 'Primary net', alternate: 'Alternate net', work: 'Work net', other: 'Other' };
+  const ROLE: Record<string, string> = { primary: 'Primary net', alternate: 'Alternate net', work: 'Work net', weather: 'Weather (listen only)', other: 'Other' };
+  const weatherNow = $derived(channels.find((c) => c.role === 'weather'));
+  const pickWeather = (e: Event) => act(() => securityWeatherSet(site, (e.currentTarget as HTMLSelectElement).value), 'Saved. Test it on the radio you will really use.');
+  async function exportRecords() { try { const where = await securityExportRecords(); note = `A readable copy was saved in your user folder: ${where}`; } catch (e) { note = String(e); } }
   function addChannel() { channels = [...channels, { channel: '', code: 'off', role: 'other', purpose: '' }]; }
   function dropChannel(i: number) { channels = channels.filter((_, k) => k !== i); }
   const saveChannels = () => act(() => securityChannelsSave(site, channels), 'The channel plan is saved. Write the new channels on the paper card too.');
@@ -97,6 +103,16 @@
   </div>
 
   <div class="panel">
+    <h2>Weather station</h2>
+    <p class="muted">NOAA Weather Radio can be listened to on most hand radios and costs no battery to transmit. Pick the station for this site.</p>
+    <select class="input" onchange={pickWeather} aria-label="Weather station" value={weatherNow ? (wx?.stations.find((x) => x.mhz === weatherNow.channel)?.call_sign ?? '') : ''}>
+      <option value="">None chosen</option>
+      {#each wx?.stations ?? [] as st}<option value={st.call_sign}>{st.place} · {st.call_sign} · {st.mhz} MHz</option>{/each}
+    </select>
+    {#if wx}<p class="small muted">{wx.note}</p>{/if}
+  </div>
+
+  <div class="panel">
     <h2>Radio coverage tests</h2>
     <p class="muted">Rate how well you could hear and be heard, from 0 to 5. Where radio is weak (2 or less), people there need another way to check in. Do not count on the radio working in an emergency.</p>
     <p class="small muted">{SCALE.join(' · ')}</p>
@@ -140,6 +156,11 @@
     </div>
   </div>
 {:else}
+  <div class="panel">
+    <h2>Copy of the records</h2>
+    <p class="muted">Writes incidents, outings and patrols, the communications log, coverage tests, inspections and availability into one readable text file you can print or hand over. The logs themselves are not changed.</p>
+    <button class="btn" onclick={exportRecords}>Make a readable copy</button>
+  </div>
   <div class="panel">
     <h2>Communications log</h2>
     <p class="muted">Write down significant calls and problems, not every ordinary conversation. An entry marked open stays under "Needs a look" until someone closes it with a line saying what happened.</p>

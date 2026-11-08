@@ -17,6 +17,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 /// `share::GUEST_COMMANDS`. `core/tests/security_rules.rs` checks that, and that this list matches `src-tauri/src/security.rs`.
 use crate::security_comms as comms;
 use crate::security_outing as outing;
+use crate::security_site as siterec;
+use crate::security_plans as plans;
 
 pub const SECURITY_COMMANDS: &[&str] = &[
     "security_overview",
@@ -44,6 +46,20 @@ pub const SECURITY_COMMANDS: &[&str] = &[
     "security_outing_list",
     "security_outing_start",
     "security_outing_event",
+    "security_assets_list",
+    "security_asset_save",
+    "security_asset_inspect",
+    "security_routes_get",
+    "security_routes_save",
+    "security_availability_list",
+    "security_availability_set",
+    "security_plans_list",
+    "security_plan_read",
+    "security_plan_save",
+    "security_plan_activate",
+    "security_weather_list",
+    "security_weather_set",
+    "security_export_records",
     "security_pocket_list",
     "security_pocket_sheet",
     "security_pocket_accept",
@@ -80,7 +96,10 @@ pub fn overview_at(user_root: &Path, off: i64, now: i64) -> Result<String, Strin
     let cov_log = comms::load_coverage(user_root)?;
     let train_log = comms::load_training(user_root)?;
     let channel_file = comms::load_channels(user_root)?;
-    let recs = Recs { outings: outings.clone(), comms: comms_log.items.clone(), coverage: cov_log.items.clone(), training: train_log.items.clone() };
+    let asset_file = siterec::load_assets(user_root)?;
+    let insp_log = siterec::load_inspections(user_root)?;
+    let avail_log = siterec::load_availability(user_root)?;
+    let recs = Recs { outings: outings.clone(), comms: comms_log.items.clone(), coverage: cov_log.items.clone(), training: train_log.items.clone(), assets: asset_file.items.clone(), inspections: insp_log.items.clone(), avail: avail_log.items.clone() };
     let built = incident::build(&incidents.items);
     let ov = security::overview(&sites.items, &log.items, now);
     let mut rows = Vec::new();
@@ -102,7 +121,7 @@ pub fn overview_at(user_root: &Path, off: i64, now: i64) -> Result<String, Strin
         ));
     }
     let sites_on_watch = sites.items.iter().filter(|s| !sched::on_watch_now(&watches.items, &s.id, now).is_empty()).count();
-    let rejected = sites.rejected.len() + log.rejected.len() + watches.rejected.len() + incidents.rejected.len() + outing_log.rejected.len() + comms_log.rejected.len() + cov_log.rejected.len() + train_log.rejected.len() + channel_file.rejected.len();
+    let rejected = sites.rejected.len() + log.rejected.len() + watches.rejected.len() + incidents.rejected.len() + outing_log.rejected.len() + comms_log.rejected.len() + cov_log.rejected.len() + train_log.rejected.len() + channel_file.rejected.len() + asset_file.rejected.len() + insp_log.rejected.len() + avail_log.rejected.len();
     if rejected > 0 {
         look_total += 1;
     }
@@ -122,6 +141,9 @@ struct Recs {
     comms: Vec<comms::CommsEntry>,
     coverage: Vec<comms::Coverage>,
     training: Vec<comms::Training>,
+    assets: Vec<siterec::Asset>,
+    inspections: Vec<siterec::Inspection>,
+    avail: Vec<siterec::Availability>,
 }
 
 /// The plain-words "needs a look" lines for one site. One place makes them, so the Dashboard count and the
@@ -148,6 +170,8 @@ fn site_looks(site: &str, st: &security::SiteStatus, cur: Option<&PostureEntry>,
     }
     out.extend(comms::looks(site, &recs.comms, &recs.coverage));
     out.extend(comms::training_looks(site, watches, &recs.training));
+    out.extend(siterec::asset_looks(site, &recs.assets, &recs.inspections, now));
+    out.extend(siterec::availability_looks(site, watches, &recs.avail, now));
     let from = (now + off).div_euclid(1440) * 1440 - off;
     let owned: Vec<sched::Watch> = mine.iter().map(|w| (*w).clone()).collect();
     let segs = sched::coverage(&owned, site, from, from + 1440);
@@ -657,6 +681,100 @@ pub fn pocket_set_aside(user_root: &Path, name: &str) -> Result<(), String> {
     crate::security_pocket::set_aside(user_root, name)
 }
 
+// ---------- the Security tab, routes, availability, plans, weather, export ----------
+
+/// Zones, barriers and alarms at a site with when each was last looked at and whether it is due.
+pub fn assets_list(user_root: &Path, site: &str, offset_minutes: i64) -> Result<String, String> {
+    let off = offset_ok(offset_minutes)?;
+    assets_list_at(user_root, site, off, now_minutes())
+}
+pub fn assets_list_at(user_root: &Path, site: &str, off: i64, now: i64) -> Result<String, String> {
+    known_site(user_root, site)?;
+    let file = siterec::load_assets(user_root)?;
+    let log = siterec::load_inspections(user_root)?;
+    let rows: Vec<String> = file.items.iter().filter(|a| a.site == site).map(|a| {
+        let last = siterec::last_inspection(&log.items, &a.id);
+        let t = last.and_then(|l| security::parse_instant(&l.at));
+        let due = if last.map(|l| l.result == "needs-work").unwrap_or(false) { "needs-work" }
+            else if a.every_days == 0 { "none" }
+            else { match t { None => "never", Some(t) if now > t + a.every_days as i64 * 1440 => "overdue", _ => "ok" } };
+        format!("{{\"id\":{},\"kind\":{},\"name\":{},\"every_days\":{},\"notes\":{},\"last_at\":{},\"last_by\":{},\"last_result\":{},\"last_note\":{},\"due\":{}}}",
+            q(&a.id), q(&a.kind), q(&a.name), a.every_days, q(&a.notes), q(last.map(|l| l.at.as_str()).unwrap_or("")), q(last.map(|l| l.by.as_str()).unwrap_or("")), q(last.map(|l| l.result.as_str()).unwrap_or("")), q(last.map(|l| l.note.as_str()).unwrap_or("")), q(due))
+    }).collect();
+    let kinds: Vec<String> = siterec::KINDS.iter().map(|k| format!("{{\"id\":{},\"label\":{}}}", q(k.0), q(k.1))).collect();
+    let _ = off;
+    Ok(format!("{{\"assets\":[{}],\"kinds\":[{}],\"unreadable_lines\":{}}}", rows.join(","), kinds.join(","), file.rejected.len() + log.rejected.len()))
+}
+pub fn asset_save(user_root: &Path, site: &str, id: &str, kind: &str, name: &str, every_days: u32, notes: &str) -> Result<String, String> {
+    siterec::save_asset(user_root, id, site, kind, name, every_days, notes)
+}
+pub fn asset_inspect(user_root: &Path, asset: &str, result: &str, by: &str, note: &str, offset_minutes: i64) -> Result<String, String> {
+    let off = offset_ok(offset_minutes)?;
+    siterec::inspect(user_root, asset, result, by, note, off, now_minutes())
+}
+
+pub fn routes_get(user_root: &Path, site: &str) -> Result<String, String> {
+    known_site(user_root, site)?;
+    let f = siterec::load_routes(user_root)?;
+    let rows: Vec<String> = f.items.iter().filter(|r| r.site == site).map(|r| format!("{{\"name\":{},\"checkpoints\":[{}]}}", q(&r.name), r.checkpoints.iter().map(|c| q(c)).collect::<Vec<_>>().join(","))).collect();
+    Ok(format!("{{\"routes\":[{}],\"unreadable_lines\":{}}}", rows.join(","), f.rejected.len()))
+}
+pub fn routes_save(user_root: &Path, site: &str, list: &[siterec::Route]) -> Result<(), String> {
+    let fixed: Vec<siterec::Route> = list.iter().map(|r| siterec::Route { site: site.to_string(), ..r.clone() }).collect();
+    siterec::save_routes(user_root, site, &fixed)
+}
+
+/// Who is unavailable now, and the newest few availability lines.
+pub fn availability_list(user_root: &Path, offset_minutes: i64) -> Result<String, String> {
+    let off = offset_ok(offset_minutes)?;
+    availability_list_at(user_root, off, now_minutes())
+}
+pub fn availability_list_at(user_root: &Path, off: i64, now: i64) -> Result<String, String> {
+    let _ = off;
+    let log = siterec::load_availability(user_root)?;
+    let row = |a: &siterec::Availability| format!("{{\"id\":{},\"person\":{},\"status\":{},\"from\":{},\"until\":{},\"reason\":{},\"by\":{}}}", q(&a.id), q(&a.person), q(&a.status), q(&a.from), q(&a.until), q(&a.reason), q(&a.by));
+    let now_rows: Vec<String> = siterec::unavailable_now(&log.items, now).iter().map(|a| row(a)).collect();
+    let recent: Vec<String> = log.items.iter().rev().take(40).map(|a| row(a)).collect();
+    Ok(format!("{{\"unavailable\":[{}],\"recent\":[{}],\"unreadable_lines\":{}}}", now_rows.join(","), recent.join(","), log.rejected.len()))
+}
+/// `until_local` is a time typed on the screen, or empty for "until I say otherwise".
+pub fn availability_set(user_root: &Path, person: &str, status: &str, until_local: &str, reason: &str, by: &str, offset_minutes: i64) -> Result<String, String> {
+    let off = offset_ok(offset_minutes)?;
+    let until = if until_local.trim().is_empty() { 0 } else { security::parse_instant(&local_instant(until_local, off)?).ok_or("The end time could not be read.")? };
+    siterec::set_availability(user_root, person, status, until, reason, by, off, now_minutes())
+}
+
+pub fn plans_list(user_root: &Path) -> Result<String, String> {
+    let rows: Vec<String> = plans::list(user_root).iter().map(|p| format!("{{\"id\":{},\"title\":{},\"current\":{},\"revisions\":[{}]}}", q(&p.id), q(&p.title), p.current, p.revisions.iter().map(|n| n.to_string()).collect::<Vec<_>>().join(","))).collect();
+    Ok(format!("{{\"plans\":[{}]}}", rows.join(",")))
+}
+pub fn plan_read(user_root: &Path, id: &str, revision: u32) -> Result<String, String> {
+    let n = if revision == 0 { *plans::revisions(user_root, id).last().ok_or("That plan could not be found.")? } else { revision };
+    Ok(format!("{{\"id\":{},\"revision\":{},\"text\":{}}}", q(id), n, q(&plans::read_revision(user_root, id, n)?)))
+}
+pub fn plan_save(user_root: &Path, id: &str, text: &str) -> Result<u32, String> {
+    plans::save(user_root, id, text)
+}
+pub fn plan_activate(user_root: &Path, inc: &str, plan: &str, revision: u32, by: &str, offset_minutes: i64) -> Result<String, String> {
+    let off = offset_ok(offset_minutes)?;
+    plans::activate(user_root, inc, plan, revision, by, off, now_minutes())
+}
+
+pub fn weather_list() -> String {
+    let rows: Vec<String> = comms::NOAA_STATIONS.iter().map(|s| format!("{{\"call_sign\":{},\"mhz\":{},\"place\":{}}}", q(s.0), q(s.1), q(s.2))).collect();
+    format!("{{\"stations\":[{}],\"note\":{}}}", rows.join(","), q(comms::NOAA_TENNESSEE_NOTE))
+}
+pub fn weather_set(user_root: &Path, site: &str, call_sign: &str) -> Result<(), String> {
+    comms::set_weather(user_root, site, call_sign)
+}
+
+/// Write the readable copy of the records. Answers with where it went (inside the user folder).
+pub fn export_records(user_root: &Path, offset_minutes: i64) -> Result<String, String> {
+    let off = offset_ok(offset_minutes)?;
+    let p = crate::security_export::export(user_root, off, now_minutes())?;
+    Ok(p.file_name().map(|n| format!("exports/{}", n.to_string_lossy())).unwrap_or_default())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -981,5 +1099,37 @@ mod tests {
         assert!(l.contains("\"person\":\"Dana\"") && l.contains("\"qualified\":true") && l.contains("\"qualified\":false"));
         assert!(l.contains("Turn the radio on and off") && l.contains("null"));
         let _ = fs::remove_dir_all(&r);
+    }
+
+    #[test]
+    fn security_tab_looks_reach_the_overview_and_availability_and_plans_work_through_the_api() {
+        let r = std::env::temp_dir().join(format!("cindrix-api2-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&r);
+        std::fs::create_dir_all(&r).unwrap();
+        site_save(&r, "", "Camp", "", "", "").unwrap();
+        let sid = store::load_sites(&r).unwrap().items[0].id.clone();
+        let now = 29_000_000;
+        let a = asset_save(&r, &sid, "", "alarm", "Trip line", 7, "").unwrap();
+        let ov = overview_at(&r, 0, now).unwrap();
+        assert!(ov.contains("never been inspected"), "{}", ov);
+        let l = assets_list_at(&r, &sid, 0, now).unwrap();
+        assert!(l.contains("\"due\":\"never\""));
+        asset_inspect(&r, &a, "needs-work", "Sam", "Wire slack", 0).unwrap();
+        assert!(assets_list_at(&r, &sid, 0, now_minutes()).unwrap().contains("\"due\":\"needs-work\""));
+        assert!(routes_get(&r, "nowhere").is_err());
+        routes_save(&r, &sid, &[siterec::Route { site: String::new(), name: "Loop".into(), checkpoints: vec!["Gate".into(), "Creek".into()] }]).unwrap();
+        assert!(routes_get(&r, &sid).unwrap().contains("\"Creek\""));
+        availability_set(&r, "Kim", "unavailable", "", "Sick", "Dana", 0).unwrap();
+        assert!(availability_list_at(&r, 0, now_minutes()).unwrap().contains("\"unavailable\":[{"));
+        assert!(availability_set(&r, "Kim", "unavailable", "garbage", "Sick", "Dana", 0).is_err());
+        assert_eq!(plan_save(&r, "evac", "# Evacuate\nGo.\n").unwrap(), 1);
+        assert!(plans_list(&r).unwrap().contains("Evacuate"));
+        assert!(plan_read(&r, "evac", 0).unwrap().contains("\"revision\":1"));
+        assert!(weather_list().contains("KWN35"));
+        weather_set(&r, &sid, "WXJ85").unwrap();
+        assert!(channels_get(&r, &sid).unwrap().contains("\"weather\""));
+        let f = export_records(&r, 0).unwrap();
+        assert!(f.starts_with("exports/security-records-"));
+        let _ = std::fs::remove_dir_all(&r);
     }
 }
