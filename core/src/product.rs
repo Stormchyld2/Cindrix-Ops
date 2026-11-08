@@ -34,8 +34,7 @@ pub struct Features {
     pub serve_archives: bool,
     /// Music player (the owner's own music in `music/`, not counted in the size budget).
     pub music: bool,
-    /// Security Operations (docs/44). Off for the Hub until the owner decides what a phone host may do
-    /// (doc 44 section 15); switching it on there is this one line.
+    /// Security Operations (docs/44). On in every edition (owner, 2026-11-08), including the Hub on a phone.
     pub security: bool,
 }
 
@@ -100,7 +99,7 @@ impl Product {
                 web_saver: true,
                 serve_archives: true,
                 music: true,
-                security: false,
+                security: true,
             },
         }
     }
@@ -180,8 +179,9 @@ mod tests {
     }
 
     #[test]
-    fn security_is_on_for_go_and_vault_and_off_for_the_hub_until_the_owner_decides() {
-        assert!(Product::Go.features().security && Product::Vault.features().security);
-        assert!(!Product::Hub.features().security);
+    fn security_is_on_in_every_edition() {
+        for p in [Product::Go, Product::Vault, Product::Hub] {
+            assert!(p.features().security);
+        }
     }
 }

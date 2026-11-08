@@ -10,7 +10,7 @@ Ten words, each with a small coloured diamond. (Security, approved 2026-11-07, i
 |---|---|
 | Dashboard, Ask, Maps | the screen itself |
 | Operations | Get ready, Plans, Drills, Inventory, Family, Binder, What fails next, Calendar, To-do list, Projects (doc 37) |
-| Security (screen title "Security Operations") | Like Dashboard, Ask and Maps, the word opens the screen itself, with six subtabs along its top: Command (opens first), Security, Operations, Planning, Personnel, Records (doc 44). Its "Operations" subtab is inside this screen and is not the Operations menu above. Colour `--cat-security` (olive, `#b7bb5a`). Host-only: the word is hidden from guests on the share server. Go and Vault show it; the Hub does not until the owner decides (doc 44 section 15; one line in `product.rs`). |
+| Security (screen title "Security Operations") | Like Dashboard, Ask and Maps, the word opens the screen itself, with six subtabs along its top: Command (opens first), Security, Operations, Planning, Personnel, Records (doc 44). Its "Operations" subtab is inside this screen and is not the Operations menu above. Colour `--cat-security` (olive, `#b7bb5a`). Host-only: the word is hidden from guests on the share server. Every edition shows it, Hub included (owner, 2026-11-08). |
 | Intel | Offline browser, Shelf, Archives, Emergency cards |
 | Academy | Courses, Training sign-off |
 | Agro | Crop guides, Planting calendar, Food preservation, Livestock, Soil and water (62 pages, `content/guides`; widened 2026-10-23 from 13 starter pages, now with farm safety, sanitation, flood and contaminated ground, land suitability, breeding, pollinators, wheat-to-flour and a growing-enough-to-eat page), Seed vault |
