@@ -1,15 +1,16 @@
 <script lang="ts">
-  // Security Operations: one screen with six subtabs (docs/44). Only Command is built so far; the others say so.
+  // Security Operations: one screen with six subtabs (docs/44). Command, Operations, Planning, Personnel and Records are partly built; Security is not.
   import SecurityCommand from './SecurityCommand.svelte';
   import SecurityOperations from './SecurityOperations.svelte';
+  import SecurityComms from './SecurityComms.svelte';
 
   const tabs = [
     { id: 'Command', c: 'var(--cat-security)', built: true, about: 'Where every site stands, who is on watch, and what needs a look.' },
     { id: 'Security', c: 'var(--cat-intel)', built: false, about: 'Zones, barriers, alarms and inspections for each site.' },
     { id: 'Operations', c: 'var(--cat-ops)', built: true, about: 'The watchbill, patrols and the day\'s tasks.' },
-    { id: 'Planning', c: 'var(--cat-academy)', built: false, about: 'Defensive and Operational Response plans, with their revisions.' },
-    { id: 'Personnel', c: 'var(--cat-morale)', built: false, about: 'Who is available, qualifications and rest.' },
-    { id: 'Records', c: 'var(--cat-system)', built: false, about: 'Incident history, logs, reviews and exports.' },
+    { id: 'Planning', c: 'var(--cat-academy)', built: true, about: 'The radio channel plan and coverage tests. Defensive and Operational Response plans are not built yet.' },
+    { id: 'Personnel', c: 'var(--cat-morale)', built: true, about: 'The twelve radio skills for each person. Availability and rest are not built yet.' },
+    { id: 'Records', c: 'var(--cat-system)', built: true, about: 'The communications log. Incident history, reviews and exports are not built yet.' },
   ] as const;
   let tab: (typeof tabs)[number]['id'] = $state('Command');
   const current = $derived(tabs.find((t) => t.id === tab)!);
@@ -41,8 +42,12 @@
   <SecurityCommand bind:site bind:me />
 {:else if tab === 'Operations'}
   <SecurityOperations bind:site {me} />
-{:else if current.built}
-  <SecurityCommand bind:site bind:me />
+{:else if tab === 'Planning'}
+  <SecurityComms part="planning" bind:site {me} />
+{:else if tab === 'Personnel'}
+  <SecurityComms part="personnel" bind:site {me} />
+{:else if tab === 'Records'}
+  <SecurityComms part="records" bind:site {me} />
 {:else}
   <div class="panel soon">
     <h2>{current.id}</h2>

@@ -38,6 +38,7 @@ pub mod hotspot;
 pub mod ops;
 pub mod security;
 pub mod security_api;
+pub mod security_comms;
 pub mod security_incident;
 pub mod security_outing;
 pub mod security_pocket;

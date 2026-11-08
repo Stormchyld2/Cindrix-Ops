@@ -1539,7 +1539,7 @@ export type SecuritySite = {
   posture: 'normal' | 'elevated' | 'emergency' | 'unknown';
   check_due: boolean; never_assessed: boolean;
   set_by: string; reason: string; at: string; review_by: string;
-  on_watch: string[]; live_incidents: number; out_now: number; last_patrol: string; looks: string[];
+  on_watch: string[]; live_incidents: number; out_now: number; last_patrol: string; primary_channel: string; looks: string[];
 };
 export type SecurityOverview = {
   now: string; headline: SecuritySite['posture']; unknown: number; check_due: number;
@@ -1628,6 +1628,46 @@ export async function securityWatchDiscard(id: string): Promise<void> {
 export async function securityWatchScheduleAll(site: string): Promise<number> {
   if (tauriHost) return call<number>('security_watch_schedule_all', { site });
   throw new Error('The watchbill is saved in the program, not in the browser preview.');
+}
+
+// ---------- communications: log, coverage, channels, training (docs/46) ----------
+export type CommsEntry = { id: string; site: string; at: string; author: string; station: string; category: string; event: string; action: string; status: 'open' | 'complete' | 'closed'; closes: string };
+export type CommsList = { entries: CommsEntry[]; open: string[]; categories: { id: string; label: string }[]; unreadable_lines: number };
+export async function securityCommsList(site: string): Promise<CommsList> {
+  if (tauriHost) return call<CommsList>('security_comms_list', { site });
+  return { entries: [], open: [], categories: [], unreadable_lines: 0 };
+}
+export async function securityCommsAdd(site: string, category: string, station: string, event: string, action: string, status: 'open' | 'complete' | 'closed', closes: string, author: string): Promise<string> {
+  if (tauriHost) return call<string>('security_comms_add', { site, category, station, event, action, status, closes, author, offsetMinutes: clockOffset() });
+  throw new Error('The log is saved in the program, not in the browser preview.');
+}
+export type CoveragePlace = { place: string; p_in: number | null; p_out: number | null; a_in: number | null; a_out: number | null; at: string; by: string; note: string };
+export type CoverageList = { places: CoveragePlace[]; tests_on_file: number; unreadable_lines: number };
+export async function securityCoverageList(site: string): Promise<CoverageList> {
+  if (tauriHost) return call<CoverageList>('security_coverage_list', { site });
+  return { places: [], tests_on_file: 0, unreadable_lines: 0 };
+}
+export async function securityCoverageAdd(site: string, place: string, pIn: string, pOut: string, aIn: string, aOut: string, by: string, note: string): Promise<string> {
+  if (tauriHost) return call<string>('security_coverage_add', { site, place, pIn, pOut, aIn, aOut, by, note, offsetMinutes: clockOffset() });
+  throw new Error('Tests are saved in the program, not in the browser preview.');
+}
+export type ChannelRow = { channel: string; code: string; role: 'primary' | 'alternate' | 'work' | 'other'; purpose: string };
+export async function securityChannelsGet(site: string): Promise<{ channels: ChannelRow[]; is_default: boolean }> {
+  if (tauriHost) return call('security_channels_get', { site });
+  return { channels: [], is_default: true };
+}
+export async function securityChannelsSave(site: string, channels: ChannelRow[]): Promise<void> {
+  if (tauriHost) return call<void>('security_channels_save', { site, channels });
+  throw new Error('The channel plan is saved in the program, not in the browser preview.');
+}
+export type TrainingList = { skills: string[]; people: { person: string; skills: (boolean | null)[]; qualified: boolean }[]; unreadable_lines: number };
+export async function securityTrainingList(): Promise<TrainingList> {
+  if (tauriHost) return call<TrainingList>('security_training_list');
+  return { skills: [], people: [], unreadable_lines: 0 };
+}
+export async function securityTrainingRecord(person: string, skill: number, result: 'pass' | 'practice', by: string, note: string): Promise<string> {
+  if (tauriHost) return call<string>('security_training_record', { person, skill, result, by, note, offsetMinutes: clockOffset() });
+  throw new Error('Training is saved in the program, not in the browser preview.');
 }
 
 export type OutingRow = {

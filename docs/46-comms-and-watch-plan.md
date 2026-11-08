@@ -18,12 +18,12 @@ organizer. The plan's own rule applies: the radios must work without it.
 | 6 / 12 Patrols and checkpoints | Operations | **Built** as a patrol: the same record with named checkpoints and the time the last patrol came back. Patrol routes planned in advance and patrol schedules are not built |
 | 8 Red, Amber, Green, emergency message order | Cards | Card **Emergency radio call** built |
 | 9 Missed check-in, lost radio contact, base radio failure | Cards | Cards **Missed check-in or radio contact lost** and **Base radio failed or lost contact with a patrol** built |
-| 3 Channel plan, channel change | Planning, Cards | Card **Moving to the back-up radio channel** built. The per-site channel card is not |
+| 3 Channel plan, channel change | Planning, Cards | **Built:** the per-site channel plan (starts as the plan's CH 01 / 04 / 05, privacy codes off; exactly one primary; one alternate at most) and the primary channel on Command. Card **Moving to the back-up radio channel** built |
 | 10 Power and battery | Planning, Inventory | Not built. Radios and batteries should be Inventory items; the test of back-up charging is a step in the plan |
 | 11 NOAA stations | Planning | Not built. West Virginia stations are in the plan text; Tennessee is to be set once the place is known |
-| 12 Coverage survey and 0 to 5 scale | Planning (site map) | Not built. Weak places should be marked on the site map and change the check-in method |
-| 13 Communications log | Records | Not built. The plan's eight categories map onto the incident log's entry kinds plus a few new ones |
-| 15 Operator training | Personnel | Not built. Twelve skills per person, recorded with a date |
+| 12 Coverage survey and 0 to 5 scale | Planning | **Built:** tests in both directions on both channels, newest result per place, a place rated 2 or less says so under "Needs a look" and that people there need another way to check in. Marking weak places on the site map is not built |
+| 13 Communications log | Records | **Built:** the eight categories, open entries stay under "Needs a look" (missed check-in, equipment failure, emergency traffic, coverage problem) until a later line closes them |
+| 15 Operator training | Personnel | **Built:** the twelve skills per person, signed off by someone else, newest line counts (a skill can go back to "needs practice"). A person who is tracked but has not passed all twelve and is on a scheduled watch shows under "Needs a look". People with no record are not flagged, because the program cannot tell untrained from not written down |
 | 14 Daily readiness, 12 survey, 15 practice | Plans | Built as the plan **Communications and watch routine** (repeating steps) |
 
 ## Rules from the plan that the software must keep
@@ -46,3 +46,11 @@ The outing and patrol log (`user/security/outing-log.txt`, append-only like the 
 that cannot be read is never added to, only a person ends an outing, and nothing the log does touches the incident log (a
 test proves it). Command's "Needs a look" and the Dashboard count come from the same lines as the Out of camp list. Not
 built: phone-sent check-ins (doc 45), route planning, and a comms log.
+
+## Built in the third round (2026-11-08)
+
+`core/src/security_comms.rs`: the communications log (`comms-log.txt`), coverage tests (`coverage-log.txt`), operator training
+(`radio-training.txt`), all append-only and never added to when unreadable, and the channel plan (`channels.txt`, rewritten with a
+backup first). Screens: Planning (channels and coverage), Personnel (the skills grid), Records (the log). Not built: equipment
+(radios and batteries as Inventory items with failure history), the NOAA station list, and the readiness checklist as a screen
+(it is the plan "Communications and watch routine").

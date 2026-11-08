@@ -15,6 +15,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 /// The names of the Tauri commands that reach this module. All are host-only: none may ever be in
 /// `share::GUEST_COMMANDS`. `core/tests/security_rules.rs` checks that, and that this list matches `src-tauri/src/security.rs`.
+use crate::security_comms as comms;
 use crate::security_outing as outing;
 
 pub const SECURITY_COMMANDS: &[&str] = &[
@@ -32,6 +33,14 @@ pub const SECURITY_COMMANDS: &[&str] = &[
     "security_watch_ack",
     "security_watch_discard",
     "security_watch_schedule_all",
+    "security_comms_list",
+    "security_comms_add",
+    "security_coverage_list",
+    "security_coverage_add",
+    "security_channels_get",
+    "security_channels_save",
+    "security_training_list",
+    "security_training_record",
     "security_outing_list",
     "security_outing_start",
     "security_outing_event",
@@ -67,6 +76,11 @@ pub fn overview_at(user_root: &Path, off: i64, now: i64) -> Result<String, Strin
     let incidents = store::load_incident_log(user_root)?;
     let outing_log = outing::load(user_root)?;
     let outings = outing::build(&outing_log.items);
+    let comms_log = comms::load_comms(user_root)?;
+    let cov_log = comms::load_coverage(user_root)?;
+    let train_log = comms::load_training(user_root)?;
+    let channel_file = comms::load_channels(user_root)?;
+    let recs = Recs { outings: outings.clone(), comms: comms_log.items.clone(), coverage: cov_log.items.clone(), training: train_log.items.clone() };
     let built = incident::build(&incidents.items);
     let ov = security::overview(&sites.items, &log.items, now);
     let mut rows = Vec::new();
@@ -75,19 +89,20 @@ pub fn overview_at(user_root: &Path, off: i64, now: i64) -> Result<String, Strin
         let cur = security::current_entry(&log.items, &s.id);
         let on: Vec<String> = sched::on_watch_now(&watches.items, &s.id, now).iter().map(|w| q(&w.person)).collect();
         let live = incident::live_open(&built).iter().filter(|i| i.site == s.id).count();
-        let looks = site_looks(&s.id, st, cur, &watches.items, &outings, off, now);
+        let looks = site_looks(&s.id, st, cur, &watches.items, &recs, off, now);
         let out_now = outings.iter().filter(|o| o.site == s.id && o.state == outing::State::Out).count();
+        let primary = comms::channels_for(&channel_file.items, &s.id).0.into_iter().find(|c| c.role == "primary").map(|c| format!("CH {}", c.channel)).unwrap_or_default();
         let last_patrol = outing::last_patrol(&outings, &s.id).map(|m| format_instant(m, off)).unwrap_or_default();
         look_total += looks.len();
         rows.push(format!(
-            "{{\"id\":{},\"name\":{},\"tz\":{},\"posture\":{},\"check_due\":{},\"never_assessed\":{},\"set_by\":{},\"reason\":{},\"at\":{},\"review_by\":{},\"on_watch\":[{}],\"live_incidents\":{},\"out_now\":{},\"last_patrol\":{},\"looks\":[{}]}}",
+            "{{\"id\":{},\"name\":{},\"tz\":{},\"posture\":{},\"check_due\":{},\"never_assessed\":{},\"set_by\":{},\"reason\":{},\"at\":{},\"review_by\":{},\"on_watch\":[{}],\"live_incidents\":{},\"out_now\":{},\"last_patrol\":{},\"primary_channel\":{},\"looks\":[{}]}}",
             q(&s.id), q(&s.name), q(&s.tz), q(st.posture.word()), st.check_due, st.never_assessed,
             q(cur.map(|e| e.set_by.as_str()).unwrap_or("")), q(cur.map(|e| e.reason.as_str()).unwrap_or("")), q(cur.map(|e| e.at.as_str()).unwrap_or("")), q(cur.map(|e| e.review_by.as_str()).unwrap_or("")),
-            on.join(","), live, out_now, q(&last_patrol), looks.iter().map(|l| q(l)).collect::<Vec<_>>().join(",")
+            on.join(","), live, out_now, q(&last_patrol), q(&primary), looks.iter().map(|l| q(l)).collect::<Vec<_>>().join(",")
         ));
     }
     let sites_on_watch = sites.items.iter().filter(|s| !sched::on_watch_now(&watches.items, &s.id, now).is_empty()).count();
-    let rejected = sites.rejected.len() + log.rejected.len() + watches.rejected.len() + incidents.rejected.len() + outing_log.rejected.len();
+    let rejected = sites.rejected.len() + log.rejected.len() + watches.rejected.len() + incidents.rejected.len() + outing_log.rejected.len() + comms_log.rejected.len() + cov_log.rejected.len() + train_log.rejected.len() + channel_file.rejected.len();
     if rejected > 0 {
         look_total += 1;
     }
@@ -101,9 +116,17 @@ pub fn overview_at(user_root: &Path, off: i64, now: i64) -> Result<String, Strin
     ))
 }
 
+/// The records, other than the watchbill and posture, that add lines to "needs a look".
+struct Recs {
+    outings: Vec<outing::Outing>,
+    comms: Vec<comms::CommsEntry>,
+    coverage: Vec<comms::Coverage>,
+    training: Vec<comms::Training>,
+}
+
 /// The plain-words "needs a look" lines for one site. One place makes them, so the Dashboard count and the
 /// Command list can never disagree.
-fn site_looks(site: &str, st: &security::SiteStatus, cur: Option<&PostureEntry>, watches: &[sched::Watch], outings: &[outing::Outing], off: i64, now: i64) -> Vec<String> {
+fn site_looks(site: &str, st: &security::SiteStatus, cur: Option<&PostureEntry>, watches: &[sched::Watch], recs: &Recs, off: i64, now: i64) -> Vec<String> {
     let mut out = Vec::new();
     if st.never_assessed {
         out.push("No posture has been set for this site yet. It shows Unknown.".to_string());
@@ -120,9 +143,11 @@ fn site_looks(site: &str, st: &security::SiteStatus, cur: Option<&PostureEntry>,
             });
         }
     }
-    for o in outings.iter().filter(|o| o.site == site) {
+    for o in recs.outings.iter().filter(|o| o.site == site) {
         out.extend(outing::looks(o, now, off));
     }
+    out.extend(comms::looks(site, &recs.comms, &recs.coverage));
+    out.extend(comms::training_looks(site, watches, &recs.training));
     let from = (now + off).div_euclid(1440) * 1440 - off;
     let owned: Vec<sched::Watch> = mine.iter().map(|w| (*w).clone()).collect();
     let segs = sched::coverage(&owned, site, from, from + 1440);
@@ -526,6 +551,88 @@ pub fn outing_event(user_root: &Path, outing_id: &str, ev: &str, a1: &str, a2: &
     put_outing(user_root, e, off)
 }
 
+// ---------- communications: log, coverage, channels, training ----------
+
+fn rec_time(off: i64) -> (String, String) {
+    let n = format_instant(now_minutes(), off);
+    (n.clone(), n)
+}
+
+/// The communications log for a site, newest first (at most 200 lines), with the log categories.
+pub fn comms_list(user_root: &Path, site: &str) -> Result<String, String> {
+    let log = comms::load_comms(user_root)?;
+    let open: Vec<String> = comms::open_items(&log.items).iter().map(|e| q(&e.id)).collect();
+    let rows: Vec<String> = log.items.iter().rev().filter(|e| site.is_empty() || e.site == site).take(200).map(|e| {
+        format!("{{\"id\":{},\"site\":{},\"at\":{},\"author\":{},\"station\":{},\"category\":{},\"event\":{},\"action\":{},\"status\":{},\"closes\":{}}}", q(&e.id), q(&e.site), q(&e.at), q(&e.author), q(&e.station), q(&e.category), q(&e.event), q(&e.action), q(&e.status), q(&e.closes))
+    }).collect();
+    let cats: Vec<String> = comms::CATEGORIES.iter().map(|c| format!("{{\"id\":{},\"label\":{}}}", q(c.0), q(c.1))).collect();
+    Ok(format!("{{\"entries\":[{}],\"open\":[{}],\"categories\":[{}],\"unreadable_lines\":{}}}", rows.join(","), open.join(","), cats.join(","), log.rejected.len()))
+}
+
+/// Write one line in the communications log. `status` is open, complete, or closed (with `closes` = the entry it closes).
+pub fn comms_add(user_root: &Path, site: &str, category: &str, station: &str, event: &str, action: &str, status: &str, closes: &str, author: &str, offset_minutes: i64) -> Result<String, String> {
+    let off = offset_ok(offset_minutes)?;
+    let log = comms::load_comms(user_root)?;
+    let (at, rec) = rec_time(off);
+    let e = comms::new_entry(&log.items, site, &at, &rec, author, station, category, event, action, status, closes);
+    comms::append_comms(user_root, &e)?;
+    Ok(e.id)
+}
+
+/// The newest test of each place at a site, and how many tests are on file.
+pub fn coverage_list(user_root: &Path, site: &str) -> Result<String, String> {
+    let log = comms::load_coverage(user_root)?;
+    let n = |v: Option<u8>| v.map(|x| x.to_string()).unwrap_or_else(|| "null".to_string());
+    let rows: Vec<String> = comms::latest_coverage(&log.items, site).iter().map(|c| format!("{{\"place\":{},\"p_in\":{},\"p_out\":{},\"a_in\":{},\"a_out\":{},\"at\":{},\"by\":{},\"note\":{}}}", q(&c.place), n(c.p_in), n(c.p_out), n(c.a_in), n(c.a_out), q(&c.at), q(&c.by), q(&c.note))).collect();
+    Ok(format!("{{\"places\":[{}],\"tests_on_file\":{},\"unreadable_lines\":{}}}", rows.join(","), log.items.iter().filter(|c| c.site == site).count(), log.rejected.len()))
+}
+
+/// Record a coverage test. Ratings are 0 to 5, or empty if not tested.
+pub fn coverage_add(user_root: &Path, site: &str, place: &str, p_in: &str, p_out: &str, a_in: &str, a_out: &str, by: &str, note: &str, offset_minutes: i64) -> Result<String, String> {
+    let off = offset_ok(offset_minutes)?;
+    let log = comms::load_coverage(user_root)?;
+    let r = |s: &str| -> Result<Option<u8>, String> {
+        let s = s.trim();
+        if s.is_empty() { return Ok(None); }
+        s.parse::<u8>().ok().filter(|n| *n <= 5).map(Some).ok_or_else(|| "Ratings go from 0 to 5.".to_string())
+    };
+    let (at, rec) = rec_time(off);
+    let c = comms::Coverage { id: crate::ops::next_id('v', log.items.iter().map(|e| e.id.clone())), site: site.into(), place: place.trim().into(), p_in: r(p_in)?, p_out: r(p_out)?, a_in: r(a_in)?, a_out: r(a_out)?, at, recorded: rec, by: by.trim().into(), note: note.trim().chars().take(300).collect() };
+    comms::append_coverage(user_root, &c)?;
+    Ok(c.id)
+}
+
+/// A site's channel plan (the plan's own defaults until the site saves its own).
+pub fn channels_get(user_root: &Path, site: &str) -> Result<String, String> {
+    known_site(user_root, site)?;
+    let file = comms::load_channels(user_root)?;
+    let (list, is_default) = comms::channels_for(&file.items, site);
+    let rows: Vec<String> = list.iter().map(|c| format!("{{\"channel\":{},\"code\":{},\"role\":{},\"purpose\":{}}}", q(&c.channel), q(&c.code), q(&c.role), q(&c.purpose))).collect();
+    Ok(format!("{{\"channels\":[{}],\"is_default\":{}}}", rows.join(","), is_default))
+}
+
+pub fn channels_save(user_root: &Path, site: &str, list: &[comms::Channel]) -> Result<(), String> {
+    comms::save_channels(user_root, site, list)
+}
+
+/// The twelve skills and each person's standing. `people` also lists names with no record yet, so the screen can start them.
+pub fn training_list(user_root: &Path) -> Result<String, String> {
+    let log = comms::load_training(user_root)?;
+    let skills: Vec<String> = comms::SKILLS.iter().map(|s| q(s)).collect();
+    let state = |v: &Option<bool>| match v { Some(true) => "true", Some(false) => "false", None => "null" };
+    let people: Vec<String> = comms::standing(&log.items).iter().map(|(p, sk)| format!("{{\"person\":{},\"skills\":[{}],\"qualified\":{}}}", q(p), sk.iter().map(state).collect::<Vec<_>>().join(","), sk.iter().all(|s| *s == Some(true)))).collect();
+    Ok(format!("{{\"skills\":[{}],\"people\":[{}],\"unreadable_lines\":{}}}", skills.join(","), people.join(","), log.rejected.len()))
+}
+
+/// Sign off (or mark for more practice) one skill for one person. `by` is whoever watched, and cannot be the same person.
+pub fn training_record(user_root: &Path, person: &str, skill: u8, result: &str, by: &str, note: &str, offset_minutes: i64) -> Result<String, String> {
+    let off = offset_ok(offset_minutes)?;
+    let log = comms::load_training(user_root)?;
+    let t = comms::new_training(&log.items, person, skill, result, &format_instant(now_minutes(), off), by, note);
+    comms::append_training(user_root, &t)?;
+    Ok(t.id)
+}
+
 /// Reports waiting in the Pocket mailbox, each with the reason it cannot be used if it cannot.
 pub fn pocket_list(user_root: &Path) -> Result<String, String> {
     let rows: Vec<String> = crate::security_pocket::waiting(user_root)
@@ -837,6 +944,42 @@ mod tests {
         outing_event(&r, &id, "return", "", "", "", "", "", "Base", 0).unwrap();
         let ls = outing_list_at(&r, "camp", 0, now_minutes()).unwrap();
         assert!(!ls.contains("\"last_patrol\":\"\"") && ls.contains("\"state\":\"back\""));
+        let _ = fs::remove_dir_all(&r);
+    }
+
+    #[test]
+    fn communications_records_feed_needs_a_look_and_the_primary_channel_shows() {
+        let r = tmp("comms");
+        site_save(&r, "", "Camp", "", "", "").unwrap();
+        let j = overview_at(&r, -300, now_minutes()).unwrap();
+        assert!(j.contains("\"primary_channel\":\"CH 01\""));
+        comms_add(&r, "camp", "equipment-failure", "Base", "Radio 3 will not charge", "Swapped to radio 4", "open", "", "Bravo", -300).unwrap();
+        coverage_add(&r, "camp", "North boundary", "1", "2", "", "", "Sam", "Dead in the gully", -300).unwrap();
+        assert!(coverage_add(&r, "camp", "Creek", "7", "", "", "", "Sam", "", -300).is_err());
+        let j = overview_at(&r, -300, now_minutes()).unwrap();
+        assert!(j.contains("Radio 3 will not charge") && j.contains("Radio is weak at North boundary"));
+        comms_add(&r, "camp", "equipment-failure", "Base", "New cable", "", "closed", "c1", "Bravo", -300).unwrap();
+        let j = overview_at(&r, -300, now_minutes()).unwrap();
+        assert!(!j.contains("Radio 3 will not charge"));
+        let l = comms_list(&r, "camp").unwrap();
+        assert!(l.contains("\"open\":[]") && l.contains("Watch turnover"));
+        // a site's own channel plan replaces the default
+        let mut ch = comms::default_channels("camp");
+        ch[0].channel = "07".into();
+        channels_save(&r, "camp", &ch).unwrap();
+        assert!(overview_at(&r, -300, now_minutes()).unwrap().contains("\"primary_channel\":\"CH 07\""));
+        let _ = fs::remove_dir_all(&r);
+    }
+
+    #[test]
+    fn training_standing_comes_through_the_list() {
+        let r = tmp("training");
+        for sk in 1..=12 { training_record(&r, "Dana", sk, "pass", "Sam", "", -300).unwrap(); }
+        training_record(&r, "Kim", 1, "practice", "Sam", "Fumbled the privacy codes", -300).unwrap();
+        assert!(training_record(&r, "Kim", 2, "pass", "kim", "", -300).is_err());
+        let l = training_list(&r).unwrap();
+        assert!(l.contains("\"person\":\"Dana\"") && l.contains("\"qualified\":true") && l.contains("\"qualified\":false"));
+        assert!(l.contains("Turn the radio on and off") && l.contains("null"));
         let _ = fs::remove_dir_all(&r);
     }
 }

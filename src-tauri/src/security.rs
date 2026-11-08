@@ -3,6 +3,8 @@
 //! `core/tests/security_rules.rs` fails if one ever is, or if this list and `SECURITY_COMMANDS` disagree.
 
 use cindrix_core::security_api as api;
+use cindrix_core::security_comms::Channel;
+use serde::Deserialize;
 use serde_json::Value;
 
 fn user_root() -> std::path::PathBuf {
@@ -118,3 +120,53 @@ pub fn security_outing_start(site: String, kind: String, people: String, task: S
 pub fn security_outing_event(outing: String, ev: String, a1: String, a2: String, text: String, back_local: String, next_local: String, by: String, offset_minutes: i64) -> Result<(), String> {
     api::outing_event(&user_root(), &outing, &ev, &a1, &a2, &text, &back_local, &next_local, &by, offset_minutes)
 }
+
+#[tauri::command]
+pub fn security_comms_list(site: String) -> Result<Value, String> {
+    json(api::comms_list(&user_root(), &site))
+}
+
+#[tauri::command]
+pub fn security_comms_add(site: String, category: String, station: String, event: String, action: String, status: String, closes: String, author: String, offset_minutes: i64) -> Result<String, String> {
+    api::comms_add(&user_root(), &site, &category, &station, &event, &action, &status, &closes, &author, offset_minutes)
+}
+
+#[tauri::command]
+pub fn security_coverage_list(site: String) -> Result<Value, String> {
+    json(api::coverage_list(&user_root(), &site))
+}
+
+#[tauri::command]
+pub fn security_coverage_add(site: String, place: String, p_in: String, p_out: String, a_in: String, a_out: String, by: String, note: String, offset_minutes: i64) -> Result<String, String> {
+    api::coverage_add(&user_root(), &site, &place, &p_in, &p_out, &a_in, &a_out, &by, &note, offset_minutes)
+}
+
+#[tauri::command]
+pub fn security_channels_get(site: String) -> Result<Value, String> {
+    json(api::channels_get(&user_root(), &site))
+}
+
+#[derive(Deserialize)]
+pub struct ChannelDto {
+    channel: String,
+    code: String,
+    role: String,
+    purpose: String,
+}
+
+#[tauri::command]
+pub fn security_channels_save(site: String, channels: Vec<ChannelDto>) -> Result<(), String> {
+    let list: Vec<Channel> = channels.into_iter().map(|c| Channel { site: site.clone(), channel: c.channel, code: c.code, role: c.role, purpose: c.purpose }).collect();
+    api::channels_save(&user_root(), &site, &list)
+}
+
+#[tauri::command]
+pub fn security_training_list() -> Result<Value, String> {
+    json(api::training_list(&user_root()))
+}
+
+#[tauri::command]
+pub fn security_training_record(person: String, skill: u8, result: String, by: String, note: String, offset_minutes: i64) -> Result<String, String> {
+    api::training_record(&user_root(), &person, skill, &result, &by, &note, offset_minutes)
+}
+

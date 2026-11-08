@@ -243,3 +243,5 @@ Added 2026-11-08 (second part): the device list and erase order (`core/src/devic
 Count sheets from phones (inventory counts that wait in the same mailbox until accepted) are built on the Hub side: `core/src/countsheet.rs`, doc 45.
 
 Outings and patrols (who is out of camp, expected return, check-ins, checkpoints, last patrol) are built: `core/src/security_outing.rs`, `user/security/outing-log.txt`, shown under Operations ("Out of camp") and feeding "Needs a look". Doc 46 has the rules.
+
+Communications records are built under Planning (channel plan, radio coverage tests), Personnel (the twelve radio skills) and Records (communications log): `core/src/security_comms.rs`, doc 46. The Security subtab, defensive and Operational Response plan files, availability and rest, incident history views and exports are still not built.
