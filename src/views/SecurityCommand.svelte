@@ -174,7 +174,7 @@
 
   {#if reports.length}
     <div class="panel reports">
-      <h2>Waiting from phones</h2>
+      <h2>Waiting for connection</h2>
       <p class="muted">Sent by a Pocket phone when it reached this computer. Nothing goes into the records until you accept it. Reports can add notes and new incidents, never change an incident's status. A count sheet only sets the numbers on items you already have; it never adds or deletes one.</p>
       {#each reports as r (r.name)}
         <div class="rep">

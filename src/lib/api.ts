@@ -1539,7 +1539,7 @@ export type SecuritySite = {
   posture: 'normal' | 'elevated' | 'emergency' | 'unknown';
   check_due: boolean; never_assessed: boolean;
   set_by: string; reason: string; at: string; review_by: string;
-  on_watch: string[]; live_incidents: number; looks: string[];
+  on_watch: string[]; live_incidents: number; out_now: number; last_patrol: string; looks: string[];
 };
 export type SecurityOverview = {
   now: string; headline: SecuritySite['posture']; unknown: number; check_due: number;
@@ -1628,6 +1628,26 @@ export async function securityWatchDiscard(id: string): Promise<void> {
 export async function securityWatchScheduleAll(site: string): Promise<number> {
   if (tauriHost) return call<number>('security_watch_schedule_all', { site });
   throw new Error('The watchbill is saved in the program, not in the browser preview.');
+}
+
+export type OutingRow = {
+  id: string; patrol: boolean; site: string; people: string[]; task: string; method: string;
+  left: string; back: string; next: string; state: 'out' | 'back' | 'cancelled'; ended: string;
+  last: { at: string; status: 'ok' | 'help' | 'delayed'; text: string } | null;
+  checkpoints: { at: string; name: string; text: string }[]; looks: string[];
+};
+export type OutingList = { outings: OutingRow[]; last_patrol: string; unreadable_lines: number };
+export async function securityOutingList(site: string): Promise<OutingList> {
+  if (tauriHost) return call<OutingList>('security_outing_list', { site, offsetMinutes: clockOffset() });
+  return { outings: [], last_patrol: '', unreadable_lines: 0 };
+}
+export async function securityOutingStart(site: string, kind: 'outing' | 'patrol', people: string, task: string, backLocal: string, nextLocal: string, method: string, by: string): Promise<string> {
+  if (tauriHost) return call<string>('security_outing_start', { site, kind, people, task, backLocal, nextLocal, method, by, offsetMinutes: clockOffset() });
+  throw new Error('Outings are saved in the program, not in the browser preview.');
+}
+export async function securityOutingEvent(outing: string, ev: 'contact' | 'checkpoint' | 'extend' | 'return' | 'cancel' | 'note', a1: string, a2: string, text: string, backLocal: string, nextLocal: string, by: string): Promise<void> {
+  if (tauriHost) return call<void>('security_outing_event', { outing, ev, a1, a2, text, backLocal, nextLocal, by, offsetMinutes: clockOffset() });
+  throw new Error('Outings are saved in the program, not in the browser preview.');
 }
 
 export type PocketReport = { name: string; size: number; device: string; person: string; created: string; entries: number; kind: 'report' | 'count-sheet'; changed: number; problem: string };

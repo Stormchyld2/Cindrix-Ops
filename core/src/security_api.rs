@@ -15,6 +15,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 /// The names of the Tauri commands that reach this module. All are host-only: none may ever be in
 /// `share::GUEST_COMMANDS`. `core/tests/security_rules.rs` checks that, and that this list matches `src-tauri/src/security.rs`.
+use crate::security_outing as outing;
+
 pub const SECURITY_COMMANDS: &[&str] = &[
     "security_overview",
     "security_watch_strip",
@@ -30,6 +32,9 @@ pub const SECURITY_COMMANDS: &[&str] = &[
     "security_watch_ack",
     "security_watch_discard",
     "security_watch_schedule_all",
+    "security_outing_list",
+    "security_outing_start",
+    "security_outing_event",
     "security_pocket_list",
     "security_pocket_sheet",
     "security_pocket_accept",
@@ -60,6 +65,8 @@ pub fn overview_at(user_root: &Path, off: i64, now: i64) -> Result<String, Strin
     let log = store::load_posture_log(user_root)?;
     let watches = store::load_watches(user_root)?;
     let incidents = store::load_incident_log(user_root)?;
+    let outing_log = outing::load(user_root)?;
+    let outings = outing::build(&outing_log.items);
     let built = incident::build(&incidents.items);
     let ov = security::overview(&sites.items, &log.items, now);
     let mut rows = Vec::new();
@@ -68,17 +75,19 @@ pub fn overview_at(user_root: &Path, off: i64, now: i64) -> Result<String, Strin
         let cur = security::current_entry(&log.items, &s.id);
         let on: Vec<String> = sched::on_watch_now(&watches.items, &s.id, now).iter().map(|w| q(&w.person)).collect();
         let live = incident::live_open(&built).iter().filter(|i| i.site == s.id).count();
-        let looks = site_looks(&s.id, st, cur, &watches.items, off, now);
+        let looks = site_looks(&s.id, st, cur, &watches.items, &outings, off, now);
+        let out_now = outings.iter().filter(|o| o.site == s.id && o.state == outing::State::Out).count();
+        let last_patrol = outing::last_patrol(&outings, &s.id).map(|m| format_instant(m, off)).unwrap_or_default();
         look_total += looks.len();
         rows.push(format!(
-            "{{\"id\":{},\"name\":{},\"tz\":{},\"posture\":{},\"check_due\":{},\"never_assessed\":{},\"set_by\":{},\"reason\":{},\"at\":{},\"review_by\":{},\"on_watch\":[{}],\"live_incidents\":{},\"looks\":[{}]}}",
+            "{{\"id\":{},\"name\":{},\"tz\":{},\"posture\":{},\"check_due\":{},\"never_assessed\":{},\"set_by\":{},\"reason\":{},\"at\":{},\"review_by\":{},\"on_watch\":[{}],\"live_incidents\":{},\"out_now\":{},\"last_patrol\":{},\"looks\":[{}]}}",
             q(&s.id), q(&s.name), q(&s.tz), q(st.posture.word()), st.check_due, st.never_assessed,
             q(cur.map(|e| e.set_by.as_str()).unwrap_or("")), q(cur.map(|e| e.reason.as_str()).unwrap_or("")), q(cur.map(|e| e.at.as_str()).unwrap_or("")), q(cur.map(|e| e.review_by.as_str()).unwrap_or("")),
-            on.join(","), live, looks.iter().map(|l| q(l)).collect::<Vec<_>>().join(",")
+            on.join(","), live, out_now, q(&last_patrol), looks.iter().map(|l| q(l)).collect::<Vec<_>>().join(",")
         ));
     }
     let sites_on_watch = sites.items.iter().filter(|s| !sched::on_watch_now(&watches.items, &s.id, now).is_empty()).count();
-    let rejected = sites.rejected.len() + log.rejected.len() + watches.rejected.len() + incidents.rejected.len();
+    let rejected = sites.rejected.len() + log.rejected.len() + watches.rejected.len() + incidents.rejected.len() + outing_log.rejected.len();
     if rejected > 0 {
         look_total += 1;
     }
@@ -94,7 +103,7 @@ pub fn overview_at(user_root: &Path, off: i64, now: i64) -> Result<String, Strin
 
 /// The plain-words "needs a look" lines for one site. One place makes them, so the Dashboard count and the
 /// Command list can never disagree.
-fn site_looks(site: &str, st: &security::SiteStatus, cur: Option<&PostureEntry>, watches: &[sched::Watch], off: i64, now: i64) -> Vec<String> {
+fn site_looks(site: &str, st: &security::SiteStatus, cur: Option<&PostureEntry>, watches: &[sched::Watch], outings: &[outing::Outing], off: i64, now: i64) -> Vec<String> {
     let mut out = Vec::new();
     if st.never_assessed {
         out.push("No posture has been set for this site yet. It shows Unknown.".to_string());
@@ -110,6 +119,9 @@ fn site_looks(site: &str, st: &security::SiteStatus, cur: Option<&PostureEntry>,
                 Attention::HandoverOpen => format!("{}'s watch has ended and no handover is written down.", w.person),
             });
         }
+    }
+    for o in outings.iter().filter(|o| o.site == site) {
+        out.extend(outing::looks(o, now, off));
     }
     let from = (now + off).div_euclid(1440) * 1440 - off;
     let owned: Vec<sched::Watch> = mine.iter().map(|w| (*w).clone()).collect();
@@ -437,6 +449,83 @@ pub fn watch_schedule_all(user_root: &Path, site: &str) -> Result<usize, String>
 
 // ---------- reports from Pocket phones ----------
 
+// ---------- outings and patrols ----------
+
+fn when_json(m: i64, off: i64) -> String {
+    q(&format_instant(m, off))
+}
+
+/// Everyone out now (and anyone who ended in the last day), at one site or all (`site` empty), with the plain-words
+/// warnings for each. Times are written with the screen's offset.
+pub fn outing_list(user_root: &Path, site: &str, offset_minutes: i64) -> Result<String, String> {
+    let off = offset_ok(offset_minutes)?;
+    outing_list_at(user_root, site, off, now_minutes())
+}
+
+pub fn outing_list_at(user_root: &Path, site: &str, off: i64, now: i64) -> Result<String, String> {
+    let log = outing::load(user_root)?;
+    let all = outing::build(&log.items);
+    let mut shown: Vec<&outing::Outing> = all.iter().filter(|o| (site.is_empty() || o.site == site) && (o.state == outing::State::Out || o.ended.map(|e| now - e < 1440).unwrap_or(false))).collect();
+    shown.sort_by_key(|o| (o.state != outing::State::Out, o.back));
+    let rows: Vec<String> = shown
+        .iter()
+        .map(|o| {
+            let last = o.last.as_ref().map(|(t, st, what)| format!("{{\"at\":{},\"status\":{},\"text\":{}}}", when_json(*t, off), q(st), q(what))).unwrap_or_else(|| "null".to_string());
+            let cps: Vec<String> = o.checkpoints.iter().map(|(t, n, w)| format!("{{\"at\":{},\"name\":{},\"text\":{}}}", when_json(*t, off), q(n), q(w))).collect();
+            format!(
+                "{{\"id\":{},\"patrol\":{},\"site\":{},\"people\":[{}],\"task\":{},\"method\":{},\"left\":{},\"back\":{},\"next\":{},\"state\":{},\"ended\":{},\"last\":{},\"checkpoints\":[{}],\"looks\":[{}]}}",
+                q(&o.id), o.patrol, q(&o.site), o.people.iter().map(|p| q(p)).collect::<Vec<_>>().join(","), q(&o.task), q(&o.method),
+                when_json(o.left, off), when_json(o.back, off), o.next.map(|n| when_json(n, off)).unwrap_or_else(|| "\"\"".to_string()),
+                q(match o.state { outing::State::Out => "out", outing::State::Back => "back", outing::State::Cancelled => "cancelled" }),
+                o.ended.map(|n| when_json(n, off)).unwrap_or_else(|| "\"\"".to_string()), last, cps.join(","),
+                outing::looks(o, now, off).iter().map(|l| q(l)).collect::<Vec<_>>().join(",")
+            )
+        })
+        .collect();
+    let lp = if site.is_empty() { None } else { outing::last_patrol(&all, site) };
+    Ok(format!("{{\"outings\":[{}],\"last_patrol\":{},\"unreadable_lines\":{}}}", rows.join(","), lp.map(|m| when_json(m, off)).unwrap_or_else(|| "\"\"".to_string()), log.rejected.len()))
+}
+
+fn put_outing(user_root: &Path, mut e: outing::Entry, off: i64) -> Result<(), String> {
+    let log = outing::load(user_root)?;
+    e.id = crate::ops::next_id('e', log.items.iter().map(|x| x.id.clone()));
+    e.recorded = format_instant(now_minutes(), off);
+    outing::append(user_root, &e)
+}
+
+/// People go out. `back_local` and `next_local` are times typed on the screen (local, `2026-11-08T14:00`); `next_local`
+/// may be empty. `kind` is `outing` or `patrol`. Returns the new outing's code.
+pub fn outing_start(user_root: &Path, site: &str, kind: &str, people: &str, task: &str, back_local: &str, next_local: &str, method: &str, by: &str, offset_minutes: i64) -> Result<String, String> {
+    let off = offset_ok(offset_minutes)?;
+    known_site(user_root, site)?;
+    let log = outing::load(user_root)?;
+    let id = crate::ops::next_id('o', log.items.iter().map(|x| x.outing.clone()));
+    let now = format_instant(now_minutes(), off);
+    let e = outing::Entry {
+        id: String::new(), outing: id.clone(), ev: outing::Ev::Out, at: now, recorded: String::new(), by: by.trim().to_string(), source: "observed".into(),
+        a1: kind.to_string(), a2: site.to_string(), a3: people.split(',').map(|p| p.trim()).filter(|p| !p.is_empty()).collect::<Vec<_>>().join(", "),
+        back: local_instant(back_local, off)?, next: if next_local.trim().is_empty() { String::new() } else { local_instant(next_local, off)? },
+        method: method.trim().to_string(), text: task.trim().to_string(),
+    };
+    put_outing(user_root, e, off)?;
+    Ok(id)
+}
+
+/// Something happens to an outing: `contact`, `checkpoint`, `extend`, `return`, `cancel` or `note`. The time is now.
+/// `a1`/`a2` are the status (contact) or the checkpoint name and status (checkpoint). `back_local`/`next_local` may be empty.
+pub fn outing_event(user_root: &Path, outing_id: &str, ev: &str, a1: &str, a2: &str, text: &str, back_local: &str, next_local: &str, by: &str, offset_minutes: i64) -> Result<(), String> {
+    let off = offset_ok(offset_minutes)?;
+    let ev = outing::Ev::from_word(ev).filter(|e| *e != outing::Ev::Out).ok_or("That is not something that can happen to an outing.")?;
+    let e = outing::Entry {
+        id: String::new(), outing: outing_id.to_string(), ev, at: format_instant(now_minutes(), off), recorded: String::new(), by: by.trim().to_string(), source: "observed".into(),
+        a1: a1.trim().to_string(), a2: a2.trim().to_string(), a3: String::new(),
+        back: if back_local.trim().is_empty() { String::new() } else { local_instant(back_local, off)? },
+        next: if next_local.trim().is_empty() { String::new() } else { local_instant(next_local, off)? },
+        method: String::new(), text: text.trim().to_string(),
+    };
+    put_outing(user_root, e, off)
+}
+
 /// Reports waiting in the Pocket mailbox, each with the reason it cannot be used if it cannot.
 pub fn pocket_list(user_root: &Path) -> Result<String, String> {
     let rows: Vec<String> = crate::security_pocket::waiting(user_root)
@@ -707,6 +796,47 @@ mod tests {
         assert_eq!(pocket_accept(&r, "n10-0001.txt", false).unwrap(), 1);
         assert!(overview(&r, 0).unwrap().contains("\"pocket_waiting\":0"));
         assert!(incident_list(&r).unwrap().contains("\"source\":\"reported\""));
+        let _ = fs::remove_dir_all(&r);
+    }
+
+    #[test]
+    fn outings_show_up_in_needs_a_look_and_the_overview_count_agrees() {
+        let r = tmp("outing");
+        site_save(&r, "", "Camp", "", "", "").unwrap();
+        posture_set(&r, "camp", "normal", "Sam", "Walked the line", 0, -300).unwrap();
+        let id = outing_start(&r, "camp", "outing", "Sam, Dana", "Water run", "2099-01-01T12:00", "2099-01-01T11:00", "radio", "Base", -300).unwrap();
+        assert_eq!(id, "o1");
+        let j = overview_at(&r, -300, now_minutes()).unwrap();
+        assert!(j.contains("\"out_now\":1"));
+        // in the far future they are very late: both the list and the overview say so, from the same lines
+        let far = security::parse_instant("2099-01-01T20:00-00:00").or_else(|| security::parse_instant("2099-01-01T20:00+00:00")).unwrap();
+        let ov = overview_at(&r, 0, far).unwrap();
+        let ls = outing_list_at(&r, "camp", 0, far).unwrap();
+        assert!(ov.contains("overdue back") && ls.contains("overdue back"));
+        let n: usize = ov.split("\"needs_a_look\":").nth(1).unwrap().split(',').next().unwrap().parse().unwrap();
+        let looks = ov.matches("overdue back").count() + ov.matches("late radio").count();
+        assert!(n >= looks && looks >= 1);
+        // a person says they are back: the look goes away
+        outing_event(&r, "o1", "return", "", "", "Back with water", "", "", "Base", -300).unwrap();
+        let ov = overview_at(&r, 0, far).unwrap();
+        assert!(!ov.contains("overdue back") && ov.contains("\"out_now\":0"));
+        assert!(security::parse_instant("2099-01-01T20:00Z").is_some());
+        let _ = fs::remove_dir_all(&r);
+    }
+
+    #[test]
+    fn patrol_checkpoints_and_last_patrol_come_through_the_list() {
+        let r = tmp("patrol");
+        site_save(&r, "", "Camp", "", "", "").unwrap();
+        let id = outing_start(&r, "camp", "patrol", "Sam, Dana", "Perimeter loop", "2099-01-01T12:00", "", "radio", "Base", 0).unwrap();
+        outing_event(&r, &id, "checkpoint", "North gate", "ok", "All quiet", "", "", "Base", 0).unwrap();
+        assert!(outing_event(&r, &id, "checkpoint", "", "ok", "", "", "", "Base", 0).is_err());
+        assert!(outing_event(&r, &id, "out", "", "", "", "", "", "Base", 0).is_err());
+        let ls = outing_list_at(&r, "camp", 0, now_minutes()).unwrap();
+        assert!(ls.contains("North gate") && ls.contains("\"patrol\":true") && ls.contains("\"last_patrol\":\"\""));
+        outing_event(&r, &id, "return", "", "", "", "", "", "Base", 0).unwrap();
+        let ls = outing_list_at(&r, "camp", 0, now_minutes()).unwrap();
+        assert!(!ls.contains("\"last_patrol\":\"\"") && ls.contains("\"state\":\"back\""));
         let _ = fs::remove_dir_all(&r);
     }
 }

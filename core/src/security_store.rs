@@ -80,7 +80,7 @@ pub fn append_posture(user_root: &Path, entry: &PostureEntry) -> Result<(), Stri
 /// Add one line to the end of a log file. `check` reads what is already there first, so a damaged or newer file
 /// stops the write before anything is added. A half line left by a power cut is ended, kept, and reported by the
 /// reader; it is never removed.
-fn append_line(user_root: &Path, path: &Path, header: &str, line: &str, check: impl Fn(&str) -> Result<(), String>) -> Result<(), String> {
+pub(crate) fn append_line(user_root: &Path, path: &Path, header: &str, line: &str, check: impl Fn(&str) -> Result<(), String>) -> Result<(), String> {
     let existing = read(path)?;
     check(&existing)?;
     fs::create_dir_all(dir(user_root)).map_err(|_| "The security folder could not be made.".to_string())?;

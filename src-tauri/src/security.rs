@@ -103,3 +103,18 @@ pub fn security_pocket_sheet(name: String) -> Result<Value, String> {
 pub fn security_pocket_set_aside(name: String) -> Result<(), String> {
     api::pocket_set_aside(&user_root(), &name)
 }
+
+#[tauri::command]
+pub fn security_outing_list(site: String, offset_minutes: i64) -> Result<Value, String> {
+    json(api::outing_list(&user_root(), &site, offset_minutes))
+}
+
+#[tauri::command]
+pub fn security_outing_start(site: String, kind: String, people: String, task: String, back_local: String, next_local: String, method: String, by: String, offset_minutes: i64) -> Result<String, String> {
+    api::outing_start(&user_root(), &site, &kind, &people, &task, &back_local, &next_local, &method, &by, offset_minutes)
+}
+
+#[tauri::command]
+pub fn security_outing_event(outing: String, ev: String, a1: String, a2: String, text: String, back_local: String, next_local: String, by: String, offset_minutes: i64) -> Result<(), String> {
+    api::outing_event(&user_root(), &outing, &ev, &a1, &a2, &text, &back_local, &next_local, &by, offset_minutes)
+}

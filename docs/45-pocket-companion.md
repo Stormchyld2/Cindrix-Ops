@@ -125,13 +125,14 @@ writes only logs" rule still holds: a count goes out as a **count sheet** in the
 
 `core/src/countsheet.rs`. A sheet (`# format: count-sheet 1`, device, person, date, then `item uid, number the phone saw,
 number counted` per line) lands in `user/inbox/pocket/` beside the reports and is handed in the same way (`pocket_upload`; the
-phone's code must match its sign-in). Command's "Waiting from phones" lists it with **Look at the numbers** (item, where, what
+phone's code must match its sign-in). Command's "Waiting for connection" lists it with **Look at the numbers** (item, where, what
 the phone saw, what the Hub has now, what was counted) and **Accept the counts**.
 - A sheet only sets the number on items that already exist. It never adds, renames or deletes a line, and it stamps the day it
   was counted.
 - All lines or none. If any item is no longer in the Inventory, nothing changes and the host is told to set the sheet aside.
 - If a Hub number moved since the phone looked, the sheet is flagged and the button becomes **Accept anyway**.
 - The same sheet twice changes nothing. Sheets and reports share one accepted-ledger, so the phone clears both.
+- **The scanner (owner, 2026-11-08):** reuse the barcode-scanner code from Cindrix Scan (repo Stormchyld2/Cindrix-Scan) inside Pocket, so Pocket scans and counts itself. Cindrix Scan stays a separate app.
 - Not built: new items from a scanned barcode that is not in the Inventory (it needs a way to name the item), and Pocket's side.
 
 ## What the Hub mailbox does now (built)
@@ -141,7 +142,7 @@ every line). Nothing enters the records until the host accepts. Accepted entries
 add notes, decisions, tasks and a new incident, never change a status or activate a plan. All entries or none are
 added; the same file twice changes nothing; every file is kept (moved to `done/` or `set-aside/`, never deleted);
 accepted names and fingerprints go in `user/security/pocket-accepted.txt` for the phone to read. Command shows
-"Reports waiting from phones" with Accept and Set aside, and counts waiting reports under "Needs a look".
+"Waiting for connection" with Accept and Set aside, and counts waiting reports under "Needs a look".
 
 ## Trusted devices, handing in reports, and erasing a lost phone (built, 2026-11-08)
 
@@ -175,3 +176,10 @@ Not built: the bundle, GPS tracks, new items from scans, and Pocket itself.
 - ~~Does each phone belong to one person?~~ Answered: yes, each phone has its own owner, and trust is by device code.
 - A trimmed emergency-contact card on the phone (the Family page is private and host-only today).
 - Which book formats the reader must open on day one.
+
+## Check-ins and patrols from the phone (later)
+
+The Hub side of outings and patrols is built (doc 46, `core/src/security_outing.rs`) and is written by the person at the base,
+from a radio call or a runner. A phone in the field could later put its own check-ins and patrol checkpoints in the outbox as
+outing lines, marked **reported**, and the host would accept them like a report. Not built. The base's own log stays the
+record, and a missing phone message never counts as bad news by itself.

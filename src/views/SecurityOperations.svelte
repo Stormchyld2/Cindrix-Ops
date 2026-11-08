@@ -2,6 +2,7 @@
   // Security Operations > Operations: the watchbill (docs/44 section 9). A draft covers nothing until a person
   // schedules it; the person on watch acknowledges it; a watch with no handover stays open until someone looks.
   import { onMount } from 'svelte';
+  import SecurityOuting from './SecurityOuting.svelte';
   import {
     securityOverview, securityWatchList, securityWatchDraft, securityWatchAdd, securityWatchMove,
     securityWatchAck, securityWatchDiscard, securityWatchScheduleAll,
@@ -151,6 +152,8 @@
     <p class="muted small">Adding a watch yourself counts as scheduling it.</p>
   </div>
 {/if}
+
+<SecurityOuting {site} {me} />
 
 <style>
   .panel { margin-bottom: 14px; }

@@ -39,6 +39,7 @@ pub mod ops;
 pub mod security;
 pub mod security_api;
 pub mod security_incident;
+pub mod security_outing;
 pub mod security_pocket;
 pub mod security_schedule;
 pub mod security_store;

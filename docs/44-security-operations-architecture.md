@@ -241,3 +241,5 @@ Core logic only, with tests, in `core/`: `security.rs` (sites, posture, overview
 Added 2026-11-08 (second part): the device list and erase order (`core/src/devices.rs`, Settings > Devices), the upload path for trusted phones into the Pocket mailbox, and the communications plan COPS-COM-001 with its integration table (doc 46). Details in docs 45 and 46. The check-in record, communications log, channel and coverage cards and operator training are the next pieces and are not built.
 
 Count sheets from phones (inventory counts that wait in the same mailbox until accepted) are built on the Hub side: `core/src/countsheet.rs`, doc 45.
+
+Outings and patrols (who is out of camp, expected return, check-ins, checkpoints, last patrol) are built: `core/src/security_outing.rs`, `user/security/outing-log.txt`, shown under Operations ("Out of camp") and feeding "Needs a look". Doc 46 has the rules.

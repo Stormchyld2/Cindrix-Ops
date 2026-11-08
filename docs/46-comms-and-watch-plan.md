@@ -14,7 +14,8 @@ organizer. The plan's own rule applies: the radios must work without it.
 |---|---|---|
 | 5 Six-hour watch, rotation, relief, five-person option | Operations (watchbill) | Watchbill, drafts that cover nothing until scheduled, coverage gaps, overlap, double booking and short rest are built. Night-duty rotation fairness and the relief position are not |
 | 5.4 Shift turnover checklist | Operations | Handover "needs a look" is built. The checklist form and the "I have the watch" step are not; the card **Handing over the watch** carries the steps |
-| 6 Check-ins, departure/arrival, expected return, next contact | Command + Operations | Not built. Next piece: a check-in record (who, where, expected return, next contact) that becomes "needs a look" when late, never an automatic incident (plan 9.1) |
+| 6 Check-ins, departure/arrival, expected return, next contact | Operations ("Out of camp"), Command (needs a look) | **Built** (`core/src/security_outing.rs`): who left, the task, expected return, next contact, method; check-in, checkpoint, change time (reason required), back safe, called off. Late contact or return is only a "needs a look" line (10 and 15 minutes of grace), never an incident. Help and delay reports come first. Going out alone is flagged (pairs rule) |
+| 6 / 12 Patrols and checkpoints | Operations | **Built** as a patrol: the same record with named checkpoints and the time the last patrol came back. Patrol routes planned in advance and patrol schedules are not built |
 | 8 Red, Amber, Green, emergency message order | Cards | Card **Emergency radio call** built |
 | 9 Missed check-in, lost radio contact, base radio failure | Cards | Cards **Missed check-in or radio contact lost** and **Base radio failed or lost contact with a patrol** built |
 | 3 Channel plan, channel change | Planning, Cards | Card **Moving to the back-up radio channel** built. The per-site channel card is not |
@@ -38,3 +39,10 @@ organizer. The plan's own rule applies: the radios must work without it.
 Four response cards (`response-emergency-radio-report`, `response-radio-blackout`, `response-radio-channel-change`,
 `response-watch-handover`) and the plan `content/plans/comms-and-watch.md`. All are drafts for the family to edit and check.
 The plan has no button into Security yet, because plans can only jump to the older screens.
+
+## Built in the second round (2026-11-08)
+
+The outing and patrol log (`user/security/outing-log.txt`, append-only like the incident log): lines are never changed, a log
+that cannot be read is never added to, only a person ends an outing, and nothing the log does touches the incident log (a
+test proves it). Command's "Needs a look" and the Dashboard count come from the same lines as the Out of camp list. Not
+built: phone-sent check-ins (doc 45), route planning, and a comms log.
