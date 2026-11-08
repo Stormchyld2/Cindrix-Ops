@@ -62,7 +62,7 @@ pub struct Waiting {
     pub person: String,
     pub created: String,
     pub entries: usize,
-    /// "report" or "count-sheet".
+    /// "report", "count-sheet" or "checkin-sheet".
     pub kind: String,
     /// For a count sheet: how many numbers in the Inventory moved since the phone looked (0 for a report).
     pub changed: usize,
@@ -182,6 +182,12 @@ pub fn waiting(user_root: &Path) -> Vec<Waiting> {
                     Err(problem) => Waiting { name, size, device: String::new(), person: String::new(), created: String::new(), entries: 0, kind: "count-sheet".into(), changed: 0, problem },
                 };
             }
+            if is_checkin_file(&path) {
+                return match crate::checkinsheet::read(&path) {
+                    Ok(sh) => Waiting { name, size, device: sh.device, person: sh.person, created: sh.created, entries: sh.lines.len(), kind: "checkin-sheet".into(), changed: 0, problem: String::new() },
+                    Err(problem) => Waiting { name, size, device: String::new(), person: String::new(), created: String::new(), entries: 0, kind: "checkin-sheet".into(), changed: 0, problem },
+                };
+            }
             match read_report(&path) {
                 Ok(r) => Waiting { name, size, device: r.device, person: r.person, created: r.created, entries: r.entries.len(), kind: "report".into(), changed: 0, problem: String::new() },
                 Err(problem) => Waiting { name, size, device: String::new(), person: String::new(), created: String::new(), entries: 0, kind: "report".into(), changed: 0, problem },
@@ -258,11 +264,20 @@ fn is_sheet_file(path: &Path) -> bool {
     crate::countsheet::is_sheet(&String::from_utf8_lossy(&buf[..n]))
 }
 
+fn is_checkin_file(path: &Path) -> bool {
+    use std::io::Read;
+    let mut buf = [0u8; 256];
+    let n = fs::File::open(path).and_then(|mut f| f.read(&mut buf)).unwrap_or(0);
+    crate::checkinsheet::is_sheet(&String::from_utf8_lossy(&buf[..n]))
+}
+
 /// Accept whatever kind of file this is. A report adds its entries; a count sheet sets the counted numbers (and, if
 /// `allow_moved`, also on lines whose Hub number moved since the phone looked). Returns how many things changed.
 pub fn accept_any(user_root: &Path, name: &str, allow_moved: bool) -> Result<usize, String> {
     if safe_name(name) && is_sheet_file(&inbox_dir(user_root).join(name)) {
         crate::countsheet::accept(user_root, name, allow_moved)
+    } else if safe_name(name) && is_checkin_file(&inbox_dir(user_root).join(name)) {
+        crate::checkinsheet::accept(user_root, name)
     } else {
         accept(user_root, name)
     }
@@ -330,6 +345,19 @@ pub fn upload(user_root: &Path, device: &str, name: &str, text: &str) -> Result<
             Ok(_) => {
                 let _ = fs::remove_file(&target);
                 Err("The count sheet names a different phone than the one that sent it.".to_string())
+            }
+            Err(e) => {
+                let _ = fs::remove_file(&target);
+                Err(e)
+            }
+        };
+    }
+    if is_checkin_file(&target) {
+        return match crate::checkinsheet::read(&target) {
+            Ok(sh) if sh.device == device => Ok(()),
+            Ok(_) => {
+                let _ = fs::remove_file(&target);
+                Err("The check-in sheet names a different phone than the one that sent it.".to_string())
             }
             Err(e) => {
                 let _ = fs::remove_file(&target);

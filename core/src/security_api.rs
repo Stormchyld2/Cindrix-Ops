@@ -18,6 +18,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use crate::security_comms as comms;
 use crate::security_outing as outing;
 use crate::security_site as siterec;
+use crate::security_equipment as equip;
 use crate::security_plans as plans;
 
 pub const SECURITY_COMMANDS: &[&str] = &[
@@ -49,6 +50,10 @@ pub const SECURITY_COMMANDS: &[&str] = &[
     "security_assets_list",
     "security_asset_save",
     "security_asset_inspect",
+    "security_schedule_get",
+    "security_schedule_save",
+    "security_equipment_list",
+    "security_equipment_add",
     "security_routes_get",
     "security_routes_save",
     "security_availability_list",
@@ -99,7 +104,11 @@ pub fn overview_at(user_root: &Path, off: i64, now: i64) -> Result<String, Strin
     let asset_file = siterec::load_assets(user_root)?;
     let insp_log = siterec::load_inspections(user_root)?;
     let avail_log = siterec::load_availability(user_root)?;
-    let recs = Recs { outings: outings.clone(), comms: comms_log.items.clone(), coverage: cov_log.items.clone(), training: train_log.items.clone(), assets: asset_file.items.clone(), inspections: insp_log.items.clone(), avail: avail_log.items.clone() };
+    let equip_log = equip::load(user_root)?;
+    let inventory = crate::userdata::UserDir::new(user_root).load_inventory().unwrap_or_default();
+    let gear = equip::gear(&equip_log.items, &inventory);
+    let rules_file = siterec::load_schedule(user_root)?;
+    let recs = Recs { gear, rules: rules_file.items.clone(), outings: outings.clone(), comms: comms_log.items.clone(), coverage: cov_log.items.clone(), training: train_log.items.clone(), assets: asset_file.items.clone(), inspections: insp_log.items.clone(), avail: avail_log.items.clone() };
     let built = incident::build(&incidents.items);
     let ov = security::overview(&sites.items, &log.items, now);
     let mut rows = Vec::new();
@@ -121,7 +130,7 @@ pub fn overview_at(user_root: &Path, off: i64, now: i64) -> Result<String, Strin
         ));
     }
     let sites_on_watch = sites.items.iter().filter(|s| !sched::on_watch_now(&watches.items, &s.id, now).is_empty()).count();
-    let rejected = sites.rejected.len() + log.rejected.len() + watches.rejected.len() + incidents.rejected.len() + outing_log.rejected.len() + comms_log.rejected.len() + cov_log.rejected.len() + train_log.rejected.len() + channel_file.rejected.len() + asset_file.rejected.len() + insp_log.rejected.len() + avail_log.rejected.len();
+    let rejected = sites.rejected.len() + log.rejected.len() + watches.rejected.len() + incidents.rejected.len() + outing_log.rejected.len() + comms_log.rejected.len() + cov_log.rejected.len() + train_log.rejected.len() + channel_file.rejected.len() + asset_file.rejected.len() + insp_log.rejected.len() + avail_log.rejected.len() + rules_file.rejected.len() + equip_log.rejected.len();
     if rejected > 0 {
         look_total += 1;
     }
@@ -141,6 +150,8 @@ struct Recs {
     comms: Vec<comms::CommsEntry>,
     coverage: Vec<comms::Coverage>,
     training: Vec<comms::Training>,
+    gear: Vec<equip::Gear>,
+    rules: Vec<siterec::PatrolRule>,
     assets: Vec<siterec::Asset>,
     inspections: Vec<siterec::Inspection>,
     avail: Vec<siterec::Availability>,
@@ -170,6 +181,9 @@ fn site_looks(site: &str, st: &security::SiteStatus, cur: Option<&PostureEntry>,
     }
     out.extend(comms::looks(site, &recs.comms, &recs.coverage));
     out.extend(comms::training_looks(site, watches, &recs.training));
+    let patrols: Vec<(String, i64)> = recs.outings.iter().filter(|o| o.patrol && o.site == site && matches!(o.state, outing::State::Out | outing::State::Back)).map(|o| (o.task.clone(), o.ended.unwrap_or(o.left))).collect();
+    out.extend(equip::looks(site, &recs.gear, now));
+    out.extend(siterec::schedule_looks(site, &recs.rules, &patrols, off, now));
     out.extend(siterec::asset_looks(site, &recs.assets, &recs.inspections, now));
     out.extend(siterec::availability_looks(site, watches, &recs.avail, now));
     let from = (now + off).div_euclid(1440) * 1440 - off;
@@ -719,6 +733,40 @@ pub fn routes_get(user_root: &Path, site: &str) -> Result<String, String> {
     let rows: Vec<String> = f.items.iter().filter(|r| r.site == site).map(|r| format!("{{\"name\":{},\"checkpoints\":[{}]}}", q(&r.name), r.checkpoints.iter().map(|c| q(c)).collect::<Vec<_>>().join(","))).collect();
     Ok(format!("{{\"routes\":[{}],\"unreadable_lines\":{}}}", rows.join(","), f.rejected.len()))
 }
+pub fn schedule_get(user_root: &Path, site: &str) -> Result<String, String> {
+    known_site(user_root, site)?;
+    let f = siterec::load_schedule(user_root)?;
+    let rows: Vec<String> = f.items.iter().filter(|r| r.site == site).map(|r| format!("{{\"route\":{},\"every_hours\":{},\"from\":{},\"to\":{}}}", q(&r.route), r.every_hours, q(&siterec::clock_text(r.from)), q(&siterec::clock_text(r.to)))).collect();
+    Ok(format!("{{\"rules\":[{}],\"unreadable_lines\":{}}}", rows.join(","), f.rejected.len()))
+}
+/// Each rule is (route, every N hours, from "HH:MM", to "HH:MM").
+pub fn schedule_save(user_root: &Path, site: &str, rules: &[(String, u32, String, String)]) -> Result<(), String> {
+    let mut list = Vec::new();
+    for (route, h, a, b) in rules {
+        let from = siterec::parse_clock(a).ok_or("A start time could not be read. Use hours and minutes, like 20:00.")?;
+        let to = siterec::parse_clock(b).ok_or("An end time could not be read. Use hours and minutes, like 06:00.")?;
+        list.push(siterec::PatrolRule { site: site.to_string(), route: route.trim().to_string(), every_hours: *h, from, to });
+    }
+    siterec::save_schedule(user_root, site, &list)
+}
+/// Communications gear (with its test and failure history) and the Inventory lines that could be listed as gear.
+pub fn equipment_list(user_root: &Path) -> Result<String, String> {
+    let log = equip::load(user_root)?;
+    let inv = crate::userdata::UserDir::new(user_root).load_inventory()?;
+    let gear = equip::gear(&log.items, &inv);
+    let rows: Vec<String> = gear.iter().map(|g| format!("{{\"uid\":{},\"name\":{},\"in_inventory\":{},\"kind\":{},\"site\":{},\"test_days\":{},\"last_test\":{},\"faults\":{},\"open_fault\":{},\"retired\":{}}}",
+        q(&g.uid), q(&g.name), g.in_inventory, q(&g.kind), q(&g.site), g.test_days, q(&g.last_test.map(|t| security::format_instant(t, 0)).unwrap_or_default()), g.faults, q(g.open_fault.as_deref().unwrap_or("")), g.retired)).collect();
+    let listed: Vec<&str> = gear.iter().map(|g| g.uid.as_str()).collect();
+    let choices: Vec<String> = inv.iter().filter(|i| !i.uid.is_empty() && !listed.contains(&i.uid.as_str())).map(|i| format!("{{\"uid\":{},\"name\":{},\"location\":{}}}", q(&i.uid), q(&i.name), q(&i.location))).collect();
+    let kinds: Vec<String> = equip::KINDS.iter().map(|k| format!("{{\"id\":{},\"label\":{}}}", q(k.0), q(k.1))).collect();
+    Ok(format!("{{\"gear\":[{}],\"choices\":[{}],\"kinds\":[{}],\"unreadable_lines\":{}}}", rows.join(","), choices.join(","), kinds.join(","), log.rejected.len()))
+}
+#[allow(clippy::too_many_arguments)]
+pub fn equipment_add(user_root: &Path, uid: &str, ev: &str, kind: &str, site: &str, test_days: u32, by: &str, note: &str, offset_minutes: i64) -> Result<String, String> {
+    let off = offset_ok(offset_minutes)?;
+    let inv = crate::userdata::UserDir::new(user_root).load_inventory()?;
+    equip::add(user_root, &inv, uid, ev, kind, site, test_days, by, note, off, now_minutes())
+}
 pub fn routes_save(user_root: &Path, site: &str, list: &[siterec::Route]) -> Result<(), String> {
     let fixed: Vec<siterec::Route> = list.iter().map(|r| siterec::Route { site: site.to_string(), ..r.clone() }).collect();
     siterec::save_routes(user_root, site, &fixed)
@@ -1116,7 +1164,13 @@ mod tests {
         assert!(l.contains("\"due\":\"never\""));
         asset_inspect(&r, &a, "needs-work", "Sam", "Wire slack", 0).unwrap();
         assert!(assets_list_at(&r, &sid, 0, now_minutes()).unwrap().contains("\"due\":\"needs-work\""));
+        assert!(equipment_list(&r).unwrap().contains("\"gear\":[]"));
+        assert!(equipment_add(&r, "nope", "listed", "radio", "", 0, "Dana", "", 0).is_err());
         assert!(routes_get(&r, "nowhere").is_err());
+        schedule_save(&r, &sid, &[(String::new(), 4, "00:00".into(), "23:59".into())]).unwrap();
+        assert!(schedule_get(&r, &sid).unwrap().contains("\"every_hours\":4"));
+        assert!(schedule_save(&r, &sid, &[(String::new(), 4, "25:00".into(), "23:59".into())]).is_err());
+        assert!(overview_at(&r, 0, now_minutes()).unwrap().contains("none is on record"));
         routes_save(&r, &sid, &[siterec::Route { site: String::new(), name: "Loop".into(), checkpoints: vec!["Gate".into(), "Creek".into()] }]).unwrap();
         assert!(routes_get(&r, &sid).unwrap().contains("\"Creek\""));
         availability_set(&r, "Kim", "unavailable", "", "Sick", "Dana", 0).unwrap();

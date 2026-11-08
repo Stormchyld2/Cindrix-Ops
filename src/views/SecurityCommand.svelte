@@ -175,7 +175,7 @@
   {#if reports.length}
     <div class="panel reports">
       <h2>Waiting for connection</h2>
-      <p class="muted">Sent by a Pocket phone when it reached this computer. Nothing goes into the records until you accept it. Reports can add notes and new incidents, never change an incident's status. A count sheet only sets the numbers on items you already have; it never adds or deletes one.</p>
+      <p class="muted">Sent by a Pocket phone when it reached this computer. Nothing goes into the records until you accept it. Reports can add notes and new incidents, never change an incident's status. A count sheet only sets the numbers on items you already have; it never adds or deletes one. Check-ins only add to someone who is already out; a phone cannot start, end or cancel an outing.</p>
       {#each reports as r (r.name)}
         <div class="rep">
           {#if r.problem}
@@ -196,6 +196,9 @@
                 {/each}
               </tbody></table>
             {/if}
+          {:else if r.kind === 'checkin-sheet'}
+            <div><b>{r.person}</b>'s phone, <b>check-ins</b> for someone who is out, {r.entries} line{r.entries === 1 ? '' : 's'}, written {when(r.created)}</div>
+            <div class="acts"><button class="btn primary" onclick={() => acceptReport(r)} title="Add these to the outing record as reported by the phone">Accept</button> <button class="btn" onclick={() => asideReport(r)}>Set aside</button></div>
           {:else}
             <div><b>{r.person}</b>'s phone, {r.entries} line{r.entries === 1 ? '' : 's'}, written {when(r.created)}</div>
             <div class="acts"><button class="btn primary" onclick={() => acceptReport(r)}>Accept</button> <button class="btn" onclick={() => asideReport(r)}>Set aside</button></div>

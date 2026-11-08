@@ -183,3 +183,8 @@ The Hub side of outings and patrols is built (doc 46, `core/src/security_outing.
 from a radio call or a runner. A phone in the field could later put its own check-ins and patrol checkpoints in the outbox as
 outing lines, marked **reported**, and the host would accept them like a report. Not built. The base's own log stays the
 record, and a missing phone message never counts as bad news by itself.
+
+## Check-in sheets (Hub side built)
+
+A phone can hand in a **check-in sheet** to the same waiting mailbox: contacts, checkpoints and notes about someone who is already out. File format and rules are in `core/src/checkinsheet.rs`: `# format: checkin-sheet 1`, header `device`, `person`, `created`, then one line per check-in (`id`, outing, `contact`/`checkpoint`/`note`, time, two fields, words). Ids start with the phone's code. The host accepts or sets aside; accepted lines enter the outing log as "reported". A sheet cannot start, end, extend or cancel an outing. The phone side is not built (Pocket repo).
+

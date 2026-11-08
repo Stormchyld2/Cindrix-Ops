@@ -182,6 +182,82 @@ pub fn save_routes(r: &Path, site: &str, list: &[Route]) -> Result<(), String> {
     fsio::backup_then_write(&routes_path(r), &store::dir(r).join("backups"), t.as_bytes()).map_err(|_| "The route list could not be saved.".to_string())
 }
 
+// ---------- patrol schedules ----------
+
+/// "Patrol this site every N hours between two times of day." A reminder only: it opens nothing and lowers nothing.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PatrolRule {
+    pub site: String,
+    /// A route name from the Security tab, or empty for any patrol.
+    pub route: String,
+    pub every_hours: u32,
+    /// Minutes after local midnight.
+    pub from: u32,
+    pub to: u32,
+}
+pub fn schedule_path(r: &Path) -> PathBuf {
+    store::dir(r).join("patrol-schedule.txt")
+}
+pub fn clock_text(m: u32) -> String {
+    format!("{:02}:{:02}", m / 60, m % 60)
+}
+pub fn parse_clock(t: &str) -> Option<u32> {
+    let (h, m) = t.trim().split_once(':')?;
+    let (h, m): (u32, u32) = (h.parse().ok()?, m.parse().ok()?);
+    if h < 24 && m < 60 { Some(h * 60 + m) } else { None }
+}
+pub fn parse_schedule(text: &str) -> Result<Parsed<PatrolRule>, String> {
+    check_format(text, "patrol-schedule", 1)?;
+    let mut p = Parsed::default();
+    for l in text.lines().filter(|l| !l.trim().is_empty() && !l.starts_with('#')) {
+        let f: Vec<&str> = l.split('\t').collect();
+        let r = (f.len() == 5 && valid_id(f[0])).then(|| f[2].parse::<u32>().ok().filter(|h| (1..=72).contains(h)).zip(parse_clock(f[3])).zip(parse_clock(f[4]))).flatten()
+            .map(|((h, a), b)| PatrolRule { site: f[0].into(), route: unesc(f[1]), every_hours: h, from: a, to: b });
+        match r { Some(r) => p.items.push(r), None => p.rejected.push(l.to_string()) }
+    }
+    Ok(p)
+}
+pub fn load_schedule(r: &Path) -> Result<Parsed<PatrolRule>, String> {
+    parse_schedule(&read_text(&schedule_path(r))?)
+}
+/// Replace one site's rules, keeping every other site's.
+pub fn save_schedule(r: &Path, site: &str, list: &[PatrolRule]) -> Result<(), String> {
+    if !store::load_sites(r)?.items.iter().any(|s| s.id == site) { return Err("That site is not on the list.".to_string()); }
+    let cur = load_schedule(r)?;
+    if !cur.rejected.is_empty() { return Err("Some lines in the patrol schedule could not be read, so nothing was changed.".to_string()); }
+    for l in list {
+        if !(1..=72).contains(&l.every_hours) { return Err("Patrols can be every 1 to 72 hours.".to_string()); }
+        if l.from >= 1440 || l.to >= 1440 || l.from == l.to { return Err("Give a start and an end time of day that differ.".to_string()); }
+    }
+    let mut t = String::from("# format: patrol-schedule 1\n# site, route name (empty = any patrol), every N hours, from (local time of day), to\n");
+    for l in cur.items.iter().filter(|x| x.site != site).chain(list.iter().map(|x| x)) {
+        let st = if l.site.is_empty() || l.site == site { site } else { l.site.as_str() };
+        t.push_str(&format!("{}\t{}\t{}\t{}\t{}\n", st, esc(&clean(&l.route, 60)), l.every_hours, clock_text(l.from), clock_text(l.to)));
+    }
+    fsio::backup_then_write(&schedule_path(r), &store::dir(r).join("backups"), t.as_bytes()).map_err(|_| "The patrol schedule could not be saved.".to_string())
+}
+/// Is this local minute-of-day inside the window (which may run past midnight)?
+fn in_window(m: u32, from: u32, to: u32) -> bool {
+    if from < to { m >= from && m < to } else { m >= from || m < to }
+}
+/// `last` = (route name, time) of each patrol that came back or is under way at this site, in minutes.
+pub fn schedule_looks(site: &str, rules: &[PatrolRule], patrols: &[(String, i64)], off: i64, now: i64) -> Vec<String> {
+    let mut out = Vec::new();
+    let local = (now + off).rem_euclid(1440) as u32;
+    for r in rules.iter().filter(|r| r.site == site) {
+        if !in_window(local, r.from, r.to) { continue; }
+        let last = patrols.iter().filter(|(n, _)| r.route.is_empty() || n.eq_ignore_ascii_case(&r.route)).map(|p| p.1).max();
+        let what = if r.route.is_empty() { "A patrol".to_string() } else { format!("The {} patrol", r.route) };
+        let every = r.every_hours as i64 * 60;
+        match last {
+            None => out.push(format!("{} is meant to go every {} hour{} between {} and {}, and none is on record yet.", what, r.every_hours, if r.every_hours == 1 { "" } else { "s" }, clock_text(r.from), clock_text(r.to))),
+            Some(t) if now > t + every + 15 => out.push(format!("{} is due: the last was {} ago, and it is meant to go every {} hour{}.", what, if (now - t) >= 120 { format!("{} hours", (now - t) / 60) } else { format!("{} minutes", now - t) }, r.every_hours, if r.every_hours == 1 { "" } else { "s" })),
+            _ => {}
+        }
+    }
+    out
+}
+
 // ---------- who is available ----------
 
 #[derive(Debug, Clone, PartialEq)]
@@ -340,6 +416,35 @@ mod tests {
 
     fn watch(person: &str, s: i64, e: i64, st: WatchState) -> Watch {
         Watch { id: "w1".into(), site: "camp".into(), person: person.into(), role: "watch".into(), start: format_instant(s, 0), end: format_instant(e, 0), state: st, ack_at: String::new(), entered_at: String::new(), notes: String::new() }
+    }
+
+    #[test]
+    fn patrol_schedules_remind_only_inside_their_window_and_never_when_a_patrol_is_recent() {
+        let r = tmp("sched");
+        let rule = |route: &str| PatrolRule { site: "camp".into(), route: route.into(), every_hours: 4, from: 20 * 60, to: 6 * 60 };
+        save_schedule(&r, "camp", &[rule("")]).unwrap();
+        let got = load_schedule(&r).unwrap().items;
+        assert_eq!((got.len(), got[0].every_hours, got[0].from, got[0].to), (1, 4, 1200, 360));
+        // 23:00 local (offset 0): inside the overnight window
+        let night = 20_000 * 1440 + 23 * 60;
+        assert!(schedule_looks("camp", &got, &[], 0, night)[0].contains("none is on record"));
+        assert!(schedule_looks("camp", &got, &[("Loop".into(), night - 60)], 0, night).is_empty());
+        let l = schedule_looks("camp", &got, &[("Loop".into(), night - 6 * 60)], 0, night);
+        assert!(l[0].contains("due") && l[0].contains("6 hours"), "{:?}", l);
+        // midday: outside the window, so quiet
+        assert!(schedule_looks("camp", &got, &[], 0, 20_000 * 1440 + 12 * 60).is_empty());
+        // the window follows the computer's time zone offset
+        assert!(schedule_looks("camp", &got, &[], -300, night + 300 - 11 * 60 * 0).len() <= 1);
+        // a named route only counts patrols of that route
+        save_schedule(&r, "camp", &[rule("Loop")]).unwrap();
+        let g = load_schedule(&r).unwrap().items;
+        assert!(schedule_looks("camp", &g, &[("Other".into(), night - 10)], 0, night)[0].contains("none is on record"));
+        assert!(save_schedule(&r, "camp", &[PatrolRule { every_hours: 0, ..rule("") }]).is_err());
+        assert!(save_schedule(&r, "camp", &[PatrolRule { from: 60, to: 60, ..rule("") }]).is_err());
+        assert!(save_schedule(&r, "nowhere", &[]).is_err());
+        assert_eq!(parse_clock("7:05"), Some(425));
+        assert_eq!(parse_clock("24:00"), None);
+        let _ = fs::remove_dir_all(&r);
     }
 
     #[test]

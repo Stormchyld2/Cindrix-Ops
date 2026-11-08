@@ -4,6 +4,7 @@
 
 use crate::security::format_instant;
 use crate::security_comms as comms;
+use crate::security_equipment as equip;
 use crate::security_incident as incident;
 use crate::security_outing as outing;
 use crate::security_site as site;
@@ -26,7 +27,8 @@ pub fn render(r: &Path, off: i64, now: i64) -> Result<String, String> {
     let insp = site::load_inspections(r)?;
     let assets = site::load_assets(r)?;
     let avail = site::load_availability(r)?;
-    let unreadable = inc.rejected.len() + out_log.rejected.len() + comm.rejected.len() + cov.rejected.len() + insp.rejected.len() + avail.rejected.len();
+    let eq = equip::load(r)?;
+    let unreadable = inc.rejected.len() + out_log.rejected.len() + comm.rejected.len() + cov.rejected.len() + insp.rejected.len() + avail.rejected.len() + eq.rejected.len();
 
     let mut t = format!("SECURITY RECORDS\nWritten {}\n", clock(&format_instant(now, off)));
     if unreadable > 0 {
@@ -81,6 +83,13 @@ pub fn render(r: &Path, off: i64, now: i64) -> Result<String, String> {
     if avail.items.is_empty() { t.push_str("None recorded.\n"); }
     for a in &avail.items {
         t.push_str(&format!("{} {}: {}{} {} (written by {})\n", clock(&a.from), a.person, a.status, if a.until.is_empty() { String::new() } else { format!(" until {}", clock(&a.until)) }, a.reason, a.by));
+    }
+    t.push_str("\n== COMMUNICATIONS GEAR ==\n");
+    if eq.items.is_empty() { t.push_str("None recorded.\n"); }
+    let inv = UserDir::new(r).load_inventory().unwrap_or_default();
+    for e in &eq.items {
+        let nm = inv.iter().find(|i| i.uid == e.uid).map(|i| i.name.clone()).unwrap_or_else(|| e.uid.clone());
+        t.push_str(&format!("{} {}: {}{}{} ({})\n", clock(&e.at), nm, e.ev, if e.kind.is_empty() { String::new() } else { format!(" as {}", e.kind) }, if e.note.is_empty() { String::new() } else { format!(" - {}", e.note) }, e.by));
     }
     Ok(t)
 }

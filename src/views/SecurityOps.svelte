@@ -5,6 +5,7 @@
   import SecurityComms from './SecurityComms.svelte';
   import SecurityTab from './SecurityTab.svelte';
   import SecurityPlans from './SecurityPlans.svelte';
+  import SecurityGear from './SecurityGear.svelte';
   import SecurityAvailability from './SecurityAvailability.svelte';
 
   const tabs = [
@@ -49,6 +50,7 @@
   <SecurityOperations bind:site {me} />
 {:else if tab === 'Planning'}
   <SecurityComms part="planning" bind:site {me} />
+  <SecurityGear {site} {me} />
   <SecurityPlans {site} {me} />
 {:else if tab === 'Personnel'}
   <SecurityAvailability {me} />

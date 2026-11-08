@@ -1693,6 +1693,25 @@ export async function securityRoutesSave(site: string, routes: RouteRow[]): Prom
   if (tauriHost) return call<void>('security_routes_save', { site, routes });
   throw new Error('Patrol routes are saved in the program, not in the browser preview.');
 }
+export type GearRow = { uid: string; name: string; in_inventory: boolean; kind: string; site: string; test_days: number; last_test: string; faults: number; open_fault: string; retired: boolean };
+export type GearList = { gear: GearRow[]; choices: { uid: string; name: string; location: string }[]; kinds: { id: string; label: string }[]; unreadable_lines: number };
+export async function securityEquipmentList(): Promise<GearList> {
+  if (tauriHost) return call<GearList>('security_equipment_list');
+  return { gear: [], choices: [], kinds: [], unreadable_lines: 0 };
+}
+export async function securityEquipmentAdd(uid: string, ev: 'listed' | 'test' | 'fault' | 'repaired' | 'charged' | 'retired', kind: string, site: string, testDays: number, by: string, note: string): Promise<string> {
+  if (tauriHost) return call<string>('security_equipment_add', { uid, ev, kind, site, testDays, by, note, offsetMinutes: clockOffset() });
+  throw new Error('Gear records are saved in the program, not in the browser preview.');
+}
+export type RuleRow = { route: string; every_hours: number; from: string; to: string };
+export async function securityScheduleGet(site: string): Promise<{ rules: RuleRow[]; unreadable_lines: number }> {
+  if (tauriHost) return call('security_schedule_get', { site });
+  return { rules: [], unreadable_lines: 0 };
+}
+export async function securityScheduleSave(site: string, rules: RuleRow[]): Promise<void> {
+  if (tauriHost) return call<void>('security_schedule_save', { site, rules });
+  throw new Error('The patrol schedule is saved in the program, not in the browser preview.');
+}
 export type AvailabilityRow = { id: string; person: string; status: 'available' | 'unavailable'; from: string; until: string; reason: string; by: string };
 export type AvailabilityList = { unavailable: AvailabilityRow[]; recent: AvailabilityRow[]; unreadable_lines: number };
 export async function securityAvailabilityList(): Promise<AvailabilityList> {
@@ -1754,7 +1773,7 @@ export async function securityOutingEvent(outing: string, ev: 'contact' | 'check
   throw new Error('Outings are saved in the program, not in the browser preview.');
 }
 
-export type PocketReport = { name: string; size: number; device: string; person: string; created: string; entries: number; kind: 'report' | 'count-sheet'; changed: number; problem: string };
+export type PocketReport = { name: string; size: number; device: string; person: string; created: string; entries: number; kind: 'report' | 'count-sheet' | 'checkin-sheet'; changed: number; problem: string };
 export type SheetLine = { name: string; location: string; unit: string; was: number; now: number; counted: number; standing: 'matches' | 'moved' | 'already' | 'missing' };
 export type CountSheet = { person: string; created: string; lines: SheetLine[] };
 export async function securityPocketSheet(name: string): Promise<CountSheet> {

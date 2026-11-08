@@ -248,3 +248,32 @@ pub fn security_weather_set(site: String, call_sign: String) -> Result<(), Strin
 pub fn security_export_records(offset_minutes: i64) -> Result<String, String> {
     api::export_records(&user_root(), offset_minutes)
 }
+
+#[derive(Deserialize)]
+pub struct RuleDto {
+    route: String,
+    every_hours: u32,
+    from: String,
+    to: String,
+}
+
+#[tauri::command]
+pub fn security_schedule_get(site: String) -> Result<Value, String> {
+    json(api::schedule_get(&user_root(), &site))
+}
+
+#[tauri::command]
+pub fn security_schedule_save(site: String, rules: Vec<RuleDto>) -> Result<(), String> {
+    let list: Vec<(String, u32, String, String)> = rules.into_iter().map(|r| (r.route, r.every_hours, r.from, r.to)).collect();
+    api::schedule_save(&user_root(), &site, &list)
+}
+
+#[tauri::command]
+pub fn security_equipment_list() -> Result<Value, String> {
+    json(api::equipment_list(&user_root()))
+}
+
+#[tauri::command]
+pub fn security_equipment_add(uid: String, ev: String, kind: String, site: String, test_days: u32, by: String, note: String, offset_minutes: i64) -> Result<String, String> {
+    api::equipment_add(&user_root(), &uid, &ev, &kind, &site, test_days, &by, &note, offset_minutes)
+}

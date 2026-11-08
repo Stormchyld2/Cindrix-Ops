@@ -3,8 +3,8 @@
   // and the patrol routes (core/src/security_site.rs). Inspections are lines added to a log, never edits.
   import { onMount } from 'svelte';
   import {
-    securityOverview, securityAssetsList, securityAssetSave, securityAssetInspect, securityRoutesGet, securityRoutesSave,
-    type AssetList, type AssetRow, type RouteRow,
+    securityOverview, securityAssetsList, securityAssetSave, securityAssetInspect, securityRoutesGet, securityRoutesSave, securityScheduleGet, securityScheduleSave,
+    type AssetList, type AssetRow, type RouteRow, type RuleRow,
   } from '../lib/api';
 
   let { site = $bindable(''), me = '' }: { site: string; me: string } = $props();
@@ -12,6 +12,7 @@
   let note = $state('');
   let list: AssetList | null = $state(null);
   let routes: RouteRow[] = $state([]);
+  let rules: RuleRow[] = $state([]);
   const who = $derived(me.trim());
 
   async function load() {
@@ -19,7 +20,7 @@
       const ov = await securityOverview();
       sites = ov.sites.map((s) => ({ id: s.id, name: s.name }));
       if (!sites.some((s) => s.id === site)) site = sites[0]?.id ?? '';
-      if (site) { list = await securityAssetsList(site); routes = (await securityRoutesGet(site)).routes; }
+      if (site) { list = await securityAssetsList(site); routes = (await securityRoutesGet(site)).routes; rules = (await securityScheduleGet(site)).rules; }
     } catch (e) { note = String(e); }
   }
   onMount(load);
@@ -46,6 +47,9 @@
   const cpText = (r: RouteRow) => r.checkpoints.join('\n');
   function setCp(i: number, v: string) { routes[i].checkpoints = v.split('\n').map((s) => s.trim()).filter(Boolean); }
   const saveRoutes = () => act(() => securityRoutesSave(site, routes), 'The routes are saved. A patrol can use them as its checkpoints.');
+  function addRule() { rules = [...rules, { route: '', every_hours: 4, from: '20:00', to: '06:00' }]; }
+  function dropRule(i: number) { rules = rules.filter((_, k) => k !== i); }
+  const saveRules = () => act(() => securityScheduleSave(site, rules.map((r) => ({ ...r, every_hours: Number(r.every_hours) || 0 }))), 'Saved. When a patrol is overdue inside its hours, Command shows it under "Needs a look".');
 </script>
 
 {#if note}<p class="note" role="status">{note}</p>{/if}
@@ -114,6 +118,22 @@
       </div>
     {/each}
     <div class="acts"><button class="btn" onclick={addRoute}>Add a route</button> <button class="btn primary" onclick={saveRoutes}>Save the routes</button></div>
+  </div>
+
+  <div class="panel">
+    <h2>Patrol schedule</h2>
+    <p class="muted">Say how often this site should be patrolled and during which hours. This is only a reminder: if no patrol has gone when one is due, Command shows it under "Needs a look". Nothing is opened or changed for you. Leave the route empty to count any patrol.</p>
+    {#each rules as r, i}
+      <div class="row ch">
+        <input class="input" list="rts" placeholder="Route (any)" bind:value={r.route} aria-label="Route" />
+        <label class="small">Every <input class="input short" type="number" min="1" max="72" bind:value={r.every_hours} /> hours</label>
+        <label class="small">from <input class="input" type="time" bind:value={r.from} /></label>
+        <label class="small">to <input class="input" type="time" bind:value={r.to} /></label>
+        <button class="btn" onclick={() => dropRule(i)}>Remove</button>
+      </div>
+    {/each}
+    <datalist id="rts">{#each routes as r}<option value={r.name}></option>{/each}</datalist>
+    <div class="acts"><button class="btn" onclick={addRule}>Add a patrol time</button> <button class="btn primary" onclick={saveRules}>Save the schedule</button></div>
   </div>
 {/if}
 
