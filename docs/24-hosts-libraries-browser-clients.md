@@ -128,6 +128,17 @@ steps 3 onward wait for the real Windows test (doc 22).
    (`product.rs`); if a model proves too heavy, a smaller one or a setting to turn it off is the fallback.
    Later, if wanted: Hub using a Vault laptop's assistant over the network.
 
+## Archives without kiwix-serve (checked 2026-11-08)
+
+The share server does not need `kiwix-serve`. Archive pages, pictures, title suggestions, the results page and the
+passages the assistant uses all come from our own ZIM reader (`core/src/zimread.rs`, `library.rs`; the routes are in
+`src-tauri/src/zimview.rs`, which the share server calls for `/content/`, `/suggest` and `/search`). Guests on the
+hotspot therefore read archives on a host that has no `kiwix-serve` (the Android plan). What `kiwix-serve` still adds
+on a Windows host is **full-text search of article bodies** (from the archive's own index) and the reader's skin
+files. Without it, search matches **titles** only, and the results page says so. A reader for the archive's own
+text index is not built; it is a separate piece of work and is listed in doc 49 section G as something to judge on
+real use. Pages from very large archives on a phone still need the real-hardware test below.
+
 ## To test on real hardware (none done)
 
 - Reading a large ZIM from an exFAT drive on Android through the system picker.

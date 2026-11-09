@@ -141,3 +141,65 @@ pub fn backup_then_write(path: &Path, backups_dir: &Path, data: &[u8]) -> std::i
     }
     write_atomic(path, data)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn tmp(name: &str) -> PathBuf {
+        let p = std::env::temp_dir().join(format!("cindrix-fsio-{}-{}", name, std::process::id()));
+        let _ = fs::remove_dir_all(&p);
+        fs::create_dir_all(&p).unwrap();
+        p
+    }
+
+    #[test]
+    fn write_atomic_replaces_the_file_and_leaves_no_temporary_one() {
+        let d = tmp("atomic");
+        let f = d.join("sub").join("a.txt");
+        write_atomic(&f, b"one").unwrap();
+        write_atomic(&f, b"two").unwrap();
+        assert_eq!(fs::read(&f).unwrap(), b"two");
+        assert!(!d.join("sub").join("a.txt.tmp").exists());
+        let _ = fs::remove_dir_all(&d);
+    }
+
+    #[test]
+    fn backup_then_write_keeps_the_old_contents() {
+        let d = tmp("backup");
+        let f = d.join("a.txt");
+        write_atomic(&f, b"old").unwrap();
+        backup_then_write(&f, &d.join("backups"), b"new").unwrap();
+        assert_eq!(fs::read(&f).unwrap(), b"new");
+        let kept: Vec<_> = fs::read_dir(d.join("backups")).unwrap().map(|e| fs::read(e.unwrap().path()).unwrap()).collect();
+        assert_eq!(kept, vec![b"old".to_vec()]);
+        let _ = fs::remove_dir_all(&d);
+    }
+
+    #[test]
+    fn append_adds_to_the_end_and_creates_the_file() {
+        let d = tmp("append");
+        let f = d.join("log.txt");
+        append(&f, b"a\n").unwrap();
+        append(&f, b"b\n").unwrap();
+        assert_eq!(read_to_string(&f).unwrap(), "a\nb\n");
+        let _ = fs::remove_dir_all(&d);
+    }
+
+    #[test]
+    fn only_the_listed_files_are_covered_by_the_lock() {
+        for yes in ["security/x.txt", "security/backups/y.txt", "devices.txt", "devices-log.txt", "trusted-devices.txt", "share-pin.txt"] {
+            assert!(is_protected_rel(Path::new(yes)), "{} should be covered", yes);
+        }
+        for no in ["inventory.txt", "tasks.txt", "inbox/pocket/r.txt", "exports/security-records.txt", "people/a/lock.json", "seclock.json", "sub/devices.txt"] {
+            assert!(!is_protected_rel(Path::new(no)), "{} should not be covered", no);
+        }
+    }
+
+    #[test]
+    fn a_sealed_marker_is_recognised_and_plain_text_is_not() {
+        assert!(is_sealed(b"CXL1abc"));
+        assert!(!is_sealed(b"CXL"));
+        assert!(!is_sealed(b"# format: x 1"));
+    }
+}

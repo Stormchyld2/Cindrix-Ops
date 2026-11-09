@@ -7,6 +7,9 @@ down. The older lists stay where they are: doc 22 (first Windows run), doc 34 (h
 Write yes/no for each line and copy any red text. Do Part A first; nothing later is worth trying if it fails.
 
 ## A. Windows host (laptop)
+0. The Windows build is not code-signed (a certificate costs money and needs the owner's decision). Windows SmartScreen will say
+   "Windows protected your PC" the first time: choose More info, then Run anyway. Note which Windows version said what.
+   Check the build you got is the one CI made by comparing the file's SHA-256 (`Get-FileHash`) with the one in the CI log.
 1. Doc 22 section 4, all twelve checks.
 2. Doc 34 "To test", all six steps (hotspot, PIN, guest refusal, wrong PIN wait).
 3. Close the program while sharing is on, start it again: sharing is off at start (it must be).
