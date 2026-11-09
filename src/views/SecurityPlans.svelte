@@ -2,10 +2,10 @@
   // Security Operations > Planning > written plans (core/src/security_plans.rs). Every save is a new version and old
   // versions stay. "Put into use" pins one exact version to a live incident and keeps a copy of its words.
   import { onMount } from 'svelte';
-  import { securityPlansList, securityPlanRead, securityPlanSave, securityPlanActivate, securityIncidentList, type PlanInfo, type SecurityIncident } from '../lib/api';
+  import { securityPlansList, securityPlanRead, securityPlanSave, securityPlanActivate, securityIncidentList, type SecPlanInfo, type SecurityIncident } from '../lib/api';
 
   let { site = '', me = '' }: { site: string; me: string } = $props();
-  let plans: PlanInfo[] = $state([]);
+  let plans: SecPlanInfo[] = $state([]);
   let incidents: SecurityIncident[] = $state([]);
   let note = $state('');
   let openId: string | null = $state(null); // plan being edited; '' = new
@@ -20,7 +20,7 @@
   onMount(load);
   async function act(fn: () => Promise<unknown>, ok = '') { try { await fn(); note = ok; await load(); } catch (e) { note = String(e); } }
 
-  async function open(p: PlanInfo | null, rev = 0) {
+  async function open(p: SecPlanInfo | null, rev = 0) {
     try {
       if (!p) { openId = ''; pId = ''; pText = '# Plan name\n\nWhen to use it:\n\nSteps:\n1. \n'; pRev = 0; return; }
       const r = await securityPlanRead(p.id, rev); openId = p.id; pId = p.id; pText = r.text; pRev = r.revision; useRev = 0; useInc = usable[0]?.id ?? '';

@@ -1722,8 +1722,8 @@ export async function securityAvailabilitySet(person: string, status: 'available
   if (tauriHost) return call<string>('security_availability_set', { person, status, untilLocal, reason, by, offsetMinutes: clockOffset() });
   throw new Error('Availability is saved in the program, not in the browser preview.');
 }
-export type PlanInfo = { id: string; title: string; current: number; revisions: number[] };
-export async function securityPlansList(): Promise<{ plans: PlanInfo[] }> {
+export type SecPlanInfo = { id: string; title: string; current: number; revisions: number[] };
+export async function securityPlansList(): Promise<{ plans: SecPlanInfo[] }> {
   if (tauriHost) return call('security_plans_list');
   return { plans: [] };
 }
