@@ -113,6 +113,9 @@ pub fn overview_at(user_root: &Path, off: i64, now: i64) -> Result<String, Strin
     let ov = security::overview(&sites.items, &log.items, now);
     let mut rows = Vec::new();
     let mut look_total = 0usize;
+    // what the program tells the host about while it is open: a key (so the same thing is announced once), the words, and how urgent
+    let mut alerts: Vec<String> = Vec::new();
+    let alert = |key: String, text: String, urgent: bool| format!("{{\"key\":{},\"text\":{},\"urgent\":{}}}", q(&key), q(&text), urgent);
     for (s, st) in sites.items.iter().zip(ov.sites.iter()) {
         let cur = security::current_entry(&log.items, &s.id);
         let on: Vec<String> = sched::on_watch_now(&watches.items, &s.id, now).iter().map(|w| q(&w.person)).collect();
@@ -122,6 +125,12 @@ pub fn overview_at(user_root: &Path, off: i64, now: i64) -> Result<String, Strin
         let primary = comms::channels_for(&channel_file.items, &s.id).0.into_iter().find(|c| c.role == "primary").map(|c| format!("CH {}", c.channel)).unwrap_or_default();
         let last_patrol = outing::last_patrol(&outings, &s.id).map(|m| format_instant(m, off)).unwrap_or_default();
         look_total += looks.len();
+        if live > 0 {
+            alerts.push(alert(format!("incident|{}|{}", s.id, live), format!("{}: {} incident{} open.", s.name, live, if live == 1 { "" } else { "s" }), true));
+        }
+        for l in &looks {
+            alerts.push(alert(format!("look|{}|{}", s.id, l), format!("{}: {}", s.name, l), false));
+        }
         rows.push(format!(
             "{{\"id\":{},\"name\":{},\"tz\":{},\"posture\":{},\"check_due\":{},\"never_assessed\":{},\"set_by\":{},\"reason\":{},\"at\":{},\"review_by\":{},\"on_watch\":[{}],\"live_incidents\":{},\"out_now\":{},\"last_patrol\":{},\"primary_channel\":{},\"looks\":[{}]}}",
             q(&s.id), q(&s.name), q(&s.tz), q(st.posture.word()), st.check_due, st.never_assessed,
@@ -133,14 +142,16 @@ pub fn overview_at(user_root: &Path, off: i64, now: i64) -> Result<String, Strin
     let rejected = sites.rejected.len() + log.rejected.len() + watches.rejected.len() + incidents.rejected.len() + outing_log.rejected.len() + comms_log.rejected.len() + cov_log.rejected.len() + train_log.rejected.len() + channel_file.rejected.len() + asset_file.rejected.len() + insp_log.rejected.len() + avail_log.rejected.len() + rules_file.rejected.len() + equip_log.rejected.len();
     if rejected > 0 {
         look_total += 1;
+        alerts.push(alert(format!("unreadable|{}", rejected), format!("{} line{} in the security records could not be read. Nothing was changed.", rejected, if rejected == 1 { "" } else { "s" }), false));
     }
     let pocket = crate::security_pocket::waiting_count(user_root);
     if pocket > 0 {
         look_total += 1;
+        alerts.push(alert(format!("pocket|{}", pocket), format!("{} report{} from a phone {} waiting for you to accept.", pocket, if pocket == 1 { "" } else { "s" }, if pocket == 1 { "is" } else { "are" }), false));
     }
     Ok(format!(
-        "{{\"now\":{},\"headline\":{},\"unknown\":{},\"check_due\":{},\"all_normal_confirmed\":{},\"live_incidents\":{},\"unreadable_lines\":{},\"pocket_waiting\":{},\"needs_a_look\":{},\"sites_on_watch\":{},\"sites\":[{}]}}",
-        q(&format_instant(now, off)), q(ov.headline.word()), ov.unknown, ov.check_due, ov.all_normal_confirmed, incident::live_open(&built).len(), rejected, pocket, look_total, sites_on_watch, rows.join(",")
+        "{{\"now\":{},\"headline\":{},\"unknown\":{},\"check_due\":{},\"all_normal_confirmed\":{},\"live_incidents\":{},\"unreadable_lines\":{},\"pocket_waiting\":{},\"needs_a_look\":{},\"sites_on_watch\":{},\"sites\":[{}],\"alerts\":[{}]}}",
+        q(&format_instant(now, off)), q(ov.headline.word()), ov.unknown, ov.check_due, ov.all_normal_confirmed, incident::live_open(&built).len(), rejected, pocket, look_total, sites_on_watch, rows.join(","), alerts.join(",")
     ))
 }
 
@@ -950,13 +961,16 @@ mod tests {
         assert!(j.contains("\"needs_a_look\":1") && j.contains("No posture has been set"));
         posture_set(&r, "home", "normal", "Dad", "", 0, 0).unwrap();
         let j = overview(&r, 0).unwrap();
-        assert!(j.contains("\"needs_a_look\":0") && j.contains("\"looks\":[]"));
+        assert!(j.contains("\"needs_a_look\":0") && j.contains("\"looks\":[]") && j.contains("\"alerts\":[]"));
         // a site with no watchbill at all is not flagged for gaps; one with a watch and a hole is
         let day = now_minutes().div_euclid(1440) * 1440; // a watch inside today, whatever time the test runs
         watch_add(&r, "home", "Dad", "", &local_for(day + 60), &local_for(day + 120), 0).unwrap();
         let j = overview(&r, 0).unwrap();
         assert!(j.contains("Nobody is covering"));
         assert!(j.contains("\"sites_on_watch\":0"));
+        // every look is also an alert with a steady key, so the screen announces it once and not at every refresh
+        assert!(j.contains("\"alerts\":[{\"key\":\"look|home|") && j.contains("\"urgent\":false"));
+        assert_eq!(overview(&r, 0).unwrap().split("\"alerts\":").nth(1), j.split("\"alerts\":").nth(1));
         let _ = fs::remove_dir_all(&r);
     }
 
@@ -1087,7 +1101,8 @@ mod tests {
         let ls = outing_list_at(&r, "camp", 0, far).unwrap();
         assert!(ov.contains("overdue back") && ls.contains("overdue back"));
         let n: usize = ov.split("\"needs_a_look\":").nth(1).unwrap().split(',').next().unwrap().parse().unwrap();
-        let looks = ov.matches("overdue back").count() + ov.matches("late radio").count();
+        let sites_part = ov.split("\"alerts\":").next().unwrap(); // the alerts repeat the same words
+        let looks = sites_part.matches("overdue back").count() + sites_part.matches("late radio").count();
         assert!(n >= looks && looks >= 1);
         // a person says they are back: the look goes away
         outing_event(&r, "o1", "return", "", "", "Back with water", "", "", "Base", -300).unwrap();

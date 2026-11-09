@@ -1602,6 +1602,8 @@ export type SecurityOverview = {
   now: string; headline: SecuritySite['posture']; unknown: number; check_due: number;
   all_normal_confirmed: boolean; live_incidents: number; unreadable_lines: number;
   pocket_waiting: number; needs_a_look: number; sites_on_watch: number; sites: SecuritySite[];
+  /** What to tell the host while the program is open. `key` is steady, so one thing is announced once. */
+  alerts: { key: string; text: string; urgent: boolean }[];
 };
 export type WatchSegment = { from: string; to: string; cover: 'confirmed' | 'planned' | 'gap' };
 export type WatchStrip = {
@@ -1626,7 +1628,7 @@ const clockOffset = () => -new Date().getTimezoneOffset();
 export async function securityOverview(): Promise<SecurityOverview> {
   if (tauriHost) return call<SecurityOverview>('security_overview', { offsetMinutes: clockOffset() });
   // Browser preview: nothing is stored, and nothing is assessed, so the honest answer is "unknown".
-  return { now: new Date().toISOString(), headline: 'unknown', unknown: 0, check_due: 0, all_normal_confirmed: false, live_incidents: 0, unreadable_lines: 0, pocket_waiting: 0, needs_a_look: 0, sites_on_watch: 0, sites: [] };
+  return { now: new Date().toISOString(), headline: 'unknown', unknown: 0, check_due: 0, all_normal_confirmed: false, live_incidents: 0, unreadable_lines: 0, pocket_waiting: 0, needs_a_look: 0, sites_on_watch: 0, sites: [], alerts: [] };
 }
 export async function securityWatchStrip(site: string): Promise<WatchStrip> {
   if (tauriHost) return call<WatchStrip>('security_watch_strip', { site, offsetMinutes: clockOffset() });

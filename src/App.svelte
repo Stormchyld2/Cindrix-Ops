@@ -11,6 +11,7 @@
   import Calendar from './views/Calendar.svelte';
   import Projects from './views/Projects.svelte';
   import { nav } from './lib/nav.svelte';
+  import Alerts from './lib/Alerts.svelte';
   import Maps from './views/Maps.svelte';
   import Shelf from './views/Shelf.svelte';
   import Archives from './views/Archives.svelte';
@@ -308,6 +309,10 @@
       {/each}
     </nav>
   </header>
+
+  {#if !inShare && product?.security}
+    <Alerts go={goTo} />
+  {/if}
 
   {#if libNote}
     <div class="warn libnote" role="status">{libNote} <button class="btn" onclick={() => (libNote = '')}>OK</button></div>

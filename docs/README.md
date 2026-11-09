@@ -51,3 +51,5 @@ Mockups of every screen are in [`../mockups`](../mockups).
 - [45. Cindrix Pocket, the phone companion](45-pocket-companion.md): a stripped-down Android companion to the Hub; logs wait in an outbox until it reaches the Hub; reuses the Ops screens. Design only; the Hub side (mailbox, trusted devices, erase order) is built
 - [46. Communications and watch plan](46-comms-and-watch-plan.md): the family's radio and watch standard (COPS-COM-001) and where each part lands in Security
 - [47. Backups and data protection](47-backups-and-data-protection.md): the copy of `user/`, and the passcode that locks the security records
+- [48. Alerts](48-alerts.md): the bar, beep and title count when something needs a look (host, while open)
+- [49. Real-hardware test plan](49-hardware-test-plan.md): every real test in one order
