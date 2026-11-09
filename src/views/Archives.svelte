@@ -286,8 +286,8 @@
   .run { margin-top: 10px; }
   .done { margin-top: 12px; padding: 10px 12px; border: 1px solid var(--line2); border-radius: 8px; background: var(--panel2); font-size: 14px; }
   progress { width: 100%; accent-color: var(--blue); }
-  .bad { color: #f08a7a; }
-  .btn.danger { border-color: #8a3b30; color: #f08a7a; }
+  .bad { color: var(--danger-text); }
+  .btn.danger { border-color: var(--danger-line); color: var(--danger-text); }
   .check { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; }
   .check input { margin-top: 3px; flex: none; }
 </style>

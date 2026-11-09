@@ -219,9 +219,11 @@
   .lnk { border: 0; background: transparent; padding: 0; color: var(--link); text-align: left; }
   .x { border: 0; background: transparent; color: var(--muted); }
   .small { font-size: 13px; }
-  .tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--line); }
-  .tabs button { border: 0; background: transparent; padding: 6px 12px; border-bottom: 2px solid transparent; }
-  .tabs button.on { border-bottom-color: var(--blue); color: var(--blue); }
+  /* the same tab look as Security Operations (docs/41-theme.md) */
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tabs button { padding: 8px 14px; background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; color: var(--muted); font-family: var(--mono); text-transform: uppercase; letter-spacing: .1em; font-size: 12px; font-weight: 500; }
+  .tabs button:hover { color: var(--text); border-color: var(--line2); }
+  .tabs button.on { background: var(--blue-soft); color: var(--blue); border-color: var(--blue-line); font-weight: 600; box-shadow: inset 0 -2px 0 var(--blue); }
   .docs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
   .docs li { display: flex; gap: 10px; align-items: center; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; background: var(--panel2); }
   .docs li.gone { opacity: .7; }

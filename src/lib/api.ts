@@ -21,8 +21,34 @@ export type Cascade = {
 };
 export type Suggestion = { level: 'urgent' | 'soon' | 'next' | 'good'; title: string; text: string; tab: string | null };
 export type DashboardFacts = { maps: number; models: number; assistant_ready: boolean; archives: number; drills_done: number; drills_total: number };
+/** "YYYY-MM-DD-HHMM" in this computer's own time. */
+export function localStamp(d = new Date()): string {
+  const p = (n: number, w = 2) => String(n).padStart(w, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`;
+}
+export type BackupStatus = { destination: string; reachable: boolean; backups: { name: string; stamp: string; files: number }[]; days_since: number | null };
+export async function backupStatus(): Promise<BackupStatus> {
+  if (inTauri) return call<BackupStatus>('backup_status', { today: localStamp() });
+  return { destination: '', reachable: false, backups: [], days_since: null };
+}
+export async function backupSetDestination(path: string): Promise<void> {
+  if (inTauri) return call<void>('backup_set_destination', { path });
+  throw new Error('Backups are made in the program, not in the browser preview.');
+}
+export async function backupNow(): Promise<string> {
+  if (inTauri) return call<string>('backup_now', { stamp: localStamp() });
+  throw new Error('Backups are made in the program, not in the browser preview.');
+}
+export async function backupCheck(name: string): Promise<string> {
+  if (inTauri) return call<string>('backup_check', { name });
+  throw new Error('Backups are checked in the program, not in the browser preview.');
+}
+export async function backupBringBack(name: string): Promise<string> {
+  if (inTauri) return call<string>('backup_bring_back', { name });
+  throw new Error('Backups are restored in the program, not in the browser preview.');
+}
 export async function dashboardSuggestions(f: DashboardFacts): Promise<Suggestion[]> {
-  if (inTauri) return call<Suggestion[]>('dashboard_suggestions', { maps: f.maps, models: f.models, assistantReady: f.assistant_ready, archives: f.archives, drillsDone: f.drills_done, drillsTotal: f.drills_total });
+  if (inTauri) return call<Suggestion[]>('dashboard_suggestions', { today: localStamp(), maps: f.maps, models: f.models, assistantReady: f.assistant_ready, archives: f.archives, drillsDone: f.drills_done, drillsTotal: f.drills_total });
   return [
     { level: 'soon', title: 'Water lasts 9.0 days', text: 'A common goal is two weeks at home (for water, about a gallon per person per day).', tab: 'Inventory' },
     { level: 'next', title: 'Run your first drill', text: 'A drill finds the gaps while everything still works.', tab: 'Drills' },
@@ -136,6 +162,37 @@ export async function lockRemove(person: string, passcode: string): Promise<numb
   if (tauriHost) return call<number>('person_lock_remove', { person, passcode });
   if (memLocks[person] !== passcode) throw new Error('That passcode is not right.');
   delete memLocks[person]; return 0;
+}
+// ---- the passcode for the security records and device sign-in files (src-tauri/src/seclock.rs, docs/47) ----
+export type SecLockStatus = { on: boolean; unlocked: boolean };
+let memSecPass: string | null = null;
+let memSecOpen = true;
+export async function secLockStatus(): Promise<SecLockStatus> {
+  if (tauriHost) return call<SecLockStatus>('seclock_status');
+  return { on: memSecPass !== null, unlocked: memSecPass === null || memSecOpen };
+}
+export async function secLockSet(passcode: string): Promise<number> {
+  if (tauriHost) return call<number>('seclock_set', { passcode });
+  memSecPass = passcode; memSecOpen = true; return 0;
+}
+export async function secLockUnlock(passcode: string): Promise<void> {
+  if (tauriHost) return call<void>('seclock_unlock', { passcode });
+  if (memSecPass !== passcode) throw new Error('That passcode is not right.');
+  memSecOpen = true;
+}
+export async function secLockRelock(): Promise<void> {
+  if (tauriHost) return call<void>('seclock_relock');
+  memSecOpen = false;
+}
+export async function secLockChange(oldPasscode: string, newPasscode: string): Promise<void> {
+  if (tauriHost) return call<void>('seclock_change', { oldPasscode, newPasscode });
+  if (memSecPass !== oldPasscode) throw new Error('That passcode is not right.');
+  memSecPass = newPasscode;
+}
+export async function secLockRemove(passcode: string): Promise<number> {
+  if (tauriHost) return call<number>('seclock_remove', { passcode });
+  if (memSecPass !== passcode) throw new Error('That passcode is not right.');
+  memSecPass = null; return 0;
 }
 export async function privacySetIdle(minutes: number): Promise<void> {
   if (tauriHost) return call<void>('privacy_set_idle', { minutes });
@@ -767,12 +824,13 @@ export type ProductInfo = {
   web_saver: boolean;
   serve_archives: boolean;
   music: boolean;
+  security: boolean;
 };
 
 export async function productInfo(): Promise<ProductInfo> {
   if (inTauri) return call<ProductInfo>('product_info');
   // Browser preview and screenshots: show the full app as Go.
-  return { id: 'go', name: 'Cindrix Ops Go', budget_gb: 100, assistant: true, library: true, maps: true, plan: true, web_saver: true, serve_archives: false, music: true };
+  return { id: 'go', name: 'Cindrix Ops Go', budget_gb: 100, assistant: true, library: true, maps: true, plan: true, web_saver: true, serve_archives: false, music: true, security: true };
 }
 
 export async function driveRescan(): Promise<void> {
@@ -1332,6 +1390,20 @@ export async function shareRevoke(id: string): Promise<TrustedDevice[]> {
   return [];
 }
 
+// ---------- connected devices, erase orders (core/src/devices.rs, docs/45) ----------
+// Host only. Trust follows the device's own code, never the person who owns it.
+export type DeviceState = 'trusted' | 'erase-ordered' | 'erased' | 'revoked';
+export type DeviceRow = { id: string; kind: 'browser' | 'pocket'; state: DeviceState; since: number; last_seen: number; state_at: number; person: string; label: string };
+export async function devicesList(): Promise<DeviceRow[]> {
+  if (tauriHost) return (await call<{ devices: DeviceRow[] }>('devices_list')).devices;
+  return [];
+}
+/** erase = order an erase for when the device next connects; cancel = take that order back; lock = shut it out now. */
+export async function devicesAction(id: string, action: 'erase' | 'cancel' | 'lock'): Promise<DeviceRow[]> {
+  if (tauriHost) return (await call<{ devices: DeviceRow[] }>('devices_action', { id, action })).devices;
+  throw 'Devices are managed on the host computer.';
+}
+
 // ---------- the connecting layer: to-do list, calendar, projects, one search (core/src/ops.rs) ----------
 // These are the person's own notes, so they work only in the app itself (not for a guest on the hotspot).
 export type Link = { kind: string; id: string };
@@ -1515,4 +1587,267 @@ export async function drugLabelsSearch(query: string): Promise<DrugSummary[]> {
 export async function drugLabelsGet(id: string): Promise<DrugLabel> {
   if (tauriHost) return call<DrugLabel>('druglabels_get', { id });
   return { id, brand: 'Sample Tablets', generic: 'SAMPLE', maker: 'Sample Maker', parts: [['What it is for', 'A sample so this screen can be looked at in a browser.'], ['Dosage and how to give it (as the FDA published it)', 'Sample text only.']] };
+}
+
+// ---------- Security Operations (host-only; docs/44) ----------
+
+export type SecuritySite = {
+  id: string; name: string; tz: string;
+  posture: 'normal' | 'elevated' | 'emergency' | 'unknown';
+  check_due: boolean; never_assessed: boolean;
+  set_by: string; reason: string; at: string; review_by: string;
+  on_watch: string[]; live_incidents: number; out_now: number; last_patrol: string; primary_channel: string; looks: string[];
+};
+export type SecurityOverview = {
+  now: string; headline: SecuritySite['posture']; unknown: number; check_due: number;
+  all_normal_confirmed: boolean; live_incidents: number; unreadable_lines: number;
+  pocket_waiting: number; needs_a_look: number; sites_on_watch: number; sites: SecuritySite[];
+  /** What to tell the host while the program is open. `key` is steady, so one thing is announced once. */
+  alerts: { key: string; text: string; urgent: boolean }[];
+};
+export type WatchSegment = { from: string; to: string; cover: 'confirmed' | 'planned' | 'gap' };
+export type WatchStrip = {
+  site: string; from: string; to: string; gap_minutes: number; segments: WatchSegment[];
+  needs_a_look: { id: string; person: string; kind: 'not-acknowledged' | 'handover-open' }[];
+  watches: { id: string; person: string; role: string; start: string; end: string; state: string }[];
+};
+export type IncidentLine = {
+  id: string; kind: string; happened_at: string; recorded_at: string; by: string; source: string;
+  arg1: string; text: string; supersedes: string; superseded_by: string;
+};
+export type SecurityIncident = {
+  id: string; site: string; title: string; priority: number; exercise: boolean;
+  status: 'draft' | 'active' | 'stabilized' | 'closed'; opened_at: string; opened_by: string; reopened: number;
+  plans: { plan: string; revision: string; fingerprint: string; by: string; at: string }[];
+  timeline: IncidentLine[];
+};
+
+// Minutes east of UTC on this computer right now. The program uses its own clock for "now"; this only says how to write it.
+const clockOffset = () => -new Date().getTimezoneOffset();
+
+export async function securityOverview(): Promise<SecurityOverview> {
+  if (tauriHost) return call<SecurityOverview>('security_overview', { offsetMinutes: clockOffset() });
+  // Browser preview: nothing is stored, and nothing is assessed, so the honest answer is "unknown".
+  return { now: new Date().toISOString(), headline: 'unknown', unknown: 0, check_due: 0, all_normal_confirmed: false, live_incidents: 0, unreadable_lines: 0, pocket_waiting: 0, needs_a_look: 0, sites_on_watch: 0, sites: [], alerts: [] };
+}
+export async function securityWatchStrip(site: string): Promise<WatchStrip> {
+  if (tauriHost) return call<WatchStrip>('security_watch_strip', { site, offsetMinutes: clockOffset() });
+  const d = new Date().toISOString();
+  return { site, from: d, to: d, gap_minutes: 1440, segments: [], needs_a_look: [], watches: [] };
+}
+export async function securitySiteSave(site: { id?: string; name: string; tz?: string; mapId?: string; notes?: string }): Promise<string> {
+  if (tauriHost) return call<string>('security_site_save', { id: site.id ?? '', name: site.name, tz: site.tz ?? '', mapId: site.mapId ?? '', notes: site.notes ?? '' });
+  throw new Error('Sites are saved in the program, not in the browser preview.');
+}
+export async function securityPostureSet(site: string, posture: SecuritySite['posture'], by: string, reason: string, reviewHours: number): Promise<void> {
+  if (tauriHost) return call<void>('security_posture_set', { site, posture, by, reason, reviewHours, offsetMinutes: clockOffset() });
+  throw new Error('Posture is saved in the program, not in the browser preview.');
+}
+export async function securityIncidentOpen(site: string, title: string, priority: number, exercise: boolean, by: string): Promise<string> {
+  if (tauriHost) return call<string>('security_incident_open', { site, title, priority, exercise, by, offsetMinutes: clockOffset() });
+  throw new Error('Incidents are saved in the program, not in the browser preview.');
+}
+export async function securityIncidentEntry(e: { incident: string; kind: 'note' | 'decision' | 'task' | 'status' | 'correction'; arg1?: string; text: string; source: 'observed' | 'reported' | 'imported' | 'corrected'; by: string; supersedes?: string; happenedAt?: string }): Promise<string> {
+  if (tauriHost) return call<string>('security_incident_entry', { incident: e.incident, kind: e.kind, arg1: e.arg1 ?? '', text: e.text, source: e.source, by: e.by, supersedes: e.supersedes ?? '', happenedAt: e.happenedAt ?? '', offsetMinutes: clockOffset() });
+  throw new Error('Incidents are saved in the program, not in the browser preview.');
+}
+export async function securityIncidentList(): Promise<{ unreadable_lines: number; incidents: SecurityIncident[] }> {
+  if (tauriHost) return call('security_incident_list');
+  return { unreadable_lines: 0, incidents: [] };
+}
+
+export type WatchRow = { id: string; person: string; role: string; start: string; end: string; state: 'proposed' | 'scheduled' | 'acknowledged' | 'on-duty' | 'completed' | 'missed'; ack_at: string; entered_at: string; notes: string };
+export type WatchList = { site: string; watches: WatchRow[]; warnings: string[]; unreadable_lines: number };
+
+export async function securityWatchList(site: string): Promise<WatchList> {
+  if (tauriHost) return call<WatchList>('security_watch_list', { site });
+  return { site, watches: [], warnings: [], unreadable_lines: 0 };
+}
+// Times below are local, like "2026-11-08T06:00" (what a date-and-time box gives). The program adds the offset.
+export async function securityWatchDraft(site: string, people: string[], startLocal: string, hours: number, count: number): Promise<number> {
+  if (tauriHost) return call<number>('security_watch_draft', { site, people, startLocal, hours, count, offsetMinutes: clockOffset() });
+  throw new Error('The watchbill is saved in the program, not in the browser preview.');
+}
+export async function securityWatchAdd(site: string, person: string, role: string, startLocal: string, endLocal: string): Promise<string> {
+  if (tauriHost) return call<string>('security_watch_add', { site, person, role, startLocal, endLocal, offsetMinutes: clockOffset() });
+  throw new Error('The watchbill is saved in the program, not in the browser preview.');
+}
+export async function securityWatchMove(id: string, to: 'scheduled' | 'on-duty' | 'completed' | 'missed'): Promise<void> {
+  if (tauriHost) return call<void>('security_watch_move', { id, to });
+  throw new Error('The watchbill is saved in the program, not in the browser preview.');
+}
+export async function securityWatchAck(id: string, atLocal = ''): Promise<void> {
+  if (tauriHost) return call<void>('security_watch_ack', { id, atLocal, offsetMinutes: clockOffset() });
+  throw new Error('The watchbill is saved in the program, not in the browser preview.');
+}
+export async function securityWatchDiscard(id: string): Promise<void> {
+  if (tauriHost) return call<void>('security_watch_discard', { id });
+  throw new Error('The watchbill is saved in the program, not in the browser preview.');
+}
+export async function securityWatchScheduleAll(site: string): Promise<number> {
+  if (tauriHost) return call<number>('security_watch_schedule_all', { site });
+  throw new Error('The watchbill is saved in the program, not in the browser preview.');
+}
+
+// ---------- communications: log, coverage, channels, training (docs/46) ----------
+export type CommsEntry = { id: string; site: string; at: string; author: string; station: string; category: string; event: string; action: string; status: 'open' | 'complete' | 'closed'; closes: string };
+export type CommsList = { entries: CommsEntry[]; open: string[]; categories: { id: string; label: string }[]; unreadable_lines: number };
+export async function securityCommsList(site: string): Promise<CommsList> {
+  if (tauriHost) return call<CommsList>('security_comms_list', { site });
+  return { entries: [], open: [], categories: [], unreadable_lines: 0 };
+}
+export async function securityCommsAdd(site: string, category: string, station: string, event: string, action: string, status: 'open' | 'complete' | 'closed', closes: string, author: string): Promise<string> {
+  if (tauriHost) return call<string>('security_comms_add', { site, category, station, event, action, status, closes, author, offsetMinutes: clockOffset() });
+  throw new Error('The log is saved in the program, not in the browser preview.');
+}
+export type CoveragePlace = { place: string; p_in: number | null; p_out: number | null; a_in: number | null; a_out: number | null; at: string; by: string; note: string };
+export type CoverageList = { places: CoveragePlace[]; tests_on_file: number; unreadable_lines: number };
+export async function securityCoverageList(site: string): Promise<CoverageList> {
+  if (tauriHost) return call<CoverageList>('security_coverage_list', { site });
+  return { places: [], tests_on_file: 0, unreadable_lines: 0 };
+}
+export async function securityCoverageAdd(site: string, place: string, pIn: string, pOut: string, aIn: string, aOut: string, by: string, note: string): Promise<string> {
+  if (tauriHost) return call<string>('security_coverage_add', { site, place, pIn, pOut, aIn, aOut, by, note, offsetMinutes: clockOffset() });
+  throw new Error('Tests are saved in the program, not in the browser preview.');
+}
+export type ChannelRow = { channel: string; code: string; role: 'primary' | 'alternate' | 'work' | 'weather' | 'other'; purpose: string };
+export async function securityChannelsGet(site: string): Promise<{ channels: ChannelRow[]; is_default: boolean }> {
+  if (tauriHost) return call('security_channels_get', { site });
+  return { channels: [], is_default: true };
+}
+export async function securityChannelsSave(site: string, channels: ChannelRow[]): Promise<void> {
+  if (tauriHost) return call<void>('security_channels_save', { site, channels });
+  throw new Error('The channel plan is saved in the program, not in the browser preview.');
+}
+export type TrainingList = { skills: string[]; people: { person: string; skills: (boolean | null)[]; qualified: boolean }[]; unreadable_lines: number };
+export async function securityTrainingList(): Promise<TrainingList> {
+  if (tauriHost) return call<TrainingList>('security_training_list');
+  return { skills: [], people: [], unreadable_lines: 0 };
+}
+export async function securityTrainingRecord(person: string, skill: number, result: 'pass' | 'practice', by: string, note: string): Promise<string> {
+  if (tauriHost) return call<string>('security_training_record', { person, skill, result, by, note, offsetMinutes: clockOffset() });
+  throw new Error('Training is saved in the program, not in the browser preview.');
+}
+
+export type AssetRow = { id: string; kind: string; name: string; every_days: number; notes: string; last_at: string; last_by: string; last_result: '' | 'ok' | 'needs-work'; last_note: string; due: 'ok' | 'overdue' | 'never' | 'needs-work' | 'none' };
+export type AssetList = { assets: AssetRow[]; kinds: { id: string; label: string }[]; unreadable_lines: number };
+export async function securityAssetsList(site: string): Promise<AssetList> {
+  if (tauriHost) return call<AssetList>('security_assets_list', { site, offsetMinutes: clockOffset() });
+  return { assets: [], kinds: [], unreadable_lines: 0 };
+}
+export async function securityAssetSave(site: string, id: string, kind: string, name: string, everyDays: number, notes: string): Promise<string> {
+  if (tauriHost) return call<string>('security_asset_save', { site, id, kind, name, everyDays, notes });
+  throw new Error('The Security list is saved in the program, not in the browser preview.');
+}
+export async function securityAssetInspect(asset: string, result: 'ok' | 'needs-work', by: string, note: string): Promise<string> {
+  if (tauriHost) return call<string>('security_asset_inspect', { asset, result, by, note, offsetMinutes: clockOffset() });
+  throw new Error('Inspections are saved in the program, not in the browser preview.');
+}
+export type RouteRow = { name: string; checkpoints: string[] };
+export async function securityRoutesGet(site: string): Promise<{ routes: RouteRow[]; unreadable_lines: number }> {
+  if (tauriHost) return call('security_routes_get', { site });
+  return { routes: [], unreadable_lines: 0 };
+}
+export async function securityRoutesSave(site: string, routes: RouteRow[]): Promise<void> {
+  if (tauriHost) return call<void>('security_routes_save', { site, routes });
+  throw new Error('Patrol routes are saved in the program, not in the browser preview.');
+}
+export type GearRow = { uid: string; name: string; in_inventory: boolean; kind: string; site: string; test_days: number; last_test: string; faults: number; open_fault: string; retired: boolean };
+export type GearList = { gear: GearRow[]; choices: { uid: string; name: string; location: string }[]; kinds: { id: string; label: string }[]; unreadable_lines: number };
+export async function securityEquipmentList(): Promise<GearList> {
+  if (tauriHost) return call<GearList>('security_equipment_list');
+  return { gear: [], choices: [], kinds: [], unreadable_lines: 0 };
+}
+export async function securityEquipmentAdd(uid: string, ev: 'listed' | 'test' | 'fault' | 'repaired' | 'charged' | 'retired', kind: string, site: string, testDays: number, by: string, note: string): Promise<string> {
+  if (tauriHost) return call<string>('security_equipment_add', { uid, ev, kind, site, testDays, by, note, offsetMinutes: clockOffset() });
+  throw new Error('Gear records are saved in the program, not in the browser preview.');
+}
+export type RuleRow = { route: string; every_hours: number; from: string; to: string };
+export async function securityScheduleGet(site: string): Promise<{ rules: RuleRow[]; unreadable_lines: number }> {
+  if (tauriHost) return call('security_schedule_get', { site });
+  return { rules: [], unreadable_lines: 0 };
+}
+export async function securityScheduleSave(site: string, rules: RuleRow[]): Promise<void> {
+  if (tauriHost) return call<void>('security_schedule_save', { site, rules });
+  throw new Error('The patrol schedule is saved in the program, not in the browser preview.');
+}
+export type AvailabilityRow = { id: string; person: string; status: 'available' | 'unavailable'; from: string; until: string; reason: string; by: string };
+export type AvailabilityList = { unavailable: AvailabilityRow[]; recent: AvailabilityRow[]; unreadable_lines: number };
+export async function securityAvailabilityList(): Promise<AvailabilityList> {
+  if (tauriHost) return call<AvailabilityList>('security_availability_list', { offsetMinutes: clockOffset() });
+  return { unavailable: [], recent: [], unreadable_lines: 0 };
+}
+export async function securityAvailabilitySet(person: string, status: 'available' | 'unavailable', untilLocal: string, reason: string, by: string): Promise<string> {
+  if (tauriHost) return call<string>('security_availability_set', { person, status, untilLocal, reason, by, offsetMinutes: clockOffset() });
+  throw new Error('Availability is saved in the program, not in the browser preview.');
+}
+export type SecPlanInfo = { id: string; title: string; current: number; revisions: number[] };
+export async function securityPlansList(): Promise<{ plans: SecPlanInfo[] }> {
+  if (tauriHost) return call('security_plans_list');
+  return { plans: [] };
+}
+export async function securityPlanRead(id: string, revision: number): Promise<{ id: string; revision: number; text: string }> {
+  if (tauriHost) return call('security_plan_read', { id, revision });
+  throw new Error('Plans are read in the program, not in the browser preview.');
+}
+export async function securityPlanSave(id: string, text: string): Promise<number> {
+  if (tauriHost) return call<number>('security_plan_save', { id, text });
+  throw new Error('Plans are saved in the program, not in the browser preview.');
+}
+export async function securityPlanActivate(incident: string, plan: string, revision: number, by: string): Promise<string> {
+  if (tauriHost) return call<string>('security_plan_activate', { incident, plan, revision, by, offsetMinutes: clockOffset() });
+  throw new Error('Plans are put into use in the program, not in the browser preview.');
+}
+export type WeatherList = { stations: { call_sign: string; mhz: string; place: string }[]; note: string };
+export async function securityWeatherList(): Promise<WeatherList> {
+  if (tauriHost) return call<WeatherList>('security_weather_list');
+  return { stations: [], note: '' };
+}
+export async function securityWeatherSet(site: string, callSign: string): Promise<void> {
+  if (tauriHost) return call<void>('security_weather_set', { site, callSign });
+  throw new Error('The weather station is saved in the program, not in the browser preview.');
+}
+export async function securityExportRecords(): Promise<string> {
+  if (tauriHost) return call<string>('security_export_records', { offsetMinutes: clockOffset() });
+  throw new Error('Records are copied out in the program, not in the browser preview.');
+}
+
+export type OutingRow = {
+  id: string; patrol: boolean; site: string; people: string[]; task: string; method: string;
+  left: string; back: string; next: string; state: 'out' | 'back' | 'cancelled'; ended: string;
+  last: { at: string; status: 'ok' | 'help' | 'delayed'; text: string } | null;
+  checkpoints: { at: string; name: string; text: string }[]; looks: string[];
+};
+export type OutingList = { outings: OutingRow[]; last_patrol: string; unreadable_lines: number };
+export async function securityOutingList(site: string): Promise<OutingList> {
+  if (tauriHost) return call<OutingList>('security_outing_list', { site, offsetMinutes: clockOffset() });
+  return { outings: [], last_patrol: '', unreadable_lines: 0 };
+}
+export async function securityOutingStart(site: string, kind: 'outing' | 'patrol', people: string, task: string, backLocal: string, nextLocal: string, method: string, by: string): Promise<string> {
+  if (tauriHost) return call<string>('security_outing_start', { site, kind, people, task, backLocal, nextLocal, method, by, offsetMinutes: clockOffset() });
+  throw new Error('Outings are saved in the program, not in the browser preview.');
+}
+export async function securityOutingEvent(outing: string, ev: 'contact' | 'checkpoint' | 'extend' | 'return' | 'cancel' | 'note', a1: string, a2: string, text: string, backLocal: string, nextLocal: string, by: string): Promise<void> {
+  if (tauriHost) return call<void>('security_outing_event', { outing, ev, a1, a2, text, backLocal, nextLocal, by, offsetMinutes: clockOffset() });
+  throw new Error('Outings are saved in the program, not in the browser preview.');
+}
+
+export type PocketReport = { name: string; size: number; device: string; person: string; created: string; entries: number; kind: 'report' | 'count-sheet' | 'checkin-sheet'; changed: number; problem: string };
+export type SheetLine = { name: string; location: string; unit: string; was: number; now: number; counted: number; standing: 'matches' | 'moved' | 'already' | 'missing' };
+export type CountSheet = { person: string; created: string; lines: SheetLine[] };
+export async function securityPocketSheet(name: string): Promise<CountSheet> {
+  if (tauriHost) return call<CountSheet>('security_pocket_sheet', { name });
+  throw new Error('Count sheets are read in the program, not in the browser preview.');
+}
+export async function securityPocketList(): Promise<PocketReport[]> {
+  if (tauriHost) return (await call<{ waiting: PocketReport[] }>('security_pocket_list')).waiting;
+  return [];
+}
+export async function securityPocketAccept(name: string, allowMoved = false): Promise<number> {
+  if (tauriHost) return call<number>('security_pocket_accept', { name, allowMoved });
+  throw new Error('Reports are accepted in the program, not in the browser preview.');
+}
+export async function securityPocketSetAside(name: string): Promise<void> {
+  if (tauriHost) return call<void>('security_pocket_set_aside', { name });
+  throw new Error('Reports are handled in the program, not in the browser preview.');
 }

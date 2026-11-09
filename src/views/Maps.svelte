@@ -737,7 +737,7 @@
   const PIN_TAGS: { name: string; color: string }[] = [
     { name: 'Home', color: '#2fb344' }, { name: 'Water', color: '#4aa3ff' }, { name: 'Food', color: '#8bc34a' },
     { name: 'Shelter', color: '#9334e6' }, { name: 'Fuel', color: '#f29900' }, { name: 'Medical', color: '#d93025' },
-    { name: 'Meeting point', color: '#ff9a1f' }, { name: 'Danger', color: '#b71c1c' }, { name: 'Other', color: '#9e9e9e' },
+    { name: 'Meeting point', color: '#ff9a1f' }, { name: 'Danger', color: '#b71c1c' }, { name: 'Weak radio', color: '#00acc1' }, { name: 'Watch post', color: '#5d4037' }, { name: 'Other', color: '#9e9e9e' },
   ];
   let pinDraft: { lat: number; lon: number; kind: 'pin' | 'rendezvous' } | null = $state(null);
   let pinName = $state('');

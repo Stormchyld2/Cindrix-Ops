@@ -28,6 +28,8 @@ The footer keeps the honest status line: model, speed, memory, "this app only ta
 
 ## Security Operations navigation and dashboards (approved 2026-11-07)
 
+In the current top bar (doc 35) Security Operations is one word that opens its own screen, with the six subtabs below along the top of that screen.
+
 - Add exactly **one** new top-level parent tab labeled **Security Operations**. On entry, open **Command** as its default subtab and security-specific dashboard. Do not add Command as a separate top-level section.
 - Show six subordinate tabs in order: **Command**, **Security**, **Operations**, **Planning**, **Personnel**, **Records**. On Android/Hub, fit these within the established mobile navigation using a horizontally scrollable/overflow subtab row, not six additional bottom-navigation parents.
 - **Command** shows site posture, verification/freshness, current watch and coverage gaps, patrol/check-in status, incidents, overdue tasks, inspections and quick-access emergency procedures.

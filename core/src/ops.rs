@@ -13,7 +13,7 @@ use crate::calendar;
 
 // ---------- text helpers ----------
 
-fn esc(s: &str) -> String {
+pub(crate) fn esc(s: &str) -> String {
     let mut o = String::with_capacity(s.len());
     for c in s.chars() {
         match c {
@@ -27,7 +27,7 @@ fn esc(s: &str) -> String {
     o
 }
 
-fn unesc(s: &str) -> String {
+pub(crate) fn unesc(s: &str) -> String {
     let mut o = String::with_capacity(s.len());
     let mut it = s.chars();
     while let Some(c) = it.next() {

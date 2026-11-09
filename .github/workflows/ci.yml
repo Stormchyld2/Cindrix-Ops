@@ -354,6 +354,8 @@ jobs:
           trap 'echo "::error::failed at step line $LINENO"' ERR
           mkdir -p out/Cindrix
           cp src-tauri/target/release/cindrix-ops.exe out/Cindrix/
+          # the program is not code-signed yet: print its SHA-256 so a downloaded copy can be compared (docs/49)
+          sha256sum out/Cindrix/cindrix-ops.exe | tee out/cindrix-ops.sha256
           # The program is only the program. Cards, plans, drills, courses and guides live on the drive (see the content pack);
           # only the credits list and the tiny sample library stay beside the program.
           mkdir -p out/Cindrix/content && cp content/sources.json out/Cindrix/content/ && cp -r content/library-sample out/Cindrix/content/

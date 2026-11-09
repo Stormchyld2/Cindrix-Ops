@@ -209,18 +209,18 @@
   .course h1 { margin: 4px 0; }
   .prog { display: flex; flex-direction: column; gap: 6px; }
   .step { margin-top: 12px; }
-  .step.due { border-top-color: #ff9a1f; }
+  .step.due { border-top-color: var(--warn); }
   .steptop { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
   .stitle { flex: 1 1 200px; font-size: 17px; letter-spacing: .05em; margin: 0; }
   .box { flex: 0 0 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line2); background: transparent; color: var(--muted); font-size: 14px; }
   .box:hover:not(:disabled) { border-color: var(--blue); color: var(--blue); }
-  .box.done { background: #1f2a1d; border-color: #34502f; color: var(--ok); }
-  .box.due { background: #2a2210; border-color: #7a5a1c; color: #ffc247; }
-  .duetext { color: #ffc247; margin: 8px 0 0; }
+  .box.done { background: var(--ok-bg); border-color: var(--ok-line); color: var(--ok); }
+  .box.due { background: var(--warn-soft); border-color: var(--warn-line); color: var(--warn); }
+  .duetext { color: var(--warn); margin: 8px 0 0; }
   .body { margin: 8px 0 0; }
   .li { margin: 4px 0 0 18px; }
   .li::before { content: '• '; color: var(--muted); }
   .small { font-size: 13px; }
-  .err { border-color: #7a2e22; background: #2a1511; color: #ffb4a6; }
+  .err { border-color: var(--danger-line); background: var(--danger-bg); color: var(--danger-text); }
   .probs { margin-top: 14px; }
 </style>

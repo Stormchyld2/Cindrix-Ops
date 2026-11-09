@@ -94,5 +94,5 @@
   .wrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 0; border-bottom: 1px solid var(--line2); }
   .grow { flex: 1; min-width: 220px; }
   .ok { color: var(--blue); }
-  .btn.danger { border-color: var(--red, #c0392b); color: var(--red, #c0392b); }
+  .btn.danger { border-color: var(--danger-text); color: var(--danger-text); }
 </style>

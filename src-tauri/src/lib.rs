@@ -28,6 +28,9 @@ mod libs;
 mod music;
 mod privacy;
 mod ops;
+mod security;
+mod seclock;
+mod userbackup;
 mod settings;
 mod share;
 mod zimview;
@@ -70,6 +73,8 @@ fn detect_drive(state: &AppState) -> bool {
     let (r, info) = cindrix_core::libraries::primary(&prog, &enabled);
     *ROOT_OVERRIDE.lock().unwrap() = if r != prog { Some(r) } else { None };
     *state.drive.lock().unwrap() = info;
+    // a different drive may have its own lock
+    seclock::install();
     root() != before
 }
 
@@ -420,6 +425,7 @@ struct ProductDto {
     web_saver: bool,
     serve_archives: bool,
     music: bool,
+    security: bool,
 }
 
 /// Which product this is, from the drive marker. No marker (for example a dev run) counts as Go.
@@ -438,6 +444,7 @@ fn product_info(state: tauri::State<'_, AppState>) -> ProductDto {
         web_saver: f.web_saver,
         serve_archives: f.serve_archives,
         music: f.music,
+        security: f.security,
     }
 }
 
@@ -1712,7 +1719,12 @@ struct SuggestionDto {
 /// The Dashboard's advice. The inventory, the family page and the person's own limits are read here;
 /// what the screen already knows (maps, models, archives, drills) is passed in.
 #[tauri::command]
-fn dashboard_suggestions(maps: usize, models: usize, assistant_ready: bool, archives: usize, drills_done: usize, drills_total: usize) -> Result<Vec<SuggestionDto>, String> {
+fn dashboard_suggestions(today: String, maps: usize, models: usize, assistant_ready: bool, archives: usize, drills_done: usize, drills_total: usize) -> Result<Vec<SuggestionDto>, String> {
+    suggestions_for(Some(today), maps, models, assistant_ready, archives, drills_done, drills_total)
+}
+
+/// `today` is None for another device on the hotspot: the backup reminder is the host's business, so it is left out.
+pub(crate) fn suggestions_for(today: Option<String>, maps: usize, models: usize, assistant_ready: bool, archives: usize, drills_done: usize, drills_total: usize) -> Result<Vec<SuggestionDto>, String> {
     let items = user().load_inventory()?;
     let t = settings::thresholds();
     let (y, m) = calendar::today_ym();
@@ -1736,6 +1748,7 @@ fn dashboard_suggestions(maps: usize, models: usize, assistant_ready: bool, arch
         archives,
         act_days: t.act_days,
         check_days: t.check_days,
+        backup_days: today.map(|t| userbackup::days_since_last(&t).unwrap_or(None)),
     };
     Ok(cindrix_core::suggest::suggest(&snap, 6).into_iter().map(|s| SuggestionDto { level: s.level.word(), title: s.title, text: s.text, tab: s.tab }).collect())
 }
@@ -2825,6 +2838,7 @@ pub fn run() {
         })
         .manage(AppState::default())
         .setup(|app| {
+            seclock::install();
             let handle = app.handle().clone();
             // sharing switches itself on when a hotspot starts (after the drive has been found, below)
             let share_handle = handle.clone();
@@ -2875,6 +2889,64 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            userbackup::backup_status,
+            userbackup::backup_set_destination,
+            userbackup::backup_now,
+            userbackup::backup_check,
+            userbackup::backup_bring_back,
+            seclock::seclock_status,
+            seclock::seclock_set,
+            seclock::seclock_unlock,
+            seclock::seclock_relock,
+            seclock::seclock_change,
+            seclock::seclock_remove,
+            security::security_overview,
+            security::security_watch_strip,
+            security::security_site_save,
+            security::security_posture_set,
+            security::security_incident_open,
+            security::security_incident_entry,
+            security::security_incident_list,
+            security::security_watch_list,
+            security::security_watch_draft,
+            security::security_watch_add,
+            security::security_watch_move,
+            security::security_watch_ack,
+            security::security_watch_discard,
+            security::security_watch_schedule_all,
+            security::security_comms_list,
+            security::security_comms_add,
+            security::security_coverage_list,
+            security::security_coverage_add,
+            security::security_channels_get,
+            security::security_channels_save,
+            security::security_training_list,
+            security::security_training_record,
+            security::security_assets_list,
+            security::security_asset_save,
+            security::security_asset_inspect,
+            security::security_schedule_get,
+            security::security_schedule_save,
+            security::security_equipment_list,
+            security::security_equipment_add,
+            security::security_routes_get,
+            security::security_routes_save,
+            security::security_availability_list,
+            security::security_availability_set,
+            security::security_plans_list,
+            security::security_plan_read,
+            security::security_plan_save,
+            security::security_plan_activate,
+            security::security_weather_list,
+            security::security_weather_set,
+            security::security_export_records,
+            security::security_outing_list,
+            security::security_outing_start,
+            security::security_outing_event,
+            security::security_pocket_list,
+            security::security_pocket_sheet,
+            security::security_pocket_accept,
+            security::security_pocket_set_aside,
             ops::ops_load,
             ops::task_save,
             ops::task_delete,
@@ -2906,6 +2978,8 @@ pub fn run() {
             share::share_invite,
             share::share_trusted,
             share::share_revoke,
+            share::devices_list,
+            share::devices_action,
             profile_load,
             profile_save,
             phone_estimate,
@@ -3053,6 +3127,7 @@ pub fn run() {
                 st.stop_all();
             }
             privacy::lock_everyone();
+            seclock::lock_now();
         }
     });
 }

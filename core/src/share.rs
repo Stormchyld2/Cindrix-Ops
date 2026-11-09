@@ -357,6 +357,15 @@ impl Auth {
         Some(t)
     }
 
+    /// The id of the trusted device a sign-in token belongs to. Trust follows the device, not the person.
+    pub fn device_id(&self, token: &str) -> Option<String> {
+        if token.is_empty() { return None; }
+        self.trusted.iter().find(|t| same(&t.token, token)).map(|t| t.id.clone())
+    }
+    /// The sign-in list as (id, person, since), for the device list.
+    pub fn trusted_ids(&self) -> Vec<(String, String, u64)> {
+        self.trusted.iter().map(|t| (t.id.clone(), t.person.clone(), t.since)).collect()
+    }
     pub fn trusted(&self) -> &[Trusted] { &self.trusted }
     pub fn set_trusted(&mut self, list: Vec<Trusted>) { self.trusted = list; }
     /// Take a device off the trusted list. It is a guest-who-must-type-the-PIN again.
@@ -396,7 +405,7 @@ pub fn trusted_from_text(text: &str) -> Vec<Trusted> {
 }
 
 /// What a trusted person may do on top of what a guest may.
-pub const PERSON_COMMANDS: &[&str] = &["whoami", "photo_add", "photo_delete"];
+pub const PERSON_COMMANDS: &[&str] = &["whoami", "photo_add", "photo_delete", "device_check_in", "device_erased", "pocket_upload"];
 
 pub fn command_allowed(role: &Role, cmd: &str) -> bool {
     match role {

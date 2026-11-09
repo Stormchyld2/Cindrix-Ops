@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cindrix Ops: Security Operations, Command (mockup)</title>
+<style>
+  /* Colours and panel style follow src/app.css and the real Dashboard (doc 35, doc 41). --cat-security is a placeholder until it is built. */
+  :root {
+    --bg:#1f2226; --panel:#262a2f; --panel2:#1a1d20; --line:#363b41; --line2:#454b52;
+    --text:#e8ecf0; --muted:#98a2ad;
+    --accent:#67b4ff; --accent-soft:#67b4ff1f; --accent-line:#67b4ff66;
+    --danger:#e5533d; --ok:#6fbf73; --warn:#f0b35a; --warn-soft:#f0b35a1f; --warn-line:#f0b35a66; --brand:#ff9a1f;
+    --cat-home:#ece7de; --cat-ops:#e0a030; --cat-intel:#4a90d0; --cat-academy:#c47a5a; --cat-agro:#8fb866;
+    --cat-maps:#4fb3a9; --cat-morale:#d9779b; --cat-comms:#9b79c9; --cat-system:#8a9189; --cat-security:#b7bb5a;
+    --mono: ui-monospace,'Cascadia Mono',Consolas,monospace;
+    --display:'Arial Narrow','Segoe UI',system-ui,sans-serif;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#15171a; color:var(--text); font-family:var(--display); font-size:15px; }
+  button { font-family:inherit; }
+  .ic { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; flex:none; }
+
+  /* ---------- the mockup's own controls (not part of the program) ---------- */
+  .note { background:#1b2430; border-bottom:1px solid var(--accent-line); color:var(--accent); font-family:var(--mono); font-size:11.5px; padding:7px 16px; letter-spacing:.06em; display:flex; flex-wrap:wrap; gap:6px 18px; align-items:center; }
+  .note b { color:var(--text); font-weight:600; }
+  .note .grp { display:flex; gap:4px; align-items:center; flex-wrap:wrap; }
+  .note button { padding:3px 9px; background:transparent; color:var(--accent); border:1px solid var(--accent-line); border-radius:4px; font-family:var(--mono); font-size:11px; letter-spacing:.06em; cursor:pointer; }
+  .note button.on { background:var(--accent-soft); color:var(--text); }
+
+  #app { container-type:inline-size; background:var(--bg); min-height:100vh; }
+  body.phone #app { width:390px; margin:16px auto; border:1px solid var(--line2); border-radius:20px; overflow:hidden; min-height:760px; }
+
+  /* ---------- top bar (doc 35, with Security Operations as the eleventh word) ---------- */
+  header { display:flex; align-items:center; gap:14px; padding:9px 16px; border-bottom:1px solid var(--line); background:var(--panel); position:relative; }
+  .brand { display:flex; gap:10px; align-items:center; white-space:nowrap; }
+  .flame { width:26px; height:26px; border-radius:50%; background:radial-gradient(circle at 50% 70%, #ffd27a, var(--brand) 60%, #b4520a); }
+  .name { font-weight:700; font-size:22px; letter-spacing:.12em; line-height:1; }
+  .name span { color:var(--brand); }
+  header nav { display:flex; gap:0; flex:1; justify-content:center; }
+  header nav button { padding:8px 6px; border:1px solid transparent; border-radius:6px; background:transparent; color:#aab3bd; font-family:var(--mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; cursor:pointer; white-space:nowrap; }
+  header nav button::before { content:"\25C6"; font-size:8px; margin-right:4px; color:var(--c,#667); }
+  header nav button:hover { color:var(--text); }
+  header nav button.on { background:var(--accent-soft); color:var(--accent); border-color:var(--accent-line); font-weight:600; box-shadow:inset 0 -2px 0 var(--c,var(--accent)); }
+  .sos { padding:7px 10px; border:1px solid #e5533d88; background:#e5533d1a; color:#ff8d7b; border-radius:6px; font-family:var(--mono); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; cursor:pointer; white-space:nowrap; display:flex; gap:6px; align-items:center; }
+  .sos:hover { background:#e5533d33; }
+  .burger { display:none; background:transparent; border:1px solid var(--line); color:var(--text); border-radius:6px; padding:7px 11px; font-size:16px; margin-left:auto; cursor:pointer; }
+
+  /* ---------- the six subtabs: real tabs, each with its own colour ---------- */
+  .subtabs { display:flex; align-items:flex-end; gap:6px; padding:10px 16px 0; background:var(--panel2); border-bottom:1px solid var(--line); overflow-x:auto; scrollbar-width:none; }
+  .subtabs::-webkit-scrollbar { display:none; }
+  .subtabs button { display:flex; align-items:center; gap:8px; padding:9px 15px 10px; border:1px solid var(--line); border-bottom:0; border-radius:10px 10px 0 0; background:var(--panel); color:#aab3bd; font-family:var(--mono); font-size:11.5px; text-transform:uppercase; letter-spacing:.1em; cursor:pointer; white-space:nowrap; border-top:3px solid var(--tc); position:relative; top:1px; }
+  .subtabs button .ic { color:var(--tc); }
+  .subtabs button:hover { color:var(--text); background:#2c3137; }
+  .subtabs button.on { background:var(--bg); color:var(--text); font-weight:600; border-color:var(--line2); box-shadow:0 -6px 18px -10px var(--tc); }
+  .subtabs button.on::after { content:""; position:absolute; left:0; right:0; bottom:-1px; height:2px; background:var(--bg); }
+
+  main { padding:12px 16px 16px; max-width:1200px; margin:0 auto; }
+  .grid { display:grid; grid-template-columns:repeat(12,1fr); gap:10px; margin-bottom:10px; }
+  .s3 { grid-column:span 3; } .s6 { grid-column:span 6; } .s12 { grid-column:span 12; }
+
+  /* panels as on the real Dashboard: rounded, a short coloured mark on the top edge, condensed heading */
+  .panel { position:relative; padding:12px 14px; background:var(--panel); border:1px solid var(--line); border-radius:12px; border-top:2px solid var(--line2); overflow:hidden; }
+  .panel::before { content:''; position:absolute; top:-2px; left:-1px; width:22px; height:2px; background:var(--c,var(--accent)); }
+  .panel h2 { margin:0 0 8px; font-family:'Barlow Condensed','Arial Narrow',var(--display); font-size:16px; letter-spacing:.14em; text-transform:uppercase; font-weight:700; display:flex; align-items:center; gap:8px; }
+  .panel h2::before { content:"\25C6"; font-size:10px; color:var(--c,var(--muted)); }
+  .panel h2 small { margin-left:auto; font-family:var(--mono); font-size:10px; font-weight:400; color:var(--muted); letter-spacing:.08em; }
+  .label { font-family:var(--mono); font-size:10.5px; letter-spacing:.14em; color:var(--c,var(--muted)); text-transform:uppercase; }
+  .muted { color:var(--muted); } .small { font-size:13px; }
+  .src { font-family:var(--mono); font-size:9.5px; color:var(--muted); letter-spacing:.06em; margin-top:8px; padding-top:6px; border-top:1px solid var(--line); }
+  a.go { color:var(--accent); font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; text-decoration:none; cursor:pointer; white-space:nowrap; }
+  .chip { display:inline-block; font-family:var(--mono); font-size:9.5px; letter-spacing:.1em; text-transform:uppercase; padding:2px 7px; border-radius:3px; border:1px solid; white-space:nowrap; }
+  .chip.warn { color:var(--warn); border-color:var(--warn-line); background:var(--warn-soft); }
+  .chip.bad { color:#ff8d7b; border-color:#e5533d88; background:#e5533d1a; }
+  .chip.info { color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft); }
+  .chip.ok { color:var(--ok); border-color:#6fbf7366; background:#6fbf7314; }
+  .chip.dim { color:var(--muted); border-color:var(--line2); }
+
+  /* ---------- site and posture (the banner takes the colour of the posture) ---------- */
+  .heropanel { --pc:var(--ok); background:linear-gradient(100deg, color-mix(in srgb, var(--pc) 13%, var(--panel)) 0%, var(--panel) 62%); border-top-color:var(--pc); }
+  .heropanel::before { background:var(--pc); width:46px; }
+  .heropanel.p-unknown { --pc:#8a949f; } .heropanel.p-normal { --pc:var(--ok); } .heropanel.p-elevated { --pc:var(--warn); } .heropanel.p-emergency { --pc:var(--danger); }
+  .hero { display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; }
+  .site label { display:block; margin-bottom:4px; }
+  .site select { background:var(--panel2); color:var(--text); border:1px solid var(--line2); border-radius:8px; padding:8px 11px; font-family:var(--display); font-size:16px; min-width:200px; }
+  .posture { display:flex; align-items:center; gap:14px; }
+  .badge { min-width:150px; text-align:center; padding:8px 16px; border-radius:10px; border:2px solid var(--pc); color:var(--pc); background:color-mix(in srgb, var(--pc) 10%, transparent); font-size:25px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; box-shadow:0 0 26px -8px var(--pc); }
+  .heropanel.p-unknown .badge { border-style:dashed; box-shadow:none; }
+  .heropanel.p-emergency .badge { background:var(--danger); color:#fff; }
+  .pmeta { line-height:1.45; font-size:14.5px; }
+  .pmeta b { font-weight:600; }
+  .heroact { margin-left:auto; display:flex; gap:8px; flex-wrap:wrap; }
+  .btn { padding:8px 12px; background:transparent; border:1px solid var(--line2); color:var(--text); border-radius:8px; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; cursor:pointer; }
+  .btn:hover { border-color:var(--accent-line); color:var(--accent); }
+  .btn.primary { background:var(--accent-soft); border-color:var(--accent-line); color:var(--accent); }
+  .stale { margin-top:10px; padding:7px 11px; border-radius:8px; border:1px solid var(--warn-line); background:var(--warn-soft); color:var(--warn); font-size:13.5px; display:none; }
+  .stale.show { display:block; }
+
+  /* shortcut blocks, like the Dashboard's */
+  .shortcuts { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-top:12px; }
+  .sc { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; min-height:62px; padding:8px 6px; color:var(--text); background:#14110e; background:var(--panel2); border:1px solid var(--line2); border-radius:12px; font-size:13.5px; text-align:center; cursor:pointer; }
+  .sc .ic { width:22px; height:22px; color:var(--c,var(--accent)); }
+  .sc:hover { border-color:var(--accent-line); background:#20252a; }
+  .sc.red { border-color:#e5533d77; background:#e5533d14; } .sc.red .ic { color:#ff8d7b; }
+
+  /* ---------- the four cards (the same four as the main Dashboard) ---------- */
+  .tile { border-left:3px solid var(--c); background:linear-gradient(180deg, color-mix(in srgb, var(--c) 9%, var(--panel)), var(--panel) 70%); }
+  .tile .big { font-size:25px; font-weight:600; margin:2px 0 1px; color:var(--bc,var(--text)); }
+  .tile .line { font-size:13.5px; margin:2px 0; line-height:1.3; }
+  .tile .line b { font-weight:600; }
+
+  /* ---------- 24-hour watch strip ---------- */
+  .cov { position:relative; margin-top:14px; }
+  .covbar { display:grid; grid-template-columns:repeat(4,1fr); gap:3px; }
+  .blk { min-height:62px; border-radius:8px; padding:7px 10px; border:1px solid; font-size:13.5px; }
+  .blk .t { font-family:var(--mono); font-size:10px; letter-spacing:.1em; opacity:.85; }
+  .blk .who { font-weight:600; margin:2px 0 1px; font-size:16px; display:flex; align-items:center; gap:6px; }
+  .blk.done { background:#67b4ff1c; border-color:#67b4ff40; color:#9cc9f5; }
+  .blk.now { background:linear-gradient(135deg,#67b4ff55,#67b4ff2a); border-color:var(--accent); color:var(--text); box-shadow:0 0 18px -8px var(--accent); }
+  .blk.sched { background:repeating-linear-gradient(45deg,#67b4ff1a 0 7px,transparent 7px 14px); border-color:#67b4ff66; border-style:dashed; color:#b8d4f2; }
+  .blk.gap { background:#e5533d14; border-color:#e5533d99; border-style:dashed; color:#ff8d7b; }
+  .blk.none { background:transparent; border-color:var(--line2); border-style:dashed; color:var(--muted); }
+  .ticks { display:grid; grid-template-columns:repeat(4,1fr); font-family:var(--mono); font-size:9.5px; color:var(--muted); margin-top:4px; }
+  .nowline { position:absolute; top:-6px; bottom:16px; width:2px; background:var(--text); left:39.2%; }
+  .nowline::before { content:"NOW 09:35"; position:absolute; top:-13px; left:-26px; font-family:var(--mono); font-size:9.5px; letter-spacing:.08em; color:var(--text); white-space:nowrap; }
+  .legend { display:flex; flex-wrap:wrap; gap:4px 16px; margin-top:8px; font-size:12px; color:var(--muted); }
+  .legend i { display:inline-block; width:11px; height:11px; border-radius:3px; border:1px solid; margin-right:5px; vertical-align:-2px; }
+
+  /* ---------- lists ---------- */
+  .item { display:flex; gap:10px; align-items:center; padding:7px 0; border-top:1px solid var(--line); }
+  .item:first-of-type { border-top:0; padding-top:0; }
+  .item .txt { flex:1; line-height:1.3; font-size:14.5px; } .item .txt small { display:block; color:var(--muted); font-size:12.5px; margin-top:1px; }
+  .proc { display:grid; grid-template-columns:repeat(2,1fr); gap:7px; }
+  .proc button { display:flex; gap:9px; align-items:center; text-align:left; padding:8px 10px; background:var(--panel2); border:1px solid var(--line2); border-left:3px solid var(--c,var(--danger)); border-radius:10px; color:var(--text); cursor:pointer; font-size:14.5px; }
+  .proc button .ic { color:var(--c,#ff8d7b); }
+  .proc button:hover { border-color:var(--accent-line); }
+  .proc button small { display:block; font-family:var(--mono); font-size:9px; letter-spacing:.05em; color:var(--muted); margin-top:2px; }
+  .tl { display:grid; grid-template-columns:48px 1fr auto; gap:0 12px; align-items:baseline; }
+  .tl .tm { font-family:var(--mono); font-size:11.5px; color:var(--muted); }
+  .tl > div { padding:5px 0; border-top:1px solid var(--line); font-size:14.5px; } .tl > div:nth-child(-n+3) { border-top:0; padding-top:0; }
+  .fall { margin-top:8px; padding:6px 10px; border-radius:8px; border:1px solid var(--accent-line); background:var(--accent-soft); color:var(--accent); font-size:13px; display:none; }
+  .fall.show { display:block; }
+
+  /* ---------- emergency procedure pop-up ---------- */
+  .scrim { position:fixed; inset:0; background:#000a; display:none; align-items:center; justify-content:center; z-index:20; padding:16px; }
+  .scrim.show { display:flex; }
+  .modal { width:min(560px,100%); max-height:90vh; overflow:auto; background:var(--panel); border:1px solid var(--line2); border-top:3px solid var(--danger); border-radius:12px; padding:16px 20px; }
+  .modal h3 { margin:2px 0 4px; font-size:22px; letter-spacing:.05em; text-transform:uppercase; }
+  .modal ol { padding-left:22px; line-height:1.6; margin:10px 0; }
+  .modal .readonly { background:var(--accent-soft); border:1px solid var(--accent-line); color:var(--accent); border-radius:8px; padding:7px 11px; font-size:13.5px; margin:10px 0; }
+  .modal .acts { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; margin-top:12px; }
+
+  /* ---------- small screens (phone) ---------- */
+  @container (max-width: 860px) {
+    header nav { display:none; position:absolute; top:100%; left:0; right:0; background:var(--panel); border-bottom:1px solid var(--line); flex-direction:column; padding:8px; z-index:6; }
+    header nav.show { display:flex; }
+    .burger { display:block; }
+    .sos { display:none; }
+    .s3, .s6 { grid-column:span 12; }
+    .heroact { margin-left:0; width:100%; }
+    .posture { flex-wrap:wrap; }
+    .badge { font-size:22px; min-width:0; padding:7px 14px; }
+    .pmeta { flex-basis:100%; }
+    .site select { min-width:0; width:100%; } .site { width:100%; }
+    .shortcuts { grid-template-columns:repeat(3,1fr); }
+    .proc { grid-template-columns:1fr; }
+    .covbar { grid-template-columns:1fr; } .ticks { display:none; } .nowline { display:none; }
+    .tl { grid-template-columns:44px 1fr; } .tl .chipcell { display:none; }
+    .subtabs { padding:8px 12px 0; gap:4px; }
+    .subtabs button { padding:8px 11px 9px; font-size:10.5px; letter-spacing:.06em; }
+    main { padding:10px 12px 14px; }
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 7.7-8 9-4.6-1.3-8-4.5-8-9V6z"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-clip" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/></symbol>
+  <symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14c2.8 0 5 2.2 5 5"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></symbol>
+  <symbol id="i-radio" viewBox="0 0 24 24"><circle cx="12" cy="13" r="2"/><path d="M7.8 8.8a6 6 0 0 0 0 8.4M16.2 8.8a6 6 0 0 1 0 8.4M4.9 5.9a10 10 0 0 0 0 14.2M19.1 5.9a10 10 0 0 1 0 14.2"/></symbol>
+  <symbol id="i-swap" viewBox="0 0 24 24"><path d="M4 8h14l-3-3M20 16H6l3 3"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.5"/></symbol>
+  <symbol id="i-print" viewBox="0 0 24 24"><path d="M7 9V3h10v6M7 17H4v-7h16v7h-3"/><rect x="7" y="14" width="10" height="7"/></symbol>
+  <symbol id="i-cross" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></symbol>
+  <symbol id="i-run" viewBox="0 0 24 24"><circle cx="14" cy="4.5" r="2"/><path d="M8 21l3-6 3 2v4M11 15l-1-5 4-2 3 3 3 1M8 10l-3 2"/></symbol>
+  <symbol id="i-fire" viewBox="0 0 24 24"><path d="M12 3c1 4 5 6 5 11a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-4-1-6 1-10z"/></symbol>
+  <symbol id="i-house" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h14V10M10 20v-6h4v6"/></symbol>
+  <symbol id="i-find" viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="M15 15l6 6"/></symbol>
+</svg>
+
+<div class="note">
+  <span><b>MOCKUP</b> &middot; every name, time and number below is made-up sample data, not real status</span>
+  <span class="grp">View
+    <button id="vDesk" class="on" type="button">Computer</button>
+    <button id="vPhone" type="button">Phone</button>
+  </span>
+  <span class="grp">Try a posture
+    <button data-p="unknown" type="button">Unknown</button>
+    <button data-p="normal" class="on" type="button">Normal</button>
+    <button data-p="elevated" type="button">Elevated</button>
+    <button data-p="emergency" type="button">Emergency</button>
+  </span>
+</div>
+
+<div id="app">
+  <header>
+    <div class="brand"><div class="flame"></div><div class="name">CINDRIX <span>OPS</span></div></div>
+    <button class="burger" id="burger" type="button" aria-label="Menu">&#9776;</button>
+    <nav id="nav">
+      <button style="--c:var(--cat-home)" type="button">Dashboard</button>
+      <button style="--c:var(--cat-intel)" type="button">Ask</button>
+      <button style="--c:var(--cat-maps)" type="button">Maps</button>
+      <button style="--c:var(--cat-ops)" type="button">Operations</button>
+      <button class="on" style="--c:var(--cat-security)" type="button">Security</button>
+      <button style="--c:var(--cat-intel)" type="button">Intel</button>
+      <button style="--c:var(--cat-academy)" type="button">Academy</button>
+      <button style="--c:var(--cat-agro)" type="button">Agro</button>
+      <button style="--c:var(--cat-morale)" type="button">Morale</button>
+      <button style="--c:var(--cat-comms)" type="button">Comms</button>
+      <button style="--c:var(--cat-system)" type="button">System</button>
+    </nav>
+    <button class="sos" type="button" data-proc="Evacuation"><svg class="ic"><use href="#i-cross"/></svg>Emergency</button>
+  </header>
+
+  <div class="subtabs" role="tablist">
+    <button class="on" type="button" style="--tc:#67b4ff"><svg class="ic"><use href="#i-grid"/></svg>Command</button>
+    <button type="button" style="--tc:var(--cat-security)"><svg class="ic"><use href="#i-shield"/></svg>Security</button>
+    <button type="button" style="--tc:var(--cat-ops)"><svg class="ic"><use href="#i-clock"/></svg>Operations</button>
+    <button type="button" style="--tc:var(--cat-maps)"><svg class="ic"><use href="#i-clip"/></svg>Planning</button>
+    <button type="button" style="--tc:var(--cat-academy)"><svg class="ic"><use href="#i-people"/></svg>Personnel</button>
+    <button type="button" style="--tc:var(--cat-comms)"><svg class="ic"><use href="#i-doc"/></svg>Records</button>
+  </div>
+
+  <main>
+    <!-- site, posture and shortcuts -->
+    <div class="panel heropanel p-normal" id="heropanel" style="margin-bottom:10px">
+      <div class="hero">
+        <div class="site">
+          <label class="label" for="site">Site</label>
+          <select id="site"><option value="home">Home</option><option value="camp">Campsite</option><option value="evac">Evacuation destination</option><option value="add">+ Add a site</option></select>
+        </div>
+        <div class="posture">
+          <div class="badge" id="badge">Normal</div>
+          <div class="pmeta" id="pmeta"></div>
+        </div>
+        <div class="heroact">
+          <button class="btn primary" type="button">Confirm posture now</button>
+          <button class="btn" type="button">Change posture&hellip;</button>
+        </div>
+      </div>
+      <div class="stale" id="stale"></div>
+      <div class="shortcuts">
+        <button class="sc" type="button" style="--c:var(--accent)"><svg class="ic"><use href="#i-radio"/></svg>Log a check-in</button>
+        <button class="sc" type="button" style="--c:var(--cat-ops)"><svg class="ic"><use href="#i-swap"/></svg>Hand over the watch</button>
+        <button class="sc" type="button" style="--c:var(--warn)"><svg class="ic"><use href="#i-alert"/></svg>Report an incident</button>
+        <button class="sc" type="button" style="--c:var(--cat-maps)"><svg class="ic"><use href="#i-print"/></svg>Print the watchbill</button>
+        <button class="sc red" type="button" data-proc="Evacuation"><svg class="ic"><use href="#i-cross"/></svg>Emergency procedures</button>
+      </div>
+    </div>
+
+    <!-- the same four things the main Dashboard shows -->
+    <div class="grid" id="tiles"></div>
+
+    <!-- 24 hours -->
+    <div class="panel" style="--c:var(--accent); margin-bottom:10px">
+      <h2>Watch for the next 24 hours <small id="covsub"></small></h2>
+      <div class="cov">
+        <div class="nowline" id="nowline"></div>
+        <div class="covbar" id="cov"></div>
+        <div class="ticks"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span></div>
+      </div>
+      <div class="legend">
+        <span><i style="background:#67b4ff55;border-color:var(--accent)"></i>Confirmed on watch</span>
+        <span><i style="background:#67b4ff1c;border-color:#67b4ff40"></i>Finished</span>
+        <span><i style="border-style:dashed;border-color:#67b4ff66"></i>Planned only (not shown as on duty)</span>
+        <span><i style="border-style:dashed;border-color:#e5533d99;background:#e5533d14"></i>Nobody assigned</span>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="panel s6" style="--c:var(--warn)">
+        <h2>Needs a look <small id="needsn"></small></h2>
+        <div id="needs"></div>
+      </div>
+      <div class="panel s6" style="--c:var(--danger)">
+        <h2>Emergency procedures <small>works offline</small></h2>
+        <div class="proc">
+          <button type="button" style="--c:#ff8d7b" data-proc="Evacuation"><svg class="ic"><use href="#i-run"/></svg><span>Evacuation<small>REV 3 &middot; 10-30 &middot; PRINTABLE</small></span></button>
+          <button type="button" style="--c:var(--accent)" data-proc="Shelter in place"><svg class="ic"><use href="#i-house"/></svg><span>Shelter in place<small>REV 2 &middot; 10-30 &middot; PRINTABLE</small></span></button>
+          <button type="button" style="--c:var(--brand)" data-proc="Fire"><svg class="ic"><use href="#i-fire"/></svg><span>Fire<small>REV 2 &middot; 10-30 &middot; PRINTABLE</small></span></button>
+          <button type="button" style="--c:var(--ok)" data-proc="Medical help"><svg class="ic"><use href="#i-cross"/></svg><span>Medical help<small>REV 4 &middot; 11-02 &middot; PRINTABLE</small></span></button>
+          <button type="button" style="--c:var(--cat-comms)" data-proc="Radios not working"><svg class="ic"><use href="#i-radio"/></svg><span>Radios not working<small>REV 1 &middot; 11-02 &middot; PRINTABLE</small></span></button>
+          <button type="button" style="--c:var(--cat-maps)" data-proc="Someone is missing"><svg class="ic"><use href="#i-find"/></svg><span>Someone is missing<small>REV 2 &middot; 11-02 &middot; PRINTABLE</small></span></button>
+        </div>
+        <div class="fall" id="fall"></div>
+        <div class="src">Reading a procedure does not start it.</div>
+      </div>
+    </div>
+
+    <div class="panel" style="--c:var(--cat-security)">
+      <h2>Today so far <small>newest first</small></h2>
+      <div class="tl" id="tl"></div>
+    </div>
+  </main>
+</div>
+
+<div class="scrim" id="scrim">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="label" style="--c:var(--danger)">Emergency procedure &middot; <span id="msite">Home</span></div>
+    <h3 id="mtitle">Evacuation</h3>
+    <div class="small muted">Revision 3 &middot; approved 10-30 &middot; next review 01-30</div>
+    <div class="readonly">You are only reading this. Nothing has been started, and nobody has been told.</div>
+    <ol>
+      <li>Call everyone to the rally point by radio or in person.</li>
+      <li>Count heads. Say each name out loud.</li>
+      <li>Take the go bags and the medical kit.</li>
+      <li>Leave by the route marked on the map.</li>
+      <li>At the second rally point, count again and write down the time.</li>
+    </ol>
+    <div class="acts">
+      <button class="btn" type="button" id="mclose">Close</button>
+      <button class="btn" type="button">Print</button>
+      <button class="btn primary" type="button">Start this response&hellip; (asks to confirm)</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const body = document.body;
+  const $ = (s) => document.querySelector(s);
+
+  // ---- sample data, one set per site (the screen shows whichever site is picked) ----
+  const tile = (c, label, big, bc, lines, src) =>
+    '<div class="panel tile s3" style="--c:' + c + '"><div class="label">' + label + '</div><div class="big" style="--bc:' + bc + '">' + big + '</div>' +
+    lines.map((l) => '<div class="line">' + l + '</div>').join('') + '<div class="src">' + src + '</div></div>';
+  const need = (chip, cls, txt, sub, act) =>
+    '<div class="item"><span class="chip ' + cls + '">' + chip + '</span><div class="txt">' + txt + '<small>' + sub + '</small></div><a class="go">' + act + '</a></div>';
+  const tl = (tm, txt, cls, chip) => '<div class="tm">' + tm + '</div><div>' + txt + '</div><div class="chipcell"><span class="chip ' + cls + '">' + chip + '</span></div>';
+
+  const SITES = {
+    home: {
+      name: 'Home', posture: 'normal', sub: 'Home &middot; six-hour watches', nowline: true,
+      tiles:
+        tile('var(--accent)', 'Watch', 'Casey', 'var(--text)', ['On watch until <b>12:00</b>, acknowledged 05:58', '<span class="muted">Next: Jordan, 12:00 &middot;</span> <span style="color:var(--warn)">not yet acknowledged</span>', '<span style="color:#ff8d7b">Gap: 18:00 to 24:00, nobody assigned</span>'], 'From the watchbill &middot; updated 06:02') +
+        tile('var(--warn)', 'Patrols and check-ins', '1 overdue', 'var(--warn)', ['Perimeter walk was due <b>09:00</b>', '<span class="muted">Last check-in 08:55, Casey, post 3</span>', '<a class="go">Open the check-up task</a>'], 'From the patrol log &middot; updated 09:35') +
+        tile('var(--cat-comms)', 'Incidents and alerts', '0 open', 'var(--text)', ['1 alert not yet looked at', '<span class="muted">Overwatch, 08:41.</span> <b>Not checked. Not an incident.</b>', '<a class="go">Review the alert</a>'], 'From Overwatch import &middot; 08:41') +
+        tile('var(--cat-maps)', 'Due soon', '3', 'var(--cat-maps)', ['2 inspections today', '<span class="muted">Gate 2 latch, trip line east side</span>', '1 training refresher in 3 days'], 'From inspections and training &middot; updated 06:00'),
+      cov:
+        '<div class="blk done"><div class="t">00:00 &ndash; 06:00</div><div class="who">Alex</div><div>Finished, handed over</div></div>' +
+        '<div class="blk now"><div class="t">06:00 &ndash; 12:00</div><div class="who">Casey</div><div>On watch, confirmed</div></div>' +
+        '<div class="blk sched"><div class="t">12:00 &ndash; 18:00</div><div class="who">Jordan</div><div>Planned, not confirmed</div></div>' +
+        '<div class="blk gap"><div class="t">18:00 &ndash; 24:00</div><div class="who">Nobody</div><div>Gap. <a class="go" style="color:#ff8d7b">Assign</a></div></div>',
+      needs:
+        need('Check', 'warn', 'Perimeter walk check-in is 35 minutes late', 'Ask Casey on the radio. This is not a sign anything is wrong.', 'Open') +
+        need('Gap', 'bad', 'Nobody on watch 18:00 to 24:00', 'Sam is resting after last night. Alex and Jordan are free.', 'Assign') +
+        need('Unchecked', 'dim', 'Overwatch alert, 08:41', 'Shown as reported, not confirmed.', 'Review') +
+        need('Due', 'warn', 'Posture needs confirming by 12:00', 'Last confirmed 06:12.', 'Confirm') +
+        need('Today', 'info', 'Gate 2 latch and east trip line', 'Inspection not yet done.', 'Open'),
+      needsn: '5', fall: '',
+      tl:
+        tl('08:55', 'Check-in at post 3, Casey', 'dim', 'Seen by Casey') +
+        tl('08:41', 'Alert came in from Overwatch', 'warn', 'Not checked') +
+        tl('06:12', 'Posture set to Normal by Alex', 'info', 'Person decided') +
+        tl('06:02', 'Handover from Alex to Casey, acknowledged', 'ok', 'Both confirmed') +
+        tl('05:40', 'Alex entered a note from the paper log (happened 03:15)', 'dim', 'Entered later')
+    }
+  };
+  const empty = (name) => ({
+    name, posture: 'unknown', sub: name + ' &middot; no watchbill yet', nowline: false,
+    tiles:
+      tile('var(--accent)', 'Watch', 'None', 'var(--muted)', ['No watchbill for this site yet', '<a class="go">Make a watchbill</a>'], 'From the watchbill &middot; nothing saved') +
+      tile('var(--warn)', 'Patrols and check-ins', 'None', 'var(--muted)', ['No patrol routes yet', '<span class="muted">Nothing is overdue because nothing is planned.</span>'], 'From the patrol log &middot; nothing saved') +
+      tile('var(--cat-comms)', 'Incidents and alerts', '0 open', 'var(--text)', ['Overwatch is <b>not connected</b> for this site', '<span class="muted">No news is not good news. It only means nothing is being watched.</span>'], 'Alert feed unavailable') +
+      tile('var(--cat-maps)', 'Due soon', '1', 'var(--cat-maps)', ['Set up the perimeter and gates', '<a class="go">Start</a>'], 'From inspections and training'),
+    cov: ['00:00 &ndash; 06:00', '06:00 &ndash; 12:00', '12:00 &ndash; 18:00', '18:00 &ndash; 24:00'].map((t) => '<div class="blk none"><div class="t">' + t + '</div><div class="who">Not planned</div><div>No watchbill</div></div>').join(''),
+    needs:
+      need('Unknown', 'dim', 'Posture has not been set for ' + name, 'Unknown is not the same as safe.', 'Set') +
+      need('Plan', 'info', 'No watchbill for this site', 'Four-person six-hour template is ready to use.', 'Make') +
+      need('General', 'info', 'No procedures written for ' + name + ' yet', 'The general set is shown instead.', 'Write'),
+    needsn: '3', fall: name + ' has no procedures of its own yet. Showing the general set, not another site&rsquo;s.',
+    tl: tl('09:30', 'Site ' + name + ' added', 'dim', 'Person decided')
+  });
+  SITES.camp = empty('Campsite');
+  SITES.evac = empty('Evacuation destination');
+
+  function render(key) {
+    const s = SITES[key]; if (!s) return;
+    $('#tiles').innerHTML = s.tiles; $('#cov').innerHTML = s.cov; $('#covsub').innerHTML = s.sub;
+    $('#nowline').style.display = s.nowline ? '' : 'none';
+    $('#needs').innerHTML = s.needs; $('#needsn').textContent = s.needsn;
+    $('#tl').innerHTML = s.tl; $('#msite').textContent = s.name;
+    const f = $('#fall'); f.innerHTML = s.fall; f.classList.toggle('show', !!s.fall);
+    posture(s.posture);
+  }
+  $('#site').onchange = (e) => { if (SITES[e.target.value]) render(e.target.value); else e.target.value = 'home'; };
+
+  // ---- computer / phone view ----
+  const vDesk = $('#vDesk'), vPhone = $('#vPhone');
+  function view(phone) { body.classList.toggle('phone', phone); vDesk.classList.toggle('on', !phone); vPhone.classList.toggle('on', phone); }
+  vDesk.onclick = () => view(false); vPhone.onclick = () => view(true);
+  $('#burger').onclick = () => $('#nav').classList.toggle('show');
+
+  // ---- posture: the four states in the document ----
+  const meta = {
+    unknown:  { label: 'Unknown',  html: '<b>Not confirmed yet.</b><br><span class="muted">Nobody has set or checked the posture for this site. This is not the same as safe.</span>', stale: '' },
+    normal:   { label: 'Normal',   html: '<b>Set by Alex at 06:12.</b> Confirmed 06:12<br><span class="muted">Reason: routine day, no reports. Confirm again by 12:00.</span>', stale: 'Posture was last confirmed at 06:12. Confirm it by 12:00 so this does not go stale.' },
+    elevated: { label: 'Elevated', html: '<b>Set by Alex at 08:50.</b> Confirmed 08:50<br><span class="muted">Reason: unchecked alert at the east side. Extra check-ins asked for.</span>', stale: 'Elevated posture: review by 10:50.' },
+    emergency:{ label: 'Emergency',html: '<b>Declared by Alex at 09:20.</b> Confirmed 09:20<br><span class="muted">A response is running. Open incidents stay open until a person closes them.</span>', stale: '' }
+  };
+  function posture(p) {
+    const m = meta[p];
+    $('#heropanel').className = 'panel heropanel p-' + p;
+    $('#badge').textContent = m.label; $('#pmeta').innerHTML = m.html;
+    const s = $('#stale'); s.textContent = m.stale; s.classList.toggle('show', !!m.stale);
+    document.querySelectorAll('[data-p]').forEach((x) => x.classList.toggle('on', x.dataset.p === p));
+  }
+  document.querySelectorAll('[data-p]').forEach((x) => (x.onclick = () => posture(x.dataset.p)));
+
+  // ---- emergency procedure pop-up (reading only) ----
+  const scrim = $('#scrim');
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-proc]'); if (!b) return;
+    $('#mtitle').textContent = b.dataset.proc; scrim.classList.add('show');
+  });
+  $('#mclose').onclick = () => scrim.classList.remove('show');
+  scrim.onclick = (e) => { if (e.target === scrim) scrim.classList.remove('show'); };
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') scrim.classList.remove('show'); });
+
+  render('home');
+</script>
+</body>
+</html>

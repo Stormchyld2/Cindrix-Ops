@@ -357,19 +357,19 @@
   .dialog { background: var(--panel, #1b1f24); border: 1px solid var(--line, #444); border-radius: 10px; padding: 16px; width: min(640px, 92vw); max-height: 80vh; overflow-y: auto; scrollbar-width: none; display: flex; flex-direction: column; gap: 10px; }
   .chat { display: flex; flex-direction: column; gap: 14px; flex: 1; }
   .msg { padding: 12px 14px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); max-width: 760px; }
-  .msg.you { align-self: flex-end; background: #27231e; border-color: #3a342c; }
+  .msg.you { align-self: flex-end; background: var(--blue-soft); border-color: var(--blue-line); }
   .msg.app { border-left: 3px solid var(--accent); }
   .text { margin-top: 4px; white-space: pre-wrap; }
   .sources { margin-top: 10px; font-size: 12px; color: var(--muted); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   .chip.open { cursor: pointer; text-decoration: underline; }
-  .chip.open:hover { border-color: #6fcf8d; }
+  .chip.open:hover { border-color: var(--ok); }
   .between { justify-content: space-between; }
   .transcript { white-space: pre-wrap; font-family: inherit; margin: 8px 0 0; }
   .pastlist { list-style: none; padding: 0; margin: 8px 0 0; display: flex; flex-direction: column; gap: 6px; }
   .pastlist li { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
-  .chip { padding: 3px 10px; border-radius: 999px; background: #1f2a1d; border: 1px solid #34502f; color: #9fd18f; }
+  .chip { padding: 3px 10px; border-radius: 999px; background: var(--ok-bg); border: 1px solid var(--ok-line); color: var(--ok-text); }
   .link { margin-top: 8px; background: none; border: 0; color: var(--blue); padding: 0; text-decoration: underline; }
-  .warn { margin: 0 0 12px; padding: 12px 14px; border-radius: 12px; border: 1px solid #7a5a1c; background: #2a2210; color: #f0d9a0; max-width: 760px; }
+  .warn { margin: 0 0 12px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--warn-line); background: var(--warn-soft); color: var(--warn); max-width: 760px; }
   .how { max-width: 760px; margin: 0 0 12px; padding: 10px 14px; }
   .how summary { cursor: pointer; font-weight: 600; }
   .how ul { margin: 8px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
