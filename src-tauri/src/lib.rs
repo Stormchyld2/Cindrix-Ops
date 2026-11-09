@@ -2940,6 +2940,8 @@ pub fn run() {
             security::security_weather_list,
             security::security_weather_set,
             security::security_export_records,
+            security::security_tracks_list,
+            security::security_track_export,
             security::security_outing_list,
             security::security_outing_start,
             security::security_outing_event,

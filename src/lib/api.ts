@@ -1812,6 +1812,16 @@ export async function securityExportRecords(): Promise<string> {
   throw new Error('Records are copied out in the program, not in the browser preview.');
 }
 
+export type TrackRow = { id: string; person: string; device: string; created: string; outing: string; points: number; metres: number; climb: number; drop: number; low: number | null; high: number | null; seconds: number; start: number };
+export async function securityTracksList(): Promise<{ tracks: TrackRow[] }> {
+  if (tauriHost) return call<{ tracks: TrackRow[] }>('security_tracks_list');
+  return { tracks: [] };
+}
+export async function securityTrackExport(id: string): Promise<string> {
+  if (tauriHost) return call<string>('security_track_export', { id });
+  throw new Error('Tracks are copied out in the program, not in the browser preview.');
+}
+
 export type OutingRow = {
   id: string; patrol: boolean; site: string; people: string[]; task: string; method: string;
   left: string; back: string; next: string; state: 'out' | 'back' | 'cancelled'; ended: string;

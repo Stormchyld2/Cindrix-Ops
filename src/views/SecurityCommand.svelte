@@ -199,6 +199,9 @@
           {:else if r.kind === 'checkin-sheet'}
             <div><b>{r.person}</b>'s phone, <b>check-ins</b> for someone who is out, {r.entries} line{r.entries === 1 ? '' : 's'}, written {when(r.created)}</div>
             <div class="acts"><button class="btn primary" onclick={() => acceptReport(r)} title="Add these to the outing record as reported by the phone">Accept</button> <button class="btn" onclick={() => asideReport(r)}>Set aside</button></div>
+          {:else if r.kind === 'track-sheet'}
+            <div><b>{r.person}</b>'s phone, a <b>GPS track</b> of {r.entries} point{r.entries === 1 ? '' : 's'}, written {when(r.created)}</div>
+            <div class="acts"><button class="btn primary" onclick={() => acceptReport(r)} title="Keep this track under Security > Outing">Accept</button> <button class="btn" onclick={() => asideReport(r)}>Set aside</button></div>
           {:else}
             <div><b>{r.person}</b>'s phone, {r.entries} line{r.entries === 1 ? '' : 's'}, written {when(r.created)}</div>
             <div class="acts"><button class="btn primary" onclick={() => acceptReport(r)}>Accept</button> <button class="btn" onclick={() => asideReport(r)}>Set aside</button></div>

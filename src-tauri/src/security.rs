@@ -314,6 +314,18 @@ pub fn security_schedule_save(site: String, rules: Vec<RuleDto>) -> Result<(), S
 }
 
 #[tauri::command]
+pub fn security_tracks_list() -> Result<Value, String> {
+    crate::seclock::require_open()?;
+    json(api::tracks_list(&user_root()))
+}
+
+#[tauri::command]
+pub fn security_track_export(id: String) -> Result<String, String> {
+    crate::seclock::require_open()?;
+    api::track_export(&user_root(), &id)
+}
+
+#[tauri::command]
 pub fn security_equipment_list() -> Result<Value, String> {
     crate::seclock::require_open()?;
     json(api::equipment_list(&user_root()))

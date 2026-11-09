@@ -2,6 +2,7 @@
   // Security Operations > Operations: who is out of camp and who is on patrol (docs/46, core/src/security_outing.rs).
   // Lateness only adds a line to "needs a look". It never opens an incident, and only a person closes an outing.
   import { onMount } from 'svelte';
+  import SecurityTracks from './SecurityTracks.svelte';
   import { securityOutingList, securityOutingStart, securityOutingEvent, securityRoutesGet, type RouteRow, type OutingList, type OutingRow } from '../lib/api';
 
   let { site = '', me = '' }: { site: string; me: string } = $props();
@@ -136,6 +137,8 @@
     {/if}
   {/if}
 </div>
+
+<SecurityTracks />
 
 <style>
   .out { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start; padding: 10px 0; border-top: 1px solid var(--line); }

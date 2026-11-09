@@ -65,6 +65,8 @@ pub const SECURITY_COMMANDS: &[&str] = &[
     "security_weather_list",
     "security_weather_set",
     "security_export_records",
+    "security_tracks_list",
+    "security_track_export",
     "security_pocket_list",
     "security_pocket_sheet",
     "security_pocket_accept",
@@ -834,6 +836,31 @@ pub fn export_records(user_root: &Path, offset_minutes: i64) -> Result<String, S
     Ok(p.file_name().map(|n| format!("exports/{}", n.to_string_lossy())).unwrap_or_default())
 }
 
+/// The kept GPS tracks from phones, newest first, with distance, climb and time worked out (core/src/tracksheet.rs).
+pub fn tracks_list(user_root: &Path) -> Result<String, String> {
+    let n = |o: Option<f64>| o.map(|v| format!("{:.1}", v)).unwrap_or_else(|| "null".to_string());
+    let rows: Vec<String> = crate::tracksheet::list(user_root)
+        .iter()
+        .map(|t| {
+            format!(
+                "{{\"id\":{},\"person\":{},\"device\":{},\"created\":{},\"outing\":{},\"points\":{},\"metres\":{:.0},\"climb\":{:.0},\"drop\":{:.0},\"low\":{},\"high\":{},\"seconds\":{},\"start\":{}}}",
+                q(&t.id), q(&t.person), q(&t.device), q(&t.created), q(&t.outing), t.stats.points, t.stats.metres, t.stats.climb, t.stats.drop, n(t.stats.low), n(t.stats.high), t.stats.seconds, t.stats.start
+            )
+        })
+        .collect();
+    Ok(format!("{{\"tracks\":[{}]}}", rows.join(",")))
+}
+
+/// Write one kept track as a GPX file in `user/exports/` and say where (a plain copy: the lock does not cover exports).
+pub fn track_export(user_root: &Path, id: &str) -> Result<String, String> {
+    let sheet = crate::tracksheet::get(user_root, id)?;
+    let dir = user_root.join("exports");
+    std::fs::create_dir_all(&dir).map_err(|_| "The exports folder could not be made.".to_string())?;
+    let name = format!("track-{}.gpx", sheet.id);
+    crate::fsio::write_atomic(&dir.join(&name), crate::tracksheet::gpx(&sheet).as_bytes()).map_err(|e| format!("The file could not be saved: {}", e))?;
+    Ok(format!("exports/{}", name))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1200,5 +1227,20 @@ mod tests {
         let f = export_records(&r, 0).unwrap();
         assert!(f.starts_with("exports/security-records-"));
         let _ = std::fs::remove_dir_all(&r);
+    }
+
+    #[test]
+    fn kept_tracks_are_listed_and_can_be_copied_out_as_gpx() {
+        let r = tmp("tracks");
+        assert!(tracks_list(&r).unwrap().contains("\"tracks\":[]"));
+        let pts: Vec<crate::tracksheet::Point> = (0..3).map(|i| crate::tracksheet::Point { t: 100 + i * 30, lat: 38.0 + i as f64 * 0.001, lon: -80.0, ele: Some(500.0 + i as f64 * 5.0) }).collect();
+        crate::security_pocket::drop_file(&r, "n10-track-1.txt", &crate::tracksheet::render("n10", "Sam", &crate::security::format_instant(now_minutes(), 0), "n10-t1", "", &pts)).unwrap();
+        crate::security_pocket::accept_any(&r, "n10-track-1.txt", false).unwrap();
+        let j = tracks_list(&r).unwrap();
+        assert!(j.contains("\"id\":\"n10-t1\"") && j.contains("\"metres\":222") && j.contains("\"climb\":10") && j.contains("\"seconds\":60"), "{}", j);
+        assert_eq!(track_export(&r, "n10-t1").unwrap(), "exports/track-n10-t1.gpx");
+        assert!(fs::read_to_string(r.join("exports/track-n10-t1.gpx")).unwrap().contains("<trkpt"));
+        assert!(track_export(&r, "../x").is_err());
+        let _ = fs::remove_dir_all(&r);
     }
 }
