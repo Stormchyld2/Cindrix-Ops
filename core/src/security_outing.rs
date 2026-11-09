@@ -15,10 +15,10 @@
 //! a2 = ok|help|delayed; next as above), `extend` (new back and/or next; a reason is required), `return`, `cancel`
 //! (a reason is required) and `note`. A line is never changed; a mistake is answered by a later line.
 
+use crate::fsio;
 use crate::ops::{esc, unesc};
 use crate::security::{self, check_format, format_instant, parse_instant, valid_id, Parsed};
 use crate::security_store as store;
-use std::fs;
 use std::path::{Path, PathBuf};
 
 pub const FORMAT: u32 = 1;
@@ -130,7 +130,7 @@ pub fn parse(text: &str) -> Result<Parsed<Entry>, String> {
 }
 
 pub fn load(user_root: &Path) -> Result<Parsed<Entry>, String> {
-    match fs::read_to_string(path(user_root)) {
+    match fsio::read_to_string(&path(user_root)) {
         Ok(t) => parse(&t),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(Parsed::default()),
         Err(_) => Err("The outing log could not be read.".to_string()),
@@ -382,6 +382,7 @@ pub fn instant_ok(s: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
 
     fn tmp(name: &str) -> PathBuf {
         let p = std::env::temp_dir().join(format!("cindrix-outing-{}-{}", name, std::process::id()));

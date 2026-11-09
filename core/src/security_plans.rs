@@ -54,7 +54,7 @@ pub fn title_of(text: &str) -> String {
 
 pub fn read_revision(r: &Path, id: &str, n: u32) -> Result<String, String> {
     if !valid_id(id) { return Err("That plan name is not valid.".to_string()); }
-    fs::read_to_string(rev_path(r, id, n)).map_err(|_| "That version of the plan could not be found.".to_string())
+    fsio::read_to_string(&rev_path(r, id, n)).map_err(|_| "That version of the plan could not be found.".to_string())
 }
 
 /// All plans, by name. A plan whose file cannot be read still shows, with an empty title.
@@ -75,7 +75,7 @@ pub fn list(r: &Path) -> Vec<PlanInfo> {
         .filter_map(|id| {
             let revs = revisions(r, &id);
             let cur = *revs.last()?;
-            Some(PlanInfo { title: fs::read_to_string(rev_path(r, &id, cur)).map(|t| title_of(&t)).unwrap_or_default(), id, current: cur, revisions: revs })
+            Some(PlanInfo { title: fsio::read_to_string(&rev_path(r, &id, cur)).map(|t| title_of(&t)).unwrap_or_default(), id, current: cur, revisions: revs })
         })
         .collect()
 }
@@ -89,7 +89,7 @@ pub fn save(r: &Path, id: &str, text: &str) -> Result<u32, String> {
     if text.len() > MAX_TEXT { return Err("That plan is too long.".to_string()); }
     let revs = revisions(r, id);
     if let Some(&last) = revs.last() {
-        if fs::read_to_string(rev_path(r, id, last)).map(|t| t == text).unwrap_or(false) { return Err("Nothing has changed since the last version.".to_string()); }
+        if fsio::read_to_string(&rev_path(r, id, last)).map(|t| t == text).unwrap_or(false) { return Err("Nothing has changed since the last version.".to_string()); }
     }
     let n = revs.last().copied().unwrap_or(0) + 1;
     let p = rev_path(r, id, n);

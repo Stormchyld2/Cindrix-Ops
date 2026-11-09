@@ -12,12 +12,12 @@
 //! contact: a1 is ok, delayed or help. checkpoint: a1 is the checkpoint name, a2 is ok, delayed or help. note: the words.
 //! A sheet can only add to an outing that is already out. It can never start, end, extend or cancel one. All lines or none.
 
+use crate::fsio;
 use crate::security::{self, valid_id};
 use crate::security_outing::{self as outing, Ev};
 use crate::security_pocket as pocket;
 use crate::security_store as store;
-use std::fs::{self, OpenOptions};
-use std::io::Write;
+use std::fs;
 use std::path::Path;
 
 const MAX_LINES: usize = 200;
@@ -86,7 +86,7 @@ pub fn read(path: &Path) -> Result<Sheet, String> {
     let meta = fs::symlink_metadata(path).map_err(|_| "The file could not be opened.".to_string())?;
     if !meta.is_file() { return Err("This is not an ordinary file, so it was left alone.".to_string()); }
     if meta.len() > pocket::MAX_FILE { return Err("This file is much bigger than any check-in sheet should be.".to_string()); }
-    let data = fs::read(path).map_err(|_| "The file could not be read.".to_string())?;
+    let data = fsio::read(path).map_err(|_| "The file could not be read.".to_string())?;
     parse(&String::from_utf8(data).map_err(|_| "This is not plain text.".to_string())?)
 }
 
@@ -119,9 +119,8 @@ pub fn accept(user_root: &Path, name: &str) -> Result<usize, String> {
         }
         for e in &new { outing::append(user_root, e)?; added += 1; }
         fs::create_dir_all(store::dir(user_root)).map_err(|_| "The security folder could not be made.".to_string())?;
-        let mut f = OpenOptions::new().create(true).append(true).open(pocket::ledger_path(user_root)).map_err(|_| "The ledger could not be opened.".to_string())?;
         let line = format!("{}\t{}\t{}\t{}\t{}\n", name, sheet.fingerprint, sheet.device, sheet.lines.len(), now);
-        f.write_all(line.as_bytes()).and_then(|_| f.sync_all()).map_err(|_| "The ledger could not be written.".to_string())?;
+        fsio::append(&pocket::ledger_path(user_root), line.as_bytes()).map_err(|_| "The ledger could not be written.".to_string())?;
     }
     pocket::move_into(&pocket::done_dir(user_root), &path, name)?;
     Ok(added)

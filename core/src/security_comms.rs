@@ -10,7 +10,6 @@ use crate::fsio;
 use crate::ops::{esc, unesc};
 use crate::security::{check_format, parse_instant, valid_id, Parsed};
 use crate::security_store as store;
-use std::fs;
 use std::path::{Path, PathBuf};
 
 // ---------- the communications log (plan section 13) ----------
@@ -59,7 +58,7 @@ pub(crate) fn rows(text: &str, kind: &str, cols: usize) -> Result<(Vec<Vec<Strin
 }
 
 pub(crate) fn read_text(p: &Path) -> Result<String, String> {
-    match fs::read_to_string(p) {
+    match fsio::read_to_string(p) {
         Ok(t) => Ok(t),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(String::new()),
         Err(_) => Err("A communications file could not be read.".to_string()),
@@ -426,6 +425,7 @@ pub fn training_looks(site: &str, watches: &[crate::security_schedule::Watch], t
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
 
     fn tmp(name: &str) -> PathBuf {
         let p = std::env::temp_dir().join(format!("cindrix-comms-{}-{}", name, std::process::id()));

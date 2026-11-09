@@ -23,8 +23,7 @@ use crate::md5::{hex, Md5};
 use crate::security::{self, valid_id};
 use crate::security_incident as incident;
 use crate::security_store as store;
-use std::fs::{self, OpenOptions};
-use std::io::Write;
+use std::fs;
 use std::path::{Path, PathBuf};
 
 pub(crate) const MAX_FILE: u64 = 256 * 1024;
@@ -93,7 +92,7 @@ fn read_report(path: &Path) -> Result<Report, String> {
     if meta.len() > MAX_FILE {
         return Err("This file is much bigger than any report should be.".to_string());
     }
-    let data = fs::read(path).map_err(|_| "The file could not be read.".to_string())?;
+    let data = fsio::read(path).map_err(|_| "The file could not be read.".to_string())?;
     let text = String::from_utf8(data.clone()).map_err(|_| "This is not plain text.".to_string())?;
     let (mut format_ok, mut device, mut person, mut created) = (false, String::new(), String::new(), String::new());
     let mut body = String::new();
@@ -249,9 +248,8 @@ pub fn accept(user_root: &Path, name: &str) -> Result<usize, String> {
     }
     // the ledger is added to before the file moves, so a crash in between leaves a file that simply accepts again
     fs::create_dir_all(store::dir(user_root)).map_err(|_| "The security folder could not be made.".to_string())?;
-    let mut f = OpenOptions::new().create(true).append(true).open(ledger_path(user_root)).map_err(|_| "The ledger could not be opened.".to_string())?;
     let line = format!("{}\t{}\t{}\t{}\t{}\n", name, report.fingerprint, report.device, report.entries.len(), security::format_instant(crate::security_api::now_minutes(), 0));
-    f.write_all(line.as_bytes()).and_then(|_| f.sync_all()).map_err(|_| "The ledger could not be written.".to_string())?;
+    fsio::append(&ledger_path(user_root), line.as_bytes()).map_err(|_| "The ledger could not be written.".to_string())?;
     move_into(&done_dir(user_root), &path, name)?;
     Ok(fresh.len())
 }
@@ -302,7 +300,7 @@ pub fn set_aside(user_root: &Path, name: &str) -> Result<(), String> {
 
 /// The names and fingerprints the host has accepted, so a phone knows which outbox files it may clear.
 pub fn accepted(user_root: &Path) -> Vec<(String, String)> {
-    fs::read_to_string(ledger_path(user_root))
+    fsio::read_to_string(&ledger_path(user_root))
         .map(|t| t.lines().filter_map(|l| { let mut f = l.split('\t'); Some((f.next()?.to_string(), f.next()?.to_string())) }).collect())
         .unwrap_or_default()
 }
@@ -331,7 +329,7 @@ pub fn upload(user_root: &Path, device: &str, name: &str, text: &str) -> Result<
         return Ok(());
     }
     let target = inbox_dir(user_root).join(name);
-    if let Ok(old) = fs::read(&target) {
+    if let Ok(old) = fsio::read(&target) {
         return if old == text.as_bytes() { Ok(()) } else { Err("A different report with this name is already waiting.".to_string()) };
     }
     if waiting_count(user_root) >= MAX_FILES {
@@ -380,7 +378,7 @@ pub fn upload(user_root: &Path, device: &str, name: &str, text: &str) -> Result<
 
 /// The names of this phone's reports the host has accepted. The phone may clear exactly these from its outbox.
 pub fn accepted_for(user_root: &Path, device: &str) -> Vec<String> {
-    fs::read_to_string(ledger_path(user_root))
+    fsio::read_to_string(&ledger_path(user_root))
         .map(|t| {
             t.lines()
                 .filter_map(|l| {

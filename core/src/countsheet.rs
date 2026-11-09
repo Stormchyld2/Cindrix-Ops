@@ -12,13 +12,13 @@
 //! all lines or none are applied; a line whose Hub number moved since the phone looked is flagged, and is applied only
 //! when the host says to accept anyway; the same sheet twice changes nothing. Accepting also records the day it was counted.
 
+use crate::fsio;
 use crate::inventory::Item;
 use crate::security::{self, valid_id};
 use crate::security_pocket as pocket;
 use crate::userdata::UserDir;
 use std::collections::HashSet;
-use std::fs::{self, OpenOptions};
-use std::io::Write;
+use std::fs;
 use std::path::Path;
 
 const MAX_LINES: usize = 2000;
@@ -108,7 +108,7 @@ pub fn read(path: &Path) -> Result<Sheet, String> {
     if meta.len() > pocket::MAX_FILE {
         return Err("This file is much bigger than any count sheet should be.".to_string());
     }
-    let data = fs::read(path).map_err(|_| "The file could not be read.".to_string())?;
+    let data = fsio::read(path).map_err(|_| "The file could not be read.".to_string())?;
     parse(&String::from_utf8(data).map_err(|_| "This is not plain text.".to_string())?)
 }
 
@@ -189,9 +189,8 @@ pub fn accept(user_root: &Path, name: &str, allow_moved: bool) -> Result<usize, 
         }
         u.save_inventory(&items)?;
         fs::create_dir_all(crate::security_store::dir(user_root)).map_err(|_| "The security folder could not be made.".to_string())?;
-        let mut f = OpenOptions::new().create(true).append(true).open(pocket::ledger_path(user_root)).map_err(|_| "The ledger could not be opened.".to_string())?;
         let line = format!("{}\t{}\t{}\t{}\t{}\n", name, sheet.fingerprint, sheet.device, sheet.lines.len(), security::format_instant(crate::security_api::now_minutes(), 0));
-        f.write_all(line.as_bytes()).and_then(|_| f.sync_all()).map_err(|_| "The ledger could not be written.".to_string())?;
+        fsio::append(&pocket::ledger_path(user_root), line.as_bytes()).map_err(|_| "The ledger could not be written.".to_string())?;
     }
     pocket::move_into(&pocket::done_dir(user_root), &path, name)?;
     Ok(changed)

@@ -16,8 +16,7 @@ use crate::fsio;
 use crate::security::{self, Parsed, PostureEntry, Site};
 use crate::security_incident as incident;
 use crate::security_schedule::{self, Watch};
-use std::fs::{self, OpenOptions};
-use std::io::Write;
+use std::fs;
 use std::path::{Path, PathBuf};
 
 pub fn dir(user_root: &Path) -> PathBuf {
@@ -39,7 +38,7 @@ pub fn watch_path(user_root: &Path) -> PathBuf {
 /// The text of a file, or empty when it does not exist yet. A file that exists but cannot be read is an error,
 /// never "empty", so nothing is overwritten by mistake.
 fn read(path: &Path) -> Result<String, String> {
-    match fs::read(path) {
+    match fsio::read(path) {
         Ok(b) => String::from_utf8(b).map_err(|_| "A security file is damaged (it is not plain text). It was left alone.".to_string()),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(String::new()),
         Err(_) => Err("A security file could not be opened. It was left alone.".to_string()),
@@ -84,7 +83,6 @@ pub(crate) fn append_line(user_root: &Path, path: &Path, header: &str, line: &st
     let existing = read(path)?;
     check(&existing)?;
     fs::create_dir_all(dir(user_root)).map_err(|_| "The security folder could not be made.".to_string())?;
-    let mut f = OpenOptions::new().create(true).append(true).open(path).map_err(|_| "The log could not be opened.".to_string())?;
     let mut out = String::new();
     if existing.is_empty() {
         out.push_str(header);
@@ -92,7 +90,7 @@ pub(crate) fn append_line(user_root: &Path, path: &Path, header: &str, line: &st
         out.push('\n');
     }
     out.push_str(line);
-    f.write_all(out.as_bytes()).and_then(|_| f.sync_all()).map_err(|_| "The change could not be saved.".to_string())
+    fsio::append(path, out.as_bytes()).map_err(|e| if e.kind() == std::io::ErrorKind::PermissionDenied { fsio::LOCKED_MSG.to_string() } else { "The change could not be saved.".to_string() })
 }
 
 pub fn incident_path(user_root: &Path) -> PathBuf {
@@ -164,6 +162,8 @@ pub fn save_watches(user_root: &Path, watches: &[Watch], keep_rejected: &[String
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs::OpenOptions;
+    use std::io::Write;
     use crate::security::Posture;
 
     fn tmp(name: &str) -> PathBuf {

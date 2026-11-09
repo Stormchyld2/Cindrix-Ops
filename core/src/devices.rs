@@ -21,8 +21,6 @@
 use crate::fsio;
 use crate::ops::{esc, unesc};
 use crate::security::{check_format, Parsed};
-use std::fs::{self, OpenOptions};
-use std::io::Write;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -134,7 +132,7 @@ pub fn parse(text: &str) -> Result<Parsed<Device>, String> {
 
 /// Read the list. A missing file is an empty list; a damaged or newer file is an error and is never overwritten.
 pub fn load(user_root: &Path) -> Result<Parsed<Device>, String> {
-    match fs::read_to_string(path(user_root)) {
+    match fsio::read_to_string(&path(user_root)) {
         Ok(t) => parse(&t),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(Parsed::default()),
         Err(_) => Err("The device list could not be read.".to_string()),
@@ -154,7 +152,7 @@ pub fn save(user_root: &Path, list: &[Device]) -> Result<(), String> {
 
 /// Add one line to the log. `what` is a short word (`erase-ordered`, `erased`, `locked-out`, `seen`, ...).
 pub fn log(user_root: &Path, now: u64, id: &str, what: &str, detail: &str) {
-    let existing = fs::read_to_string(log_path(user_root)).unwrap_or_default();
+    let existing = fsio::read_to_string(&log_path(user_root)).unwrap_or_default();
     let mut out = String::new();
     if existing.is_empty() {
         out.push_str("# format: devices-log 1\n# time (seconds since 1970), device, what happened, detail\n");
@@ -162,9 +160,7 @@ pub fn log(user_root: &Path, now: u64, id: &str, what: &str, detail: &str) {
         out.push('\n');
     }
     out.push_str(&format!("{}\t{}\t{}\t{}\n", now, id, what, esc(detail)));
-    if let Ok(mut f) = OpenOptions::new().create(true).append(true).open(log_path(user_root)) {
-        let _ = f.write_all(out.as_bytes());
-    }
+    let _ = fsio::append(&log_path(user_root), out.as_bytes());
 }
 
 /// Make sure every device that can sign in has a line, and that a device taken off the trusted list elsewhere
@@ -379,6 +375,7 @@ pub fn device_erased(user_root: &Path, trusted: &TrustedIds, id: &str, now: u64)
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
 
     fn tmp(name: &str) -> PathBuf {
         let p = std::env::temp_dir().join(format!("cindrix-devices-{}-{}", name, std::process::id()));
