@@ -128,6 +128,18 @@
           "license": "Public domain (U.S. government text) as collected by Project NOMAD (Apache-2.0)",
           "status": "in this build",
           "note": "Simple home measures (CDC, MedlinePlus) and herbal products (NCCIH). Each page names its source. All are drafts until a qualified person has checked them. Herbal and kitchen amounts only; no drug doses."
+        },
+        {
+          "name": "Starter security plans (Defensive security plan, Operational Response plan)",
+          "license": "Written for this project",
+          "status": "in this build",
+          "note": "Starter text for a family to edit (content/security-plans/). DRAFTS: not approved, not legal or tactical advice, to be read by a qualified reviewer. They name no outside text."
+        },
+        {
+          "name": "GPS tracks from phones (Pocket)",
+          "license": "Made on the person's own phone",
+          "status": "in this build",
+          "note": "Nothing is downloaded. Tracks wait in the mailbox until the host accepts them."
         }
       ]
     },

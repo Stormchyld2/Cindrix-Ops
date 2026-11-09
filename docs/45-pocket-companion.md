@@ -188,3 +188,24 @@ record, and a missing phone message never counts as bad news by itself.
 
 A phone can hand in a **check-in sheet** to the same waiting mailbox: contacts, checkpoints and notes about someone who is already out. File format and rules are in `core/src/checkinsheet.rs`: `# format: checkin-sheet 1`, header `device`, `person`, `created`, then one line per check-in (`id`, outing, `contact`/`checkpoint`/`note`, time, two fields, words). Ids start with the phone's code. The host accepts or sets aside; accepted lines enter the outing log as "reported". A sheet cannot start, end, extend or cancel an outing. The phone side is not built (Pocket repo).
 
+
+
+## GPS tracks (built on the Hub side 2026-11-09)
+
+A phone can hand in a **track sheet** to the same waiting mailbox: where its person walked, from the phone's GPS. File format and rules are in `core/src/tracksheet.rs`:
+
+```text
+# format: track-sheet 1
+# device: <the phone's code>
+# person: <who walked it>
+# created: 2026-11-08T10:00-05:00
+# track: <track id, starting with the device code and a dash>
+# outing: <outing id, optional>
+<seconds since 1970 UTC> TAB <latitude> TAB <longitude> TAB <metres above sea level, or empty>
+```
+
+Rules: two points or more; times never go backwards; positions in range; all or nothing; the same file twice changes nothing; a different file claiming a kept track's id is refused. The host accepts or sets aside (Command). A kept track lives in `user/security/tracks/` (covered by the passcode lock) and changes no other record. Security > Operations > Walked tracks lists each with distance, time and climb (a climb or drop counts only after 3 m of change, so GPS wobble does not add up) and can copy one out as a GPX file (a plain copy in `user/exports/`).
+
+## New items from a scan
+
+Pocket sends scans the way Cindrix Scan does: an inventory import file in `inbox/inventory/` (`scan_id`, `action`, name, barcode, qty, unit, use-by; `core/src/scaninbox.rs`, docs/39). A barcode the phone has never seen is named by the person and arrives as a new line; the host accepts it in Inventory. A count of items already in the Inventory goes in a count sheet instead (above). Nothing changes until the host accepts.

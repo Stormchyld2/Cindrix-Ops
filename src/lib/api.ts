@@ -1782,9 +1782,14 @@ export async function securityAvailabilitySet(person: string, status: 'available
   throw new Error('Availability is saved in the program, not in the browser preview.');
 }
 export type SecPlanInfo = { id: string; title: string; current: number; revisions: number[] };
-export async function securityPlansList(): Promise<{ plans: SecPlanInfo[] }> {
+export type SecPlanSample = { id: string; title: string; have: boolean };
+export async function securityPlansList(): Promise<{ plans: SecPlanInfo[]; samples: SecPlanSample[] }> {
   if (tauriHost) return call('security_plans_list');
-  return { plans: [] };
+  return { plans: [], samples: [] };
+}
+export async function securityPlanAdoptSample(id: string): Promise<number> {
+  if (tauriHost) return call<number>('security_plan_adopt_sample', { id });
+  throw new Error('Plans are saved in the program, not in the browser preview.');
 }
 export async function securityPlanRead(id: string, revision: number): Promise<{ id: string; revision: number; text: string }> {
   if (tauriHost) return call('security_plan_read', { id, revision });

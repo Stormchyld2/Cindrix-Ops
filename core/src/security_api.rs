@@ -61,6 +61,7 @@ pub const SECURITY_COMMANDS: &[&str] = &[
     "security_plans_list",
     "security_plan_read",
     "security_plan_save",
+    "security_plan_adopt_sample",
     "security_plan_activate",
     "security_weather_list",
     "security_weather_set",
@@ -807,7 +808,11 @@ pub fn availability_set(user_root: &Path, person: &str, status: &str, until_loca
 
 pub fn plans_list(user_root: &Path) -> Result<String, String> {
     let rows: Vec<String> = plans::list(user_root).iter().map(|p| format!("{{\"id\":{},\"title\":{},\"current\":{},\"revisions\":[{}]}}", q(&p.id), q(&p.title), p.current, p.revisions.iter().map(|n| n.to_string()).collect::<Vec<_>>().join(","))).collect();
-    Ok(format!("{{\"plans\":[{}]}}", rows.join(",")))
+    let samples: Vec<String> = plans::samples(user_root).iter().map(|(id, t, have)| format!("{{\"id\":{},\"title\":{},\"have\":{}}}", q(id), q(t), have)).collect();
+    Ok(format!("{{\"plans\":[{}],\"samples\":[{}]}}", rows.join(","), samples.join(",")))
+}
+pub fn plan_adopt_sample(user_root: &Path, id: &str) -> Result<u32, String> {
+    plans::adopt_sample(user_root, id)
 }
 pub fn plan_read(user_root: &Path, id: &str, revision: u32) -> Result<String, String> {
     let n = if revision == 0 { *plans::revisions(user_root, id).last().ok_or("That plan could not be found.")? } else { revision };

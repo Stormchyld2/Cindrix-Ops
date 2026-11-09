@@ -2934,6 +2934,7 @@ pub fn run() {
             security::security_availability_list,
             security::security_availability_set,
             security::security_plans_list,
+            security::security_plan_adopt_sample,
             security::security_plan_read,
             security::security_plan_save,
             security::security_plan_activate,

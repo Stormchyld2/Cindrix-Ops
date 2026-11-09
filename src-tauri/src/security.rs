@@ -251,6 +251,12 @@ pub fn security_availability_set(person: String, status: String, until_local: St
 }
 
 #[tauri::command]
+pub fn security_plan_adopt_sample(id: String) -> Result<u32, String> {
+    crate::seclock::require_open()?;
+    api::plan_adopt_sample(&user_root(), &id)
+}
+
+#[tauri::command]
 pub fn security_plans_list() -> Result<Value, String> {
     crate::seclock::require_open()?;
     json(api::plans_list(&user_root()))
