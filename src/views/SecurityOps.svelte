@@ -7,6 +7,9 @@
   import SecurityPlans from './SecurityPlans.svelte';
   import SecurityGear from './SecurityGear.svelte';
   import SecurityAvailability from './SecurityAvailability.svelte';
+  import SecLock from './SecLock.svelte';
+  import { onMount } from 'svelte';
+  import { secLockStatus } from '../lib/api';
 
   const tabs = [
     { id: 'Command', c: 'var(--cat-security)', built: true, about: 'Where every site stands, who is on watch, and what needs a look.' },
@@ -22,6 +25,10 @@
   let site = $state('');
   let me = $state('');
   try { me = localStorage.getItem('securityName') ?? ''; } catch { /* a private window: just ask each time */ }
+  // when the records are locked, only the unlock box is shown until the passcode is typed
+  let locked = $state(false);
+  async function checkLock() { try { const s = await secLockStatus(); locked = s.on && !s.unlocked; } catch { locked = false; } }
+  onMount(checkLock);
   function rememberMe() { try { localStorage.setItem('securityName', me); } catch { /* fine */ } }
 </script>
 
@@ -34,6 +41,9 @@
   </div>
 </div>
 
+{#if locked}
+  <SecLock gate onchange={checkLock} />
+{:else}
 <div class="subtabs" role="tablist" aria-label="Security Operations">
   {#each tabs as t (t.id)}
     <button role="tab" class:on={tab === t.id} aria-selected={tab === t.id} style={`--c: ${t.c}`} onclick={() => (tab = t.id)}>
@@ -64,6 +74,7 @@
     <p>This part is not built yet. The Command tab already works.</p>
     <button class="btn" onclick={() => (tab = 'Command')}>Back to Command</button>
   </div>
+{/if}
 {/if}
 
 <style>

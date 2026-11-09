@@ -29,6 +29,7 @@ mod music;
 mod privacy;
 mod ops;
 mod security;
+mod seclock;
 mod userbackup;
 mod settings;
 mod share;
@@ -72,6 +73,8 @@ fn detect_drive(state: &AppState) -> bool {
     let (r, info) = cindrix_core::libraries::primary(&prog, &enabled);
     *ROOT_OVERRIDE.lock().unwrap() = if r != prog { Some(r) } else { None };
     *state.drive.lock().unwrap() = info;
+    // a different drive may have its own lock
+    seclock::install();
     root() != before
 }
 
@@ -2830,6 +2833,7 @@ pub fn run() {
         })
         .manage(AppState::default())
         .setup(|app| {
+            seclock::install();
             let handle = app.handle().clone();
             // sharing switches itself on when a hotspot starts (after the drive has been found, below)
             let share_handle = handle.clone();
@@ -2885,6 +2889,12 @@ pub fn run() {
             userbackup::backup_now,
             userbackup::backup_check,
             userbackup::backup_bring_back,
+            seclock::seclock_status,
+            seclock::seclock_set,
+            seclock::seclock_unlock,
+            seclock::seclock_relock,
+            seclock::seclock_change,
+            seclock::seclock_remove,
             security::security_overview,
             security::security_watch_strip,
             security::security_site_save,
@@ -3112,6 +3122,7 @@ pub fn run() {
                 st.stop_all();
             }
             privacy::lock_everyone();
+            seclock::lock_now();
         }
     });
 }

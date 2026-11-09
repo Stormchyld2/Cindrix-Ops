@@ -46,9 +46,10 @@ impl Default for Share {
 impl Share {
     fn auth(&self) -> std::sync::MutexGuard<'_, Auth> {
         let mut a = self.auth.lock().unwrap();
-        if !self.pin_loaded.swap(true, Ordering::SeqCst) {
+        // while the records are locked nothing is read, so a PIN is never made up from a sealed file
+        if !crate::seclock::locked() && !self.pin_loaded.swap(true, Ordering::SeqCst) {
             a.set_pin(&load_pin());
-            a.set_trusted(share::trusted_from_text(&std::fs::read_to_string(trusted_file()).unwrap_or_default()));
+            a.set_trusted(share::trusted_from_text(&cindrix_core::fsio::read_to_string(&trusted_file()).unwrap_or_default()));
         }
         a
     }
@@ -68,8 +69,17 @@ fn save_trusted(a: &Auth) {
     let _ = cindrix_core::fsio::write_atomic(&trusted_file(), share::trusted_to_text(a.trusted()).as_bytes());
 }
 
+/// After the lock is turned on, opened, closed or taken off: forget what was loaded and sign everyone out, so the
+/// PIN and the trusted list are read again (or not at all while locked).
+pub fn reload_after_lock_change(app: &tauri::AppHandle) {
+    let st = app.state::<AppState>();
+    st.share.pin_loaded.store(false, Ordering::SeqCst);
+    let mut a = st.share.auth.lock().unwrap();
+    *a = Auth::new("");
+}
+
 fn load_pin() -> String {
-    if let Ok(t) = std::fs::read_to_string(pin_file()) {
+    if let Ok(t) = cindrix_core::fsio::read_to_string(&pin_file()) {
         let t = t.trim().to_string();
         if valid_pin(&t) {
             return t;
@@ -261,7 +271,11 @@ fn device_of(app: &tauri::AppHandle, req: &Request) -> (Option<String>, Vec<(Str
 fn device_gate(app: &tauri::AppHandle, req: &Request) -> Option<Response> {
     let (id, _) = device_of(app, req);
     let id = id?;
-    let list = cindrix_core::devices::load(&user_dir()).ok()?.items;
+    // if the list cannot be read, the device is stopped (never let it through)
+    let list = match cindrix_core::devices::load(&user_dir()) {
+        Ok(l) => l.items,
+        Err(_) => return Some(Response::json(403, &json!({ "error": "The Hub cannot check this device right now.", "erase": false }).to_string())),
+    };
     let state = cindrix_core::devices::state_of(&list, &id);
     let cmd = req.path.strip_prefix("/api/").unwrap_or("");
     if state == cindrix_core::devices::State::Trusted || (req.method == "POST" && cindrix_core::devices::may_ask(state, cmd)) {
@@ -439,6 +453,10 @@ fn handle(app: &tauri::AppHandle, mut stream: TcpStream, peer: SocketAddr) -> Re
     let max = if upload { cindrix_core::people::MAX_PHOTO_BYTES + 1024 } else { share::MAX_BODY };
     if let Err(e) = share::read_body(&mut reader, &mut req, max) {
         send(&mut stream, &Response::text(400, &e));
+        return Ok(());
+    }
+    if crate::seclock::locked() {
+        send(&mut stream, &json_err(503, "The Hub is locked. On the computer running it, open Settings and unlock the security records."));
         return Ok(());
     }
     route(app, &req, &peer.ip().to_string(), &mut stream);

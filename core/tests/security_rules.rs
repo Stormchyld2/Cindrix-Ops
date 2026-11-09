@@ -110,3 +110,29 @@ fn device_and_mailbox_code_make_no_network_calls() {
         }
     }
 }
+
+#[test]
+fn every_security_command_checks_the_lock_first() {
+    let tauri = fs::read_to_string(repo("src-tauri/src/security.rs")).unwrap();
+    let lines: Vec<&str> = tauri.lines().collect();
+    let mut n = 0;
+    for (i, l) in lines.iter().enumerate() {
+        if l.starts_with("pub fn security_") {
+            n += 1;
+            assert!(lines[i + 1].contains("seclock::require_open()?"), "{} must check the lock before anything else", l);
+        }
+    }
+    assert!(n > 40, "found only {} security commands", n);
+}
+
+#[test]
+fn the_lock_commands_are_host_only_and_the_hub_stops_when_locked() {
+    for c in ["seclock_status", "seclock_set", "seclock_unlock", "seclock_relock", "seclock_change", "seclock_remove"] {
+        assert!(!guest_allowed(c), "{} must be host-only", c);
+    }
+    let share = fs::read_to_string(repo("src-tauri/src/share.rs")).unwrap();
+    assert!(share.contains("seclock::locked()"), "the share server must refuse everyone while the records are locked");
+    // a device list that cannot be read must stop the device, not let it through
+    let gate = share.split("fn device_gate").nth(1).unwrap().split("\n}\n").next().unwrap().to_string();
+    assert!(!gate.contains(".ok()?"), "device_gate must fail closed");
+}

@@ -163,6 +163,37 @@ export async function lockRemove(person: string, passcode: string): Promise<numb
   if (memLocks[person] !== passcode) throw new Error('That passcode is not right.');
   delete memLocks[person]; return 0;
 }
+// ---- the passcode for the security records and device sign-in files (src-tauri/src/seclock.rs, docs/47) ----
+export type SecLockStatus = { on: boolean; unlocked: boolean };
+let memSecPass: string | null = null;
+let memSecOpen = true;
+export async function secLockStatus(): Promise<SecLockStatus> {
+  if (tauriHost) return call<SecLockStatus>('seclock_status');
+  return { on: memSecPass !== null, unlocked: memSecPass === null || memSecOpen };
+}
+export async function secLockSet(passcode: string): Promise<number> {
+  if (tauriHost) return call<number>('seclock_set', { passcode });
+  memSecPass = passcode; memSecOpen = true; return 0;
+}
+export async function secLockUnlock(passcode: string): Promise<void> {
+  if (tauriHost) return call<void>('seclock_unlock', { passcode });
+  if (memSecPass !== passcode) throw new Error('That passcode is not right.');
+  memSecOpen = true;
+}
+export async function secLockRelock(): Promise<void> {
+  if (tauriHost) return call<void>('seclock_relock');
+  memSecOpen = false;
+}
+export async function secLockChange(oldPasscode: string, newPasscode: string): Promise<void> {
+  if (tauriHost) return call<void>('seclock_change', { oldPasscode, newPasscode });
+  if (memSecPass !== oldPasscode) throw new Error('That passcode is not right.');
+  memSecPass = newPasscode;
+}
+export async function secLockRemove(passcode: string): Promise<number> {
+  if (tauriHost) return call<number>('seclock_remove', { passcode });
+  if (memSecPass !== passcode) throw new Error('That passcode is not right.');
+  memSecPass = null; return 0;
+}
 export async function privacySetIdle(minutes: number): Promise<void> {
   if (tauriHost) return call<void>('privacy_set_idle', { minutes });
 }
