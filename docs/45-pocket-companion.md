@@ -209,3 +209,7 @@ Rules: two points or more; times never go backwards; positions in range; all or 
 ## New items from a scan
 
 Pocket sends scans the way Cindrix Scan does: an inventory import file in `inbox/inventory/` (`scan_id`, `action`, name, barcode, qty, unit, use-by; `core/src/scaninbox.rs`, docs/39). A barcode the phone has never seen is named by the person and arrives as a new line; the host accepts it in Inventory. A count of items already in the Inventory goes in a count sheet instead (above). Nothing changes until the host accepts.
+
+## Pocket's first build (2026-11-09)
+
+Repo Stormchyld2/Cindrix-Pocket, branch `field-tools` (not merged to its `main` yet): a native Kotlin app made from the Cindrix Scan code, with the CindrixOps logo. It has the scanner, new items from a scan (name, quantity, unit, use-by), add and take out for known barcodes, the stock list, **GPS tracking** and the outbox. Inventory lists leave for `inbox/inventory/`, track sheets for `inbox/pocket/`. Built and unit-tested by its CI, **not yet run on a real phone**. Still to build: the invite-QR join (so the phone's code is the Hub's device ID), count and check-in sheets from the phone, cards, Academy, reader, maps, and the hub view.
