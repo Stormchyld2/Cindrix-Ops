@@ -1847,7 +1847,7 @@ export async function securityOutingEvent(outing: string, ev: 'contact' | 'check
   throw new Error('Outings are saved in the program, not in the browser preview.');
 }
 
-export type PocketReport = { name: string; size: number; device: string; person: string; created: string; entries: number; kind: 'report' | 'count-sheet' | 'checkin-sheet'; changed: number; problem: string };
+export type PocketReport = { name: string; size: number; device: string; person: string; created: string; entries: number; kind: 'report' | 'count-sheet' | 'checkin-sheet' | 'track-sheet'; changed: number; problem: string };
 export type SheetLine = { name: string; location: string; unit: string; was: number; now: number; counted: number; standing: 'matches' | 'moved' | 'already' | 'missing' };
 export type CountSheet = { person: string; created: string; lines: SheetLine[] };
 export async function securityPocketSheet(name: string): Promise<CountSheet> {
