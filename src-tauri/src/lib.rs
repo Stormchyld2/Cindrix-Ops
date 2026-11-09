@@ -1720,6 +1720,11 @@ struct SuggestionDto {
 /// what the screen already knows (maps, models, archives, drills) is passed in.
 #[tauri::command]
 fn dashboard_suggestions(today: String, maps: usize, models: usize, assistant_ready: bool, archives: usize, drills_done: usize, drills_total: usize) -> Result<Vec<SuggestionDto>, String> {
+    suggestions_for(Some(today), maps, models, assistant_ready, archives, drills_done, drills_total)
+}
+
+/// `today` is None for another device on the hotspot: the backup reminder is the host's business, so it is left out.
+pub(crate) fn suggestions_for(today: Option<String>, maps: usize, models: usize, assistant_ready: bool, archives: usize, drills_done: usize, drills_total: usize) -> Result<Vec<SuggestionDto>, String> {
     let items = user().load_inventory()?;
     let t = settings::thresholds();
     let (y, m) = calendar::today_ym();
@@ -1743,7 +1748,7 @@ fn dashboard_suggestions(today: String, maps: usize, models: usize, assistant_re
         archives,
         act_days: t.act_days,
         check_days: t.check_days,
-        backup_days: Some(userbackup::days_since_last(&today).unwrap_or(None)),
+        backup_days: today.map(|t| userbackup::days_since_last(&t).unwrap_or(None)),
     };
     Ok(cindrix_core::suggest::suggest(&snap, 6).into_iter().map(|s| SuggestionDto { level: s.level.word(), title: s.title, text: s.text, tab: s.tab }).collect())
 }

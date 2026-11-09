@@ -682,7 +682,8 @@ fn dispatch(app: &tauri::AppHandle, cmd: &str, a: &Value, role: &Role) -> Result
         "shelf_list" => tv(crate::shelf_list()?),
         "sources_list" => tv(crate::sources_list()),
         "settings_load" => tv(crate::settings::settings_load()),
-        "dashboard_suggestions" => tv(crate::dashboard_suggestions(
+        "dashboard_suggestions" => tv(crate::suggestions_for(
+            None,
             arg(a, "maps")?,
             arg(a, "models")?,
             arg(a, "assistantReady")?,
