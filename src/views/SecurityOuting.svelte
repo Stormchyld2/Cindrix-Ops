@@ -25,7 +25,7 @@
   const done = $derived((data?.outings ?? []).filter((o) => o.state !== 'out'));
 
   // ---- going out ----
-  let kind = $state<'outing' | 'patrol' = $state('outing');
+  let kind: 'outing' | 'patrol' = $state('outing');
   let people = $state('');
   let task = $state('');
   let back = $state(stamp(120));
@@ -40,7 +40,7 @@
   }
 
   // ---- what happens to someone who is out ----
-  let acting: { id: string; what: 'contact' | 'checkpoint' | 'extend' | 'cancel' } | null>(null);
+  let acting = $state<{ id: string; what: 'contact' | 'checkpoint' | 'extend' | 'cancel' } | null>(null);
   let status = $state('ok');
   let cpName = $state('');
   let text = $state('');
