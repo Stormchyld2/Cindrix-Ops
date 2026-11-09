@@ -21,8 +21,34 @@ export type Cascade = {
 };
 export type Suggestion = { level: 'urgent' | 'soon' | 'next' | 'good'; title: string; text: string; tab: string | null };
 export type DashboardFacts = { maps: number; models: number; assistant_ready: boolean; archives: number; drills_done: number; drills_total: number };
+/** "YYYY-MM-DD-HHMM" in this computer's own time. */
+export function localStamp(d = new Date()): string {
+  const p = (n: number, w = 2) => String(n).padStart(w, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`;
+}
+export type BackupStatus = { destination: string; reachable: boolean; backups: { name: string; stamp: string; files: number }[]; days_since: number | null };
+export async function backupStatus(): Promise<BackupStatus> {
+  if (inTauri) return call<BackupStatus>('backup_status', { today: localStamp() });
+  return { destination: '', reachable: false, backups: [], days_since: null };
+}
+export async function backupSetDestination(path: string): Promise<void> {
+  if (inTauri) return call<void>('backup_set_destination', { path });
+  throw new Error('Backups are made in the program, not in the browser preview.');
+}
+export async function backupNow(): Promise<string> {
+  if (inTauri) return call<string>('backup_now', { stamp: localStamp() });
+  throw new Error('Backups are made in the program, not in the browser preview.');
+}
+export async function backupCheck(name: string): Promise<string> {
+  if (inTauri) return call<string>('backup_check', { name });
+  throw new Error('Backups are checked in the program, not in the browser preview.');
+}
+export async function backupBringBack(name: string): Promise<string> {
+  if (inTauri) return call<string>('backup_bring_back', { name });
+  throw new Error('Backups are restored in the program, not in the browser preview.');
+}
 export async function dashboardSuggestions(f: DashboardFacts): Promise<Suggestion[]> {
-  if (inTauri) return call<Suggestion[]>('dashboard_suggestions', { maps: f.maps, models: f.models, assistantReady: f.assistant_ready, archives: f.archives, drillsDone: f.drills_done, drillsTotal: f.drills_total });
+  if (inTauri) return call<Suggestion[]>('dashboard_suggestions', { today: localStamp(), maps: f.maps, models: f.models, assistantReady: f.assistant_ready, archives: f.archives, drillsDone: f.drills_done, drillsTotal: f.drills_total });
   return [
     { level: 'soon', title: 'Water lasts 9.0 days', text: 'A common goal is two weeks at home (for water, about a gallon per person per day).', tab: 'Inventory' },
     { level: 'next', title: 'Run your first drill', text: 'A drill finds the gaps while everything still works.', tab: 'Drills' },

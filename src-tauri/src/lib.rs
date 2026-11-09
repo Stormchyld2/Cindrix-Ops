@@ -29,6 +29,7 @@ mod music;
 mod privacy;
 mod ops;
 mod security;
+mod userbackup;
 mod settings;
 mod share;
 mod zimview;
@@ -1715,7 +1716,7 @@ struct SuggestionDto {
 /// The Dashboard's advice. The inventory, the family page and the person's own limits are read here;
 /// what the screen already knows (maps, models, archives, drills) is passed in.
 #[tauri::command]
-fn dashboard_suggestions(maps: usize, models: usize, assistant_ready: bool, archives: usize, drills_done: usize, drills_total: usize) -> Result<Vec<SuggestionDto>, String> {
+fn dashboard_suggestions(today: String, maps: usize, models: usize, assistant_ready: bool, archives: usize, drills_done: usize, drills_total: usize) -> Result<Vec<SuggestionDto>, String> {
     let items = user().load_inventory()?;
     let t = settings::thresholds();
     let (y, m) = calendar::today_ym();
@@ -1739,6 +1740,7 @@ fn dashboard_suggestions(maps: usize, models: usize, assistant_ready: bool, arch
         archives,
         act_days: t.act_days,
         check_days: t.check_days,
+        backup_days: Some(userbackup::days_since_last(&today).unwrap_or(None)),
     };
     Ok(cindrix_core::suggest::suggest(&snap, 6).into_iter().map(|s| SuggestionDto { level: s.level.word(), title: s.title, text: s.text, tab: s.tab }).collect())
 }
@@ -2878,6 +2880,11 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            userbackup::backup_status,
+            userbackup::backup_set_destination,
+            userbackup::backup_now,
+            userbackup::backup_check,
+            userbackup::backup_bring_back,
             security::security_overview,
             security::security_watch_strip,
             security::security_site_save,

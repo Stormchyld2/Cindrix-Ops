@@ -75,6 +75,7 @@ pub mod safebackup;
 pub mod scaninbox;
 pub mod stocklist;
 pub mod sync;
+pub mod userbackup;
 pub mod userdata;
 pub mod xz;
 pub mod zim;

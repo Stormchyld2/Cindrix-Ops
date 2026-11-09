@@ -24,6 +24,9 @@ pub struct Snapshot {
     /// The person's own limits (Settings, Plan): under `act_days` is urgent, under `check_days` needs a look.
     pub act_days: f64,
     pub check_days: f64,
+    /// None: not looked at. Some(None): a place for copies is set, or none is, and there has never been one.
+    /// Some(Some(d)): the newest copy of the person's own files is d days old.
+    pub backup_days: Option<Option<i64>>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -69,6 +72,12 @@ pub fn suggest(n: &Snapshot, limit: usize) -> Vec<Suggestion> {
     let mut out: Vec<Suggestion> = Vec::new();
     let act = if n.act_days > 0.0 { n.act_days } else { 3.0 };
     let check = if n.check_days > act { n.check_days } else { act * 4.0 };
+
+    match n.backup_days {
+        Some(None) => out.push(s(Level::Soon, "Back up your own files", "Your Family page, inventory, plans and records live only on this drive. Copy them somewhere else now, so a lost or broken drive does not take them all.".into(), "Settings")),
+        Some(Some(d)) if d >= 14 => out.push(s(Level::Soon, "Your last backup is getting old", format!("It was {} days ago. Anything you have added since is only on this drive.", d), "Settings")),
+        _ => {}
+    }
 
     if n.items == 0 {
         out.push(s(Level::Soon, "Count your supplies", "Nothing is in the Inventory yet. Start with water, food, batteries and any medical supplies, with how much you use each day. Everything else on this page depends on it.".into(), "Inventory"));
@@ -184,5 +193,15 @@ mod tests {
         assert!(suggest(&n, 6)[0].text.contains("No model file"));
         n.models = 1;
         assert!(suggest(&n, 6)[0].text.contains("not running"));
+    }
+
+    #[test]
+    fn a_missing_or_old_backup_is_suggested_and_a_fresh_one_is_not() {
+        let base = || Snapshot { drills_total: 6, act_days: 3.0, check_days: 14.0, ..Default::default() };
+        let titles = |b: Option<Option<i64>>| suggest(&Snapshot { backup_days: b, ..base() }, 20).into_iter().map(|s| s.title).collect::<Vec<_>>();
+        assert!(titles(Some(None)).iter().any(|t| t == "Back up your own files"));
+        assert!(titles(Some(Some(20))).iter().any(|t| t.contains("backup is getting old")));
+        assert!(!titles(Some(Some(3))).iter().any(|t| t.to_lowercase().contains("backup")));
+        assert!(!titles(None).iter().any(|t| t.to_lowercase().contains("back up")));
     }
 }
