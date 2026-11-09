@@ -1782,9 +1782,14 @@ export async function securityAvailabilitySet(person: string, status: 'available
   throw new Error('Availability is saved in the program, not in the browser preview.');
 }
 export type SecPlanInfo = { id: string; title: string; current: number; revisions: number[] };
-export async function securityPlansList(): Promise<{ plans: SecPlanInfo[] }> {
+export type SecPlanSample = { id: string; title: string; have: boolean };
+export async function securityPlansList(): Promise<{ plans: SecPlanInfo[]; samples: SecPlanSample[] }> {
   if (tauriHost) return call('security_plans_list');
-  return { plans: [] };
+  return { plans: [], samples: [] };
+}
+export async function securityPlanAdoptSample(id: string): Promise<number> {
+  if (tauriHost) return call<number>('security_plan_adopt_sample', { id });
+  throw new Error('Plans are saved in the program, not in the browser preview.');
 }
 export async function securityPlanRead(id: string, revision: number): Promise<{ id: string; revision: number; text: string }> {
   if (tauriHost) return call('security_plan_read', { id, revision });
@@ -1812,6 +1817,16 @@ export async function securityExportRecords(): Promise<string> {
   throw new Error('Records are copied out in the program, not in the browser preview.');
 }
 
+export type TrackRow = { id: string; person: string; device: string; created: string; outing: string; points: number; metres: number; climb: number; drop: number; low: number | null; high: number | null; seconds: number; start: number };
+export async function securityTracksList(): Promise<{ tracks: TrackRow[] }> {
+  if (tauriHost) return call<{ tracks: TrackRow[] }>('security_tracks_list');
+  return { tracks: [] };
+}
+export async function securityTrackExport(id: string): Promise<string> {
+  if (tauriHost) return call<string>('security_track_export', { id });
+  throw new Error('Tracks are copied out in the program, not in the browser preview.');
+}
+
 export type OutingRow = {
   id: string; patrol: boolean; site: string; people: string[]; task: string; method: string;
   left: string; back: string; next: string; state: 'out' | 'back' | 'cancelled'; ended: string;
@@ -1832,7 +1847,7 @@ export async function securityOutingEvent(outing: string, ev: 'contact' | 'check
   throw new Error('Outings are saved in the program, not in the browser preview.');
 }
 
-export type PocketReport = { name: string; size: number; device: string; person: string; created: string; entries: number; kind: 'report' | 'count-sheet' | 'checkin-sheet'; changed: number; problem: string };
+export type PocketReport = { name: string; size: number; device: string; person: string; created: string; entries: number; kind: 'report' | 'count-sheet' | 'checkin-sheet' | 'track-sheet'; changed: number; problem: string };
 export type SheetLine = { name: string; location: string; unit: string; was: number; now: number; counted: number; standing: 'matches' | 'moved' | 'already' | 'missing' };
 export type CountSheet = { person: string; created: string; lines: SheetLine[] };
 export async function securityPocketSheet(name: string): Promise<CountSheet> {

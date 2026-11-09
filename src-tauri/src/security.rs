@@ -251,6 +251,12 @@ pub fn security_availability_set(person: String, status: String, until_local: St
 }
 
 #[tauri::command]
+pub fn security_plan_adopt_sample(id: String) -> Result<u32, String> {
+    crate::seclock::require_open()?;
+    api::plan_adopt_sample(&user_root(), &id)
+}
+
+#[tauri::command]
 pub fn security_plans_list() -> Result<Value, String> {
     crate::seclock::require_open()?;
     json(api::plans_list(&user_root()))
@@ -311,6 +317,18 @@ pub fn security_schedule_save(site: String, rules: Vec<RuleDto>) -> Result<(), S
     crate::seclock::require_open()?;
     let list: Vec<(String, u32, String, String)> = rules.into_iter().map(|r| (r.route, r.every_hours, r.from, r.to)).collect();
     api::schedule_save(&user_root(), &site, &list)
+}
+
+#[tauri::command]
+pub fn security_tracks_list() -> Result<Value, String> {
+    crate::seclock::require_open()?;
+    json(api::tracks_list(&user_root()))
+}
+
+#[tauri::command]
+pub fn security_track_export(id: String) -> Result<String, String> {
+    crate::seclock::require_open()?;
+    api::track_export(&user_root(), &id)
 }
 
 #[tauri::command]

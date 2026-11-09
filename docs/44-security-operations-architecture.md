@@ -252,3 +252,5 @@ Built 2026-11-08 (fourth part): **check-ins sent from phones** (`core/src/checki
 
 
 Built 2026-11-08 (fifth part, from the audit): **protection at rest** (`core/src/fsio.rs`, `core/src/seclock.rs`, `src-tauri/src/seclock.rs`, `src/views/SecLock.svelte`, Settings > Protection; doc 47): a passcode seals everything under `user/security/` and the device sign-in files; every `security_*` command checks the lock first (a test enforces it), the Security screen shows only the unlock box while locked, the Hub answers nobody while locked, and the device check fails closed. **Alerts** (`overview.alerts`, `src/lib/Alerts.svelte`; doc 48): bar, beep and title count while the program is open. **Backups of `user/`** (doc 47) and the **real-hardware test plan** (doc 49).
+
+Built 2026-11-09 (sixth part): **GPS tracks** from phones (`core/src/tracksheet.rs`, `src/views/SecurityTracks.svelte`; doc 45) and **starter plans** for the Plans screen (`content/security-plans/`: Defensive security plan, Operational Response plan; `security_plans::SAMPLES`; "Start from a sample"). The starter plans are unapproved drafts with blanks marked "(fill in)".

@@ -2,10 +2,11 @@
   // Security Operations > Planning > written plans (core/src/security_plans.rs). Every save is a new version and old
   // versions stay. "Put into use" pins one exact version to a live incident and keeps a copy of its words.
   import { onMount } from 'svelte';
-  import { securityPlansList, securityPlanRead, securityPlanSave, securityPlanActivate, securityIncidentList, type SecPlanInfo, type SecurityIncident } from '../lib/api';
+  import { securityPlansList, securityPlanAdoptSample, securityPlanRead, securityPlanSave, securityPlanActivate, securityIncidentList, type SecPlanInfo, type SecPlanSample, type SecurityIncident } from '../lib/api';
 
   let { site = '', me = '' }: { site: string; me: string } = $props();
   let plans: SecPlanInfo[] = $state([]);
+  let samples: SecPlanSample[] = $state([]);
   let incidents: SecurityIncident[] = $state([]);
   let note = $state('');
   let openId = $state<string | null>(null); // plan being edited; '' = new
@@ -15,7 +16,7 @@
   let useInc = $state(''); let useRev = $state(0);
 
   async function load() {
-    try { plans = (await securityPlansList()).plans; incidents = (await securityIncidentList()).incidents; } catch (e) { note = String(e); }
+    try { const l = await securityPlansList(); plans = l.plans; samples = l.samples ?? []; incidents = (await securityIncidentList()).incidents; } catch (e) { note = String(e); }
   }
   onMount(load);
   async function act(fn: () => Promise<unknown>, ok = '') { try { await fn(); note = ok; await load(); } catch (e) { note = String(e); } }
@@ -41,6 +42,15 @@
       {/each}
     </ul>
   {:else}<p class="muted">No plans written yet.</p>{/if}
+  {#if samples.some((x) => !x.have)}
+    <div class="samples">
+      <h3>Start from a sample</h3>
+      <p class="muted small">Starter plans to edit for your own site. They are drafts nobody has approved. Adding one copies it in as version 1; you then change it to fit.</p>
+      {#each samples.filter((x) => !x.have) as x (x.id)}
+        <div class="row ch"><span><b>{x.title}</b></span> <button class="btn" onclick={() => act(async () => { await securityPlanAdoptSample(x.id); await open({ id: x.id, title: x.title, current: 1, revisions: [1] }); }, 'Added. Fill in the blanks marked (fill in), then save.')}>Add to my plans</button></div>
+      {/each}
+    </div>
+  {/if}
   {#if openId === null}<div class="acts"><button class="btn primary" onclick={() => open(null)}>Write a plan</button></div>{/if}
 
   {#if openId !== null}

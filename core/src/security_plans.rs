@@ -98,6 +98,26 @@ pub fn save(r: &Path, id: &str, text: &str) -> Result<u32, String> {
     Ok(n)
 }
 
+/// Starter plans shipped with the program (content/security-plans/). The group adopts one, then edits it as its own.
+pub const SAMPLES: &[(&str, &str)] = &[
+    ("defensive-security-plan", include_str!("../../content/security-plans/defensive-security-plan.md")),
+    ("operational-response-plan", include_str!("../../content/security-plans/operational-response-plan.md")),
+];
+
+/// (id, title, already adopted)
+pub fn samples(r: &Path) -> Vec<(String, String, bool)> {
+    SAMPLES.iter().map(|(id, t)| (id.to_string(), title_of(t), !revisions(r, id).is_empty())).collect()
+}
+
+/// Copy a starter plan in as version 1 of a plan with the same name. Never touches a plan that already exists.
+pub fn adopt_sample(r: &Path, id: &str) -> Result<u32, String> {
+    let (_, text) = SAMPLES.iter().find(|(i, _)| *i == id).ok_or("That starter plan does not exist.")?;
+    if !revisions(r, id).is_empty() {
+        return Err("You already have a plan with this name. Open it from the list.".to_string());
+    }
+    save(r, id, text)
+}
+
 /// Pin one revision (0 = the current one) of a plan to an incident. Returns the log entry's number.
 pub fn activate(r: &Path, inc: &str, plan: &str, revision: u32, by: &str, off: i64, now: i64) -> Result<String, String> {
     let revs = revisions(r, plan);
@@ -177,6 +197,40 @@ mod tests {
         assert!(activate(&r, &inc, "nope", 0, "Dana", 0, NOW).is_err());
         assert!(activate(&r, &inc, "evac", 0, " ", 0, NOW).is_err());
         assert!(activate(&r, "i99", "evac", 0, "Dana", 0, NOW).is_err());
+        let _ = fs::remove_dir_all(&r);
+    }
+
+    #[test]
+    fn the_starter_plans_carry_what_a_plan_must_have_and_no_medicine_doses() {
+        for (id, text) in SAMPLES {
+            assert!(valid_id(id));
+            for need in ["Plan type:", "Author:", "Version:", "Approved by:", "Last reviewed:", "NOT YET APPROVED"] {
+                assert!(text.contains(need), "{} is missing {}", id, need);
+            }
+            assert!(text.to_lowercase().contains("review"), "{}", id);
+            assert!(!text.contains(" mg") && !text.to_lowercase().contains("dose of"), "{} must not give a medicine dose", id);
+            assert!(!text.contains("http"), "{} must not need the internet", id);
+        }
+        let od = SAMPLES.iter().find(|(i, _)| *i == "operational-response-plan").unwrap().1;
+        for need in ["Trigger", "Evacuation", "Shelter", "Medical", "de-escalation", "Communications failure", "Family accountability", "Completion criteria"] {
+            assert!(od.contains(need), "operational response plan is missing {}", need);
+        }
+        let df = SAMPLES.iter().find(|(i, _)| *i == "defensive-security-plan").unwrap().1;
+        assert!(df.contains("Verify before you react") && df.contains("No traps") && df.contains("Call 911"));
+    }
+
+    #[test]
+    fn a_starter_plan_is_adopted_once_and_can_be_put_into_use() {
+        let r = tmp("adopt");
+        assert!(samples(&r).iter().all(|(_, _, have)| !have));
+        assert_eq!(adopt_sample(&r, "operational-response-plan").unwrap(), 1);
+        assert!(adopt_sample(&r, "operational-response-plan").is_err(), "never replace a plan that exists");
+        assert!(adopt_sample(&r, "../x").is_err());
+        assert!(samples(&r).iter().any(|(id, _, have)| id == "operational-response-plan" && *have));
+        // editing it makes version 2 and version 1 stays
+        let v1 = read_revision(&r, "operational-response-plan", 1).unwrap();
+        assert_eq!(save(&r, "operational-response-plan", &format!("{}\nOur edit.\n", v1)).unwrap(), 2);
+        assert_eq!(read_revision(&r, "operational-response-plan", 1).unwrap(), v1);
         let _ = fs::remove_dir_all(&r);
     }
 }
