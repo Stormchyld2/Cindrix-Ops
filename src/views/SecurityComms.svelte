@@ -18,12 +18,12 @@
   // ---- planning ----
   let channels: ChannelRow[] = $state([]);
   let isDefault = $state(true);
-  let cov: CoverageList | null = $state(null);
-  let wx: WeatherList | null = $state(null);
+  let cov = $state<CoverageList | null>(null);
+  let wx = $state<WeatherList | null>(null);
   // ---- personnel ----
-  let train: TrainingList | null = $state(null);
+  let train = $state<TrainingList | null>(null);
   // ---- records ----
-  let log: CommsList | null = $state(null);
+  let log = $state<CommsList | null>(null);
 
   async function load() {
     try {
@@ -70,7 +70,7 @@
   // records: log
   let lCat = $state('watch-turnover'); let lStation = $state(''); let lEvent = $state(''); let lAction = $state(''); let lStatus: 'open' | 'complete' = $state('complete');
   const addLog = () => act(async () => { await securityCommsAdd(site, lCat, lStation, lEvent, lAction, lStatus, '', who); lEvent = lAction = ''; }, 'Written in the log.');
-  let closing: string | null = $state(null); let closeText = $state('');
+  let closing = $state<string | null>(null); let closeText = $state('');
   const closeEntry = (e: CommsEntry) => act(async () => { await securityCommsAdd(site, e.category, e.station, closeText, '', 'closed', e.id, who); closing = null; closeText = ''; }, 'Closed.');
   const label = (id: string) => log?.categories.find((c) => c.id === id)?.label ?? id;
   const isOpen = (e: CommsEntry) => !!log?.open.includes(e.id);

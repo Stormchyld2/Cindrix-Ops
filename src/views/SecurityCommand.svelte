@@ -10,8 +10,8 @@
   } from '../lib/api';
 
   let { site = $bindable(''), me = $bindable('') }: { site: string; me: string } = $props();
-  let ov: SecurityOverview | null = $state(null);
-  let strip: WatchStrip | null = $state(null);
+  let ov = $state<SecurityOverview | null>(null);
+  let strip = $state<WatchStrip | null>(null);
   let incidents: SecurityIncident[] = $state([]);
   let note = $state('');
   let reports: PocketReport[] = $state([]);
@@ -97,7 +97,7 @@
     if (!me.trim()) { note = 'Type your name first, so the record says who wrote it.'; return; }
     try { rememberMe(); await securityIncidentOpen(site, iTitle, iPriority, iExercise, me); incDlg?.close(); iTitle = ''; iExercise = false; note = ''; await refresh(); } catch (e) { note = String(e); }
   }
-  let shown: string | null = $state(null);
+  let shown = $state<string | null>(null);
   let words = $state('');
   let reason = $state('');
   const NEXT: Record<string, string[]> = { draft: ['active', 'closed'], active: ['stabilized', 'closed'], stabilized: ['active', 'closed'], closed: ['reopen'] };

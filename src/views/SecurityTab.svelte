@@ -10,7 +10,7 @@
   let { site = $bindable(''), me = '' }: { site: string; me: string } = $props();
   let sites: { id: string; name: string }[] = $state([]);
   let note = $state('');
-  let list: AssetList | null = $state(null);
+  let list = $state<AssetList | null>(null);
   let routes: RouteRow[] = $state([]);
   let rules: RuleRow[] = $state([]);
   const who = $derived(me.trim());
@@ -32,13 +32,13 @@
   const kindLabel = (id: string) => list?.kinds.find((k) => k.id === id)?.label ?? id;
 
   // add or change a thing
-  let editing: string | null = $state(null); // asset id, or '' for a new one
+  let editing = $state<string | null>(null); // asset id, or '' for a new one
   let fKind = $state('barrier'); let fName = $state(''); let fDays = $state(7); let fNotes = $state('');
   function edit(a: AssetRow | null) { editing = a?.id ?? ''; fKind = a?.kind ?? 'barrier'; fName = a?.name ?? ''; fDays = a?.every_days ?? 7; fNotes = a?.notes ?? ''; }
   const saveAsset = () => act(async () => { await securityAssetSave(site, editing ?? '', fKind, fName, Number(fDays) || 0, fNotes); editing = null; }, 'Saved.');
 
   // inspect
-  let looking: string | null = $state(null); let lResult: 'ok' | 'needs-work' = $state('ok'); let lNote = $state('');
+  let looking = $state<string | null>(null); let lResult: 'ok' | 'needs-work' = $state('ok'); let lNote = $state('');
   const inspect = (a: AssetRow) => act(async () => { await securityAssetInspect(a.id, lResult, who, lNote); looking = null; lNote = ''; }, 'Written in the inspection log.');
 
   // routes: one line per checkpoint, in the order they are walked

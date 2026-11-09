@@ -10,8 +10,8 @@
   } from '../lib/api';
 
   let { site = $bindable(''), me = '' }: { site: string; me: string } = $props();
-  let ov: SecurityOverview | null = $state(null);
-  let list: WatchList | null = $state(null);
+  let ov = $state<SecurityOverview | null>(null);
+  let list = $state<WatchList | null>(null);
   let note = $state('');
 
   async function load() {
@@ -33,7 +33,7 @@
   const STATE: Record<string, string> = { proposed: 'Draft', scheduled: 'Scheduled', acknowledged: 'Acknowledged', 'on-duty': 'On duty', completed: 'Done', missed: 'Missed' };
 
   // a handover that really happened earlier (radio, paper)
-  let ackFor: string | null = $state(null);
+  let ackFor = $state<string | null>(null);
   let ackAt = $state('');
   async function ack(w: WatchRow) { await act(() => securityWatchAck(w.id, ackAt)); ackFor = null; ackAt = ''; }
 

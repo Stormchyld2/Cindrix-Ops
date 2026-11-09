@@ -5,7 +5,7 @@
   import { securityOutingList, securityOutingStart, securityOutingEvent, securityRoutesGet, type RouteRow, type OutingList, type OutingRow } from '../lib/api';
 
   let { site = '', me = '' }: { site: string; me: string } = $props();
-  let data: OutingList | null = $state(null);
+  let data = $state<OutingList | null>(null);
   let note = $state('');
 
   let routes: RouteRow[] = $state([]);
@@ -25,7 +25,7 @@
   const done = $derived((data?.outings ?? []).filter((o) => o.state !== 'out'));
 
   // ---- going out ----
-  let kind: 'outing' | 'patrol' = $state('outing');
+  let kind = $state<'outing' | 'patrol' = $state('outing');
   let people = $state('');
   let task = $state('');
   let back = $state(stamp(120));
@@ -40,7 +40,7 @@
   }
 
   // ---- what happens to someone who is out ----
-  let acting: { id: string; what: 'contact' | 'checkpoint' | 'extend' | 'cancel' } | null = $state(null);
+  let acting: { id: string; what: 'contact' | 'checkpoint' | 'extend' | 'cancel' } | null>(null);
   let status = $state('ok');
   let cpName = $state('');
   let text = $state('');

@@ -8,7 +8,7 @@
   let plans: SecPlanInfo[] = $state([]);
   let incidents: SecurityIncident[] = $state([]);
   let note = $state('');
-  let openId: string | null = $state(null); // plan being edited; '' = new
+  let openId = $state<string | null>(null); // plan being edited; '' = new
   let pId = $state(''); let pText = $state(''); let pRev = $state(0);
   const who = $derived(me.trim());
   const usable = $derived(incidents.filter((i) => i.site === site && (i.status === 'active' || i.status === 'stabilized')));

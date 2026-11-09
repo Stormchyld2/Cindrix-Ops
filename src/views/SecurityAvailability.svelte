@@ -5,7 +5,7 @@
   import { securityAvailabilityList, securityAvailabilitySet, type AvailabilityList } from '../lib/api';
 
   let { me = '' }: { me: string } = $props();
-  let list: AvailabilityList | null = $state(null);
+  let list = $state<AvailabilityList | null>(null);
   let note = $state('');
   let person = $state(''); let reason = $state(''); let until = $state('');
   const who = $derived(me.trim());

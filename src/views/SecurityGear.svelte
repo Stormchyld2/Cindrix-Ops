@@ -6,11 +6,11 @@
   import { securityEquipmentList, securityEquipmentAdd, type GearList, type GearRow } from '../lib/api';
 
   let { site = '', me = '' }: { site: string; me: string } = $props();
-  let data: GearList | null = $state(null);
+  let data = $state<GearList | null>(null);
   let note = $state('');
   const who = $derived(me.trim());
   let pick = $state(''); let kind = $state('radio'); let days = $state(30); let here = $state(true);
-  let acting: { uid: string; ev: 'test' | 'fault' | 'repaired' | 'charged' | 'retired' } | null = $state(null);
+  let acting = $state<{ uid: string; ev: 'test' | 'fault' | 'repaired' | 'charged' | 'retired' } | null>(null);
   let words = $state('');
 
   async function load() { try { data = await securityEquipmentList(); } catch (e) { note = String(e); } }
