@@ -1,4 +1,4 @@
 ---
 title: First aid in the field
-summary: The first minutes of care for bleeding, cold and heat. This is basic awareness, not a substitute for a certified course.
+summary: Bleeding, shock, cold, heat, wounds, burns and broken bones when help is far away. Basic awareness, not a substitute for a certified course.
 ---

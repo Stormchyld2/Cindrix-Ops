@@ -1,39 +1,94 @@
 ---
 title: Cooking and sanitation without power
-minutes: 9
-status: draft
-source: CDC and Ready.gov guidance; Leave No Trace principles
+minutes: 12
+status: complete
+source: USDA; FEMA/Ready.gov; CDC; Utah State University Extension food storage research; Brigham Young University food storage studies; CDC emergency sanitation; FoodSafety.gov; Sphere Handbook
 ---
-## Cooking
-- Use a camp stove, grill or fire **outdoors only**, at a safe distance from the house. Never cook with charcoal or fuel inside.
-- Boil water for cooking and cleaning if the supply is doubtful.
-- Wash hands with soap and clean water before handling food. If you have no water, use hand sanitizer with alcohol.
-- Keep raw and cooked food apart. Cook meat to a safe temperature and eat leftovers quickly.
+When the emergency drags on, daily life needs routines for cooking, cleaning and waste.
+
+## Cooking options
+- **Camp stove,** propane or butane, **outdoors only.**
+- **Charcoal grill** outdoors only.
+- **Wood-burning rocket stove,** outdoors.
+- **Solar oven,** slow but free.
+- **Fire pit,** with a grate.
+- **Rocket stoves** use small sticks efficiently.
+- **Canned heat** for warming.
+- **Thermal (fireless) cooking:** bring food to a boil, then put the pot in an insulated box to finish cooking. Saves fuel.
+- **Never cook** inside a tent, garage or enclosed room.
+
+## Fuel
+- Store **propane canisters** safely, outdoors, away from heat.
+- **Store charcoal** dry.
+- **Store firewood** dry and off the ground.
+- **Know** how much fuel you use per day, and plan for weeks.
+
+## Cooking safely
+- **Wash** hands and surfaces.
+- **Keep raw and cooked** foods apart.
+- **Cook** to safe temperatures. **Chicken 165 °F, ground meat 160 °F,** fish 145 °F.
+- **Chill** leftovers or eat them quickly. **No leftovers** if you have no cold storage.
+- **Boil** water for dishes, or use treated water.
+
+## Dishwashing
+Three-bucket method:
+1. **Wash** in warm soapy water.
+2. **Rinse** in clean water.
+3. **Sanitize** in water with a small amount of bleach (follow the label), then air dry.
 
 ## Waste
-- If toilets do not work, line a bucket with a heavy trash bag, add a little absorbent such as cat litter or sawdust, and seal the bag when it is used.
-- In the field, dig a hole **6 to 8 inches deep**, at least **200 feet (about 70 paces)** from water, camp and trails, and cover it.
-- Store trash in sealed bags away from living areas to avoid pests.
+- **Toilets:** see the first module (bucket toilet, pit latrine).
+- **Trash:** bag and store in sealed containers, away from living and food areas. Bury or burn only if allowed and safe.
+- **Greywater** (dish and wash water) should be poured away from wells and streams, and away from living areas.
+- **Compost** food scraps if you can, away from living areas.
 
-## Hygiene
-- Wash hands after the toilet, before eating, and after handling waste.
-- Keep a clean area for sleeping, eating and waste, apart from each other.
+## Hygiene routines
+- **Hand-washing station:** a jug with a spigot, soap and a bucket. Use it every time.
+- **Baths:** a basin and a washcloth.
+- **Laundry:** a bucket or a washboard, with soap, and dry in the sun.
+- **Oral care.**
+- **Menstrual and infant care supplies.**
+- **Keep** your living area clean.
 
-> Most disease in a long emergency comes from poor water and poor sanitation, not from lack of food.
+## Pests
+- **Seal** food.
+- **Remove** garbage.
+- **Control** flies and rodents.
+- **Protect** from mosquitoes with nets and removing standing water.
+
+## Disease prevention
+- **Boil or treat** all drinking water.
+- **Wash** hands.
+- **Cook** food well.
+- **Keep waste** away from water.
+- **Watch** for illness and isolate sick people.
+
+## Checklist
+- A safe outdoor cooking setup and fuel plan
+- A hand-washing station
+- A dish and laundry routine
+- A waste plan for weeks
+
+> This is basic awareness, not a substitute for a certified course or hands-on training. Call 911 for life-threatening emergencies when you can.
 
 ## Check yourself
-? Where should you cook with charcoal or a camp stove?
-+ Outdoors only, away from the house
-- In the garage with the door open
-- In a closed kitchen
-> These produce carbon monoxide that can kill indoors.
-? How far from water should you dig a toilet hole in the field?
-+ At least 200 feet (about 70 paces)
-- 5 feet
-- As close as possible
-> Distance protects water from contamination.
-? When should you wash your hands?
-+ After the toilet, before eating, and after handling waste
-- Only before bed
-- Only when visibly dirty
-> Handwashing is the best way to prevent illness in a long emergency.
+? Where should you cook with a camp stove or grill?
+- Indoors
++ Outdoors only
+- In a tent
+- In a garage
+> Carbon monoxide kills.
+
+? What does the three-bucket method do?
+- Make soap
++ Wash, rinse and sanitize dishes
+- Cook food
+- Store water
+> It cleans without a sink.
+
+? What is a hand-washing station?
+- A towel
++ A jug with a spigot, soap and a basin
+- A sink
+- A bar of soap only
+> It encourages frequent washing.
