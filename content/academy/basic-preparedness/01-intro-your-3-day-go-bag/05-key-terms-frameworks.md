@@ -1,8 +1,8 @@
 ---
 title: Key Terms & Frameworks
 minutes: 3
-status: draft
-source: CindrixOps Basic Preparedness course
+status: complete
+source: CindrixOps Basic Preparedness course; FEMA/Ready.gov; American Red Cross
 ---
 ## The PACE plan
 
@@ -50,3 +50,38 @@ Throughout this course, we'll be talking about supplies & gear that are vital el
 Redundancy means having a backup of the items that are most critical to survival so you're always able to meet your basic needs.
 
 Now, there is value in traveling light, and not bringing unnecessary gear with you along the way. A 50lb Go-Bag might slow you down more than it helps you. But knowing what the important items are to have backups of when it's mission critical is key - and we'll cover all that in the next section.
+
+## Going deeper: using the frameworks together
+The four ideas in this lesson are a toolkit. Here is how they combine.
+
+### Example: a winter power outage
+- **Hazard:** you live in a region with winter storms.
+- **Rule of 3s:** shelter and warmth come first, then water, then food.
+- **PACE for heat:** Primary: your furnace. Alternate: a safe, vented indoor heater or a wood stove. Contingency: one warm room with sleeping bags and layers. Emergency: leave for a warming center or a friend's house.
+- **Redundancy:** two ways to light, two ways to warm, spare fuel stored safely, carbon monoxide alarm with fresh batteries.
+
+### Example: a wildfire evacuation
+- **Hazard:** wildfire in the region.
+- **PACE for evacuation:** Primary: the main road. Alternate: a second route. Contingency: a back road or on foot. Emergency: a safe refuge area, shelter-in-place only if told.
+- **Redundancy:** a go-bag, a half tank of fuel, and a spare set of documents.
+
+## More terms you will meet
+- **Bug in / bug out:** stay at home, or leave.
+- **B.O.L.:** bug out location, a place to go.
+- **OOA:** out of area, as in your out-of-area contact.
+- **AO:** area of operation, the region you know and study.
+- **Go-bag:** a bag with three days of supplies. Also called a 72-hour kit.
+- **SHTF:** shorthand for a serious disruption. We prefer plain words such as emergency or disaster.
+- **ICS:** Incident Command System, the way responders organize.
+- **CERT:** Community Emergency Response Team.
+- **Mitigation:** actions that reduce harm in advance, like strapping a water heater or clearing brush.
+- **Resilience:** the ability to take a hit and recover.
+
+## The five principles
+This Academy uses five principles of emergency management in every course: **Prevention and hazard assessment, Preparedness, Response, Mitigation, Recovery.** Ask yourself, for each hazard, what you can do in each of the five.
+
+## Learn your local hazards
+- **Your county emergency management** website lists hazards and alerts.
+- **FEMA's National Risk Index** at hazards.fema.gov.
+- **USGS** for earthquakes and floods, **NOAA** for weather, **CAL FIRE** and state forestry for wildfire.
+- **Your insurance agent** knows local risks.

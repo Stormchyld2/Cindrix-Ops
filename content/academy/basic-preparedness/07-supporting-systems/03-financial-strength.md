@@ -1,8 +1,8 @@
 ---
 title: Financial Strength
 minutes: 3
-status: draft
-source: CindrixOps Basic Preparedness course
+status: complete
+source: CindrixOps Basic Preparedness course; FEMA/Ready.gov; American Red Cross; this lesson is general information, not financial advice
 ---
 One of the best things you can do to truly be independent is be financially stable!
 
@@ -50,3 +50,76 @@ A credit card with available credit can provide temporary purchasing power if ca
 
 ## Checklist
 - Keep at least one credit card available for emergencies
+
+## Going deeper: a financial preparedness plan
+This is general information, not financial or legal advice. Talk with a qualified professional about your situation.
+
+### Layer 1: cash flow
+Know where your money goes. Track income and spending for two or three months, then group into **needs** (housing, food, utilities, insurance, transportation, debt payments), **wants,** and **savings.** Reduce wants to fund preparedness and savings.
+
+### Layer 2: emergency fund
+Experts commonly recommend saving **three to six months of essential expenses** in an accessible account. Start with a **starter fund** of $500 to $1,000, then build. Keep it in a savings account, separate from daily spending.
+
+### Layer 3: cash at home
+Keep small bills in a secure place, as in the lesson. Include coins for vending machines and phones. Replace what you use.
+
+### Layer 4: insurance
+- **Homeowners or renters:** know what is covered. Many policies exclude floods and earthquakes.
+- **Flood** insurance (NFIP) takes 30 days to start in most cases, so buy ahead.
+- **Auto, health, life and disability.**
+- **Review** coverage each year.
+
+### Layer 5: debt
+- **Pay down** high-interest debt (credit cards) first.
+- **Avoid** new debt for non-essentials.
+- **Know** your payment options and the rules for hardship programs.
+- **Keep** a good credit score for emergencies.
+
+### Layer 6: documents and access
+- **Copies** of account numbers and contacts stored securely.
+- **Multiple ways** to pay: cash, credit and debit.
+- **Passwords** in a secure manager.
+- **Know** how to reach your bank when the internet is down.
+
+### Layer 7: income resilience
+- **Skills** that earn money.
+- **A second income** if possible.
+- **A network** for finding work.
+
+### Spend wisely on preparedness
+- Buy what you will use.
+- Prioritize **water, food, medicine, communications, and a plan.**
+- Avoid scams that prey on fear.
+- Do not go into debt for gear.
+
+### Scams
+After disasters, scams surge: fake charities, fake contractors and fake officials. Verify, do not pay upfront, and report fraud.
+
+### Checklist
+- A tracked budget
+- A starter emergency fund, then a bigger one
+- Cash reserve in small bills
+- Insurance reviewed
+- Documents stored securely
+
+## Check yourself
+? Why keep cash on hand?
+- It is required
+- It is lighter
+- It earns interest
++ Electronic payments may fail in an outage
+> Cash works when systems are down.
+
+? What is a common target for an emergency fund?
+- None
+- A year of vacations
+- One dollar
++ Three to six months of essential expenses
+> Start small and build.
+
+? Which debt should you tackle first?
++ High-interest debt such as credit cards
+- Nothing
+- Low-interest mortgage only
+- Debts to friends only
+> It costs the most.

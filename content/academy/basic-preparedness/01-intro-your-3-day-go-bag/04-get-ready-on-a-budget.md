@@ -1,8 +1,8 @@
 ---
 title: Get Ready on a Budget
 minutes: 3
-status: draft
-source: CindrixOps Basic Preparedness course
+status: complete
+source: CindrixOps Basic Preparedness course; FEMA/Ready.gov; American Red Cross
 ---
 Increasing your personal readiness does not have to be expensive!
 
@@ -35,3 +35,35 @@ Some items are cheaper (and just as effective) if you make them:
 - Organizers → reuse containers or zip bags
 
 Pre-packaged Go-Bags or emergency kits almost always charge extra for convenience. In the following lessons, we'll share details on all the items you'll need to be prepared so you can build it yourself.
+
+## Going deeper: a month-by-month plan for $25 a month
+You can build a solid baseline over a year with a small monthly spend.
+- **Month 1:** a backpack (from what you own), a lighter, a flashlight, spare batteries. Two gallons of water per person. A list of hazards.
+- **Month 2:** three days of food for each person, plus a manual can opener. Water treatment tablets or bleach (unscented).
+- **Month 3:** rain poncho or tarp, cord, a wool blanket or a sleeping bag.
+- **Month 4:** a basic first aid kit, built from the Medical course list.
+- **Month 5:** a battery or crank radio, and a power bank.
+- **Month 6:** a water filter, and a plan for storing water at home.
+- **Month 7 to 9:** extend food to two weeks, using extra cans each shopping trip.
+- **Month 10 to 12:** documents in a binder, cash, hygiene supplies and tools.
+
+## Smart buying
+- **Buy for use first.** Choose items you will use in daily life, such as food you eat, so nothing goes to waste.
+- **Buy one level up** on a few critical items: a good filter, a good headlamp and a good pair of boots.
+- **Watch sales.** Buy canned and dry goods in bulk when prices are low.
+- **Compare unit prices.**
+- **Avoid pre-made "survival" kits** with filler. They are often poor value.
+- **Skip gadgets** you do not understand.
+
+## Free and nearly free
+- **Local classes:** CERT, Red Cross and fire departments teach for free.
+- **Library:** books on first aid, gardening and navigation.
+- **Learning:** skills cost no money. Practice knots, navigation and first aid with what you have.
+- **Neighbors:** share the cost of a large item such as a filter, a generator or a bulk food order.
+- **Reuse:** clean 2-liter soda bottles store water. Reuse jars, buckets (food-grade) and bags.
+
+## Avoid the debt trap
+Do not go into debt to prepare. A calm, paid-off household is more resilient than a stocked one with a mountain of credit card debt.
+
+## Track it
+Use the Tasks list and Inventory screen. Mark what you have and what you need. Look at it monthly.

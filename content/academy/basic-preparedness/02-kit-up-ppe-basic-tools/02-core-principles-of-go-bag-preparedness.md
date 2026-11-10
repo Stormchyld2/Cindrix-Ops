@@ -1,8 +1,8 @@
 ---
 title: Core Principles of Go-Bag Preparedness
 minutes: 4
-status: draft
-source: CindrixOps Basic Preparedness course
+status: complete
+source: CindrixOps Basic Preparedness course; FEMA/Ready.gov; American Red Cross
 ---
 When creating your Go-Bag, here are the core ideas to keep in mind:
 
@@ -58,3 +58,39 @@ When items are familiar and accessible, you'll feel more confident and comfortab
 So, test your gear. New stove? Light it up. Make sure you know how to use it.
 
 A go-bag is meant for emergencies - this means there is a strong likelihood you are in your worst mental state, not your best. So set yourself up for success by knowing how to use what you've got and don't overcomplicate it.
+
+## Going deeper: putting the six principles to work
+Each principle becomes a question you can ask about any item in your bag.
+1. **Action:** Is it in the bag now? If not, put something there today.
+2. **Mobility:** Could I carry this for ten miles? Weigh the bag every season.
+3. **Essentials:** Which category does it serve, and would I miss it? If it serves none, remove it.
+4. **Redundancy:** If this broke or got wet or lost, what is my backup, and is the backup light?
+5. **Sustainability:** Does it let me make more of something (water, fire, light), or does it run out?
+6. **KISS:** Could I use it when tired, cold and frightened, with one hand?
+
+## A pack-audit exercise
+1. **Empty the bag** on a table and sort items by category.
+2. **Remove duplicates** that are not critical.
+3. **Ask** the six questions for each item.
+4. **Repack** with the heavy items near your back and the things you reach for most near the top.
+5. **Weigh it** and walk with it.
+6. **Write** a packing list and tape it inside the bag.
+
+## Redundancy without weight
+- **Fire:** a lighter (2 grams of fuel), a ferro rod and a small tin of tinder weigh almost nothing.
+- **Light:** a headlamp, a tiny keychain light and a power bank.
+- **Water:** a filter, tablets and a bottle for boiling.
+- **Cutting:** a knife and a multi-tool.
+- **Shelter:** a tarp and a space blanket.
+- **Warmth:** a hat, gloves and a wool layer.
+
+## Common mistakes
+- **Buying gadgets** instead of skills.
+- **Packing for comfort** instead of survival.
+- **Never testing** the stove, filter or radio.
+- **Forgetting** the seasons. Winter needs more warm gear and summer more water.
+- **Forgetting** family needs: medicine, children's items and pets.
+- **Leaving it in a hot car** where batteries and food spoil.
+
+## Skills beat stuff
+A person who knows how to build a fire, purify water, give first aid and navigate needs far less gear than someone who has gear but no skills. Pair every item with a skill. The Academy courses teach them.

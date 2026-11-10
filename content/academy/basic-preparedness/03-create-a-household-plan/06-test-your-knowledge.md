@@ -1,7 +1,7 @@
 ---
 title: Test Your Knowledge
 minutes: 5
-status: draft
+status: complete
 source: CindrixOps Basic Preparedness course
 ---
 Check what you have learned in this part of the course.

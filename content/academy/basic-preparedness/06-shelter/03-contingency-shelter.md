@@ -1,8 +1,8 @@
 ---
 title: Contingency Shelter
 minutes: 3
-status: draft
-source: CindrixOps Basic Preparedness course
+status: complete
+source: CindrixOps Basic Preparedness course; FEMA/Ready.gov; American Red Cross; CDC carbon monoxide guidance
 ---
 ## Option: Sleep in your vehicle
 Your vehicle can be one of the most practical quick shelter options—especially if you need to leave home but don't have a fixed destination.
@@ -87,3 +87,44 @@ Bivy = last-resort backup
 - Obtain a TENT that will fit you and your family
 - Set up your vehicle as a CONTINGENCY shelter option
 - Add a Bivy shelter to your 3 Day Bag
+
+## Going deeper: setting up contingency shelter
+### Vehicle shelter, done right
+- **Park** in a safe, legal spot, away from hazards, trees and floods.
+- **Crack** windows slightly for ventilation (and use covers to stop rain).
+- **Insulate** windows with reflective covers or blankets.
+- **Use** a sleeping pad and sleeping bag rated for the temperature.
+- **Keep** your keys in a known spot.
+- **Do not run** the engine to heat or cool for long. If you must run it, clear the tailpipe, crack a window and use a carbon monoxide alarm. Run it only about 10 minutes an hour.
+- **Lock** the doors.
+- **Store** a kit: blankets, water, food, a light, a first aid kit and a bucket.
+
+### Tent selection and use
+- **Season rating:** three-season tents are fine for most conditions. Four-season tents handle snow and wind.
+- **Size:** add one person to the number you plan for, for gear.
+- **Weight:** under 5 pounds per person for carrying.
+- **Waterproofing:** a rain fly that reaches near the ground, taped seams, and a footprint.
+- **Practice:** set it up at home at least twice.
+- **Stakes and guylines:** bring extra.
+- **Site:** flat, drained, sheltered from wind and away from hazards.
+- **Ventilation:** reduce condensation by opening vents.
+- **Never use** a stove, heater or grill inside.
+- **Keep** food out of the tent in bear country.
+- **Heat:** a warm sleeping bag, a pad (R-value 3 or more for cold), and hot water bottles.
+
+### Bivy sacks
+A bivy is a waterproof shell that goes over a sleeping bag. It protects from wind and rain with little weight. Emergency bivies (foil) are cheap, but they trap moisture and are not comfortable. They can save a life.
+
+### Other contingency options
+- **Cabin or lodge** at a campground.
+- **Church or community hall.**
+- **Boat or houseboat.**
+- **Storage unit or workshop** (not for living, but as a stopgap).
+- **A shed** or a garage conversion.
+- **A second home** or land.
+
+### If you are already in a car or tent as housing
+Local services, 211, churches and nonprofit groups can help. You are not alone.
+
+### Test
+Do a night in the backyard or a campground each year. Learn what you missed, such as lights, sleeping pads, or a way to cook.

@@ -1,8 +1,8 @@
 ---
 title: Decision Tree: Bug in or bug out?
 minutes: 3
-status: draft
-source: CindrixOps Basic Preparedness course
+status: complete
+source: CindrixOps Basic Preparedness course; FEMA/Ready.gov; American Red Cross
 ---
 Disaster strikes - where do you start? A pre-planned decision tree that will guide you step-by-step.
 
@@ -48,3 +48,67 @@ Abandon Home (Bug Out)
 TIP: Don't wait for certainty. If things are clearly getting worse (fire spreading, unrest escalating, water rising), leaving early is almost always safer than leaving late.
 
 Let's talk about what to do in either scenario in the next lesson.
+
+## Going deeper: using the tree in real time
+The two questions only work if you answer them honestly and quickly.
+
+### Triggers: when to go, written in advance
+Write triggers on a card:
+- **Official order:** if an evacuation order is issued for my zone, we leave.
+- **Fire:** if smoke or flames are within a mile, or the wildfire is moving toward us, we leave.
+- **Water:** if floodwater reaches the end of our street, we leave.
+- **Structure:** if the house is damaged and unsafe, we leave.
+- **Air:** if the air is dangerous (smoke or chemicals) and we cannot filter it, we leave or move to a cleaner room or area.
+- **Supplies:** if we run out of water or heat and cannot get more, we go.
+- **People:** if there is violence or unrest nearby that is getting worse, we go early.
+- **Gut check:** if anyone feels strongly that we should go, we talk and decide.
+
+### Staying put well
+If the answer is bug in:
+- **Check utilities** and safety.
+- **Account** for everyone.
+- **Gather** water, food, light and warmth.
+- **Make a one-room plan** if needed.
+- **Listen** for official updates.
+- **Check on neighbors.**
+- **Keep the go-bag ready** in case things change.
+
+### Leaving well
+If the answer is bug out:
+- **Go early,** and in daylight if you can.
+- **Take** go-bags, binder, medicines, pets and phones.
+- **Tell** your contacts where you are going.
+- **Leave** a note.
+- **Fuel up** and use your planned route.
+- **Have** a second route.
+- **Travel** in a group when possible.
+
+### Costs of each choice
+- **Staying** risks being trapped in a hazard, or running out of supplies.
+- **Leaving** risks traffic, accidents, fuel shortages, exposure and leaving home unattended.
+- **Leaving too late** is the most dangerous choice.
+
+### Practice the decision
+Pick a scenario each quarter, such as a wildfire warning, and walk the tree. Time how long it takes to load the car.
+
+## Check yourself
+? What are the two key questions in the tree?
++ Is my home safe, and is my area safer than anywhere else?
+- Is it Friday, and is it raining?
+- Do I have a car, and a pet?
+- Is my neighbor leaving?
+> Two yeses mean stay. Any no means go.
+
+? When is leaving safest?
+- After the roads clog
++ Early, before conditions worsen
+- Never
+- At the last minute
+> Late departures are the most dangerous.
+
+? Why write triggers in advance?
++ You can decide calmly instead of under stress
+- They replace a plan
+- They sound official
+- They are required by law
+> Pre-decided triggers speed action.

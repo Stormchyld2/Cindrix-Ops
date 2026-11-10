@@ -1,8 +1,8 @@
 ---
 title: How Much Water You Need
 minutes: 3
-status: draft
-source: CindrixOps Basic Preparedness course
+status: complete
+source: CindrixOps Basic Preparedness course; FEMA/Ready.gov; American Red Cross
 ---
 Most people **dramatically underestimate** how much water they use every day. Turn on the faucet, take a shower, wash dishes...it all adds up quickly.
 
@@ -42,3 +42,41 @@ Now ask yourself:
 
 ## Checklist
 - Calculate your household's daily water needs
+
+## Going deeper: calculating your own number
+### Use this worksheet
+1. **Count people** in your household (and add guests you might host).
+2. **Add pets:** a dog needs about an ounce of water per pound of body weight per day. A cat needs a little less per pound than a dog.
+3. **Pick a level:** 1 gallon (survival), 3 gallons (realistic) or more.
+4. **Choose days:** 3 days (minimum), 14 days (good) or 30 days (strong).
+5. **Multiply:** people times gallons times days.
+
+Family of four, realistic level, two weeks: 4 x 3 x 14 = **168 gallons.** That is about three 55-gallon drums.
+
+### Add extras
+- **Hot weather or hard work:** add 50 percent or more.
+- **Nursing mothers, illness, infants:** add more.
+- **Cooking and rehydrating food:** rice and beans use a lot. Count it.
+- **Cleaning and laundry:** small amounts.
+- **Medical and special needs.**
+
+### Stretching what you have
+- **Drink first.** Drinking water is the top priority.
+- **Wash less,** using a basin and a cloth.
+- **Reuse** greywater to flush a bucket toilet.
+- **Cook** with minimal water, and use the cooking water in soups.
+- **Use paper plates** and disposable utensils for short periods.
+- **Hand sanitizer** for hands when water is scarce (only on visibly clean hands).
+
+### Where to store it
+- **Under beds,** in closets, in the garage (not in hot sun) and in a basement.
+- **Spread out** so one leak does not wipe out your supply.
+- **Weight:** a gallon weighs about 8.3 pounds. Plan for floors and for moving it.
+
+### Ways to move it
+- A wheeled cart or wagon.
+- Collapsible containers.
+- Many small containers rather than one huge one, so people of different strengths can carry them.
+
+### Real-world check
+Try a 24-hour water test: turn off the water to your home for one day and live on your stored water. How much did you use? Adjust your plan.

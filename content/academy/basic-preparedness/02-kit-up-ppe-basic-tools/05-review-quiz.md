@@ -1,7 +1,7 @@
 ---
 title: Review Quiz
 minutes: 6
-status: draft
+status: complete
 source: CindrixOps Basic Preparedness course
 ---
 Test your knowledge of Go-Bag & Sustainment concepts.

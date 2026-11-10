@@ -1,7 +1,7 @@
 ---
 title: Review
 minutes: 6
-status: draft
+status: complete
 source: CindrixOps Basic Preparedness course
 ---
 Check what you have learned in this part of the course.

@@ -1,8 +1,8 @@
 ---
 title: OOA Contact Plan
 minutes: 3
-status: draft
-source: CindrixOps Basic Preparedness course
+status: complete
+source: CindrixOps Basic Preparedness course; FEMA/Ready.gov; American Red Cross
 ---
 Step by step guides to make contact with important people in your life and determine immediate needs.
 
@@ -36,3 +36,63 @@ Write your plan on paper, fill it in with your family, and put it in your binder
 - Fill out the contact plan and put it in your Emergency Binder
 - Choose your Out Of Area Contact Person
 - Give each member of your household the OOA Contact Card
+
+## Going deeper: running the OOA plan
+### Choosing the contact
+- **Distance:** at least 100 miles away, ideally another state, in an area not exposed to the same hazard.
+- **Reliability:** someone responsible, with a charged phone, who is usually reachable.
+- **Willingness:** ask them first. Explain the plan, and have them keep the list.
+- **Backup:** pick a second contact in a different region.
+
+### What the card holds
+Print a small card for each family member and keep it in wallets, bags and phone cases:
+- The OOA contact's name and numbers (phone, text, email).
+- The backup contact.
+- Your family's names and numbers.
+- Meeting places.
+- A reminder: "Text first. Say STATUS and C.A.N."
+
+### The STATUS and C.A.N. report
+- **STATUS:** one of three: **Stable,** **Need minor assistance,** or **Life-threatening situation.**
+- **C.A.N.:** **Conditions** (what is happening around you), **Actions** (what you are doing), **Needs** (what you need).
+Example text: "STATUS: Stable. C: Power out, roads blocked. A: Staying home, have supplies. N: None yet."
+
+### The contact's job
+- **Collect** reports from everyone.
+- **Pass** news along to family when someone reaches them.
+- **Keep a log** with times.
+- **Relay** needs to the right helpers.
+- **Not panic** if someone does not check in for a while.
+
+### Tips
+- **Text first.** Texts use less bandwidth.
+- **Be brief.** Keep the message short.
+- **Try again** at intervals.
+- **Use a prearranged schedule,** such as checking in at the top of every hour at first, then every four hours.
+- **Tell the contact** if you move.
+- **Practice** once a year with a drill.
+
+### Plans for your group
+Your group needs its own contact plan too. See the group communication lessons and the Radio Licenses course for backup methods when phones fail.
+
+## Check yourself
+? Why use an out-of-area contact?
+- It is easier to remember
+- It costs less
+- They live nearby
++ Distant calls and texts often work when local ones are jammed
+> Everyone reports to one distant person.
+
+? What does STATUS report?
+- Your bank balance
++ Stable, need minor assistance, or life-threatening situation
+- The weather only
+- Your favorite color
+> It sets urgency.
+
+? What does C.A.N. stand for?
+- Cold, Alone, Nervous
++ Conditions, Actions, Needs
+- Car, Address, Name
+- Call, Ask, Note
+> It keeps messages short and useful.

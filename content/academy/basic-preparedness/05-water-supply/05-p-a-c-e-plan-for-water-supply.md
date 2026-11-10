@@ -1,8 +1,8 @@
 ---
 title: P.A.C.E Plan For Water Supply
 minutes: 4
-status: draft
-source: CindrixOps Basic Preparedness course
+status: complete
+source: CindrixOps Basic Preparedness course; FEMA/Ready.gov; American Red Cross; CDC; EPA
 ---
 You need to have a PACE plan for your family when it comes to water. As a reminder, PACE stands for: Primary, Alternative, Contingency, Emergency. PACE is all about the key preparedness principle of Redundancy.
 
@@ -84,3 +84,48 @@ You may be required (or strongly encouraged) to:
 - Emergency: Identify the closest, reliable source of water that can be cleaned for drinking
 - Obtain water treatment chemicals
 - Obtain a water filter
+
+## Going deeper: writing your water PACE card
+Put this card in your binder. Fill in the blanks for your home.
+
+**PRIMARY:** Tap water from ________ (municipal utility or well).
+**ALTERNATE:** If the tap fails: ________ (WaterBOB filled early, water heater tank, hand pump or generator for the well).
+**CONTINGENCY:** Stored water: ________ gallons in ________ (containers and locations). Lasts ________ days for ________ people.
+**EMERGENCY:** Closest natural sources: ________ and ________ (distance and route). Treatment: filter ________ and chemicals ________.
+
+### Triggers: when to move down the plan
+- **Boil-water notice or discoloration:** move to Alternate (treat the tap water).
+- **Pressure drops or the water stops:** use Alternate (water heater, WaterBOB) and start Contingency.
+- **Contingency under a week left:** begin scouting and treating Emergency sources.
+- **Stored water is gone and no source:** consider relocation.
+
+### Using the water heater
+1. **Turn off** the power or gas to the heater.
+2. **Turn off** the cold-water inlet valve.
+3. **Open** a hot water faucet in the house to let air in.
+4. **Open** the drain valve at the bottom and fill containers. The first water may carry sediment.
+5. **Treat** the water if the tank is old or the utility has issued a notice.
+
+### Bathtub storage
+A WaterBOB or a similar bladder holds about 100 gallons in a clean tub. Fill it as soon as a storm or outage is forecast. Use for washing and flushing, and for drinking after treatment.
+
+### Well owners
+- **Hand pump:** install a pitcher pump or a deep-well hand pump that fits your well casing.
+- **Generator:** a generator that can run the pump, with a safe connection and fuel stored.
+- **Solar pump:** an option for long-term independence.
+- **Storage tank:** a cistern and gravity feed.
+
+### Rainwater
+- **Barrels:** food-grade, covered, with a screen and an overflow.
+- **First flush diverter:** discards the first dirty water from the roof.
+- **Treat** before drinking.
+- **Check laws.**
+
+### Practice
+Every year, run a drill: turn off the water and live on your Contingency for a day. Test the filter and the water heater drain. Replace chemicals.
+
+### Checklist
+- A written PACE card in the binder
+- One week of stored water
+- A filter and chemicals
+- The nearest emergency sources scouted

@@ -1,8 +1,8 @@
 ---
 title: Your Water Source
 minutes: 3
-status: draft
-source: CindrixOps Basic Preparedness course
+status: complete
+source: CindrixOps Basic Preparedness course; FEMA/Ready.gov; American Red Cross; EPA
 ---
 ## Identify water source
 Do you know where your water comes from? Some people have no idea where the water flowing out of their tap originates.
@@ -31,3 +31,35 @@ If you're not sure where your water comes from, here's how to figure it out quic
 - Write it down in a place accessible by your family
 
 We'll discuss the PACE plan (backups) for each type of water source in a following lesson.
+
+## Going deeper: your source and its weak points
+### Municipal water: what to learn
+- **Name of the utility** and its emergency phone number.
+- **Where the water comes from:** a reservoir, river, groundwater wells or a regional system.
+- **Where the treatment plant is** and what it depends on (power, chemicals, staff).
+- **How to sign up** for alerts and boil-water notices.
+- **Where the main shutoff valve** to your home is. Turn it off during a contamination event or a broken line to protect what is in your water heater and pipes.
+- **Backup power:** some utilities have generators, but fuel is limited.
+- **Read** the annual Consumer Confidence Report, which every utility publishes. It lists what is in your water.
+
+### Private wells: what to learn
+- **Depth and age** of the well.
+- **Type of pump:** electric submersible, jet or other.
+- **Power backup:** generator size and a transfer switch, or a hand pump.
+- **Testing:** test yearly for bacteria and nitrates, and every few years for other contaminants. After floods, test and disinfect.
+- **Location:** keep it clear of septic, chemicals and animals.
+- **Wellhead:** keep it sealed and in good repair.
+
+### Surface and shared systems
+- **Cisterns, springs and rainwater** need treatment.
+- **Community wells** need group planning.
+- **Hauled water** needs safe containers and reliable delivery.
+
+### Weak points to write down
+For your source, list: **what could break it** (power, pipes, drought, contamination, flood, fire), and **how long** it would take to fix. Compare with your stored water.
+
+### Local sources near you
+List the closest natural sources: streams, lakes, ponds, ditches and reservoirs. Walk to them now and note access, safety and ownership. Add them to your Area Study (see the Area Studies course).
+
+### Keep the information
+Put this page in your binder, and tell your household.

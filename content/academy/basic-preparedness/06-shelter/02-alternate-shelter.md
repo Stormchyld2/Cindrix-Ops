@@ -1,8 +1,8 @@
 ---
 title: Alternate Shelter
 minutes: 3
-status: draft
-source: CindrixOps Basic Preparedness course
+status: complete
+source: CindrixOps Basic Preparedness course; FEMA/Ready.gov; American Red Cross
 ---
 It's important to plan in advance how you would survive! Remember 3 hours in adverse weather conditions **could mean death** for you or your loved one.
 
@@ -77,3 +77,43 @@ They may become fully booked within hours or prices surge dramatically. It could
 
 ## Checklist
 - Make your Alternate plan
+
+## Going deeper: arranging your alternate shelter
+### A plan with neighbors, friends or family
+Make it specific. On a single page, write:
+- **Who:** the household and their contact details.
+- **Where:** address, directions and an alternate route.
+- **How long:** a reasonable stay (a week or two).
+- **What you bring:** food, water, bedding, medicine and cash.
+- **What you share:** chores, cooking and expenses.
+- **What if they cannot take you?** A second option.
+- **Pets:** whether they are welcome.
+- **Rules:** quiet hours, kids, smoking, guests.
+
+Offer the same in return.
+
+### Distance and diversity
+Choose at least one option **close** (within a few miles) for short events and one **far** (100 miles or more) in a different region, for large disasters. Choose places that are not in the same flood zone, fire zone or fault line as you.
+
+### Hotels and rentals
+- **Book early** when a storm or fire is forecast.
+- **Choose** pet-friendly places if needed.
+- **Keep** a list of hotels outside your region on your route.
+- **Ask** your insurer about loss-of-use coverage and keep receipts.
+- **Bring** your own supplies: hotels may be crowded and out of food.
+
+### RV and trailers
+- **Maintain** the vehicle and keep it fueled.
+- **Know** how to hook up water, power and sewer.
+- **Know** its limits: a long tow in high wind or a crowded evacuation.
+- **Keep** a basic kit in it.
+- **Park** it where it is safe from the hazard.
+
+### Camping as an alternate
+A good tent, sleeping bags and a stove let you shelter in a campground or on your own land. Practice camping each year. See the Contingency lesson.
+
+### Costs
+Alternate shelter costs money. Set aside an emergency fund (see the Financial Strength lesson) to cover a week or two of lodging, gas and food.
+
+### Test the plan
+Call your host once a year to confirm. Drive the route. Make sure everyone knows the plan.
