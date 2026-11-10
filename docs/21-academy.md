@@ -73,8 +73,8 @@ A course pack is one text file (`.ccourse`) holding a course's folders, lesson f
 - Many of these are reading lessons with no quiz. They are shown but not counted toward sign-off
   (a lesson with a quiz needs at least three questions). Videos, images and PDF templates in the originals were
   not brought over.
-- Four study-path plans walk through the courses in order: `first-30-days`, `tier-1-readiness-path`,
+- Four study-path plans walk through the courses in order: `first-30-days`, `tier-3-readiness-path`,
   `lead-a-preparedness-group` and `keep-your-skills-fresh` (the names will change when the tier scheme is settled).
 - The Radio Licenses course points to the CHIRP programming software. The installer is not in the repo: the owner
   puts it in `resources/CHIRP/` on the drive. It is listed in `content/sources.json` and `licenses/README.md` (GPL-3.0).
-- Not built yet: the redesigned Academy layout and the Operator tier courses (Tier 3, then 2, then 1; each builds on the one before).
+- Not built yet: the redesigned Academy layout and the Operator tier courses (Tier 3 first, then 2, then 1; each builds on the one before).

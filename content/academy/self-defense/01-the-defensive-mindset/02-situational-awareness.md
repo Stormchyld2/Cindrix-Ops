@@ -6,7 +6,7 @@ source: CindrixOps Self Defense course
 ---
 Build the habit of noticing exits, anomalies, and danger indicators.
 
-## Tier 1 self-defense begins long before force. Awareness, distance, and early recognition prevent more problems than any tool.
+## Tier 3 self-defense begins long before force. Awareness, distance, and early recognition prevent more problems than any tool.
 
 ## Situational awareness
 - Be aware of your surroundings and potential threats

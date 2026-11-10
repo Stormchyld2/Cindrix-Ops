@@ -6,7 +6,7 @@ source: CindrixOps Area Studies course
 ---
 Start building a useful picture of your area of operations.
 
-## Area studies at Tier 1 is your pre-research that is supported by active information gathering, analysis, and dissemination.
+## Area studies at Tier 3 is your pre-research that is supported by active information gathering, analysis, and dissemination.
 
 ## Why an Area Study
 What are we preparing for? It isn't the actual event itself, but the follow-on effects of the event.

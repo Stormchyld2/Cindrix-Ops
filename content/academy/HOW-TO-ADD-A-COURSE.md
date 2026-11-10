@@ -61,7 +61,7 @@ Rules the Academy checks:
 - Every question needs at least two answers and exactly one `+` answer.
 - **Lessons never give medicine amounts (doses).** A lesson that does is left out. Say to follow the
   label or to ask a doctor or pharmacist.
-- `status: reviewed` means a qualified person has checked the lesson. Anything else shows as a
+- `status: complete` means the lesson is fully written. `status: reviewed` means a qualified person has checked the lesson. Anything else shows as a
   draft, with a plain notice, so readers know.
 
 If a file is left out, the Academy tells you which one and why (at the bottom of its screen). The

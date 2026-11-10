@@ -72,7 +72,7 @@
   const openCourse = $derived(courseId ? courses.find((c) => c.id === courseId) : undefined);
   function stats(c: { modules: AcademyModule[] }) {
     const ls = c.modules.flatMap((m) => m.lessons);
-    return { lessons: ls.length, done: ls.filter((l) => l.tries > 0).length, hours: Math.round((ls.reduce((a, l) => a + l.minutes, 0) / 60) * 10) / 10, draft: ls.some((l) => l.status !== 'reviewed') };
+    return { lessons: ls.length, done: ls.filter((l) => l.tries > 0).length, hours: Math.round((ls.reduce((a, l) => a + l.minutes, 0) / 60) * 10) / 10, draft: ls.some((l) => l.status === 'draft') };
   }
   const allLessons = $derived(modules.flatMap((m) => m.lessons));
   const finished = $derived(allLessons.filter((l) => l.tries > 0).length);
@@ -202,7 +202,7 @@
                   <span class="mark" class:done={l.tries > 0}>{l.tries > 0 ? '✓' : '○'}</span>
                   <span class="grow">
                     <span class="title">{l.title}</span>
-                    <span class="muted small">{l.minutes} min{l.questions ? ` · ${l.questions} question${l.questions === 1 ? '' : 's'}` : ''}{l.status !== 'reviewed' ? ' · draft' : ''}</span>
+                    <span class="muted small">{l.minutes} min{l.questions ? ` · ${l.questions} question${l.questions === 1 ? '' : 's'}` : ''}{l.status === 'draft' ? ' · draft' : ''}</span>
                   </span>
                   {#if l.tries > 0}<span class="best">Best {l.best_score}/{l.total}</span>{/if}
                 </button>

@@ -1,6 +1,6 @@
 ---
-title: Tier 1 readiness path (14 weeks)
-summary: Every Tier 1 Academy course in a sensible order, one topic a week, so a household can cover the whole baseline in about three months.
+title: Tier 3 readiness path (14 weeks)
+summary: Every Tier 3 Academy course in a sensible order, one topic a week, so a household can cover the whole baseline in about three months.
 kind: learning
 author: CindrixOps
 version: 1

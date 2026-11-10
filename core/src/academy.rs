@@ -660,7 +660,7 @@ mod tests {
                 assert!(ids.insert(l.id.clone()), "duplicate lesson {}", l.id);
                 assert!(l.minutes > 0, "{} has no minutes", l.id);
                 assert!(!l.source.is_empty(), "{} names no source", l.id);
-                assert!(l.status == "draft" || l.status == "reviewed", "{}", l.id);
+                assert!(l.status == "draft" || l.status == "complete" || l.status == "reviewed", "{}", l.id);
                 assert!(l.quiz.len() >= 3, "{} has {} quiz questions", l.id, l.quiz.len());
                 let mut all = String::new();
                 for b in &l.body {

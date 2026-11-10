@@ -1,4 +1,4 @@
 ---
-title: Comms PACE Plan
-summary: A tiered framework — Primary, Alternate, Contingency — so your group can always communicate.
+title: The communications PACE plan
+summary: Build a four-level plan so the group can always find a way to talk, and practice it.
 ---

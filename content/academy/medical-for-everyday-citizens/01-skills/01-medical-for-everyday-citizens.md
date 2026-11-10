@@ -24,7 +24,7 @@ There are many different levels of medical situations you may encounter in every
 • Serious illness — diarrheal diseases, cholera, and typhoid
 • Major traumatic injuries — broken bones, gunshot wounds, or amputations
 
-## Tier 1 Medical Skills Preview
+## Tier 3 Medical Skills Preview
 
 Foundational medical abilities every responsible citizen should possess, designed to stabilize a patient until professional care arrives:
 
@@ -35,7 +35,7 @@ Foundational medical abilities every responsible citizen should possess, designe
 
 These skills are practical, teachable, and achievable for everyday people with proper training and repetition.
 
-## Tier 1 Medical Equipment Preview
+## Tier 3 Medical Equipment Preview
 
 Medical skills are only effective if you have the proper equipment available when you need it. We recommend building capability in layers, focusing on 3 types of kits:
 

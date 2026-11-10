@@ -6,7 +6,7 @@ source: CindrixOps Basic Preparedness course
 ---
 Long-term food storage doesn't have to be complicated. By packaging staple foods in mylar bags with oxygen absorbers and sealing them inside 5-gallon buckets, you can safely store them for 15+ years when kept in a cool, dry place.
 
-For your Tier 1 foundation, keep it simple:
+For your Tier 3 foundation, keep it simple:
 - 1 bucket of white rice
 - 1 bucket of red beans
 - 1 bucket of oats

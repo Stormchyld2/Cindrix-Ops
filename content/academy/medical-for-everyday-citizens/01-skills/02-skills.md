@@ -23,7 +23,7 @@ In high-stress emergencies, people do not rise to the occasion — they fall bac
 - Administering Narcan
 - Epinephrine Administration
 
-Where to Learn Tier 1 Medical Skills
+Where to Learn Tier 3 Medical Skills
 
 Medical skills are perishable. Reading about them is helpful, but true competence comes from hands-on training, repetition, and practice under stress.
 

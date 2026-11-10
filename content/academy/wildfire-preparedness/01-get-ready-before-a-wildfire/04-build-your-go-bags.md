@@ -6,7 +6,7 @@ source: CindrixOps Wildfire Preparedness course (IAFC Ready Set Go, NFPA Firewis
 ---
 A go-bag is what you grab when you have five minutes, not fifty. Pack it now, while you have all the time in the world to think clearly, not later while you're watching the sky. We cover go-bags, and other types of supplies you'd need whether you are "bugging out" or "staying put," in our Baseline Preparedness course.
 
-Pack one Go-Bag per person — kids' kits can be lighter, but everyone should have their own. Store them somewhere genuinely fast to grab. Our Basic Preparedness Tier 1 course goes deep into the details of preparing a Go-Bag.
+Pack one Go-Bag per person — kids' kits can be lighter, but everyone should have their own. Store them somewhere genuinely fast to grab. Our Basic Preparedness Tier 3 course goes deep into the details of preparing a Go-Bag.
 
 ## Gear you might need
 

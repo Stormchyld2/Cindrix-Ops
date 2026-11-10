@@ -1,4 +1,4 @@
 ---
-title: Get Your COMMS Up!
-summary: Get the equipment, training, and licenses you need to be radio-ready.
+title: Get your COMMS up
+summary: Understand why phones fail, pick the right radio service, get licensed, and build a radio kit that works.
 ---
