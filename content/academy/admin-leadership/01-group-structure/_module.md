@@ -1,4 +1,4 @@
 ---
-title: Group Structure
-summary: Clarify roles, backups, and how decisions get made.
+title: Group structure
+summary: Clarify who leads, who backs them up, how big teams should be and how decisions get made.
 ---
