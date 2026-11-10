@@ -1,7 +1,7 @@
 ---
 title: GMRS channels and power limits
 minutes: 3
-status: draft
+status: complete
 source: CindrixOps Radio Licenses course; FCC rules for FRS, GMRS, MURS and amateur radio
 ---
 ![CindrixOps GMRS channels: frequencies and power limits](gmrs-channels.jpg)

@@ -1,7 +1,7 @@
 ---
 title: GMRS or ham?
 minutes: 3
-status: draft
+status: complete
 source: CindrixOps Radio Licenses course; FCC rules for FRS, GMRS, MURS and amateur radio
 ---
 **GMRS** is the fastest way to get a household on the air. There's no exam: you apply with the FCC, pay the fee, and one license covers your immediate family for 10 years. GMRS radios reach a few miles, more with a repeater.

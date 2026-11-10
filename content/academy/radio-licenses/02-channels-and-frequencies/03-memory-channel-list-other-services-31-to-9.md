@@ -1,7 +1,7 @@
 ---
 title: Memory channel list: other services (31 to 98)
 minutes: 4
-status: draft
+status: complete
 source: CindrixOps Radio Licenses course; FCC rules for FRS, GMRS, MURS and amateur radio
 ---
 This lesson covers the rest of the memory channel list: license-free PMR and MURS, business, marine, weather, search and rescue and ham channels. Many of these are for **listening only** unless you hold the right license, so program them so you can hear what is going on.

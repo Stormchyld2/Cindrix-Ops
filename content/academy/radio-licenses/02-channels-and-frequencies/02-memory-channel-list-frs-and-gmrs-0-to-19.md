@@ -1,7 +1,7 @@
 ---
 title: Memory channel list: FRS and GMRS (0 to 19)
 minutes: 3
-status: draft
+status: complete
 source: CindrixOps Radio Licenses course; FCC rules for FRS, GMRS, MURS and amateur radio
 ---
 A memory channel list is a plan for programming your radio so that everyone in your group has the same channel on the same number. This list has 99 memory channels, numbered 0 to 98. This lesson covers the first twenty, which are the license-free FRS channels and the GMRS channels. The next lesson covers the rest.

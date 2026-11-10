@@ -1,7 +1,7 @@
 ---
 title: CHIRP: programming your radio from a computer
 minutes: 6
-status: draft
+status: complete
 source: CindrixOps Radio Licenses course; CHIRP project documentation (chirpmyradio.com)
 ---
 Typing channels into a handheld radio one button at a time is slow. **CHIRP** is free, open-source software for Windows that lets you fill in a table of channels on a computer and send it to the radio through a programming cable. It works with a long list of radios, including most Baofeng and other low-cost handhelds.
