@@ -1,4 +1,4 @@
 ---
-title: Go: During a Wildfire
-summary: Leave fast, and know what to do if trapped.
+title: Go: during a wildfire
+summary: Response: evacuate early, and know what to do if fire catches you in a vehicle, a home or outdoors.
 ---
