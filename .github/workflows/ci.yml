@@ -114,11 +114,11 @@ jobs:
           say() { echo "::notice::$1"; }
           bad() { echo "::error::$1"; fail=1; }
           cd "$RUNNER_TEMP"
-          curl -fsSL https://download.kiwix.org/release/kiwix-tools/ -o kt.html
+          curl -fsSL --retry 5 --retry-delay 10 --retry-all-errors https://download.kiwix.org/release/kiwix-tools/ -o kt.html
           kt=$(grep -oE 'kiwix-tools_linux-x86_64-[0-9.]+\.tar\.gz' kt.html | sort -uV | tail -n1)
           sudo apt-get install -y zim-tools > apt.log 2>&1 || bad "apt could not install zim-tools"
           say "tools: $kt"
-          [ -n "$kt" ] && curl -fsSL -o kt.tgz "https://download.kiwix.org/release/kiwix-tools/$kt" && mkdir -p kt && tar xzf kt.tgz -C kt --strip-components=1
+          [ -n "$kt" ] && curl -fsSL --retry 5 --retry-delay 10 --retry-all-errors -o kt.tgz "https://download.kiwix.org/release/kiwix-tools/$kt" && mkdir -p kt && tar xzf kt.tgz -C kt --strip-components=1
           if command -v zimcheck > /dev/null; then
             out=$(zimcheck zim/sample.zim 2>&1); code=$?
             echo "::notice::zimcheck output: $(echo "$out" | grep -v INFO | tr '\n' '|' | head -c 1500)"
@@ -247,14 +247,14 @@ jobs:
         run: |
           set -e
           cd "$RUNNER_TEMP"
-          curl -fsSL https://download.kiwix.org/release/kiwix-tools/ -o kt.html
+          curl -fsSL --retry 5 --retry-delay 10 --retry-all-errors https://download.kiwix.org/release/kiwix-tools/ -o kt.html
           kt=$(grep -oE 'kiwix-tools_linux-x86_64-[0-9.]+\.tar\.gz' kt.html | sort -uV | tail -n1 || true)
           [ -n "$kt" ] || { echo "::error::no kiwix-tools linux download found"; exit 1; }
-          curl -fsSL -o kt.tgz "https://download.kiwix.org/release/kiwix-tools/$kt"
+          curl -fsSL --retry 5 --retry-delay 10 --retry-all-errors -o kt.tgz "https://download.kiwix.org/release/kiwix-tools/$kt"
           mkdir -p kt && tar xzf kt.tgz -C kt --strip-components=1
           # the same archives docs/22-real-test.md tells you to download (the drive plan job proves they exist)
           get() {
-            curl -fsSL "https://download.kiwix.org/zim/$1/" -o list.html
+            curl -fsSL --retry 5 --retry-delay 10 --retry-all-errors "https://download.kiwix.org/zim/$1/" -o list.html
             f=$(grep -oE "$2[0-9-]+\.zim" list.html | sort -uV | tail -n1 || true)
             if [ -z "$f" ]; then
               echo "::error::no $2*.zim in zim/$1"
@@ -262,7 +262,7 @@ jobs:
               exit 1
             fi
             echo "::notice::archive: $1/$f ($kt)"
-            curl -fsSL -o "$f" "https://download.kiwix.org/zim/$1/$f"
+            curl -fsSL --retry 5 --retry-delay 10 --retry-all-errors -o "$f" "https://download.kiwix.org/zim/$1/$f"
           }
           get zimit ready.gov_en_all_
           get wikipedia wikipedia_en_medicine_maxi_
@@ -368,16 +368,16 @@ jobs:
           done
           if [ -z "$url" ] || [ "$url" = "null" ]; then echo "::error::no llama.cpp windows cpu asset found"; exit 1; fi
           echo "llama.cpp: $url"
-          curl -fsSL -o llama.zip "$url"
+          curl -fsSL --retry 5 --retry-delay 10 --retry-all-errors -o llama.zip "$url"
           powershell -NoProfile -Command "Expand-Archive -Path llama.zip -DestinationPath llama-extract"
           ls llama-extract || true
           cp -r llama-extract/* out/Cindrix/engines/
           mkdir -p out/Cindrix/library
-          curl -fsSL https://download.kiwix.org/release/kiwix-tools/ -o kt.html || true
+          curl -fsSL --retry 5 --retry-delay 10 --retry-all-errors https://download.kiwix.org/release/kiwix-tools/ -o kt.html || true
           kt=$(grep -oE 'kiwix-tools_win-i686-[0-9.]+\.zip' kt.html | sort -uV | tail -n1 || true)
           if [ -n "$kt" ]; then
             echo "kiwix-tools: $kt"
-            curl -fsSL -o kt.zip "https://download.kiwix.org/release/kiwix-tools/$kt"
+            curl -fsSL --retry 5 --retry-delay 10 --retry-all-errors -o kt.zip "https://download.kiwix.org/release/kiwix-tools/$kt"
             powershell -NoProfile -Command "Expand-Archive -Path kt.zip -DestinationPath kt-extract"
             cp -r kt-extract/*/* out/Cindrix/engines/ 2>/dev/null || cp -r kt-extract/* out/Cindrix/engines/
           else
@@ -386,7 +386,7 @@ jobs:
           # ffmpeg (LGPL build) lets the music player play WMA and similar. Optional: the build goes on without it.
           mkdir -p out/Cindrix/music out/Cindrix/LICENSES
           ff=$(gh api "repos/BtbN/FFmpeg-Builds/releases/latest" --jq '[.assets[] | select(.name | test("^ffmpeg-master-latest-win64-lgpl\\.zip$"))][0].browser_download_url' || true)
-          if [ -n "$ff" ] && [ "$ff" != "null" ] && curl -fsSL -o ffmpeg.zip "$ff"; then
+          if [ -n "$ff" ] && [ "$ff" != "null" ] && curl -fsSL --retry 5 --retry-delay 10 --retry-all-errors -o ffmpeg.zip "$ff"; then
             powershell -NoProfile -Command "Expand-Archive -Path ffmpeg.zip -DestinationPath ffmpeg-extract"
             cp ffmpeg-extract/*/bin/ffmpeg.exe out/Cindrix/engines/ || echo "::warning::ffmpeg.exe not found in the download"
             cp ffmpeg-extract/*/LICENSE.txt out/Cindrix/LICENSES/ffmpeg-LICENSE.txt 2>/dev/null || true
