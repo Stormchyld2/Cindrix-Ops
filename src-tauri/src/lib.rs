@@ -54,6 +54,14 @@ fn root() -> PathBuf {
 static ROOT_OVERRIDE: Mutex<Option<PathBuf>> = Mutex::new(None);
 
 fn program_dir() -> PathBuf {
+    // On Android the program sits in a read-only folder, so the app's own writable folder stands in for it
+    #[cfg(target_os = "android")]
+    {
+        let d = PathBuf::from("/data/data/org.cindrix.ops/files");
+        let _ = std::fs::create_dir_all(&d);
+        return d;
+    }
+    #[cfg(not(target_os = "android"))]
     std::env::current_exe()
         .ok()
         .and_then(|p| p.parent().map(|d| d.to_path_buf()))
