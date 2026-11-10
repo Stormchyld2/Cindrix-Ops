@@ -540,7 +540,7 @@ mod tests {
     #[test]
     fn guests_read_the_library_but_cannot_write_the_hosts_files() {
         for c in ["list_cards", "guides_list", "photos_list", "photo_read", "shelf_read", "ask_stream", "zim_search_all", "academy_lesson"] { assert!(guest_allowed(c), "{}", c); }
-        for c in ["family_save", "inventory_save_item", "settings_save", "profile_load", "profile_save", "archive_remove", "shelf_add",
+        for c in ["family_save", "inventory_save_item", "settings_save", "profile_load", "profile_save", "pace_load", "pace_save", "archive_remove", "shelf_add",
                   "chat_read", "chat_save", "library_share", "pick_folder", "phone_send", "map_save", "academy_save", "plan_tick", "crawl_start",
                   "journal_list", "journal_save", "person_lock_status", "person_lock_set", "person_lock_unlock", "person_lock_relock", "person_lock_change", "person_lock_remove", "privacy_set_idle", "comms_plan_load", "comms_plan_save", "comms_plan_add_missing", "photo_add", "photo_delete",
                   "ops_load", "task_save", "task_delete", "task_done", "event_save", "event_delete", "project_save", "project_delete", "project_file_chat", "project_doc_link", "project_doc_upload", "project_doc_remove", "project_doc_open", "project_doc_image", "connect_suggest",

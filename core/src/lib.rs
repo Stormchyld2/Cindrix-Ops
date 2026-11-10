@@ -53,6 +53,7 @@ pub mod security_site;
 pub mod security_store;
 pub mod people;
 pub mod privacy;
+pub mod pace;
 pub mod profile;
 pub mod senses;
 pub mod share;

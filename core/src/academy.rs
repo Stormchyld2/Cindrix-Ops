@@ -766,7 +766,7 @@ mod tests {
     }
 
     #[test]
-    fn every_shipped_course_names_sources_has_quizzes_and_never_gives_doses() {
+    fn every_shipped_course_names_sources_has_real_quizzes_and_never_gives_doses() {
         let shipped = Path::new(env!("CARGO_MANIFEST_DIR")).join("../content/academy");
         let l = load_dir(&shipped);
         assert!(l.problems.is_empty(), "{:?}", l.problems);
@@ -780,7 +780,9 @@ mod tests {
                 for les in &m.lessons {
                     assert!(ids.insert(les.id.clone()), "duplicate lesson {}", les.id);
                     assert!(!les.source.is_empty(), "{} names no source", les.id);
-                    assert!(les.quiz.len() >= 3, "{} has {} quiz questions", les.id, les.quiz.len());
+                    // A reading lesson (a checklist or reference page) may have no quiz and is then shown but not counted
+                    // (training.rs). A lesson that does have a quiz needs at least three questions.
+                    assert!(les.quiz.is_empty() || les.quiz.len() >= 3, "{} has {} quiz questions", les.id, les.quiz.len());
                     let mut all = String::new();
                     for b in &les.body {
                         match b {

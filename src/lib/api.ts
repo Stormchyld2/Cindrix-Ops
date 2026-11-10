@@ -780,6 +780,44 @@ export type MyDetails = {
 };
 export const emptyDetails = (): MyDetails => ({ home: { name: '', address: '', lat: null, lon: null }, bugout: [], adults: 0, children: 0, babies: 0, small_pets: 0, large_pets: 0, contacts: [], needs: '', skills: '', notes: '', last_frost: '', first_frost: '' });
 
+// ---------- the comms PACE plan (answers in Settings > PACE plan; the plan is built from them) ----------
+export type PaceQuestion = { key: string; tier: string; tier_name: string; tier_when: string; prompt: string; hint: string; example: string };
+export type PaceLevel = { code: string; name: string; when: string; items: { prompt: string; answer: string }[]; missing: string[] };
+export type PacePlan = { empty: boolean; answered: number; total: number; levels: PaceLevel[]; text: string };
+export type Pace = { questions: PaceQuestion[]; answers: [string, string][]; plan: PacePlan };
+
+const previewPaceQuestions: PaceQuestion[] = [
+  { key: 'specialist', tier: 'G', tier_name: 'The group', tier_when: 'Who is in the plan and who leads it.', prompt: 'Who is your Comms Specialist?', hint: 'The person who knows radios best.', example: 'Dana Reyes, callsign Hawk' },
+  { key: 'p_ways', tier: 'P', tier_name: 'Primary', tier_when: 'Cell phones, internet and power all work.', prompt: 'What will you use every day?', hint: 'Phone calls, texts, a messaging app.', example: 'Call first, then text' },
+  { key: 'a_ways', tier: 'A', tier_name: 'Alternate', tier_when: 'Cell phones are down, but the internet works.', prompt: 'What will you try when cell phones fail but the internet still works?', hint: 'Messaging over Wi-Fi, email.', example: 'Signal chat over Wi-Fi' },
+  { key: 'c_channels', tier: 'C', tier_name: 'Contingency', tier_when: 'Cell phones, internet and power are all down. Radio is your lifeline.', prompt: 'Which channels will you use first?', hint: 'The first place to call.', example: '146.520 MHz' },
+  { key: 'e_rally', tier: 'E', tier_name: 'Emergency', tier_when: 'Everything has failed, radios included.', prompt: 'Where are the meeting places?', hint: 'A first choice and a backup.', example: 'The library car park' },
+];
+let previewPace: Record<string, string> = {};
+function previewPaceBuild(): Pace {
+  const qs = previewPaceQuestions;
+  const levels: PaceLevel[] = ['G', 'P', 'A', 'C', 'E'].map((code) => {
+    const inTier = qs.filter((q) => q.tier === code);
+    return {
+      code, name: inTier[0].tier_name, when: inTier[0].tier_when,
+      items: inTier.filter((q) => (previewPace[q.key] ?? '').trim()).map((q) => ({ prompt: q.prompt, answer: previewPace[q.key].trim() })),
+      missing: inTier.filter((q) => !(previewPace[q.key] ?? '').trim()).map((q) => q.prompt),
+    };
+  });
+  const answered = levels.reduce((n, l) => n + l.items.length, 0);
+  const text = answered ? 'COMMS PLAN: PACE\n' + levels.map((l) => `\n${l.name.toUpperCase()}\n` + l.items.map((i) => `- ${i.prompt}\n  ${i.answer}`).join('\n')).join('\n') : '';
+  return { questions: qs, answers: qs.map((q) => [q.key, previewPace[q.key] ?? ''] as [string, string]), plan: { empty: answered === 0, answered, total: qs.length, levels, text } };
+}
+export async function paceLoad(): Promise<Pace> {
+  if (inTauri) return call<Pace>('pace_load');
+  return previewPaceBuild();
+}
+export async function paceSave(answers: [string, string][]): Promise<Pace> {
+  if (inTauri) return call<Pace>('pace_save', { answers });
+  previewPace = Object.fromEntries(answers);
+  return previewPaceBuild();
+}
+
 let previewDetails: MyDetails = emptyDetails();
 export async function profileLoad(): Promise<MyDetails> {
   if (inTauri) return call<MyDetails>('profile_load');

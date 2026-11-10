@@ -674,6 +674,43 @@ fn place_out(p: &cindrix_core::profile::Place) -> MyPlaceDto {
     MyPlaceDto { name: p.name.clone(), address: p.address.clone(), lat: p.lat, lon: p.lon }
 }
 
+#[derive(Serialize)]
+struct PaceQuestionDto { key: String, tier: String, tier_name: String, tier_when: String, prompt: String, hint: String, example: String }
+#[derive(Serialize)]
+struct PaceItemDto { prompt: String, answer: String }
+#[derive(Serialize)]
+struct PaceLevelDto { code: String, name: String, when: String, items: Vec<PaceItemDto>, missing: Vec<String> }
+#[derive(Serialize)]
+struct PacePlanDto { empty: bool, answered: usize, total: usize, levels: Vec<PaceLevelDto>, text: String }
+#[derive(Serialize)]
+struct PaceDto { questions: Vec<PaceQuestionDto>, answers: Vec<(String, String)>, plan: PacePlanDto }
+
+fn pace_dto(answers: Vec<(String, String)>) -> PaceDto {
+    use cindrix_core::pace;
+    let plan = pace::build(&answers);
+    let text = pace::to_text(&plan);
+    PaceDto {
+        questions: pace::QUESTIONS.iter().map(|q| PaceQuestionDto { key: q.key.into(), tier: q.tier.into(), tier_name: pace::tier_name(q.tier).into(), tier_when: pace::tier_when(q.tier).into(), prompt: q.prompt.into(), hint: q.hint.into(), example: q.example.into() }).collect(),
+        answers,
+        plan: PacePlanDto {
+            empty: plan.empty, answered: plan.answered, total: plan.total, text,
+            levels: plan.levels.iter().map(|l| PaceLevelDto { code: l.code.clone(), name: l.name.clone(), when: l.when.clone(), items: l.items.iter().map(|i| PaceItemDto { prompt: i.prompt.clone(), answer: i.answer.clone() }).collect(), missing: l.missing.clone() }).collect(),
+        },
+    }
+}
+
+#[tauri::command]
+fn pace_load() -> Result<PaceDto, String> {
+    Ok(pace_dto(cindrix_core::pace::load(&root().join("user"))?))
+}
+
+#[tauri::command]
+fn pace_save(answers: Vec<(String, String)>) -> Result<PaceDto, String> {
+    let user = root().join("user");
+    cindrix_core::pace::save(&user, &answers)?;
+    Ok(pace_dto(cindrix_core::pace::load(&user)?))
+}
+
 #[tauri::command]
 fn profile_load() -> Result<MyDetailsDto, String> {
     let p = cindrix_core::profile::load(&root().join("user"))?;
@@ -2984,6 +3021,8 @@ pub fn run() {
             share::devices_list,
             share::devices_action,
             profile_load,
+            pace_load,
+            pace_save,
             profile_save,
             phone_estimate,
             phone_devices,

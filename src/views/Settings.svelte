@@ -6,6 +6,7 @@
     type ModelStatus, type ModelChoice, type LibraryStatus, type Sources, type LibraryEntry,
   } from '../lib/api';
   import MyDetails from './MyDetails.svelte';
+  import PaceSettings from './PaceSettings.svelte';
   import Sharing from './Sharing.svelte';
   import Devices from './Devices.svelte';
   import SafeBackups from './SafeBackups.svelte';
@@ -14,7 +15,7 @@
   import { viewRequest } from '../lib/chat.svelte';
   import { settings, RANGES, SCREENS, type Settings } from '../lib/settings.svelte';
 
-  let { openArchives }: { openArchives: () => void } = $props();
+  let { openArchives, go }: { openArchives: () => void; go?: (where: string) => void } = $props();
 
   let own: OwnFolder[] = $state([]);
   let ownNote: Record<string, string> = $state({});
@@ -31,11 +32,11 @@
     }
   }
 
-  const tabs = ['General', 'Assistant', 'My details', 'Sharing', 'Devices', 'Backups', 'Protection', 'Safe backups', 'Library', 'Intel', 'Music', 'Maps', 'Plan', 'Calendar', 'Your own cards and plans', 'Drive', 'Sources and licenses', 'About'] as const;
+  const tabs = ['General', 'Assistant', 'My details', 'PACE plan', 'Sharing', 'Devices', 'Backups', 'Protection', 'Safe backups', 'Library', 'Intel', 'Music', 'Maps', 'Plan', 'Calendar', 'Your own cards and plans', 'Drive', 'Sources and licenses', 'About'] as const;
   let tab: (typeof tabs)[number] = $state('General');
   // the tabs, in groups, down the left side (the short names stay the same; only what is shown changes)
   const tabGroups: { title: string; tabs: (typeof tabs)[number][] }[] = [
-    { title: 'YOU', tabs: ['General', 'My details', 'Sharing', 'Devices', 'Backups', 'Protection', 'Safe backups'] },
+    { title: 'YOU', tabs: ['General', 'My details', 'PACE plan', 'Sharing', 'Devices', 'Backups', 'Protection', 'Safe backups'] },
     { title: 'THE SCREENS', tabs: ['Assistant', 'Library', 'Intel', 'Music', 'Maps', 'Plan', 'Calendar'] },
     { title: 'THE DRIVE', tabs: ['Drive', 'Your own cards and plans', 'Sources and licenses', 'About'] },
   ];
@@ -261,6 +262,8 @@
       <div class="row"><button class="btn" onclick={addFolder}>Add a folder…</button></div>
     </div>
     {@render reset(['searchBooks', 'searchArchives', 'searchFiles', 'searchSavedSites', 'answerSources', 'answerLength', 'answerStyle', 'followUpMemory', 'searchSpeed', 'showSourceChips', 'extraFolders'])}
+  {:else if tab === 'PACE plan'}
+    <PaceSettings {go} />
   {:else if tab === 'My details'}
     <MyDetails />
   {:else if tab === 'Backups'}

@@ -350,7 +350,7 @@
     {:else if group === 'Photos'}
       <Photos />
     {:else if group === 'CommsPlan'}
-      <CommsPlan />
+      <CommsPlan go={goTo} />
     {:else if group === 'Todo'}
       <Todo />
     {:else if group === 'Calendar'}
@@ -378,7 +378,7 @@
     {:else if group === 'Inventory'}
       <Inventory />
     {:else if group === 'Settings'}
-      <Settings {openArchives} />
+      <Settings {openArchives} go={goTo} />
     {:else}
       <Soon title={group === 'Soon' ? soonTitle : group} />
     {/if}
