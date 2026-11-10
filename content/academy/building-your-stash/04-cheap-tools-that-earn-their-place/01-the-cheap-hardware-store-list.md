@@ -1,7 +1,7 @@
 ---
 title: The cheap hardware-store list
 minutes: 9
-status: draft
+status: complete
 source: Ready.gov / FEMA: Build a Kit and Make a Plan (US government, public domain); US Consumer Product Safety Commission; NFPA and CDC carbon monoxide and fire safety guidance (public)
 ---
 > Basic planning guidance. Prices change, so this course names no prices. Check anything about chemicals or food storage against the sources named in the lesson before you rely on it.
@@ -34,6 +34,23 @@ A **flat pry bar** is a good tool for jammed doors, boards and nails. Heavy **zi
 Gloves protect hands in rubble. Keep tools clean and dry.
 
 > Cheap does not mean careless. Learn each tool before you need it.
+
+## Going deeper: why these items
+Each of these is cheap, light and does many jobs.
+- **Rope and paracord** hold up tarps, tie gear, make a clothesline and mend things. Learn a few knots: a bowline, a clove hitch and a trucker's hitch.
+- **Duct tape** and **painter's tape** mend, seal, patch and label. Wrap a few feet around a pencil or a lighter to carry it.
+- **Heavy contractor bags** make a rain poncho, a ground sheet, a water carrier liner, an emergency toilet liner and a way to keep gear dry.
+- **A tarp** is a shelter, a roof patch and a rain catcher.
+- **A pry bar, wrench and gas shutoff tool** let you turn off utilities. Learn where your main water, gas and electrical shutoffs are, and how to close them. Only shut off gas if you smell it or suspect a leak, because only the utility can turn it back on.
+- **Work gloves, safety glasses and a dust mask** prevent the commonest injuries during cleanup.
+- **A multi-tool and a fixed-blade knife,** a saw, a hammer and screwdrivers.
+- **A fire extinguisher** (ABC type) for the kitchen, each car and the workshop. Learn PASS: pull, aim, squeeze, sweep.
+
+## Buy decent, not luxury
+Pick tools with a good reputation and sturdy build. Cheap tools that bend, snap or rust fail when you need them. Buy fewer, better ones.
+
+## Practice
+Tie the knots. Put up the tarp in the backyard. Close your water shutoff. Skills turn cheap items into capability.
 
 ## Check yourself
 ? Where should you NOT use cord?

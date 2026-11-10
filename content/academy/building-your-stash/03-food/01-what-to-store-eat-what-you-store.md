@@ -1,7 +1,7 @@
 ---
 title: What to store: eat what you store
 minutes: 8
-status: draft
+status: complete
 source: Ready.gov / FEMA: Build a Kit and Make a Plan (US government, public domain); USDA Food Safety and Inspection Service: Keeping Food Safe During an Emergency (public domain)
 ---
 > Basic planning guidance. Prices change, so this course names no prices. Check anything about chemicals or food storage against the sources named in the lesson before you rely on it.
@@ -30,6 +30,25 @@ An adult needs roughly **two thousand calories a day**, more if working hard or 
 Some foods should need little fuel: canned food, peanut butter, crackers, dried fruit. Save cooking fuel for rice and beans.
 
 > A stash of food no one will eat is just waste. Choose food your family likes.
+
+## Going deeper: what a good store looks like
+A good store covers calories, protein, fat and vitamins, and matches what your family will eat when stressed.
+
+- **Calories and energy:** rice, pasta, oats, flour, potatoes, canned goods and cooking oil.
+- **Protein:** canned fish and poultry, beans and lentils, peanut butter, nuts, powdered or shelf-stable milk, and protein bars.
+- **Fruits and vegetables:** canned, dried and freeze-dried, plus fruit cups and jars of sauce.
+- **Comfort and morale:** coffee, tea, chocolate, hard candy, spices, honey and sugar. A hot, familiar meal lifts spirits during a hard week.
+- **Baby and special needs:** formula, baby food, gluten-free items, low-sodium or low-sugar food as needed, and pet food.
+- **Shelf-life champions:** white rice, dried beans, rolled oats, honey, salt, sugar and pasta, stored well, can last years or decades.
+
+## How to build it
+Use the "buy a little extra" habit: when you shop, buy two of what you already eat. Make a two-week menu from shelf-stable foods, and buy what that menu needs. Rotate by eating the oldest first and replacing it.
+
+## Check your cooking method
+Food is only useful if you can cook it. A can opener, a pot, a lighter and a small camp stove with fuel matter as much as the food. Foods that need a lot of water, such as dry beans and rice, raise your water needs, so count that water.
+
+## Try it for a weekend
+Eat only from your stored food for two days. Note what you ran out of, what was disliked and what took too long. Fix the gaps now, while stores are open.
 
 ## Check yourself
 ? What is the rule for what to store?

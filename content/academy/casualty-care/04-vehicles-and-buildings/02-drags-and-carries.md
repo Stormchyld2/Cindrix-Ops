@@ -1,7 +1,7 @@
 ---
 title: Drags and carries
 minutes: 9
-status: draft
+status: complete
 source: FEMA Community Emergency Response Team (CERT) Basic Training Participant Manual (US government, public domain)
 ---
 Moving a person is hard on them and on you. Move them only when you must, and use a method that protects their spine and your own back.
@@ -25,6 +25,29 @@ Otherwise, stay and give care.
 Bend the knees, keep your back straight, and lift with your legs. Get help if the person is heavy.
 
 > Think before you lift. A badly done carry can injure both of you and takes longer than a good plan.
+
+## Going deeper: choosing a move
+Moving a hurt person risks making injuries worse, so move only if you must, such as for fire, collapse, flood or traffic, or when you need a flat spot to give life-saving care.
+
+## Emergency drags (one person)
+- **Clothing drag:** grab the person's collar or jacket, support the head with your forearms, and pull them along the ground in a straight line.
+- **Blanket or coat drag:** roll the person onto a blanket and pull the blanket. It protects the head and back.
+- **Arm drag:** reach under the armpits, grasp the forearms and pull.
+- **Fireman's carry:** for a person who is conscious and can bear weight on the legs, lift across your shoulders. It needs strength, and is not for a spine injury.
+
+## Two-person moves
+- **Two-hand seat:** each rescuer grips their own wrists and the other's, forming a seat for the person.
+- **Four-hand seat, chair carry** for someone who can hold on, and a **stretcher** made of a blanket or door for more serious injuries. Poles pushed through jacket sleeves make a stretcher too.
+- **Team lift:** with three or more, kneel along one side and lift together on the leader's count.
+
+## Spinal protection
+If the neck or back may be injured, keep the head, neck and spine in line. Log roll with at least three people, one holding the head and calling the count.
+
+## Protect your back
+Bend the knees, keep the back straight, hold the load close, avoid twisting and lift with the legs. Plan the route and clear obstacles before you lift. Tell the casualty what you are doing.
+
+## Practice
+Try each move on a healthy partner in a safe place.
 
 ## Check yourself
 ? When should you move an injured person?

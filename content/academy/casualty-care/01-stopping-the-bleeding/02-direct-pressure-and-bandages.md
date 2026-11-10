@@ -1,7 +1,7 @@
 ---
 title: Direct pressure and bandages
 minutes: 7
-status: draft
+status: complete
 source: CoTCCC Tactical Combat Casualty Care Guidelines (public); Stop the Bleed (American College of Surgeons)
 ---
 Most bleeding stops with firm pressure. Start here for any wound that is bleeding heavily.
@@ -22,6 +22,28 @@ A pressure bandage is a pad with an elastic wrap and a bar or clip. Put the pad 
 - Using a bandage that is too loose. It does nothing.
 
 > If direct pressure does not control bleeding on an arm or leg, move on to a tourniquet. Do not keep holding a wound that keeps pouring.
+
+## Going deeper: doing pressure properly
+Most bleeding stops with firm, steady pressure. The common mistake is to press too lightly or to keep peeking.
+
+- **Press hard,** as if you meant to push the wound against the bone beneath it. It will hurt, and that is expected.
+- **Use both hands,** and lock your elbows so your body weight does the work.
+- **Hold for at least three minutes without lifting** before you look. Stop the Bleed teaches this.
+- **If blood soaks through,** add more cloth on top and keep pressing. Do not remove the first layer, because it holds the forming clot.
+- **Then bandage:** wrap firmly to hold the dressing and keep pressure, but not so tight that fingers or toes turn pale, blue or numb.
+- **Check circulation** beyond the bandage every few minutes.
+
+## Materials
+Clean gauze, a pressure bandage (such as an elastic wrap with a pad), a clean cloth or a shirt will do if you have nothing else. Wear gloves if you have them, or use a plastic bag over your hand, and wash after.
+
+## Special places
+- **Scalp** bleeds a lot. Press with a pad, but do not press hard on a depressed or soft spot in the skull.
+- **Neck:** press with fingers around the wound, not on both sides of the neck at once.
+- **Armpit and groin:** these are junction areas. A tourniquet will not fit, so pack the wound and press hard (see packing).
+- **Nose:** lean forward, pinch the soft part for ten minutes.
+
+## When to stop and escalate
+If bleeding spurts, will not slow down or the limb is badly injured, go straight to packing and a tourniquet. Do not wait.
 
 ## Check yourself
 ? Blood soaks through the pad. What do you do?

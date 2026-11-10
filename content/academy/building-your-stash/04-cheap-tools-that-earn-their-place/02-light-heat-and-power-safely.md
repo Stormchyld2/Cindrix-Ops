@@ -1,7 +1,7 @@
 ---
 title: Light, heat and power, safely
 minutes: 8
-status: draft
+status: complete
 source: US Consumer Product Safety Commission; NFPA and CDC carbon monoxide and fire safety guidance (public)
 ---
 > Basic planning guidance. Prices change, so this course names no prices. Check anything about chemicals or food storage against the sources named in the lesson before you rely on it.
@@ -27,6 +27,28 @@ source: US Consumer Product Safety Commission; NFPA and CDC carbon monoxide and 
 - Do not store more than the law and your fire code allow.
 
 > A dim light and a working alarm beat a bright light and a house fire.
+
+## Going deeper: the deadly mistakes
+Every year, people die from carbon monoxide (CO) and house fires after storms. The rules are simple and strict.
+
+- **Never run a generator, grill, camp stove, charcoal burner or propane heater indoors,** in a garage, a basement or near a window or vent. CO is invisible and odorless. Put generators at least 20 feet from the house, with the exhaust pointing away from doors and windows.
+- **Install battery CO alarms** on every level and near sleeping areas. Test them and keep spare batteries.
+- **Smoke alarms** too, tested monthly.
+- **Use flashlights and LED lanterns** in preference to candles. If you must use candles, keep them in sturdy holders away from anything that burns, and never leave them unattended or near children and pets.
+- **Do not use a gas oven or stovetop** to heat a room.
+- **Keep a fire extinguisher** handy, and clear space around any heater.
+
+## Light
+Keep a headlamp for each person, so hands stay free. Stock extra batteries of the right sizes, and store them out of the devices so they do not drain or leak. Rechargeable lanterns and a solar charger are a good backup.
+
+## Heat
+Layers, hats, blankets, sleeping bags rated for your climate and a small warm room are safer than any fuel burner. If you use a heater, use one rated for indoor use, with tip-over and low-oxygen shutoffs, and still crack a window and have a CO alarm.
+
+## Power
+A power bank keeps phones alive for a few charges. A battery or hand-crank radio carries alerts. If you buy a generator, have a licensed electrician install a transfer switch, so you never backfeed the grid, which can kill line workers.
+
+## Fuel storage
+Store only approved containers, outdoors, in the shade, away from your house and any ignition source. Add a stabilizer, rotate, and follow your local fire code limits.
 
 ## Check yourself
 ? Which light is usually more useful in a long outage?
