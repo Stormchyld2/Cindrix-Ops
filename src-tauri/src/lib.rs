@@ -2000,12 +2000,23 @@ struct CopyDto {
 /// Let the owner pick a folder on this computer (Settings: folders for the assistant to search).
 #[tauri::command]
 async fn pick_folder(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    // A phone has no folder picker the program can read from. A plugged-in drive is found by its marker file,
+    // and the phone's own storage is read once "All files access" is allowed for the app.
+    #[cfg(target_os = "android")]
+    {
+        let _ = app;
+        return Err("On a phone, folders are found by themselves. Plug in the drive, or allow All files access for Cindrix in the phone's settings.".into());
+    }
+    #[cfg(not(target_os = "android"))]
     let picked = tauri::async_runtime::spawn_blocking(move || app.dialog().file().blocking_pick_folder())
         .await
         .map_err(|e| e.to_string())?;
-    let Some(fp) = picked else { return Ok(None) };
-    let p = fp.into_path().map_err(|e| e.to_string())?;
-    Ok(Some(p.to_string_lossy().to_string()))
+    #[cfg(not(target_os = "android"))]
+    {
+        let Some(fp) = picked else { return Ok(None) };
+        let p = fp.into_path().map_err(|e| e.to_string())?;
+        Ok(Some(p.to_string_lossy().to_string()))
+    }
 }
 
 /// Ask for a .zim file and copy it into the library (in the background; poll `archive_copy_status`).
