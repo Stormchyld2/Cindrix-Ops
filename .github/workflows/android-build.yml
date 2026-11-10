@@ -12,6 +12,8 @@ on:
     branches: [security-docs]
     paths:
       - ".github/workflows/android-build.yml"
+      - "src-tauri/src/**"
+      - "core/src/**"
 
 permissions:
   contents: write
