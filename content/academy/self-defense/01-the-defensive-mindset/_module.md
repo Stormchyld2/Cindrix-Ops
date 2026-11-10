@@ -1,4 +1,4 @@
 ---
-title: The Defensive Mindset
-summary: Most threats are avoidable if you see them early enough.
+title: The defensive mindset
+summary: Safety is a system: mindset, awareness, skills and tools working together, with avoidance first.
 ---

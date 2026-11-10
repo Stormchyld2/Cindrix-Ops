@@ -1,4 +1,4 @@
 ---
-title: Everyday Self Defense
-summary: Learn to create time, distance, and exits before things go bad.
+title: Everyday self-defense
+summary: Avoid, de-escalate, know the law, secure your home and vehicle, and carry what helps.
 ---

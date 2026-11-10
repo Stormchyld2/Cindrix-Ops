@@ -1,4 +1,4 @@
 ---
-title: Building Personal Capability
-summary: Build a minimum physical standard for functional readiness.
+title: Build your personal capability
+summary: Fitness, food, training and skills so you can protect yourself and the people who count on you.
 ---
