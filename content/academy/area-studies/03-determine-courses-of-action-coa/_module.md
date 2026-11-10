@@ -1,4 +1,4 @@
 ---
-title: Determine Courses Of Action (COA)
-summary: By laying these out in advance, you eliminate confusion and hesitation. Don't just practice till you get it right, train until you can't get it wrong!
+title: Decide what you will do
+summary: Turn what you know into written plans: Plan A, Plan B and Plan C, with triggers, drills and reviews.
 ---

@@ -1,4 +1,4 @@
 ---
-title: Map Your Area
-summary: Understand your area of operations before you need to move through it.
+title: Map your area
+summary: Learn the planning method, mark the edges of your area, and start your area study binder.
 ---
