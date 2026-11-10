@@ -1123,7 +1123,7 @@ export async function stockNeeds(adults: number, children: number, babies: numbe
 
 // ---------- training sign-off ----------
 export type TrainLesson = { id: string; title: string; module: string; minutes: number; questions: number; state: 'passed' | 'tried' | 'new' | 'noquiz'; best_score: number; total: number; last_date: string };
-export type TrainCourse = { id: string; title: string; summary: string; chosen: boolean; signed_by: string; signed_date: string; passed: number; needed: number; minutes_left: number; complete: boolean; lessons: TrainLesson[] };
+export type TrainCourse = { id: string; title: string; summary: string; tier: number; chosen: boolean; signed_by: string; signed_date: string; passed: number; needed: number; minutes_left: number; complete: boolean; lessons: TrainLesson[] };
 export type TrainSuggestion = { course: string; title: string; reason: string };
 export type TrainReport = { person: string; passed: number; needed: number; signed: number; chosen: number; courses: TrainCourse[]; suggestions: TrainSuggestion[] };
 
@@ -1139,7 +1139,7 @@ export async function trainingReports(people: string[]): Promise<TrainReport[]> 
       { id: previewLesson.id, title: previewLesson.title, module: 'The first 72 hours', minutes: previewLesson.minutes, questions: 1, state: passed ? 'passed' : r ? 'tried' : 'new', best_score: r?.best ?? 0, total: r?.total ?? 0, last_date: r ? 'today' : '' },
       { id: 'preview/two', title: 'Staying warm and sheltered', module: 'The first 72 hours', minutes: 10, questions: 3, state: 'new', best_score: 0, total: 0, last_date: '' },
     ];
-    const course: TrainCourse = { id: 'survival-basics', title: 'Survival basics', summary: 'The core course.', chosen: !!m?.chosen || !!r, signed_by: m?.signed_by ?? '', signed_date: m?.signed_date ?? '', passed: lessons.filter((l) => l.state === 'passed').length, needed: 2, minutes_left: passed ? 10 : 18, complete: false, lessons };
+    const course: TrainCourse = { id: 'survival-basics', title: 'Survival basics', summary: 'The core course.', tier: 3, chosen: !!m?.chosen || !!r, signed_by: m?.signed_by ?? '', signed_date: m?.signed_date ?? '', passed: lessons.filter((l) => l.state === 'passed').length, needed: 2, minutes_left: passed ? 10 : 18, complete: false, lessons };
     const other: TrainCourse = { id: 'field-first-aid', title: 'Field first aid', summary: 'Bleeding, burns, breaks and shock.', chosen: false, signed_by: '', signed_date: '', passed: 0, needed: 4, minutes_left: 40, complete: false, lessons: [] };
     return { person, passed: course.passed, needed: course.chosen ? course.needed : 0, signed: course.signed_date ? 1 : 0, chosen: course.chosen ? 1 : 0, courses: [course, other], suggestions: course.chosen ? [{ course: course.id, title: course.title, reason: 'Keep going: 1 lesson left, about 10 minutes.' }, { course: other.id, title: other.title, reason: 'Next in the usual order.' }] : [{ course: course.id, title: course.title, reason: 'A good place to start.' }] };
   });

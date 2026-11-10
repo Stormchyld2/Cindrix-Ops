@@ -78,3 +78,12 @@ A course pack is one text file (`.ccourse`) holding a course's folders, lesson f
 - The Radio Licenses course points to the CHIRP programming software. The installer is not in the repo: the owner
   puts it in `resources/CHIRP/` on the drive. It is listed in `content/sources.json` and `licenses/README.md` (GPL-3.0).
 - Not built yet: the redesigned Academy layout and the Operator tier courses (Tier 3 first, then 2, then 1; each builds on the one before).
+
+## Tiers (approved 2026-11-10)
+
+- Tier 3 is the foundation for everyone, Tier 2 is the practitioner level, Tier 1 is the operator (elite) level.
+  Each builds on the one before: a person reaches a tier only when every course of that tier and of every tier
+  below it (higher number) is done. The Academy folder is the source: each `course.md` has a `tier:` line.
+- `core/src/training.rs` works this out (`tier_progress`) from the sign-offs; the Training screen shows a tier
+  chip on each course. The sign-off page summary (Tier 3/2/1 badge per person) is not built yet.
+- Lessons marked `status: complete` are fully written; `reviewed` is kept for lessons a qualified person has checked.

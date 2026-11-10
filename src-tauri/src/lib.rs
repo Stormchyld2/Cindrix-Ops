@@ -2571,6 +2571,7 @@ struct TrainCourseDto {
     id: String,
     title: String,
     summary: String,
+    tier: u8,
     chosen: bool,
     signed_by: String,
     signed_date: String,
@@ -2620,7 +2621,7 @@ fn training_reports(people: Vec<String>) -> Result<Vec<TrainReportDto>, String> 
                     .map(|c| {
                         let complete = c.complete();
                         TrainCourseDto {
-                            id: c.id, title: c.title, summary: c.summary, chosen: c.chosen, signed_by: c.signed_by, signed_date: c.signed_date,
+                            id: c.id, title: c.title, summary: c.summary, tier: c.tier, chosen: c.chosen, signed_by: c.signed_by, signed_date: c.signed_date,
                             passed: c.passed, needed: c.needed, minutes_left: c.minutes_left, complete,
                             lessons: c.lessons.into_iter().map(|l| TrainLessonDto { id: l.id, title: l.title, module: l.module, minutes: l.minutes, questions: l.questions, state: l.state, best_score: l.best_score, total: l.total, last_date: l.last_date }).collect(),
                         }

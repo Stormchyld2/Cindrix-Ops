@@ -383,7 +383,19 @@ pub struct Course {
     /// A whole number; when two copies of a course are found, the higher one is used.
     pub version: u32,
     pub license: String,
+    /// 3 (foundation), 2 (practitioner) or 1 (operator); 0 when the course names none.
+    pub tier: u8,
     pub modules: Vec<Module>,
+}
+
+/// The tier named in a course header: "3", "2" or "1" (also "Tier 3"); anything else is 0 (none).
+pub fn parse_tier(s: &str) -> u8 {
+    match s.trim().to_lowercase().trim_start_matches("tier").trim() {
+        "1" => 1,
+        "2" => 2,
+        "3" => 3,
+        _ => 0,
+    }
 }
 
 /// The course made of modules placed straight in the Academy folder (how the first course was laid out).
@@ -440,11 +452,12 @@ pub fn load_dir(dir: &Path) -> Loaded {
             author: get(&meta, "author"),
             version: get(&meta, "version").parse().unwrap_or(0),
             license: get(&meta, "license"),
+            tier: parse_tier(&get(&meta, "tier")),
             modules,
         });
     }
     if !basics.is_empty() {
-        out.courses.insert(0, Course { id: BASICS_ID.into(), title: "Survival basics".into(), summary: "The core course: the first days of an emergency, mindset, shelter, water, first aid and longer-term planning.".into(), author: String::new(), version: 0, license: String::new(), modules: basics });
+        out.courses.insert(0, Course { id: BASICS_ID.into(), title: "Survival basics".into(), summary: "The core course: the first days of an emergency, mindset, shelter, water, first aid and longer-term planning.".into(), author: String::new(), version: 0, license: String::new(), tier: 3, modules: basics });
     }
     out
 }
@@ -763,6 +776,12 @@ mod tests {
         assert!(l.problems.is_empty(), "{:?}", l.problems);
         assert!(!l.courses.is_empty());
         assert!(l.courses.iter().map(|c| c.modules.iter().map(|m| m.lessons.len()).sum::<usize>()).sum::<usize>() >= 7);
+    }
+
+    #[test]
+    fn a_course_names_its_tier_as_a_number_or_with_the_word_tier() {
+        assert_eq!((parse_tier("3"), parse_tier(" Tier 2 "), parse_tier("tier 1")), (3, 2, 1));
+        assert_eq!((parse_tier(""), parse_tier("4"), parse_tier("elite")), (0, 0, 0));
     }
 
     #[test]

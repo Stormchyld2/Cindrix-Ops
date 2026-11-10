@@ -122,6 +122,8 @@ pub struct CourseState {
     pub id: String,
     pub title: String,
     pub summary: String,
+    /// 3, 2 or 1; 0 when the course names none.
+    pub tier: u8,
     pub chosen: bool,
     pub signed_by: String,
     pub signed_date: String,
@@ -130,6 +132,34 @@ pub struct CourseState {
     pub passed: u32,
     pub needed: u32,
     pub minutes_left: u32,
+}
+
+/// How far a person is through one tier.
+#[derive(Clone, Debug, PartialEq)]
+pub struct TierProgress {
+    pub tier: u8,
+    /// Courses in the Academy that belong to this tier.
+    pub courses: u32,
+    /// Of those, the ones the person has completed or had signed off.
+    pub done: u32,
+    /// All courses of this tier are done and every lower tier (a higher number) is reached too.
+    pub reached: bool,
+}
+
+/// Tier 3, then 2, then 1. Each tier builds on the one before: a tier is reached only when all of its courses
+/// are done and every tier below it is reached. A tier with no courses is never reached.
+pub fn tier_progress(courses: &[CourseState]) -> Vec<TierProgress> {
+    let mut out: Vec<TierProgress> = Vec::new();
+    let mut below_reached = true;
+    for tier in [3u8, 2, 1] {
+        let in_tier: Vec<&CourseState> = courses.iter().filter(|c| c.tier == tier).collect();
+        let done = in_tier.iter().filter(|c| c.complete() || !c.signed_date.is_empty()).count() as u32;
+        let courses_n = in_tier.len() as u32;
+        let reached = below_reached && courses_n > 0 && done == courses_n;
+        below_reached = reached;
+        out.push(TierProgress { tier, courses: courses_n, done, reached });
+    }
+    out
 }
 
 impl CourseState {
@@ -190,7 +220,7 @@ pub fn report(courses: &[Course], results: &[Result_], roster: &[Enrol], person:
         let passed = lessons.iter().filter(|l| l.state == "passed").count() as u32;
         let minutes_left = lessons.iter().filter(|l| l.state == "new" || l.state == "tried").map(|l| l.minutes).sum();
         states.push(CourseState {
-            id: c.id.clone(), title: c.title.clone(), summary: c.summary.clone(),
+            id: c.id.clone(), title: c.title.clone(), summary: c.summary.clone(), tier: c.tier,
             chosen: enrol.is_some() || mine.iter().any(|r| lessons.iter().any(|l| l.id == r.lesson)),
             signed_by: enrol.map(|e| e.signed_by.clone()).unwrap_or_default(),
             signed_date: enrol.map(|e| e.signed_date.clone()).unwrap_or_default(),
@@ -232,7 +262,7 @@ mod tests {
 
     fn course(id: &str, lessons: &[(&str, &str)]) -> Course {
         Course {
-            id: id.into(), title: format!("Course {}", id), summary: String::new(), author: String::new(), version: 1, license: String::new(),
+            id: id.into(), title: format!("Course {}", id), summary: String::new(), author: String::new(), version: 1, license: String::new(), tier: 3,
             modules: vec![Module { id: "m".into(), title: "M".into(), summary: String::new(), lessons: lessons.iter().map(|(i, t)| parse_lesson(&format!("{}/{}", id, i), t).unwrap()).collect() }],
         }
     }
@@ -321,5 +351,29 @@ mod tests {
         assert_eq!(all.len(), 2);
         assert_eq!(all[1].person, "Ann");
         assert!(fs::read_to_string(&log.path).unwrap().starts_with("date,lesson,score,total,person\n"));
+    }
+}
+
+#[cfg(test)]
+mod tier_tests {
+    use super::*;
+
+    fn course(tier: u8, done: bool) -> CourseState {
+        CourseState { id: format!("c{}{}", tier, done), title: String::new(), summary: String::new(), tier, chosen: true, signed_by: String::new(), signed_date: if done { "2026-11-10".into() } else { String::new() }, lessons: vec![], passed: 0, needed: 3, minutes_left: 0 }
+    }
+
+    #[test]
+    fn a_tier_is_reached_only_when_every_tier_below_it_is_reached() {
+        let t = tier_progress(&[course(3, true), course(3, true), course(2, true), course(1, true)]);
+        assert_eq!(t.iter().map(|x| (x.tier, x.reached)).collect::<Vec<_>>(), vec![(3, true), (2, true), (1, true)]);
+        // Tier 2 done but a Tier 3 course is not: nothing above Tier 3 counts
+        let t = tier_progress(&[course(3, true), course(3, false), course(2, true), course(1, true)]);
+        assert_eq!(t.iter().map(|x| (x.tier, x.done, x.courses, x.reached)).collect::<Vec<_>>(), vec![(3, 1, 2, false), (2, 1, 1, false), (1, 1, 1, false)]);
+    }
+
+    #[test]
+    fn a_tier_with_no_courses_is_not_reached_and_courses_without_a_tier_are_ignored() {
+        let t = tier_progress(&[course(3, true), course(0, true)]);
+        assert_eq!(t.iter().map(|x| (x.tier, x.courses, x.reached)).collect::<Vec<_>>(), vec![(3, 1, true), (2, 0, false), (1, 0, false)]);
     }
 }

@@ -154,7 +154,7 @@
     {#each followed(report) as c (c.id)}
       <section class="panel">
         <div class="row between">
-          <h2>{c.title}</h2>
+          <h2>{c.title}{#if c.tier} <span class="tier t{c.tier}" title="Tier 3 is the foundation, Tier 2 builds on it, Tier 1 is the operator level">Tier {c.tier}</span>{/if}</h2>
           <span class="meta">{c.passed} of {c.needed} learned{c.minutes_left ? ` · about ${c.minutes_left} min left` : ''}</span>
         </div>
         <div class="track"><span style="width:{pct(c.passed, c.needed)}%"></span></div>
@@ -216,6 +216,7 @@
   .card:hover { border-color: var(--blue-line); }
   .ctitle { font-size: 20px; letter-spacing: .1em; font-family: var(--display); text-transform: uppercase; margin: 0; }
   .meta { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; color: var(--muted); }
+  .tier { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line, #444); color: var(--muted); vertical-align: middle; }
   .next { font-size: 13px; color: var(--blue); }
   .track { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
   .track.big { height: 12px; }
