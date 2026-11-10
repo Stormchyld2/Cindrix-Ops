@@ -1,49 +1,100 @@
 ---
-title: Medical for Everyday Citizens
-minutes: 3
-status: draft
-source: CindrixOps Medical for Everyday Citizens course
+title: Medical for everyday citizens
+minutes: 10
+status: complete
+source: CindrixOps Medical for Everyday Citizens course; American Red Cross and American Heart Association first aid and CPR guidance; FEMA Community Emergency Response Team (CERT) basic training concepts
 ---
-Why basic medical preparedness matters — and what this course covers.
+Why basic medical preparedness matters, and what this course covers.
 
-Emergencies rarely happen at convenient times, and professional medical help may be delayed due to distance, disasters, severe weather, or overwhelmed emergency services. Having the ability to recognize, treat, and stabilize injuries or illnesses can save lives — including your own.
+Emergencies rarely happen at convenient times, and professional medical help may be delayed by distance, disasters, severe weather or overwhelmed emergency services. Being able to recognize, treat and stabilize injuries and illness can save lives, including your own.
 
-Throughout this course, we focus on three core pillars of medical preparedness:
+## Three pillars
+1. **Skills:** the hands-on ability to assess and treat injury and illness.
+2. **Equipment:** the tools and supplies needed to provide care.
+3. **Knowledge and training:** understanding why treatments work, recognizing medical emergencies and building confidence through education and practice.
 
-1. Skills — The hands-on ability to assess and treat injuries or illness.
-2. Equipment — The medical tools and supplies needed to provide care.
-3. Knowledge & Training — Understanding why treatments work, recognizing medical emergencies, and building confidence through education and practice.
+You need all three. Skills without supplies leave you improvising. Supplies without skills create false confidence. Both without understanding lead to mistakes.
 
-## Types of Medical Emergencies
+## The levels of medical situations
+There are many levels of medical situations you may meet in everyday life. Some are minor inconveniences. Others are immediately life-threatening.
 
-There are many different levels of medical situations you may encounter in everyday life. Some are minor inconveniences, while others are immediately life-threatening.
+- **Minor injuries:** a cut finger with controlled bleeding, or a smashed thumb.
+- **Common illness:** a cold or the flu.
+- **Minor traumatic injury:** a sprained ankle, or a bump on the head with no warning signs.
+- **Serious illness:** severe diarrheal disease, dehydration, cholera and typhoid.
+- **Major traumatic injuries:** broken bones, gunshot wounds, deep cuts and amputations.
+- **Sudden medical emergencies:** cardiac arrest, choking, a severe allergic reaction, an overdose, a stroke.
 
-• Minor injuries — a cut on your finger with controlled bleeding, or smashing your thumb with a hammer
-• Common illness — cold or flu
-• Minor traumatic injury — a sprained ankle or contusion to your head
-• Serious illness — diarrheal diseases, cholera, and typhoid
-• Major traumatic injuries — broken bones, gunshot wounds, or amputations
+Your job is to sort these quickly: **what is life-threatening, what is serious, and what can wait.**
 
-## Tier 3 Medical Skills Preview
+## The order that saves lives
+Whatever the situation, think in this order, the same order used in Stop the Bleed, CERT and first aid classes:
+1. **Safety:** is the scene safe for you and the patient?
+2. **Life threats first:** severe bleeding, no breathing, no pulse, blocked airway.
+3. **Call for help:** 911 early, and send someone to get the kit and the AED.
+4. **Treat what you found** in order of danger.
+5. **Keep the patient warm, calm and monitored** until help arrives.
+6. **Hand off** with a clear report.
 
-Foundational medical abilities every responsible citizen should possess, designed to stabilize a patient until professional care arrives:
+## Foundational skills for every responsible citizen
+These are designed to stabilize a patient until professional care arrives:
+- CPR and AED use
+- Controlling bleeding, including tourniquets and wound packing
+- Cleaning and covering wounds
+- Burns
+- Fractures, sprains and splinting
+- Chest wounds and chest seals
+- Recognizing and treating shock
+- Choking
+- Severe allergic reactions
+- Opioid overdose
+- Heat and cold illness
 
-• CPR
-• Clean and disinfect a wound
-• How to control bleeding and basic bandaging
-• And more covered in the following lessons
+These skills are practical, teachable and achievable for everyday people with proper training and repetition.
 
-These skills are practical, teachable, and achievable for everyday people with proper training and repetition.
+## Equipment in layers
+Skills only work if you have the right equipment. Build capability in layers, with three kinds of kits:
+- **First aid kits:** for common minor injuries and illness.
+- **Individual first aid kits (IFAKs):** compact, trauma-focused kits for severe bleeding and hazardous conditions.
+- **Family or team kits:** larger supplies for longer-term care and more serious conditions.
 
-## Tier 3 Medical Equipment Preview
+Types of supplies:
+- **Consumables:** bandages, gloves, gauze pads.
+- **Medications:** common over-the-counter products and any prescribed emergency medicines.
+- **Instruments:** thermometer, pulse oximeter, blood pressure cuff, stethoscope.
 
-Medical skills are only effective if you have the proper equipment available when you need it. We recommend building capability in layers, focusing on 3 types of kits:
+## What this course will not do
+This course teaches first aid. It does not replace hands-on training, and it does not replace a doctor. It never gives medicine amounts. Doses depend on the person and the product. Follow the label, a pharmacist or your doctor.
 
-• First Aid Kits — for common minor injuries and illness
-• Individual First Aid Kits (IFAKs) — for tactical or extremely hazardous conditions
-• Family or Team Kits — extra equipment for longer-term care and more serious conditions
+> **How to use this course:** read a lesson, then practice the skill, then take a class. Skills fade without repetition.
 
-Types of supplies included:
-• Consumables — band-aids, gloves, gauze pads
-• Medications — ibuprofen, antibiotic ointment, epinephrine
-• Medical instruments — stethoscope, pulse oximeter, BP cuff
+> This lesson is first aid education, not medical advice or a substitute for hands-on training from the American Red Cross, American Heart Association or a Stop the Bleed class. Call 911 for any life-threatening emergency.
+
+## Check yourself
+? What are the three pillars of medical preparedness?
+- Speed, strength and luck
++ Skills, equipment and knowledge and training
+- Doctors, nurses and hospitals
+- Pills, bandages and ointments
+> You need all three.
+
+? What comes first in any medical emergency?
+- Taking photos
+- Cleaning small cuts
+- Checking the temperature
++ Scene safety, then life threats such as severe bleeding and breathing
+> Safety and life threats come before everything else.
+
+? Is this course a replacement for hands-on training?
+- Only for adults
+- Yes
++ No. Take a class and practice
+- Only for kits
+> Skills are perishable and need practice.
+
+? Which kit is built for severe, life-threatening trauma?
+- A toiletry bag
++ The IFAK
+- A sewing kit
+- A basic home kit
+> It focuses on bleeding, chest and airway.

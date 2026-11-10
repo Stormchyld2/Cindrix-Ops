@@ -55,7 +55,7 @@ button: Open the Academy
 Communications, modules 2 and 3, and Radio Licenses, module 2. Nominate a Comms Specialist, set up your PACE plan, learn radio talk and program your channels.
 
 ## Week 9: Medical skills
-check: lesson:medical-for-everyday-citizens/01-skills/03-quiz
+check: lesson:medical-for-everyday-citizens/01-skills/15-quiz
 go: Academy
 button: Open the Academy
 Medical for Everyday Citizens, module 1. Bleeding control, wounds, splinting and the other skills, then the Medical Skills quiz.
