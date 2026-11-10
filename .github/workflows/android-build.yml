@@ -92,6 +92,8 @@ jobs:
           name: CindrixOps-Hub-android
           path: dist/*
       - name: Publish the APK as a release
+        # the repository may not let workflows make releases; the APK is still on the run page as an artifact
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
