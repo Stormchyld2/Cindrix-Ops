@@ -51,6 +51,12 @@
           "license": "SIL Open Font License 1.1",
           "status": "in this build",
           "note": "Lettering for the map. Fetched by scripts\\get-maps.ps1; the license text comes with them (maps\\fonts\\OFL.txt)."
+        },
+        {
+          "name": "CHIRP (radio programming software; installer you add)",
+          "license": "GPL-3.0",
+          "status": "you add",
+          "note": "Free radio programming software for Windows. Put the installer from chirpmyradio.com in the resources/CHIRP folder on the drive. We do not change it. Source code: github.com/kk7ds/chirp (the project's own site is chirpmyradio.com). Taught in the Radio Licenses course."
         }
       ]
     },
@@ -140,6 +146,12 @@
           "license": "Made on the person's own phone",
           "status": "in this build",
           "note": "Nothing is downloaded. Tracks wait in the mailbox until the host accepts them."
+        },
+        {
+          "name": "Academy courses supplied by the owner (Basic Preparedness, Self-Defense, Communications, Area Studies, Mobility, Admin and Leadership, Power Outage, Wildfire, Medical for Everyday Citizens, Radio Licenses)",
+          "license": "All rights reserved, CindrixOps (written text supplied by the owner)",
+          "status": "in this build",
+          "note": "Written text exported from the owner's own course material and rebranded as CindrixOps. Expert advice notes are credited to Brent Weir (firefighter). Videos, images and PDF templates in the originals are not included; web links are kept as plain text. The Radio Licenses channel infographic and channel list were made by the owner. DRAFTS until a qualified reviewer signs them off. No medicine doses. Not medical or legal advice. Rights to the original text to be confirmed by the owner."
         }
       ]
     },

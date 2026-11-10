@@ -63,3 +63,18 @@ A line of its own in a lesson, `![what it shows](name.png)`, shows the picture `
 ## Course packs
 
 A course pack is one text file (`.ccourse`) holding a course's folders, lesson files and pictures (`core/src/coursepack.rs`, tested). **Academy > Share my courses as a pack** writes the courses in `user/academy` to `user/exports/my-courses.ccourse`. To add a pack, put the file in `user/academy-packs` and press **Install course packs**. The whole pack is checked first (plain file names only, allowed file types, size limits); a course that is already installed is never overwritten. Installed packs are renamed to end in `.done`. Both commands are host-only.
+
+## Courses supplied by the owner (2026-11)
+
+- Ten courses were imported from the owner's written exports and rebranded CindrixOps: Basic Preparedness,
+  Self-Defense, Communications, Area Studies, Mobility, Admin and Leadership, Power Outage Preparedness,
+  Wildfire Preparedness, Medical for Everyday Citizens and Radio Licenses (with his channel infographic and
+  memory channel lists). All lessons are drafts.
+- Many of these are reading lessons with no quiz. They are shown but not counted toward sign-off
+  (a lesson with a quiz needs at least three questions). Videos, images and PDF templates in the originals were
+  not brought over.
+- Four study-path plans walk through the courses in order: `first-30-days`, `tier-1-readiness-path`,
+  `lead-a-preparedness-group` and `keep-your-skills-fresh` (the names will change when the tier scheme is settled).
+- The Radio Licenses course points to the CHIRP programming software. The installer is not in the repo: the owner
+  puts it in `resources/CHIRP/` on the drive. It is listed in `content/sources.json` and `licenses/README.md` (GPL-3.0).
+- Not built yet: the redesigned Academy layout and the Operator tier courses (Tier 3, then 2, then 1; each builds on the one before).
