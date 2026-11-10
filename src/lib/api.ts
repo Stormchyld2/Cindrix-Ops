@@ -973,7 +973,7 @@ export async function drillSave(drill: string, seconds: number, done: number, to
 
 // ---------- academy (the text course) ----------
 export type AcademyLessonMeta = { id: string; title: string; minutes: number; status: string; source: string; questions: number; tries: number; best_score: number; total: number; last_date: string };
-export type AcademyModule = { id: string; title: string; summary: string; course: string; course_title: string; course_summary: string; course_author: string; lessons: AcademyLessonMeta[] };
+export type AcademyModule = { id: string; title: string; summary: string; course: string; course_title: string; course_summary: string; course_author: string; course_tier: number; lessons: AcademyLessonMeta[] };
 export type CourseProblem = { place: string; message: string };
 export type AcademyBlock = { kind: 'heading' | 'para' | 'note' | 'bullets' | 'steps' | 'image'; text: string; items: string[] };
 export type AcademyQuestion = { text: string; options: string[]; correct: number; explain: string };
@@ -994,7 +994,7 @@ let memAcademy: Record<string, { tries: number; best: number; total: number }> =
 export async function academyList(person?: string): Promise<AcademyModule[]> {
   if (inTauri) return call<AcademyModule[]>('academy_list', { person: person ?? null });
   const r = memAcademy[previewLesson.id];
-  return [{ id: 'survival-basics:01-first-72-hours', title: 'The first 72 hours', summary: 'Water, shelter and a plan for the first three days.', course: 'survival-basics', course_title: 'Survival basics', course_summary: 'The core course.', course_author: '', lessons: [{ id: previewLesson.id, title: previewLesson.title, minutes: previewLesson.minutes, status: 'draft', source: previewLesson.source, questions: previewLesson.quiz.length, tries: r?.tries ?? 0, best_score: r?.best ?? 0, total: r?.total ?? 0, last_date: r ? 'today' : '' }] }];
+  return [{ id: 'survival-basics:01-first-72-hours', title: 'The first 72 hours', summary: 'Water, shelter and a plan for the first three days.', course: 'survival-basics', course_title: 'Survival basics', course_summary: 'The core course.', course_author: '', course_tier: 3, lessons: [{ id: previewLesson.id, title: previewLesson.title, minutes: previewLesson.minutes, status: 'draft', source: previewLesson.source, questions: previewLesson.quiz.length, tries: r?.tries ?? 0, best_score: r?.best ?? 0, total: r?.total ?? 0, last_date: r ? 'today' : '' }] }];
 }
 export async function academyProblems(): Promise<CourseProblem[]> {
   if (inTauri) return call<CourseProblem[]>('academy_problems');

@@ -2139,6 +2139,7 @@ struct ModuleDto {
     course_title: String,
     course_summary: String,
     course_author: String,
+    course_tier: u8,
     lessons: Vec<LessonDto>,
 }
 
@@ -2200,6 +2201,7 @@ fn academy_list(person: Option<String>) -> Result<Vec<ModuleDto>, String> {
                 course_title: c.title.clone(),
                 course_summary: c.summary.clone(),
                 course_author: c.author.clone(),
+                course_tier: c.tier,
                 lessons: m
                     .lessons
                     .into_iter()

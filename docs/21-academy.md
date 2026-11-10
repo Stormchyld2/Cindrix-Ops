@@ -77,7 +77,12 @@ A course pack is one text file (`.ccourse`) holding a course's folders, lesson f
   `lead-a-preparedness-group` and `keep-your-skills-fresh` (the names will change when the tier scheme is settled).
 - The Radio Licenses course points to the CHIRP programming software. The installer is not in the repo: the owner
   puts it in `resources/CHIRP/` on the drive. It is listed in `content/sources.json` and `licenses/README.md` (GPL-3.0).
-- Not built yet: the redesigned Academy layout and the Operator tier courses (Tier 3 first, then 2, then 1; each builds on the one before).
+- Built 2026-11-10: Tier 2 courses Water and Sanitation, Food Production and Preservation, Home and Site Security and
+  Vehicle Readiness and Safe Driving; Tier 1 Operator courses Emergency Management (modules follow the five
+  principles: prevention and hazard assessment, preparedness, response, mitigation, recovery), Prolonged Field Care,
+  Movement and Evasion, Communications and Information, Leadership and Training, and CBRN and Hazmat Protection.
+  Study paths: `tier-2-practitioner-path` and `tier-1-operator-path`. The Academy screen groups course cards under
+  Tier 3, Tier 2 and Tier 1 headings (`course_tier` comes from `course.md`). Courses with no tier show last.
 
 ## Tiers (approved 2026-11-10)
 
@@ -85,5 +90,7 @@ A course pack is one text file (`.ccourse`) holding a course's folders, lesson f
   Each builds on the one before: a person reaches a tier only when every course of that tier and of every tier
   below it (higher number) is done. The Academy folder is the source: each `course.md` has a `tier:` line.
 - `core/src/training.rs` works this out (`tier_progress`) from the sign-offs; the Training screen shows a tier
-  chip on each course. The sign-off page summary (Tier 3/2/1 badge per person) is not built yet.
+  chip on each course. Each person's card on the sign-off page shows a rank chip (the lowest tier number reached,
+  `training::badge_of`) and the person page has a per-tier progress panel. A tier with no courses is never reached,
+  and a Tier 2 sign-off without Tier 3 earns nothing.
 - Lessons marked `status: complete` are fully written; `reviewed` is kept for lessons a qualified person has checked.

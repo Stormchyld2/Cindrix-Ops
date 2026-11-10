@@ -60,13 +60,24 @@
 
   // the modules, grouped under their course
   const courses = $derived.by(() => {
-    const out: { id: string; title: string; summary: string; author: string; modules: AcademyModule[] }[] = [];
+    const out: { id: string; title: string; summary: string; author: string; tier: number; modules: AcademyModule[] }[] = [];
     for (const m of modules) {
       let c = out.find((x) => x.id === m.course);
-      if (!c) { c = { id: m.course, title: m.course_title, summary: m.course_summary, author: m.course_author, modules: [] }; out.push(c); }
+      if (!c) { c = { id: m.course, title: m.course_title, summary: m.course_summary, author: m.course_author, tier: m.course_tier, modules: [] }; out.push(c); }
       c.modules.push(m);
     }
     return out;
+  });
+  // courses grouped by tier: Foundation (3), Practitioner (2), Operator (1), then any without a tier
+  const tierGroups = $derived.by(() => {
+    const names: Record<number, [string, string]> = {
+      3: ['Tier 3 · Foundation', 'The baseline every household should have.'],
+      2: ['Tier 2 · Practitioner', 'Deeper skills for the people who lead each area.'],
+      1: ['Tier 1 · Operator', 'Expert level: run a whole area for the group under stress.']
+    };
+    return [3, 2, 1, 0]
+      .map((t) => ({ tier: t, title: names[t]?.[0] ?? 'Other courses', note: names[t]?.[1] ?? '', list: courses.filter((c) => (names[c.tier] ? c.tier : 0) === t) }))
+      .filter((g) => g.list.length > 0);
   });
   let courseId: string | null = $state(null);
   const openCourse = $derived(courseId ? courses.find((c) => c.id === courseId) : undefined);
@@ -161,8 +172,11 @@
           <div class="track"><span style="width:{(finished / allLessons.length) * 100}%"></span></div>
         </div>
       {/if}
+      {#each tierGroups as g (g.tier)}
+      <h2 class="tierhead">{g.title}</h2>
+      {#if g.note}<p class="muted small tiernote">{g.note}</p>{/if}
       <div class="cards">
-        {#each courses as c (c.id)}
+        {#each g.list as c (c.id)}
           {@const st = stats(c)}
           <button class="card" onclick={() => (courseId = c.id)} aria-label={`Open the course ${c.title}`}>
             <span class="ctitle">{c.title}</span>
@@ -174,6 +188,7 @@
           </button>
         {/each}
       </div>
+      {/each}
       {#if problems.length}
         <details class="panel probs">
           <summary>{problems.length} course file{problems.length === 1 ? ' was' : 's were'} left out</summary>
@@ -298,6 +313,8 @@
   .who label { gap: 8px; align-items: center; }
   .course { margin-top: 8px; }
   .ctitle { font-size: 20px; letter-spacing: .1em; font-family: var(--display); text-transform: uppercase; margin: 0; }
+  .tierhead { margin: 22px 0 2px; font-size: 1.1rem; }
+  .tiernote { margin: 0 0 10px; }
   .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
   .card { display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 16px; background: var(--panel); border: 1px solid var(--line); border-top: 2px solid var(--line2); border-radius: 12px; }
   .card:hover { border-color: var(--blue-line); }

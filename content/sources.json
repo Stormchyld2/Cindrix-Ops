@@ -158,6 +158,24 @@
           "license": "All rights reserved, CindrixOps (written text supplied by the owner)",
           "status": "in this build",
           "note": "Written text exported from the owner's own course material and rebranded as CindrixOps. Expert advice notes are credited to Brent Weir (firefighter). Videos, images and PDF templates in the originals are not included; web links are kept as plain text. The Radio Licenses channel infographic and channel list were made by the owner. Written in full and marked complete, not yet signed off by a qualified reviewer. No medicine doses. Not medical or legal advice. Rights to the original text to be confirmed by the owner."
+        },
+        {
+          "name": "Academy Tier 2 courses: Water and Sanitation, Food Production and Preservation, Home and Site Security, Vehicle Readiness and Safe Driving (44 lessons)",
+          "license": "Written for this project in our own words from public guidance",
+          "status": "in this build",
+          "note": "FEMA, Ready.gov, CDC, EPA, WHO, USDA National Center for Home Food Preservation, NSSF Project ChildSafe, NHTSA and NWS public guidance"
+        },
+        {
+          "name": "Academy Tier 1 Operator courses: Emergency Management, Prolonged Field Care, Movement and Evasion, Communications and Information, Leadership and Training, CBRN and Hazmat Protection (65 lessons, built on the five principles)",
+          "license": "Written for this project in our own words from public guidance",
+          "status": "in this build",
+          "note": "FEMA CPG 101 and 201, ICS, NFPA 1600, CoTCCC and Joint Trauma System guidelines, Wilderness Medical Society, NOLS, CDC, EPA, NRC, US DOT Emergency Response Guidebook, ARRL, FCC rules, and US Army field manuals (FM 21-76, FM 3-25.26, ATP 3-21.8, FM 7-22, TC 25-20) used for civilian principles only"
+        },
+        {
+          "name": "Academy study paths: Tier 2 practitioner path and Tier 1 operator path",
+          "license": "Written for this project in our own words from public guidance",
+          "status": "in this build",
+          "note": "Written by us; point to the courses above"
         }
       ]
     },

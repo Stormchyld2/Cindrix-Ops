@@ -4,7 +4,7 @@ summary: Every Tier 3 Academy course in a sensible order, one topic a week, so a
 kind: learning
 author: CindrixOps
 version: 1
-status: draft
+status: complete
 ---
 
 ## Week 1: Go-bag and kits

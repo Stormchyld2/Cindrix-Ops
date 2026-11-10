@@ -49,6 +49,7 @@ their full text.
 | US government manuals and guides (Army, FEMA, CDC, FDA, USGS) | Public domain | Record edition and date |
 | Project Gutenberg titles | Public domain in the US | Check each title |
 | Academy lessons we wrote (Survival basics, Seed vault, Map reading and land navigation, Casualty care in a crisis, Family medical care without a clinic, Building your stash, Earthquake Preparedness, Stop the Bleed, CPR and First Aid) | Ours, from public-domain US government manuals where noted | Complete, but not yet signed off by a qualified reviewer |
+| Academy Tier 2 and Tier 1 courses we wrote (Water and Sanitation, Food Production and Preservation, Home and Site Security, Vehicle Readiness, and the six Operator courses) and the two study-path plans | Ours, in our own words from US government and public guidance (FEMA, CDC, EPA, NRC, US DOT ERG, NHTSA, NWS, USDA NCHFP, US Army field manuals for civilian principles) | Complete, but not yet signed off by a qualified reviewer |
 | Academy courses someone else wrote | Set by the author in `course.md` (`license:`) | The Academy shows the author; do not ship a course with no license |
 | Music and books you add yourself | Yours | Not part of what we ship |
 
