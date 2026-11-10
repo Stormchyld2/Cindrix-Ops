@@ -1,40 +1,96 @@
 ---
 title: Fire: tinder, kindling, fuel
-minutes: 9
-status: draft
-source: Army FM 21-76, chapter 9; US Forest Service fire safety
+minutes: 11
+status: complete
+source: U.S. Army FM 21-76 Survival; American Red Cross; National Park Service and Leave No Trace guidance; CDC; FM 21-76 chapter on fire; Leave No Trace fire guidance; NPS fire safety
 ---
-Fire gives warmth, light, a way to boil water, and a signal. It also burns forests, so build it with care.
+Fire gives warmth, light, a way to cook, a way to treat water, a signal and a lift in morale. It also burns people and forests, so use it carefully.
 
-## Three stages
-1. **Tinder** catches a spark: dry grass, birch bark, cotton fluff, fine shavings.
-2. **Kindling** grows the flame: pencil-thin dry twigs.
-3. **Fuel** keeps it going: wrist-thick and larger dry wood.
+## Check first
+- **Is fire allowed?** Follow burn bans and local rules. In dry conditions, **do not light a fire.** Use a stove.
+- **Is it safe?** Clear a 10-foot circle down to bare dirt. Look overhead and around for dry grass, leaves, branches and tents.
+- **Do you have water** to put it out?
+- **Use an existing fire ring** if there is one.
 
-## Build it safely
-- Clear a patch of bare soil about **10 feet across**, away from overhanging branches.
-- Build a small fire. Small fires are easier to control and use less wood.
-- Keep water or soil beside it.
+## The fire triangle
+Fire needs **heat, fuel and oxygen.** Remove one and it goes out. Build with all three in balance.
+
+## What to gather (before you light)
+1. **Tinder:** very dry, fine material that catches a spark. Dry grass, bark shavings, birch bark, dry leaves, cotton balls with petroleum jelly, dryer lint, commercial tinder.
+2. **Kindling:** pencil-thin dry twigs, then finger-thick sticks. Gather more than you think you need.
+3. **Fuel:** wrist-thick and arm-thick wood, dry and dead. Standing dead wood is drier than wood on the ground. Snap tests: dry wood snaps, damp wood bends.
+Gather **three piles** within reach before you strike a flame.
+
+## Build a fire
+- **Teepee:** lean kindling against a center of tinder, in a cone. Good for starting.
+- **Log cabin:** stack sticks in a square. Good for a steady fire.
+- **Lean-to:** lean kindling against a larger log, with tinder underneath.
+- **Platform:** on wet or snowy ground, lay a base of green sticks or logs.
+**Leave air gaps** so oxygen can flow.
+
+## Light it
+- **Lighters** and **waterproof matches** are the best. Carry two ways, and store them in a waterproof container.
+- **Ferrocerium rods** (fire steels) work when wet.
+- **Magnifying lens** works in strong sun.
+- **Friction fires** (bow drill) are hard, so practice them before you need them.
+- **Light the tinder from the windward side,** shielding it from the wind. Feed in kindling a little at a time, then fuel.
+
+## Wet conditions
+- **Look for dry wood:** dead branches still on trees, the underside of logs, inside stumps, **standing dead wood.**
+- **Split logs** to get at dry centers.
+- **Make feather sticks:** shave curls on a dry stick.
+- **Use resinous wood** (pine) or fatwood.
+- **Build a platform** and a **windbreak.**
+- **Carry waterproof tinder.**
+
+## Safety
 - **Never leave a fire unattended.**
+- **Keep children and pets away.**
+- **Do not use gasoline or other accelerants.**
+- **Keep fuel and gear away** from sparks.
+- **Know first aid for burns** (see the first aid module).
+- **Do not burn** treated lumber, plastics or trash. The smoke is toxic.
+- **Do not build** a fire in a closed tent or shelter.
 
 ## Put it out
-Pour water, stir, and pour again until it is cold to the touch. If you cannot hold your hand over it, it is not out.
+1. **Let it burn down** to ash.
+2. **Pour water** on it, and stir the ashes.
+3. **Feel with the back of your hand** (not touching). If it is too hot to touch, add more water.
+4. **Scatter** cooled ashes when it is allowed.
+Make sure it is **cold.**
 
-> Windy, dry conditions and wildfire warnings mean: do not light a fire.
+## Stoves and alternatives
+Backpacking stoves, alcohol stoves and solid-fuel tablets are safer and cleaner than open fires. Use outdoors, on a level surface, and keep fuel away from the flame.
+
+> Gather three piles first, build with air gaps, never leave it, and drown it when done.
+
+> This is basic awareness, not a substitute for hands-on training. Practice skills close to home before you depend on them.
 
 ## Check yourself
-? What is the right order of materials?
-+ Tinder, then kindling, then fuel wood
-- Fuel, tinder, kindling
-- Kindling, fuel, tinder
-> Tinder catches the spark, kindling grows the flame, fuel sustains it.
-? How do you know a fire is really out?
-+ It is cold to the touch after you drown and stir it
-- It has stopped smoking
-- The flames are gone
-> Embers can stay hot and restart a fire for hours.
-? What should you do in very dry, windy conditions?
-+ Not light a fire
-- Build a bigger fire to be safe
-- Light it under trees for shelter
-> Wildfires start from careless campfires. Use another way to stay warm.
+? What are the three things fire needs?
+- Paper, water and wood
+- Matches, wood and wind
+- Wind, rain and sun
++ Heat, fuel and oxygen
+> Remove one and it goes out.
+
+? What should you gather before lighting a fire?
+- Only matches
+- Only paper
+- Only logs
++ Tinder, kindling and fuel
+> Have everything within reach.
+
+? How do you know a fire is fully out?
+- It stops smoking only
++ The ashes are cold when you check carefully
+- It is raining
+- It looks dark
+> Add water and stir.
+
+? Where should you not build a fire?
++ Under dry brush or in a burn ban
+- In a fire ring with water nearby
+- On a gravel bar
+- On bare dirt in a cleared ring
+> Wildfires start from careless fires.

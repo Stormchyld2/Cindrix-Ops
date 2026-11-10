@@ -1,42 +1,69 @@
 ---
 title: Staying warm and sheltered at home
-minutes: 8
-status: draft
-source: FEMA winter storm guidance; Army FM 21-76 (cold weather)
+minutes: 10
+status: complete
+source: FEMA/Ready.gov; CDC emergency water treatment; American Red Cross; Ready.gov extreme cold and winter weather; CDC cold weather safety
 ---
-When the power fails in cold weather, your goal is to keep body heat in, not to heat the whole house.
+Staying put at home is usually the safest choice. The job is to keep the place livable without normal power or heat.
 
-## Shrink the space
-- Pick one small room, ideally with few windows and an interior wall.
-- Close doors and hang blankets over doorways and windows.
-- Stuff towels at the bottom of doors.
+## Pick one warm room
+- **Choose a small room,** ideally interior, with few windows and a door that closes. A small space holds body heat.
+- **Close off the rest** of the house. Shut doors, and put towels or blankets along the bottom.
+- **Cover windows** with blankets, cardboard or plastic sheeting, and tape the edges. Hang a blanket over doorways.
+- **Insulate the floor** with rugs, cushions or cardboard, because cold rises from the floor.
 
-## Dress for it
-- Wear **layers**: a wicking base, an insulating middle, a wind-blocking outer layer.
-- Cover your head, neck, hands and feet.
-- Keep clothing **dry**. Wet clothing pulls heat out of your body quickly.
-- Insulate from the floor with cushions, a mattress or cardboard.
+## Layer up
+- Wear **several thin layers** rather than one thick one. Add a hat (a lot of heat leaves through the head), gloves and thick socks.
+- Keep clothing **dry.** Wet clothes lose warmth fast.
+- Use **sleeping bags** and blankets. Sleep together, with children in the middle, and use a pad under you.
+- **Eat and drink warm,** and keep moving a little. Food is fuel, so do not skip meals.
 
-## Never do this
-> Never burn charcoal, run a generator, or use a camp stove or grill **inside** a home, garage or tent. Carbon monoxide is invisible and odorless and kills quickly. Run generators outdoors and well away from windows and doors.
+## Safe heat
+Heat sources kill people every winter. Follow these rules.
+- **Never burn charcoal or run a grill, camp stove or generator indoors,** in a garage or near windows. They make **carbon monoxide,** a colorless, odorless gas that kills.
+- **Do not use a gas oven or range** to heat the home.
+- **Use only heaters made for indoor use,** such as a properly vented fireplace or wood stove, or an indoor-safe propane heater with an oxygen sensor, with the fuel it is designed for.
+- **Keep flammables** at least 3 feet from any heater. Never leave a heater on when you sleep or leave.
+- **Have a working carbon monoxide alarm** and smoke alarms, with fresh batteries.
+- **Ventilate** as the heater's instructions say.
 
-## Watch each other
-- Eat and drink regularly: your body makes heat from food.
-- Check on children, older people and anyone who is very sleepy or confused.
+## Hot weather
+- **Stay low** in the house, on the lowest floor, away from sun-facing rooms.
+- **Close blinds** and curtains on sunny windows, and open windows at night if it is safe.
+- **Drink water often,** wear loose light clothing, wet your skin and fan yourself.
+- **Never leave anyone** in a closed car.
+- See the heat illness lesson for the warning signs.
+
+## Protect pipes in a freeze
+- Open cabinet doors under sinks to let warm air in.
+- Let a faucet drip slowly.
+- Know where the main water valve is, in case a pipe bursts.
+
+## Check on people
+Older adults, infants and people with health problems lose or gain heat faster. Check on them, and on neighbors.
+
+> A small warm room, dry layers and a working carbon monoxide alarm do more than any gadget.
+
+> This is basic awareness, not a substitute for hands-on training. Rules and local conditions vary, so follow official guidance first.
 
 ## Check yourself
-? Where is it best to stay when you cannot heat the whole house?
-+ One small room that is easy to keep warm
-- The largest room with the best view
-- The garage near the car
-> A small room holds body heat. Never use the garage for fuel-burning heat.
-? Why is wet clothing dangerous in the cold?
-+ It pulls heat from your body much faster than dry clothing
-- It makes you heavier
-- It blocks the wind
-> Water conducts heat away from the body. Keep clothing dry and change out of wet things.
-? Where can you safely run a generator or burn charcoal?
-+ Never inside a home, garage or tent; a generator goes outdoors, well away from openings
-- In an open garage
-- On a back porch right next to a window
-> Carbon monoxide builds up in enclosed and even partly enclosed spaces and can kill without warning.
+? Why choose one small room to keep warm?
++ A small space holds body heat
+- It is quieter
+- It uses less water
+- It looks better
+> Heating less space is easier.
+
+? Where must you never run a grill or generator?
++ Indoors, in a garage or near windows
+- On a patio away from windows
+- In the open yard far from the house
+- At a campsite
+> They make carbon monoxide.
+
+? What is a better way to dress for cold?
+- One thick cotton coat
+- Light clothes
++ Several thin layers and a hat
+- Wet wool
+> Layers trap warm air. Stay dry.

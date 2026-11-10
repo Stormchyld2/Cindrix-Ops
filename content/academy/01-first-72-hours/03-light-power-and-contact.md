@@ -1,41 +1,77 @@
 ---
 title: Light, power and staying in contact
-minutes: 7
-status: draft
-source: Ready.gov; FEMA family communication plan
+minutes: 10
+status: complete
+source: FEMA/Ready.gov; CDC emergency water treatment; American Red Cross; Ready.gov power outages; FCC and American Red Cross emergency communications
 ---
-Plan for **light**, **power for phones** and a way to **reach each other** before you need them.
+When the power fails you lose light, refrigeration, charging and often phones and internet. Plan for each.
 
 ## Light
-- Use flashlights and headlamps instead of candles. Candles cause house fires in outages.
-- Keep spare batteries stored with the light, not inside it.
-- Lanterns that run on batteries are safer than any flame inside a house.
+- **Flashlights, headlamps and battery lanterns** are safest. Keep one in each room and one with each person.
+- **Spare batteries** in the right sizes, stored in a cool place and not in the device.
+- **Avoid candles.** They cause house fires. If you must use one, put it in a sturdy holder on a flat surface, away from anything that burns, never unattended.
+- **Glow sticks** are safe for children and for marking paths.
+- **Solar lights** can charge in the day and light at night.
+- **Headlamps** free your hands.
 
 ## Power
-- Turn the phone's brightness down and use low-power mode.
-- Send short texts instead of calling. Texts often get through when calls do not.
-- A small battery bank, charged and kept in your kit, can recharge a phone several times.
+- **Power banks** keep phones and radios running. Keep them charged, and use them only for essentials.
+- **A car** can charge a phone, but run it only outdoors in the open, never in a closed garage.
+- **Solar chargers** and hand-crank gadgets give slow but steady power.
+- **Generators** are for outdoors only, far from windows and doors, with a carbon monoxide alarm indoors. Never plug one into a wall outlet (see the Power Outage course).
+- **Turn down brightness,** use airplane mode, and close apps to save the phone battery.
 
-## Contact plan
-1. Choose an **out-of-area contact** everyone calls or texts to say they are safe.
-2. Choose **two meeting places**: one near home, one outside your neighborhood.
-3. Write the numbers on paper. Phones die and screens break.
+## Keeping food safe
+- **Keep the refrigerator and freezer closed.** A closed fridge keeps food cold for about **four hours.** A full freezer holds about **48 hours** (24 if half full).
+- **Use perishable food first,** then the freezer, then dry goods.
+- **When in doubt, throw it out.** Do not taste to test. Throw out perishable food that has been above 40 °F for more than two hours.
 
-> A battery-powered or hand-crank radio gives you official news when the internet is down.
+## Staying in contact
+- **Text instead of calling.** Texts need less bandwidth and often go through when calls do not.
+- **Keep calls short** to keep lines clear.
+- **A battery or hand-crank radio** with weather band keeps you informed. NOAA Weather Radio gives alerts.
+- **An out-of-area contact** can pass messages when local lines are jammed.
+- **Write down** key phone numbers on paper.
+- **Two-way radios** (see the Radio Licenses course) let your household and neighbors talk.
+- **Emergency alerts** on your phone: turn them on.
+- **Know your neighbors.** Share news and help.
+
+## A simple routine
+1. Check everyone is safe.
+2. Light in each room.
+3. Charge devices in turn.
+4. Check the radio at set times (for example, every hour on the hour).
+5. Save batteries for the night.
+
+> Light you can trust, a charged phone and a radio. The rest is a bonus.
+
+> This is basic awareness, not a substitute for hands-on training. Rules and local conditions vary, so follow official guidance first.
 
 ## Check yourself
-? Why choose a contact who lives outside your area?
-+ Local lines may be jammed while long-distance messages still get through
-- They can drive to you quickly
-- They will always have power
-> In a regional disaster, local networks overload. An out-of-area person is a hub everyone can reach.
-? What is the safer light source in a power outage?
-+ Battery flashlights, headlamps or lanterns
+? Which is the safer light source in an outage?
+- Oil lamps indoors
+- Matches
++ Flashlights and headlamps
 - Candles
-- Oil lamps in a closed room
-> Open flames cause many outage fires. Battery lights have no flame.
-? What helps most when phone networks are busy?
-+ Short text messages
+> Candles cause house fires.
+
+? How long does a closed refrigerator keep food cold?
+- About one hour
+- About four days
++ About four hours
+- About a week
+> Keep the door shut.
+
+? What is better when calls will not connect?
+- Nothing
+- Social media posts only
 - Repeated long calls
-- Streaming a video
-> Texts use far less capacity than calls and often get through when calls fail.
++ A short text message
+> Texts use less bandwidth.
+
+? Where must a generator run?
+- In the garage with the door open
+- On the porch next to a window
++ Outdoors, far from windows and doors
+- In the basement
+> It makes carbon monoxide.
