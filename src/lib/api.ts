@@ -1125,7 +1125,8 @@ export async function stockNeeds(adults: number, children: number, babies: numbe
 export type TrainLesson = { id: string; title: string; module: string; minutes: number; questions: number; state: 'passed' | 'tried' | 'new' | 'noquiz'; best_score: number; total: number; last_date: string };
 export type TrainCourse = { id: string; title: string; summary: string; tier: number; chosen: boolean; signed_by: string; signed_date: string; passed: number; needed: number; minutes_left: number; complete: boolean; lessons: TrainLesson[] };
 export type TrainSuggestion = { course: string; title: string; reason: string };
-export type TrainReport = { person: string; passed: number; needed: number; signed: number; chosen: number; courses: TrainCourse[]; suggestions: TrainSuggestion[] };
+export type TrainTier = { tier: number; name: string; courses: number; done: number; reached: boolean };
+export type TrainReport = { person: string; passed: number; needed: number; signed: number; chosen: number; badge: number; badge_name: string; tiers: TrainTier[]; courses: TrainCourse[]; suggestions: TrainSuggestion[] };
 
 const memTrain: Record<string, { chosen: boolean; signed_by: string; signed_date: string }> = {};
 export async function trainingReports(people: string[]): Promise<TrainReport[]> {
@@ -1141,7 +1142,7 @@ export async function trainingReports(people: string[]): Promise<TrainReport[]> 
     ];
     const course: TrainCourse = { id: 'survival-basics', title: 'Survival basics', summary: 'The core course.', tier: 3, chosen: !!m?.chosen || !!r, signed_by: m?.signed_by ?? '', signed_date: m?.signed_date ?? '', passed: lessons.filter((l) => l.state === 'passed').length, needed: 2, minutes_left: passed ? 10 : 18, complete: false, lessons };
     const other: TrainCourse = { id: 'field-first-aid', title: 'Field first aid', summary: 'Bleeding, burns, breaks and shock.', chosen: false, signed_by: '', signed_date: '', passed: 0, needed: 4, minutes_left: 40, complete: false, lessons: [] };
-    return { person, passed: course.passed, needed: course.chosen ? course.needed : 0, signed: course.signed_date ? 1 : 0, chosen: course.chosen ? 1 : 0, courses: [course, other], suggestions: course.chosen ? [{ course: course.id, title: course.title, reason: 'Keep going: 1 lesson left, about 10 minutes.' }, { course: other.id, title: other.title, reason: 'Next in the usual order.' }] : [{ course: course.id, title: course.title, reason: 'A good place to start.' }] };
+    return { person, passed: course.passed, needed: course.chosen ? course.needed : 0, signed: course.signed_date ? 1 : 0, chosen: course.chosen ? 1 : 0, badge: 0, badge_name: '', tiers: [{ tier: 3, name: 'Foundation', courses: 2, done: course.signed_date ? 1 : 0, reached: false }, { tier: 2, name: 'Practitioner', courses: 1, done: 0, reached: false }, { tier: 1, name: 'Operator', courses: 1, done: 0, reached: false }], courses: [course, other], suggestions: course.chosen ? [{ course: course.id, title: course.title, reason: 'Keep going: 1 lesson left, about 10 minutes.' }, { course: other.id, title: other.title, reason: 'Next in the usual order.' }] : [{ course: course.id, title: course.title, reason: 'A good place to start.' }] };
   });
 }
 export async function trainingEnrol(person: string, course: string, on: boolean): Promise<void> {

@@ -185,6 +185,26 @@ pub struct Report {
     pub needed: u32,
     pub signed: u32,
     pub chosen: u32,
+    /// Tier 3, 2 and 1 progress, over every course in the Academy (a course counts as done when its quizzes
+    /// are passed or it has been signed off).
+    pub tiers: Vec<TierProgress>,
+    /// The highest rank earned: 3 (Foundation), 2 (Practitioner), 1 (Operator), or 0 for none yet.
+    pub badge: u8,
+}
+
+/// The rank word for a tier.
+pub fn tier_name(tier: u8) -> &'static str {
+    match tier {
+        3 => "Foundation",
+        2 => "Practitioner",
+        1 => "Operator",
+        _ => "",
+    }
+}
+
+/// The best rank reached: the lowest tier number that is reached, 0 when none.
+pub fn badge_of(tiers: &[TierProgress]) -> u8 {
+    tiers.iter().filter(|t| t.reached).map(|t| t.tier).min().unwrap_or(0)
 }
 
 fn state_of(best: u32, total: u32, tries: usize) -> &'static str {
@@ -249,7 +269,9 @@ pub fn report(courses: &[Course], results: &[Result_], roster: &[Enrol], person:
         }
         suggestions.push(Suggestion { course: c.id.clone(), title: c.title.clone(), reason: if followed.is_empty() { "A good place to start.".into() } else { "Next in the usual order.".into() } });
     }
-    Report { person: person.into(), courses: states, suggestions, passed, needed, signed, chosen }
+    let tiers = tier_progress(&states);
+    let badge = badge_of(&tiers);
+    Report { person: person.into(), courses: states, suggestions, passed, needed, signed, chosen, tiers, badge }
 }
 
 #[cfg(test)]
@@ -375,5 +397,44 @@ mod tier_tests {
     fn a_tier_with_no_courses_is_not_reached_and_courses_without_a_tier_are_ignored() {
         let t = tier_progress(&[course(3, true), course(0, true)]);
         assert_eq!(t.iter().map(|x| (x.tier, x.courses, x.reached)).collect::<Vec<_>>(), vec![(3, 1, true), (2, 0, false), (1, 0, false)]);
+    }
+}
+
+#[cfg(test)]
+mod badge_tests {
+    use super::*;
+    use crate::academy::{parse_lesson, Module};
+
+    const LESSON: &str = "---\ntitle: Water\nminutes: 8\n---\nText.\n\n## Check yourself\n? Q1\n- a\n+ b\n? Q2\n+ a\n- b\n? Q3\n+ a\n- b\n";
+
+    fn course(id: &str, tier: u8) -> Course {
+        Course {
+            id: id.into(), title: id.into(), summary: String::new(), author: String::new(), version: 1, license: String::new(), tier,
+            modules: vec![Module { id: "m".into(), title: "M".into(), summary: String::new(), lessons: vec![parse_lesson(&format!("{}/l1", id), LESSON).unwrap()] }],
+        }
+    }
+
+    #[test]
+    fn the_rank_word_and_badge_follow_the_tiers_reached() {
+        assert_eq!((tier_name(3), tier_name(2), tier_name(1), tier_name(0)), ("Foundation", "Practitioner", "Operator", ""));
+        let cs = vec![course("a", 3), course("b", 2), course("c", 1)];
+        // nothing done: no badge
+        let none = report(&cs, &[], &[], "Ann");
+        assert_eq!(none.badge, 0);
+        assert_eq!(none.tiers.len(), 3);
+        // finish Tier 3 only: Foundation
+        let r3 = vec![Result_ { date: "d".into(), lesson: "a/l1".into(), score: 3, total: 3, person: "Ann".into() }];
+        let one = report(&cs, &r3, &[], "Ann");
+        assert_eq!((one.badge, one.tiers[0].reached, one.tiers[1].reached), (3, true, false));
+        // a Tier 2 sign-off without Tier 3 done earns nothing
+        let roster = vec![Enrol { person: "Ben".into(), course: "b".into(), signed_by: "Dad".into(), signed_date: "2026-11-10".into() }];
+        assert_eq!(report(&cs, &[], &roster, "Ben").badge, 0);
+        // all three done: Operator
+        let all = vec![
+            Result_ { date: "d".into(), lesson: "a/l1".into(), score: 3, total: 3, person: "Cy".into() },
+            Result_ { date: "d".into(), lesson: "b/l1".into(), score: 3, total: 3, person: "Cy".into() },
+            Result_ { date: "d".into(), lesson: "c/l1".into(), score: 3, total: 3, person: "Cy".into() },
+        ];
+        assert_eq!(report(&cs, &all, &[], "Cy").badge, 1);
     }
 }

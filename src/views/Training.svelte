@@ -115,6 +115,7 @@
         {#each reports as r (r.person)}
           <button class="card" onclick={() => (who = r.person)} aria-label={`Open the training page for ${r.person}`}>
             <span class="ctitle">{r.person}</span>
+            <span class="rank" class:none={!r.badge} title="Tier 3 Foundation, Tier 2 Practitioner, Tier 1 Operator. Each tier needs every course of that tier, and of the tiers before it, to be finished or signed off.">{r.badge ? `Tier ${r.badge} · ${r.badge_name}` : 'No tier reached yet'}</span>
             <span class="meta">{r.chosen} course{r.chosen === 1 ? '' : 's'} followed · {r.signed} signed off</span>
             <span class="track"><span style="width:{pct(r.passed, r.needed)}%"></span></span>
             <span class="meta">{r.needed ? `${r.passed} of ${r.needed} lessons learned` : 'Nothing started yet'}</span>
@@ -135,6 +136,20 @@
       <p class="muted">{report.needed ? `${report.passed} of ${report.needed} lessons learned in the courses followed (${pct(report.passed, report.needed)}%).` : 'No course followed yet. Choose one below.'}</p>
     </header>
     {#if error}<div class="warn" role="alert">{error}</div>{/if}
+
+    <section class="panel" aria-label={`Tier rank for ${report.person}`}>
+      <h2>Tier rank: {report.badge ? `Tier ${report.badge} · ${report.badge_name}` : 'none yet'}</h2>
+      <p class="muted small">Tier 3 is the foundation, Tier 2 builds on it and Tier 1 is the operator level. A tier is reached when every course in it is finished (all quizzes passed, or signed off) and the tier before it is reached.</p>
+      <ul class="tiers">
+        {#each report.tiers as t (t.tier)}
+          <li class:reached={t.reached}>
+            <span class="tname">Tier {t.tier} · {t.name}</span>
+            <span class="track"><span style="width:{pct(t.done, t.courses)}%"></span></span>
+            <span class="meta">{t.courses ? `${t.done} of ${t.courses} courses finished${t.reached ? ' · reached' : ''}` : 'No courses in this tier yet'}</span>
+          </li>
+        {/each}
+      </ul>
+    </section>
 
     {#if report.suggestions.length}
       <section class="panel">
@@ -218,6 +233,12 @@
   .meta { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; color: var(--muted); }
   .tier { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line, #444); color: var(--muted); vertical-align: middle; }
   .next { font-size: 13px; color: var(--blue); }
+  .rank { align-self: flex-start; font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--blue-line); background: var(--blue-soft); color: var(--blue); }
+  .rank.none { border-color: var(--line); background: transparent; color: var(--muted); }
+  .tiers { list-style: none; padding: 0; margin: 10px 0 0; display: flex; flex-direction: column; gap: 10px; }
+  .tiers li { display: flex; flex-direction: column; gap: 4px; }
+  .tiers .tname { font-weight: 600; }
+  .tiers li.reached .tname { color: var(--blue); }
   .track { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
   .track.big { height: 12px; }
   .track span { display: block; height: 100%; background: var(--blue); }

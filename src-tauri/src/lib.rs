@@ -2588,12 +2588,23 @@ struct TrainSuggestionDto {
     reason: String,
 }
 #[derive(Serialize)]
+struct TierDto {
+    tier: u8,
+    name: &'static str,
+    courses: u32,
+    done: u32,
+    reached: bool,
+}
+#[derive(Serialize)]
 struct TrainReportDto {
     person: String,
     passed: u32,
     needed: u32,
     signed: u32,
     chosen: u32,
+    badge: u8,
+    badge_name: &'static str,
+    tiers: Vec<TierDto>,
     courses: Vec<TrainCourseDto>,
     suggestions: Vec<TrainSuggestionDto>,
 }
@@ -2615,6 +2626,9 @@ fn training_reports(people: Vec<String>) -> Result<Vec<TrainReportDto>, String> 
                 needed: r.needed,
                 signed: r.signed,
                 chosen: r.chosen,
+                badge: r.badge,
+                badge_name: training::tier_name(r.badge),
+                tiers: r.tiers.iter().map(|t| TierDto { tier: t.tier, name: training::tier_name(t.tier), courses: t.courses, done: t.done, reached: t.reached }).collect(),
                 courses: r
                     .courses
                     .into_iter()
