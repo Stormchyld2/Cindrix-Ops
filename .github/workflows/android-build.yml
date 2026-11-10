@@ -7,6 +7,11 @@ name: Android - build Cindrix Ops (Hub on a phone)
 
 on:
   workflow_dispatch:
+  # also runs when this file or the Android code changes on the working branch, so it can be tried before it reaches main
+  push:
+    branches: [security-docs]
+    paths:
+      - ".github/workflows/android-build.yml"
 
 permissions:
   contents: write
