@@ -79,31 +79,37 @@
           "name": "Academy courses (Survival basics, 7 modules)",
           "license": "Written for this project, from public-domain US government manuals",
           "status": "in this build",
-          "note": "Based on US Army field manuals (FM 21-76, FM 3-25.26, FM 3-05.70), FEMA/Ready.gov, CDC and Red Cross public guidance. Each lesson names its source. All are DRAFTS until a qualified reviewer signs them off. Not medical or legal advice."
+          "note": "Based on US Army field manuals (FM 21-76, FM 3-25.26, FM 3-05.70), FEMA/Ready.gov, CDC and Red Cross public guidance. Each lesson names its source. All lessons are written in full and marked complete; none has yet been signed off as reviewed by a qualified person. Not medical or legal advice."
         },
         {
           "name": "Academy course: Map reading and land navigation (5 modules, 41 lessons)",
           "license": "Written for this project, from public-domain US government manuals",
           "status": "in this build",
-          "note": "Based on the whole of Army FM 3-25.26 (Map Reading and Land Navigation; military-only parts left out), FM 21-76, USGS map symbol guidance and NOAA magnetic field information. Each lesson names its source. DRAFTS until a qualified reviewer signs them off."
+          "note": "Based on the whole of Army FM 3-25.26 (Map Reading and Land Navigation; military-only parts left out), FM 21-76, USGS map symbol guidance and NOAA magnetic field information. Each lesson names its source. Written in full and marked complete, not yet signed off by a qualified reviewer."
         },
         {
           "name": "Academy course: Casualty care in a crisis (5 modules, 20 lessons)",
           "license": "Written for this project in our own words from public guidance",
           "status": "in this build",
-          "note": "Based on the published Committee on Tactical Combat Casualty Care (CoTCCC) guidelines, Stop the Bleed (American College of Surgeons), the HHS CHEMM START triage algorithm, FEMA CERT Basic Training (public domain) and American Red Cross first aid guidance. Nothing is copied from any training school's course. No medicine doses. DRAFTS until a qualified reviewer signs them off; it does not replace a hands-on class."
+          "note": "Based on the published Committee on Tactical Combat Casualty Care (CoTCCC) guidelines, Stop the Bleed (American College of Surgeons), the HHS CHEMM START triage algorithm, FEMA CERT Basic Training (public domain) and American Red Cross first aid guidance. Nothing is copied from any training school's course. No medicine doses. Written in full and marked complete, not yet signed off by a qualified reviewer; it does not replace a hands-on class."
         },
         {
           "name": "Academy course: Family medical care without a clinic (5 modules, 15 lessons)",
           "license": "Written for this project in our own words from public guidance",
           "status": "in this build",
-          "note": "Based on American Academy of Pediatrics HealthyChildren.org, CDC, ACOG patient guidance, American Red Cross, National Institute on Aging (NIH), American Heart Association, SAMHSA 988, ASPCA Animal Poison Control and AVMA guidance. Nothing is copied from any training school's course. No medicine doses: it says what a medicine is for, the dangers and when to see a doctor. DRAFTS until a qualified reviewer signs them off; it does not replace a doctor or a hands-on class."
+          "note": "Based on American Academy of Pediatrics HealthyChildren.org, CDC, ACOG patient guidance, American Red Cross, National Institute on Aging (NIH), American Heart Association, SAMHSA 988, ASPCA Animal Poison Control and AVMA guidance. Nothing is copied from any training school's course. No medicine doses: it says what a medicine is for, the dangers and when to see a doctor. Written in full and marked complete, not yet signed off by a qualified reviewer; it does not replace a doctor or a hands-on class."
         },
         {
           "name": "Academy course: Building your stash (5 modules, 15 lessons)",
           "license": "Written for this project in our own words from public guidance",
           "status": "in this build",
-          "note": "Based on Ready.gov / FEMA, CDC and EPA guidance on making water safe, CDC pool chemical safety, USDA Food Safety and Inspection Service, US university extension guidance on long-term food storage, CPSC and NFPA safety guidance and the USGS National Map. Prompted by a video of hardware-store items; nothing is copied from it, and its unsafe claims (food-unsafe buckets, tape on chest wounds, cord stitches) are corrected. No prices, no medicine doses. DRAFTS until a qualified reviewer signs them off."
+          "note": "Based on Ready.gov / FEMA, CDC and EPA guidance on making water safe, CDC pool chemical safety, USDA Food Safety and Inspection Service, US university extension guidance on long-term food storage, CPSC and NFPA safety guidance and the USGS National Map. Prompted by a video of hardware-store items; nothing is copied from it, and its unsafe claims (food-unsafe buckets, tape on chest wounds, cord stitches) are corrected. No prices, no medicine doses. Written in full and marked complete, not yet signed off by a qualified reviewer."
+        },
+        {
+          "name": "Academy courses added this round (Earthquake Preparedness, Stop the Bleed, CPR and First Aid) and the expanded Survival basics, Basic Preparedness and Medical for Everyday Citizens lessons",
+          "license": "Written for this project in our own words from public guidance",
+          "status": "in this build",
+          "note": "Sources: Ready.gov and FEMA, CDC, FoodSafety.gov, CAL FIRE, IAFC Ready Set Go, National Weather Service, American Heart Association, American Red Cross, Stop the Bleed (American College of Surgeons), SAMHSA, CUSEC, Earthquake Country Alliance, US Army FM 21-76. Nothing is copied. No medicine doses: medicines are described by steps only, with the label, plan or dispatcher giving amounts. Marked complete, not yet signed off by a qualified reviewer."
         },
         {
           "name": "Academy courses added by you or others",
@@ -121,7 +127,7 @@
           "name": "Seed vault guides (19), the suggested seed list (138 crops) and the Seed vault course",
           "license": "Written for this project; facts paraphrased from university extension guidance",
           "status": "in this build",
-          "note": "Drafts, not yet reviewed. Sources: Purdue Extension, University of Wisconsin-Madison Extension, Oregon State and Penn State Extension, USDA. Seed life numbers are rules of thumb; a germination test is better."
+          "note": "The Seed vault course is now 15 full lessons (planning, storing, testing, saving seed, soil and compost, starting seeds, pests, harvest, a three-year plan) with quizzes; not yet reviewed by a qualified person. Sources: Purdue Extension, University of Wisconsin-Madison Extension, Oregon State, Cornell and Penn State Extension, Seed Savers Exchange, USDA. Seed life numbers are rules of thumb; a germination test is better."
         },
         {
           "name": "Agro guides (128 pages: crops, planting calendar by zone, livestock, soil and water, food preservation) and radio reference (55 pages)",
@@ -151,7 +157,7 @@
           "name": "Academy courses supplied by the owner (Basic Preparedness, Self-Defense, Communications, Area Studies, Mobility, Admin and Leadership, Power Outage, Wildfire, Medical for Everyday Citizens, Radio Licenses)",
           "license": "All rights reserved, CindrixOps (written text supplied by the owner)",
           "status": "in this build",
-          "note": "Written text exported from the owner's own course material and rebranded as CindrixOps. Expert advice notes are credited to Brent Weir (firefighter). Videos, images and PDF templates in the originals are not included; web links are kept as plain text. The Radio Licenses channel infographic and channel list were made by the owner. DRAFTS until a qualified reviewer signs them off. No medicine doses. Not medical or legal advice. Rights to the original text to be confirmed by the owner."
+          "note": "Written text exported from the owner's own course material and rebranded as CindrixOps. Expert advice notes are credited to Brent Weir (firefighter). Videos, images and PDF templates in the originals are not included; web links are kept as plain text. The Radio Licenses channel infographic and channel list were made by the owner. Written in full and marked complete, not yet signed off by a qualified reviewer. No medicine doses. Not medical or legal advice. Rights to the original text to be confirmed by the owner."
         }
       ]
     },

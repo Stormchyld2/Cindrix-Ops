@@ -1,7 +1,7 @@
 ---
 title: Your own local map and meeting places
 minutes: 9
-status: draft
+status: complete
 source: Army FM 3-25.26 Map Reading and Land Navigation (US government, public domain); USGS topographic map symbols and map reading guidance (US government, public domain)
 ---
 A map of your own area, drawn and marked by you, is one of the most useful things you can make before trouble comes.
@@ -32,6 +32,27 @@ Make several copies, in pencil and permanent marker, on paper in plastic bags: o
 Review it every six months. New roads, fences and building works change the best way.
 
 > The Maps screen in this program works without the internet. Print or copy the parts of it you need.
+
+## Going deeper: your own map is a family tool
+A map of your own area with the things that matter to you, marked in your own way, is more useful than any general map.
+
+## Choose meeting places
+- **Near home:** a spot outside the house, such as a tree or a mailbox, for fires and quick exits.
+- **In the neighborhood:** a park or school a short walk away.
+- **Out of the area:** a place beyond the danger zone, such as a relative's home or a town you can reach by two routes.
+- Pick places that are easy to identify, easy to reach on foot and safe.
+
+## Add to the map
+Routes out of town, water sources, shelters, hospitals, fire stations, fuel, stores, family and friends' homes, hazards such as bridges and flood zones, and your caches.
+
+## Practice the routes
+Drive, bike and walk each route, and time them. Note blocked roads and alternatives.
+
+## Make copies
+Keep a copy in each car, in the go-bag, and with a relative. Seal in plastic. Mark the date, and update after changes.
+
+## Teach everyone
+Make sure that older children and every adult can read the map and find each meeting place without help.
 
 ## Check yourself
 ? How many meeting places should a plan have?

@@ -1,7 +1,7 @@
 ---
 title: Night travel and the stars
 minutes: 10
-status: draft
+status: complete
 source: Army FM 3-25.26 Map Reading and Land Navigation (US government, public domain); Army FM 21-76 Survival (US government, public domain)
 ---
 The methods are the same at night, but everything is slower and harder.

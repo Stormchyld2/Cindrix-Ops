@@ -1,7 +1,7 @@
 ---
 title: True, grid and magnetic north
 minutes: 10
-status: draft
+status: complete
 source: Army FM 3-25.26 Map Reading and Land Navigation (US government, public domain); NOAA National Centers for Environmental Information, magnetic field information (US government, public domain)
 ---
 There are **three norths**, and they are not the same. This is the most common reason for navigation mistakes.
@@ -33,6 +33,23 @@ Maps are drawn to true (or grid) north. Compasses read magnetic north.
 Example: the declination is 10 degrees east. A bearing you measure on the map is 90 degrees. To set it on your compass, use 80 degrees.
 
 > Some compasses have a built-in declination adjustment. Set it once for your area and the compass does the work for you.
+
+## Going deeper: why the three norths differ
+- **True north** points to the geographic North Pole, where the Earth's axis of spin meets the surface. Lines of longitude point to it.
+- **Magnetic north** is where the compass needle points, toward a spot in the Arctic that drifts over time.
+- **Grid north** is the direction of the vertical lines on a map's grid. A flat map cannot align perfectly with the curved Earth, so grid north varies slightly from true.
+
+## What it means for you
+The angle between true and magnetic north is **magnetic declination**, and it changes from place to place and year to year. In some places it is a few degrees, and in others it is more than twenty. Ignoring a declination of ten degrees can put you off by about 900 feet after a mile.
+
+## Find the figure
+Read the declination diagram in the margin of your map, noting the year, and the yearly change. For up-to-date values, use the NOAA magnetic field calculator when you have access, and write the current value on your map in pencil.
+
+## Set it
+Some compasses let you adjust declination. If yours does not, add or subtract it each time you move between map and compass, using the rules in the next lessons.
+
+## Local magnetic traps
+Steel, vehicles, power lines, rebar and electronics can pull the needle off. Stand well clear when you take a reading.
 
 ## Check yourself
 ? What is declination?

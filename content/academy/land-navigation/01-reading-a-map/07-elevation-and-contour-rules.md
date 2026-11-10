@@ -1,7 +1,7 @@
 ---
 title: Elevation and contour rules
 minutes: 12
-status: draft
+status: complete
 source: Army FM 3-25.26 Map Reading and Land Navigation (US government, public domain)
 ---
 **Elevation** is how high a point is above mean sea level (the middle point between high and low tide). **Relief** is the shape of the land.

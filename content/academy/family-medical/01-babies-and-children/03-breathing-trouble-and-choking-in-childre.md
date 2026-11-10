@@ -1,7 +1,7 @@
 ---
 title: Breathing trouble and choking in children
 minutes: 8
-status: draft
+status: complete
 source: American Academy of Pediatrics HealthyChildren.org guidance; CDC child health pages (public); American Red Cross choking guidance
 ---
 > Basic awareness only. It does not replace a doctor or a hands-on class. Call emergency services first whenever you can. This course never gives medicine amounts: for those, read the package or ask a pharmacist or doctor.
@@ -28,6 +28,26 @@ source: American Academy of Pediatrics HealthyChildren.org guidance; CDC child h
 - Keep small objects, coins and button batteries away from children. A swallowed button battery is an emergency.
 
 > A child who is coughing hard and making noise is moving air. Let them cough. Act when they go silent.
+
+## Going deeper: reading a child's breathing
+Count breaths for a full minute while the child is calm. Rough normal rates: babies up to about 50, toddlers up to about 40, school age up to about 30. Fast breathing, nostrils flaring, ribs pulling in with each breath, a grunting sound and blue lips are warning signs.
+
+## Common causes and what you see
+- **Croup:** a barking, seal-like cough, a harsh sound when breathing in, worse at night. Stay calm because crying makes it worse. Cool night air or a steamy bathroom may help some children. Seek help if noisy breathing is present at rest, the child drools or struggles to breathe.
+- **Asthma:** wheezing, a tight chest, coughing. Use the child's action plan and reliever inhaler exactly as prescribed, sit the child upright and stay with them. Call 911 if the reliever does not help quickly or the child cannot speak.
+- **Bronchiolitis:** a cold turning to fast, wheezy breathing in babies. Get medical advice, especially for babies under six months or those feeding poorly.
+- **Epiglottitis and severe allergy** are emergencies: drooling, muffled voice, sitting forward, swelling of face or tongue. Call 911 and do not examine the throat.
+
+## Choking in children
+- **Child (over one year), cannot breathe, cough or cry:** give abdominal thrusts, standing or kneeling behind, until it clears or the child collapses. Then call 911 and begin CPR, checking the mouth for the object before each set of breaths.
+- **Infant (under one year):** five back blows with the child face down along your forearm, support the head, then five chest thrusts with two fingers, face up. Repeat.
+- Never do blind finger sweeps.
+
+## Prevent it
+Cut food into small pieces, avoid whole nuts, whole grapes, popcorn, hard candy and chunks of hot dog for young children, and keep small objects, balloons and batteries out of reach. Button batteries and magnets are emergencies, so go to hospital at once if swallowed.
+
+## Learn CPR
+Take a pediatric first-aid and CPR course. It is the best use of a weekend.
 
 ## Check yourself
 ? A child is coughing hard and loudly. What do you do?

@@ -1,7 +1,7 @@
 ---
 title: Symbols, colors and map types
 minutes: 8
-status: draft
+status: complete
 source: USGS topographic map symbols and map reading guidance (US government, public domain); Army FM 3-25.26 Map Reading and Land Navigation (US government, public domain)
 ---
 Map makers use colors and small pictures (symbols) to fit a lot of information on one sheet. The legend explains each one, but a few meanings are very common.
@@ -30,6 +30,21 @@ Map makers use colors and small pictures (symbols) to fit a lot of information o
 
 ## Check the legend
 If a symbol is not familiar, **do not guess**. Look it up in the legend. A well can look like a spring and a mine can look like a quarry.
+
+## Going deeper: reading the colors quickly
+On many US topographic maps: **black** is man-made (buildings, roads, labels), **blue** is water, **green** is woods, **brown** is relief (contours), **red** is major roads and boundaries, **white** is open ground and **purple** shows later revisions. Other countries and map makers use their own sets, so always read the legend.
+
+## Learn the lines
+- Solid thick lines: main roads. Dashed lines: trails or unpaved tracks.
+- Dashed blue: seasonal streams. Solid blue: permanent ones.
+- Dotted lines: boundaries or footpaths, as the legend says.
+- Small black squares: buildings, with larger shapes for large buildings.
+
+## Practice
+Take a map of your own area, and walk to three things marked on it. Match each symbol to the real object. This builds your feel for how symbols compare with real life.
+
+## Scale and generalization
+Roads and buildings are drawn wider than they are, and small features are dropped. Do not assume that anything absent from the map is absent from the ground.
 
 ## Check yourself
 ? On most topographic maps, what color shows water?

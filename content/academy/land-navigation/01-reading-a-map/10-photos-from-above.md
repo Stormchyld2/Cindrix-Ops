@@ -1,7 +1,7 @@
 ---
 title: Aerial and satellite pictures
 minutes: 9
-status: draft
+status: complete
 source: Army FM 3-25.26 Map Reading and Land Navigation (US government, public domain)
 ---
 An aerial photograph, or a satellite picture on a screen or printed from one, shows the ground as it is now. A map may be years old.

@@ -1,7 +1,7 @@
 ---
 title: Fixing your position: intersection, resection, polar plot
 minutes: 16
-status: draft
+status: complete
 source: Army FM 3-25.26 Map Reading and Land Navigation (US government, public domain)
 ---
 Four ways to put a point on a map using bearings and distances. For all of them you need an oriented map, a compass, and a pencil, and you must convert between magnetic and grid directions (earlier lesson).

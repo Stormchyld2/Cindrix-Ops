@@ -1,7 +1,7 @@
 ---
 title: Military (lensatic) compass techniques
 minutes: 12
-status: draft
+status: complete
 source: Army FM 3-25.26 Map Reading and Land Navigation (US government, public domain)
 ---
 Many surplus and military-style compasses are **lensatic**: a lid with a sighting wire, a floating dial, a ratchet bezel ring and a lens that folds up. The ideas are the same as for a baseplate compass, but the handling is different.

@@ -1,7 +1,7 @@
 ---
 title: Testing and caring for your compass
 minutes: 6
-status: draft
+status: complete
 source: Army FM 3-25.26 Map Reading and Land Navigation (US government, public domain)
 ---
 A compass is simple, but it can be wrong. Test it before a trip, and again when something happens to it.
@@ -30,6 +30,28 @@ The needle should settle quickly and without sticking. Tilt the compass a little
 - Practice with it every few months.
 
 > A compass you trust is one you have tested.
+
+## Going deeper: a compass you can trust
+A compass can fail without looking broken. Check it every season, and after a drop or a trip.
+
+## Tests
+- **Reversal test:** hold the compass level, note the reading, then turn the compass around 180 degrees and check. The needle should swing to the same direction.
+- **Known line test:** on a long straight road or a set of marked points, take a bearing and compare with the map.
+- **Compare with a second compass,** standing well apart from metal.
+- **Check the needle:** it should swing freely and settle in a few seconds. A sticky or sluggish needle needs replacing.
+- **Look for bubbles** in the liquid. A small one is usually harmless, but large ones can interfere.
+
+## Things that cause errors
+Pockets with keys or a phone, belt buckles, rifles and knives, vehicles, wire fences, power lines, magnets in speakers and bag clasps, and electronics. Stand at least a few meters away, and more for vehicles and power lines.
+
+## Reverse polarity
+A compass left near a strong magnet may show south as north. Test it against a known direction before use.
+
+## Care
+Store it clean, dry and away from heat and magnets. Wipe it after salt water or mud. Keep a lanyard on, and spare it a hard knock.
+
+## Practice
+Take bearings to the same object from different places, and compare. Your ability to hold the compass level and steady matters as much as the tool.
 
 ## Check yourself
 ? What is a quick way to check a compass?

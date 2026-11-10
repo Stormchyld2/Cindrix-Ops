@@ -1,7 +1,7 @@
 ---
 title: Orienting the map
 minutes: 9
-status: draft
+status: complete
 source: Army FM 3-25.26 Map Reading and Land Navigation (US government, public domain)
 ---
 To **orient** a map means to turn it so that the map's north is the same as north on the ground. When it is oriented, everything on the map lies in the same direction as the real thing. A hill on the left of the map is on your left.
@@ -27,6 +27,29 @@ Oriented maps stop the common mistake of turning the wrong way at a junction. Th
 - Turning only the compass and not the map with it.
 
 > When you reach a fork in the path, orient the map first. Then decide.
+
+## Going deeper: orient first, every time
+Orienting the map means turning it until the map's north points to true north, so everything on the map lies in the same direction as on the ground. Do this before any other step.
+
+## With a baseplate compass
+1. Lay the compass on the map with the long edge along a north-south grid line, and the direction-of-travel arrow pointing to the top of the map.
+2. Turn the whole map and compass together until the **red needle** sits in the orienting arrow (use declination if needed).
+3. Now the map matches the land. Features on your left on the map are on your left on the ground.
+
+## Without a compass
+Use a line feature you can see, such as a straight road, a power line or a river, and turn the map until the line on the map aligns with the real one. Or use the sun, or a shadow stick, to find north and turn the map.
+
+## Check
+Match two or three features: a hilltop, a lake, a building. They should all be in the right directions.
+
+## Common mistakes
+- Orienting to the wrong end of the needle.
+- Forgetting declination.
+- Standing next to metal.
+- Holding the compass tilted so the needle sticks.
+
+## Keep it up
+As you walk, keep the map oriented. Your eyes can then jump from map to land with no mental rotation.
 
 ## Check yourself
 ? What does it mean to orient a map?

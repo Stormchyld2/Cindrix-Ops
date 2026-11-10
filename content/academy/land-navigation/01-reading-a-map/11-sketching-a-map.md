@@ -1,7 +1,7 @@
 ---
 title: Sketching a map
 minutes: 9
-status: draft
+status: complete
 source: Army FM 3-25.26 Map Reading and Land Navigation (US government, public domain)
 ---
 A sketch is a freehand drawing of an area or route. Use one when you have no map, when the map is not detailed enough, or to show someone else where something is.
@@ -31,6 +31,29 @@ A sketch is a freehand drawing of an area or route. Use one when you have no map
 - A drawing to put on your local map when a road is blocked.
 
 > Make the sketch the same way each time and put the date on it. Anyone who picks it up should understand it without you.
+
+## Going deeper: a sketch can save your life
+When you have no map, a sketch of what you see and know gives you a working picture. It helps you plan a route, share information and leave a record for rescuers.
+
+## Add these to every sketch
+- **North arrow,** found by a compass, the sun or stars.
+- **A rough scale,** such as "one thumb width is about 100 paces."
+- **Your position,** marked with a clear symbol.
+- **A title, the date and the time.**
+- **A key** for your symbols.
+
+## Technique
+1. Start with a few big features: a river, a ridge, a road, a lake.
+2. Add smaller ones in their relative positions: buildings, trails, bridges.
+3. Estimate distance by pace count or travel time.
+4. Show bearings between features if you have a compass.
+5. Mark hazards, water sources and shelters.
+
+## Panoramic sketch
+Sketch the skyline from a high point, with bearings to peaks and notable features. Later you can match it to a map.
+
+## Keep it up to date
+Each time you learn something new, add it. Keep a copy at camp and carry a copy.
 
 ## Check yourself
 ? What must a field sketch always show?

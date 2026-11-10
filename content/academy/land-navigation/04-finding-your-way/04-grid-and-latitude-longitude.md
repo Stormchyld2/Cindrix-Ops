@@ -1,7 +1,7 @@
 ---
 title: Grid references and latitude/longitude
 minutes: 10
-status: draft
+status: complete
 source: Army FM 3-25.26 Map Reading and Land Navigation (US government, public domain); USGS topographic map symbols and map reading guidance (US government, public domain)
 ---
 To tell someone exactly where you are, or to find a place from a message, you need a shared way to name a spot. Maps have two.
@@ -30,6 +30,24 @@ Use whichever system the map has, and make sure the other person uses the same o
 Read digit by digit, and repeat it back: "grid one two five three four seven, I say again..."
 
 > If you have to leave a note, write the grid reference, the date and time, the direction you went and who is with you.
+
+## Going deeper: two systems for naming places
+Both systems give a location as numbers, and both work without any signal.
+
+## Grid references
+A grid divides the map into squares with numbered lines. Read **right, then up** ("go along the corridor, then up the stairs"). A four-figure reference locates a square (one kilometer or 1,000 meters on many maps). A six-figure reference places you within about 100 meters, and an eight-figure within about 10 meters.
+
+## Latitude and longitude
+Latitude measures north or south of the equator, and longitude measures east or west of the prime meridian. A position may be written in degrees, minutes and seconds, in degrees and decimal minutes or in decimal degrees. Learn the formats your GPS uses and make sure a partner uses the same.
+
+## Datum matters
+Position depends on the datum, such as WGS 84 or NAD 83. Make sure your GPS and map use the same, or you can be off by many meters.
+
+## Reading it on the radio
+Say each digit clearly. Say "grid" or "latitude," state the zone, and repeat. Add "from my position" if giving a bearing and distance.
+
+## Practice
+Pick five landmarks on a map and write their grid references and coordinates. Check with a partner.
 
 ## Check yourself
 ? In a grid reference, which do you read first?

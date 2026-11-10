@@ -1,7 +1,7 @@
 ---
 title: GPS and electronic aids
 minutes: 9
-status: draft
+status: complete
 source: Army FM 3-25.26 Map Reading and Land Navigation (US government, public domain)
 ---
 A GPS (global positioning system) receiver, whether a handheld unit or a phone, measures your distance from several satellites and works out where you are.

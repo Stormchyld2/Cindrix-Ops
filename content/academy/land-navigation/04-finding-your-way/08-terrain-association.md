@@ -1,7 +1,7 @@
 ---
 title: Moving by terrain association
 minutes: 12
-status: draft
+status: complete
 source: Army FM 3-25.26 Map Reading and Land Navigation (US government, public domain)
 ---
 This is how most people find their way with a map: match what the map says to what you see, and move from feature to feature. It is more forgiving of mistakes than dead reckoning because you always compare the map and the ground, so errors are noticed early.

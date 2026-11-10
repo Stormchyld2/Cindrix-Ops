@@ -1,7 +1,7 @@
 ---
 title: Navigating by vehicle
 minutes: 9
-status: draft
+status: complete
 source: Army FM 3-25.26 Map Reading and Land Navigation (US government, public domain)
 ---
 The principles are the same as on foot. The big difference is speed: a 15-minute drive covers what an hour on foot would.

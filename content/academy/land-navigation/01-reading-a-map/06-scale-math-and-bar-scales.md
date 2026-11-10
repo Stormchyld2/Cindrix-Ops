@@ -1,7 +1,7 @@
 ---
 title: Scale math and bar scales
 minutes: 12
-status: draft
+status: complete
 source: Army FM 3-25.26 Map Reading and Land Navigation (US government, public domain)
 ---
 You met scale earlier. Here is how to work it out exactly, even when a map has no scale printed on it.

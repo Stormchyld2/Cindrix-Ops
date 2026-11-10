@@ -47,7 +47,7 @@ academy/<course>/<NN-module>/<NN-lesson>.md
 Core tests check the parser, bad quizzes (no right answer, two right answers), loading order, the results file (a damaged file is reported and never overwritten), and that every shipped lesson has minutes, a named source, at least 3 questions and no dosing text. The screenshot run opens a lesson, takes the quiz and saves the score.
 
 ## Content today
-One course (Survival basics), seven modules, 21 lessons: the first 72 hours, survival mindset, shelter/fire/water, navigation and signaling, field first aid, evade/resist/escape for civilians, and weeks to months. **All are drafts**, written from public-domain US government manuals and public guidance, and need review by a qualified person (especially first aid) before the `status` is changed to `reviewed`. They are a start, not a finished SERE school: more modules can be added by adding folders.
+One course (Survival basics), seven modules, 21 lessons: the first 72 hours, survival mindset, shelter/fire/water, navigation and signaling, field first aid, evade/resist/escape for civilians, and weeks to months. **All are written in full and marked complete** (not yet signed off as reviewed), written from public-domain US government manuals and public guidance, and need review by a qualified person (especially first aid) before the `status` is changed to `reviewed`. They are a start, not a finished SERE school: more modules can be added by adding folders.
 
 ## Not built yet
 Nothing is listed as missing from the first plan. (Ask already links an answer to the lesson, card, plan, book page or guide page it came from.)
@@ -69,7 +69,7 @@ A course pack is one text file (`.ccourse`) holding a course's folders, lesson f
 - Ten courses were imported from the owner's written exports and rebranded CindrixOps: Basic Preparedness,
   Self-Defense, Communications, Area Studies, Mobility, Admin and Leadership, Power Outage Preparedness,
   Wildfire Preparedness, Medical for Everyday Citizens and Radio Licenses (with his channel infographic and
-  memory channel lists). All lessons are drafts.
+  memory channel lists). All lessons have since been expanded and marked complete; none is a draft. Reviewer sign-off (`status: reviewed`) is still outstanding.
 - Many of these are reading lessons with no quiz. They are shown but not counted toward sign-off
   (a lesson with a quiz needs at least three questions). Videos, images and PDF templates in the originals were
   not brought over.

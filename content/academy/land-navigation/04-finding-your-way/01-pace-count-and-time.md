@@ -1,7 +1,7 @@
 ---
 title: Pace count and travel time
 minutes: 9
-status: draft
+status: complete
 source: Army FM 3-25.26 Map Reading and Land Navigation (US government, public domain); Army FM 21-76 Survival (US government, public domain)
 ---
 Knowing **how far** you have gone is as important as knowing which way. Without a map scale on the ground, you use your own steps and the clock.
