@@ -1,4 +1,4 @@
 ---
-title: Settle In: For More Than One Day
-summary: Food triage, temperature, and backup power done safely.
+title: Settle in: for more than one day
+summary: Mitigation: food triage, temperature control and backup power done safely.
 ---

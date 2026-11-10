@@ -1,4 +1,4 @@
 ---
-title: Get Ready: Before the Lights Go Out
-summary: Know what runs on power, then stock light, water, and alerts.
+title: Get ready: before the lights go out
+summary: Prevention and preparation: know what runs on power, then stock light, water, food, warmth and alerts.
 ---

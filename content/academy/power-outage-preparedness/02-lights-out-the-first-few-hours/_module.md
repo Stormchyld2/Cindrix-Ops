@@ -1,4 +1,4 @@
 ---
-title: Lights Out: The First Few Hours
-summary: Figure out what happened, protect your stuff, stay safe.
+title: Lights out: the first few hours
+summary: Response: figure out what is happening, protect your household and stay safe.
 ---
