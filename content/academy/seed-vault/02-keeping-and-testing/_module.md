@@ -1,4 +1,4 @@
 ---
-title: Keeping and testing seed
-summary: Storing, testing and rotating.
+title: Keeping and testing
+summary: How to store seed, how to test it, and how long it lasts.
 ---

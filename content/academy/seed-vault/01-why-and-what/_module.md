@@ -1,4 +1,4 @@
 ---
-title: Why a seed vault, and what to buy
-summary: Why seeds matter and how to choose them.
+title: Why and what
+summary: Why keep seed, what to buy, and which kinds of seed to choose.
 ---
