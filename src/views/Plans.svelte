@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import PageHeader from '../lib/PageHeader.svelte';
   import { learner, loadPeople } from '../lib/learner.svelte';
   import { plansList, plansProblems, planFollow, planTick, plansExport, type PlanInfo, type PlanStep, type CourseProblem } from '../lib/api';
   import { gatherFacts, stepStatus, planCounts, nextStep, autoDone, KIND_NAME, type PlanFacts } from '../lib/planfacts';
@@ -59,6 +60,13 @@
     return out;
   });
   const followedCount = $derived(plans.filter((p) => p.followed).length);
+  const followedTotals = $derived.by(() => {
+    let done = 0, total = 0, due = 0;
+    for (const p of plans.filter((x) => x.followed)) { const c = planCounts(p, facts); done += c.done; total += c.total; due += c.due; }
+    return { done, total, due };
+  });
+  const dueTotal = $derived(followedTotals.due);
+  const overallPct = $derived(followedTotals.total ? Math.round((followedTotals.done / followedTotals.total) * 100) : 0);
 
   let packNote = $state('');
   async function sharePack() {
@@ -95,16 +103,19 @@
 {/snippet}
 
 {#if !open}
-  <section>
-    <h1>Plans</h1>
-    <p class="sub">The first walkthrough gets you ready. These plans keep going after that: checks that come back on a schedule, things to learn, a plan for each kind of emergency, a guide to keep each thing from failing, and a guide to how much to have. Follow as many as you like at the same time. Choose a plan to go inside it.</p>
-  </section>
+  <PageHeader eyebrow="PLANS" title="Plans" tagline="Checks that come back on a schedule, things to learn, a plan for each kind of emergency and a guide to how much to have. Follow as many as you like. Choose one to go inside it.">
+    <button class="btn" onclick={sharePack} title="Put the plans you wrote into one file to give to another household">Share my plans as a pack</button>
+    <button class="btn primary" onclick={() => go('Start')}>Get ready</button>
+  </PageHeader>
+  <div class="statrow">
+    <div class="stat" style="--c: var(--blue)"><span class="ico">▤</span><span><div class="n">{plans.length}</div><div class="t">Plans</div></span></div>
+    <div class="stat" style="--c: var(--ok)"><span class="ico">✓</span><span><div class="n">{followedCount}</div><div class="t">Following</div></span></div>
+    <div class="stat" style="--c: var(--warn)"><span class="ico">!</span><span><div class="n">{dueTotal}</div><div class="t">Checks due again</div></span></div>
+    <div class="stat" style="--c: var(--cat-academy)"><span class="ico">◔</span><span><div class="n">{overallPct}%</div><div class="t">Steps done in followed</div></span></div>
+  </div>
   {#if error}<div class="warn err" role="alert">{error}</div>{/if}
   {@render whoPick()}
-  <div class="row">
-    <button class="btn" onclick={sharePack} title="Put the plans you wrote into one file to give to another household">Share my plans as a pack</button>
-    {#if packNote}<span class="muted small">{packNote}</span>{/if}
-  </div>
+  {#if packNote}<p class="muted small">{packNote}</p>{/if}
 
   <div class="cards">
     <button class="card base" onclick={() => go('Start')} aria-label="Open the first walkthrough, Get ready">
@@ -192,9 +203,10 @@
 
 <style>
   .forwho { display: inline-flex; gap: 8px; align-items: center; margin: 4px 0; }
-  .gh { margin-top: 18px; }
-  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-top: 12px; }
+  .gh { margin-top: 18px; font-family: 'Barlow Condensed', 'Arial Narrow', var(--display); font-size: 19px; letter-spacing: .08em; color: var(--text); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; margin-top: 12px; }
   .card { display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 16px; background: var(--panel); border: 1px solid var(--line); border-top: 2px solid var(--line2); border-radius: 12px; }
+  .card { box-shadow: 0 0 18px rgba(103, 180, 255, .06); min-height: 170px; }
   .card:hover { border-color: var(--blue-line); }
   .card.on { border-top-color: var(--blue); }
   .card.base { border-style: dashed; }

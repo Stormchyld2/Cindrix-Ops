@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { drillsList, drillSave, type Drill } from '../lib/api';
+  import PageHeader from '../lib/PageHeader.svelte';
+  import Ring from '../lib/Ring.svelte';
 
   let drills: Drill[] = $state([]);
   let error = $state('');
@@ -26,6 +28,13 @@
 
   const mmss = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
   let doneCount = $derived(checked.filter(Boolean).length);
+  let filter = $state('all');
+  let q = $state('');
+  let listView = $state(false);
+  const doneDrills = $derived(drills.filter((d) => d.times_done > 0).length);
+  const totalRuns = $derived(drills.reduce((n, d) => n + d.times_done, 0));
+  const nextUndone = $derived(drills.find((d) => d.times_done === 0));
+  const shown = $derived(drills.filter((d) => (filter === 'all' || (filter === 'done') === d.times_done > 0) && (!q.trim() || (d.title + ' ' + d.summary + ' ' + d.place).toLowerCase().includes(q.trim().toLowerCase()))));
   let nextStep = $derived(checked.indexOf(false) === -1 ? checked.length : checked.indexOf(false) + 1);
 
   function start(d: Drill) {
@@ -59,15 +68,37 @@
 
 <section class="wrap">
   {#if !active}
-    <div>
-      <h1>Drills</h1>
-      <p class="sub">Practice before it is real. Each drill is a short checklist you walk through, with a timer and a debrief. Your results stay on this drive.</p>
+    <PageHeader eyebrow="DRILLS" title="Drills" tagline="Practice before it is real. Each drill is a short checklist with a timer and a debrief. Your results stay on this drive." />
+    <div class="twocol">
+      <div class="statrow">
+        <div class="stat" style="--c: var(--blue)"><span class="ico">▶</span><span><div class="n">{drills.length}</div><div class="t">Drills</div></span></div>
+        <div class="stat" style="--c: var(--ok)"><span class="ico">✓</span><span><div class="n">{doneDrills}</div><div class="t">Done at least once</div></span></div>
+        <div class="stat" style="--c: var(--warn)"><span class="ico">○</span><span><div class="n">{drills.length - doneDrills}</div><div class="t">Not done yet</div></span></div>
+        <div class="stat" style="--c: var(--cat-academy)"><span class="ico">↻</span><span><div class="n">{totalRuns}</div><div class="t">Practice runs in all</div></span></div>
+      </div>
+      <div class="panel glow ready" style="--c: var(--blue)">
+        <Ring value={drills.length ? (doneDrills / drills.length) * 100 : 0} size={96} label="practised" />
+        <div>
+          <div class="label">DRILL READINESS</div>
+          <p class="muted small">Share of drills you have done at least once. A drill finds the gap while everything still works.</p>
+          {#if nextUndone}<button class="btn primary" onclick={() => start(nextUndone)}>Start: {nextUndone.title}</button>{/if}
+        </div>
+      </div>
+    </div>
+    <div class="row bar2">
+      <div class="tabs" role="tablist" aria-label="Show">
+        {#each [['all', 'All'], ['todo', 'Not done'], ['done', 'Done']] as [k, t]}
+          <button class="tab" class:on={filter === k} role="tab" aria-selected={filter === k} onclick={() => (filter = k)}>{t}</button>
+        {/each}
+      </div>
+      <input class="input grow" type="search" placeholder="Search the drills" aria-label="Search drills" bind:value={q} />
+      <button class="btn" onclick={() => (listView = !listView)} title="Switch between cards and a list">{listView ? 'Cards' : 'List'}</button>
     </div>
     {#if error}<div class="warn">{error}</div>{/if}
     {#if saved}<div class="done">{saved}</div>{/if}
-    <div class="grid">
-      {#each drills as d (d.id)}
-        <article class="panel drill">
+    <div class={listView ? 'list' : 'grid'}>
+      {#each shown as d (d.id)}
+        <article class="panel drill glow" style="--c: {d.times_done > 0 ? 'var(--ok)' : 'var(--blue)'}">
           <div class="meta">
             {#if d.times_done > 0}<span class="label">DONE {d.times_done}×</span>{:else}<span class="label">NOT DONE YET</span>{/if}
             {#if d.status !== 'reviewed'}<span class="badge">draft</span>{/if}
@@ -119,7 +150,16 @@
 
 <style>
   .wrap { display: flex; flex-direction: column; gap: 14px; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+  .list { display: flex; flex-direction: column; gap: 10px; }
+  .ready { display: flex; align-items: center; gap: 16px; }
+  .ready p { margin: 4px 0 8px; }
+  .bar2 { gap: 10px; }
+  .grow { flex: 1 1 200px; }
+  .tabs { display: inline-flex; border: 1px solid var(--line2); border-radius: 10px; overflow: hidden; }
+  .tab { padding: 8px 14px; background: transparent; border: 0; color: var(--muted); }
+  .tab.on { background: var(--blue-soft); color: var(--blue); font-weight: 600; }
+  .small { font-size: 13px; }
   .drill { display: flex; flex-direction: column; gap: 6px; }
   .drill h2 { margin: 0; font-size: 18px; }
   .drill p { margin: 0; }

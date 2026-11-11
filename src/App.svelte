@@ -463,7 +463,7 @@
     aside.show { transform: none; }
     .scrim { display: block; position: fixed; inset: 0; z-index: 45; background: #0009; border: 0; }
   }
-  main { flex: 1; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; max-width: 1040px; width: 100%; margin: 0 auto; }
+  main { flex: 1; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; max-width: 1560px; width: 100%; margin: 0 auto; }
   /* the offline browser gets the whole window, so pages have room */
   main.wide { max-width: none; padding: 14px 16px; }
   main.wide:has(> .ac) { padding: 0; gap: 0; }

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import PageHeader from '../lib/PageHeader.svelte';
+  import Ring from '../lib/Ring.svelte';
   import { familyStatus, inventoryList, drillsList, libraryStatus, modelStatus, listModels, mapPacks, whatFailsNext, type LibraryStatus, type ModelStatus } from '../lib/api';
   import { onMount } from 'svelte';
 
@@ -126,33 +128,50 @@
   let doneCount = $derived(tickable.filter((s) => s.done).length);
 </script>
 
-<section>
-  <h1>Your plan, step by step</h1>
-  <p class="sub">Work down this list once, in order. Each step says why it matters and exactly what to do. The steps that can be checked tick themselves when you have really filled something in; the rest are for you to read and do.</p>
+<PageHeader eyebrow="GET READY" title="Your plan, step by step" tagline="Work down this list once, in order. Each step says why it matters and what to do. Steps that can be checked tick themselves when you have really filled something in." />
+
+<section class="panel glow overview" style="--c: var(--blue)">
+  <Ring value={tickable.length ? (doneCount / tickable.length) * 100 : 0} size={132} label="ready" />
+  <div class="ovtxt">
+    <div class="label">YOUR PROGRESS</div>
+    <p class="count">{doneCount} of {tickable.length} checked steps done</p>
+    <div class="track"><span style="width:{tickable.length ? (doneCount / tickable.length) * 100 : 0}%"></span></div>
+    <div class="chev" aria-label="Steps">
+      {#each steps as s, n}
+        <a class="cv" class:done={s.done === true} href={'#step' + n} title={s.title}>{s.done === true ? '✓' : n + 1}</a>
+      {/each}
+    </div>
+  </div>
+  <div class="ovnext">
+    <div class="label">WHEN THIS LIST IS DONE</div>
+    <p class="muted small">It does not end here. Repeating checks, learning plans and a plan for each kind of emergency pick up where this stops.</p>
+    <button class="btn" onclick={() => go('What next')}>What next →</button>
+  </div>
 </section>
 
-<section class="panel">
-  <div class="row between"><span class="label">YOUR PROGRESS</span><span class="count">{doneCount} of {tickable.length} checked steps done</span></div>
-  <div class="track"><span style="width:{tickable.length ? (doneCount / tickable.length) * 100 : 0}%"></span></div>
-</section>
-
-<section class="panel next">
-  <div class="row between"><span class="label">WHEN THIS LIST IS DONE</span><button class="btn" onclick={() => go('What next')}>What next →</button></div>
-  <p class="muted small">This list gets you ready. It does not end there: repeating checks, learning plans and a plan for each kind of emergency pick up where it stops, and you can follow several at once.</p>
-</section>
-
+<div class="steps2">
 {#each steps as s, n}
-  <section class="panel stepcard">
+  <section class="panel stepcard glow" id={'step' + n} style="--c: {s.done === true ? 'var(--ok)' : 'var(--blue)'}">
     <div class="steptop">
       <span class="mark" class:done={s.done === true}>{s.done === true ? '✓' : n + 1}</span>
       <h2 class="stitle">{s.title}</h2>
-      {#if s.tab}<button class="btn" class:primary={s.done !== true} onclick={() => go(s.tab!)}>{s.button}</button>{/if}
     </div>
     <p class="why">{s.why}</p>
     <ul class="todo">{#each s.todo as t}<li>{t}</li>{/each}</ul>
-    {#if s.goal}<p class="goal">{s.goal}</p>{/if}
+    <div class="stfoot">
+      {#if s.goal}<p class="goal">{s.goal}</p>{/if}
+      {#if s.tab}<button class="btn" class:primary={s.done !== true} onclick={() => go(s.tab!)}>{s.button}</button>{/if}
+    </div>
   </section>
 {/each}
+</div>
+
+<nav class="statrow quick" aria-label="Quick links">
+  <button class="stat" style="--c: var(--cat-ops)" onclick={() => go('Inventory')}><span class="ico">▣</span><span><div class="n">Inventory</div><div class="t">Water, food, gear</div></span></button>
+  <button class="stat" style="--c: var(--cat-intel)" onclick={() => go('Family')}><span class="ico">☺</span><span><div class="n">Family</div><div class="t">People and contacts</div></span></button>
+  <button class="stat" style="--c: var(--cat-academy)" onclick={() => go('Maps')}><span class="ico">⌖</span><span><div class="n">Maps</div><div class="t">Where to go</div></span></button>
+  <button class="stat" style="--c: var(--cat-security)" onclick={() => go('Drills')}><span class="ico">▶</span><span><div class="n">Drills</div><div class="t">Practice runs</div></span></button>
+</nav>
 
 {#if checks.length}
   <section class="panel" aria-label="Setup check">
@@ -180,7 +199,18 @@
   .mark { flex: 0 0 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line2); color: var(--muted); font-size: 13px; }
   .mark.done { background: var(--ok-bg); border-color: var(--ok-line); color: var(--ok); }
   .grow { flex: 1 1 260px; }
-  .stepcard { margin-top: 12px; }
+  .overview { display: grid; grid-template-columns: auto minmax(0, 1fr) 280px; gap: 20px; align-items: center; }
+  .ovtxt p { margin: 4px 0 8px; }
+  .chev { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .cv { min-width: 34px; height: 30px; padding: 0 10px; display: inline-flex; align-items: center; justify-content: center; clip-path: polygon(0 0, 85% 0, 100% 50%, 85% 100%, 0 100%, 15% 50%); background: var(--panel2); color: var(--muted); font-size: 13px; text-decoration: none; }
+  .cv.done { background: var(--ok-bg); color: var(--ok); }
+  .ovnext { border-left: 1px solid var(--line); padding-left: 20px; }
+  @media (max-width: 900px) { .overview { grid-template-columns: 1fr; } .ovnext { border: 0; padding: 0; } }
+  .steps2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 14px; }
+  @media (max-width: 520px) { .steps2 { grid-template-columns: 1fr; } }
+  .stepcard { display: flex; flex-direction: column; scroll-margin-top: 12px; }
+  .stfoot { margin-top: auto; padding-top: 10px; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; }
+  .quick { margin-top: 2px; }
   .steptop { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
   .stitle { flex: 1 1 200px; font-size: 18px; letter-spacing: .06em; }
   .why { margin: 10px 0 6px; color: var(--muted); }

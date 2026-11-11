@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PageHeader from '../lib/PageHeader.svelte';
   import { onMount } from 'svelte';
   import { inShare, whatFailsNext, inventoryList, drillsList, mapPacks, modelStatus, listModels, libraryStatus, shareInfo, shareSet, dashboardSuggestions, agendaGet, changesRecent, securityOverview, type SecurityOverview, type AgendaItem, type Change, plansList, academyList, familyStatus, productInfo, type ProductInfo, type ShareInfo, type Cascade, type Suggestion, type PlanInfo, type AcademyModule } from '../lib/api';
   import { gatherFacts, planCounts, nextStep, stepStatus, KIND_NAME, type PlanFacts } from '../lib/planfacts';
@@ -170,24 +171,19 @@
   const today = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
 </script>
 
-<section class="hero">
-  <div class="herotop">
-    <img class="herologo" src="/cindrix-logo.png" alt="" width="64" height="64" />
-    <div class="grow">
-      <h1>Dashboard</h1>
-      <div class="muted small">{product?.name ?? 'Cindrix Ops'} · {today}</div>
-    </div>
-  </div>
-  <nav class="shortcuts" aria-label="Shortcuts">
-    {#each tiles as t (t.label)}
-      <button class="sc" aria-label={'Open ' + t.label} title={'Open ' + t.label} onclick={() => go(t.tab)}>
-        <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={ICONS[t.icon]} /></svg>
-        <span>{t.label}</span>
-      </button>
-    {/each}
-  </nav>
-</section>
-<p class="sub">Where you stand today, worked out from what you have filled in. It is an estimate, not a prediction.</p>
+<PageHeader eyebrow={(product?.name ?? 'CINDRIX OPS').toUpperCase()} title="Dashboard" tagline={'Where you stand today, ' + today + '. Worked out from what you have filled in.'}>
+  <button class="btn primary" onclick={() => go('Start')} title="The step-by-step walkthrough">Get ready</button>
+  <button class="btn" onclick={() => go('Inventory')}>Inventory</button>
+</PageHeader>
+<nav class="shortcuts glow" aria-label="Shortcuts">
+  {#each tiles as t (t.label)}
+    <button class="sc" aria-label={'Open ' + t.label} title={'Open ' + t.label} onclick={() => go(t.tab)}>
+      <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={ICONS[t.icon]} /></svg>
+      <span>{t.label}</span>
+    </button>
+  {/each}
+</nav>
+<p class="sub est">These numbers are an estimate, not a prediction.</p>
 
 {#if error}<div class="warn" role="alert">{error}</div>{/if}
 
@@ -343,6 +339,8 @@
   {/if}
 </div>
 
+<div class="motto" aria-hidden="true"><span>PREPARE</span><span>EQUIP</span><span>TRAIN</span><span>SUSTAIN</span></div>
+
 <svelte:window onkeydown={(e) => { if (e.key === 'Escape') detail = null; }} />
 
 {#if detail}
@@ -408,7 +406,8 @@
   .herotop { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
   .herologo { width: 52px; height: 52px; object-fit: contain; }
   .hero h1 { margin: 0; }
-  .shortcuts { display: grid; grid-template-columns: repeat(auto-fit, minmax(88px, 1fr)); gap: 8px; }
+  .shortcuts { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; --c: var(--blue); }
+  .est { margin: 0; font-size: 13px; }
   .sc { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 76px; padding: 10px 6px; text-align: center; color: var(--text); background: var(--panel2); border: 1px solid var(--line2); border-radius: 12px; font-size: 12.5px; letter-spacing: .02em; }
   .sc svg { color: var(--accent); }
   .sc:hover { border-color: var(--blue-line); }
@@ -426,11 +425,11 @@
   .tiles.sec { grid-template-columns: repeat(4, 1fr); }
   @media (max-width: 1100px) { .tiles { grid-template-columns: repeat(3, 1fr); } .tiles.sec { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 560px) { .tiles { grid-template-columns: repeat(2, 1fr); } }
-  .tile { display: flex; flex-direction: column; justify-content: space-between; gap: 8px; min-height: 84px; padding: 14px; text-align: left; background: linear-gradient(180deg, color-mix(in srgb, var(--c, var(--line)) 9%, var(--panel)), var(--panel) 70%); border: 1px solid var(--line); border-left: 3px solid var(--c, var(--line)); border-radius: 12px; }
+  .tile { display: flex; flex-direction: column; justify-content: space-between; gap: 8px; min-height: 84px; padding: 14px; text-align: left; background: linear-gradient(180deg, color-mix(in srgb, var(--c, var(--line)) 9%, var(--panel)), var(--panel) 70%); border: 1px solid var(--line); border-left: 3px solid var(--c, var(--line)); border-radius: 12px; box-shadow: 0 0 18px color-mix(in srgb, var(--c, var(--blue)) 10%, transparent); }
   .tile:hover { border-color: var(--blue-line); }
   .big { font-size: 24px; font-weight: 600; margin-top: 2px; }
   /* every block has one set size, and shows only the most important lines; the rest scrolls inside it */
-  .dgrid { display: grid; grid-template-columns: repeat(12, 1fr); grid-template-rows: 330px 440px 300px; grid-auto-rows: 300px; gap: 12px; align-items: stretch; }
+  .dgrid { display: grid; grid-template-columns: repeat(12, 1fr); grid-template-rows: 340px 400px 320px; grid-auto-rows: 320px; gap: 12px; align-items: stretch; }
   .dgrid .panel { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
   /* no scroll bars: the mouse wheel (or a finger) moves the list inside the block, and a soft fade at the bottom shows there is more */
   .dgrid .scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; -ms-overflow-style: none; padding-bottom: 22px; -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 22px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 22px), transparent); }

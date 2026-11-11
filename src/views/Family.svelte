@@ -1,6 +1,7 @@
 <script lang="ts">
   import { familyStatus, familyLoad, familySave, exportText, birthdaysSync, type Family, type Person } from '../lib/api';
   import { onMount } from 'svelte';
+  import PageHeader from '../lib/PageHeader.svelte';
 
   let family: Family = $state({ people: [], contacts: '', plan: '' });
   let status = $state({ exists: false, locked: false });
@@ -13,6 +14,9 @@
   let newPass = $state('');
   let newPass2 = $state('');
 
+  const named = $derived(family.people.filter((p) => p.name.trim()).length);
+  const withMeds = $derived(family.people.filter((p) => p.medicines.trim()).length);
+  const withAllergy = $derived(family.people.filter((p) => p.allergies.trim()).length);
   const blank = (): Person => ({ name: '', conditions: '', medicines: '', allergies: '', doctor: '', birthday: '' });
 
   onMount(refresh);
@@ -96,10 +100,20 @@
   }
 </script>
 
-<section>
-  <h1>Family</h1>
-  <p class="sub">Names, conditions, medicines as your doctor wrote them, allergies and contacts. Saved on this drive only.</p>
-</section>
+<PageHeader eyebrow="FAMILY" title="Family" tagline="Names, conditions, medicines as your doctor wrote them, allergies and contacts. Saved on this drive only.">
+  {#if unlocked}
+    <button class="btn" onclick={addPerson}>Add a person</button>
+    <button class="btn primary" onclick={save}>Save to this drive</button>
+  {/if}
+</PageHeader>
+{#if unlocked}
+  <div class="statrow">
+    <div class="stat" style="--c: var(--blue)"><span class="ico">☺</span><span><div class="n">{named}</div><div class="t">People</div></span></div>
+    <div class="stat" style="--c: var(--cat-academy)"><span class="ico">✚</span><span><div class="n">{withMeds}</div><div class="t">With medicines listed</div></span></div>
+    <div class="stat" style="--c: var(--warn)"><span class="ico">!</span><span><div class="n">{withAllergy}</div><div class="t">With allergies listed</div></span></div>
+    <div class="stat" style="--c: {passphrase ? 'var(--ok)' : 'var(--muted)'}"><span class="ico">⚿</span><span><div class="n">{passphrase ? 'On' : 'Off'}</div><div class="t">Passphrase lock</div></span></div>
+  </div>
+{/if}
 
 {#if error}<div class="warn" role="alert">{error}</div>{/if}
 
@@ -114,8 +128,10 @@
     </form>
   </section>
 {:else if unlocked}
+  <div class="twocol">
+  <div class="people">
   {#each family.people as p, n}
-    <section class="panel">
+    <section class="panel glow" style="--c: var(--blue)">
       <div class="row between">
         <span class="label">PERSON {n + 1}</span>
         {#if family.people.length > 1}<button class="btn" onclick={() => removePerson(n)}>Remove</button>{/if}
@@ -132,9 +148,9 @@
       </label>
     </section>
   {/each}
-  <div class="row"><button class="btn" onclick={addPerson}>Add a person</button></div>
-
-  <section class="panel">
+  </div>
+  <aside class="side">
+  <section class="panel glow" style="--c: var(--cat-security)">
     <label class="block">Emergency contacts
       <textarea class="input" bind:value={family.contacts}></textarea>
     </label>
@@ -160,6 +176,8 @@
       <button class="btn" onclick={() => (setting = true)}>Set a passphrase</button>
     {/if}
   </section>
+  </aside>
+  </div>
 
   <div class="row">
     <button class="btn" title="Save a plain text copy anyone can read, even without this program" onclick={exportReadable}>Save a readable copy</button>
@@ -175,5 +193,8 @@
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 12px 0; }
   label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
   .block { margin-top: 8px; }
+  .people { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 14px; align-items: start; }
+  .side { display: flex; flex-direction: column; gap: 14px; }
+  textarea.input { min-height: 90px; }
   .hint { font-size: 11px; }
 </style>

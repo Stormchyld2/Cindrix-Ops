@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PageHeader from '../lib/PageHeader.svelte';
   import { inventoryList, inventorySave, inventoryDelete, scanInboxList, scanInboxPreview, scanInboxAccept, scanInboxDismiss, syncInboxList, syncMerge, stockNeeds, profileLoad, inventoryPlaces, inventoryWhere, shelfLifeSuggest, placeParts, insidePlace, type Item, type Need, type Place, type Found, type ShelfGuess, type ScanFile, type ScanLine } from '../lib/api';
   import { onMount } from 'svelte';
   import { categories, categoryHint, categoryUnits, categoryAsk, forWhomChoices, conditionChoices } from '../lib/categories';
@@ -214,6 +215,12 @@
   );
   let allSelected = $derived(shown.length > 0 && shown.every((i) => selected.includes(i.id)));
 
+  const usedCategories = $derived(new Set(items.map((i) => i.category)).size);
+  const inStock = $derived(items.filter((i) => i.quantity > 0).length);
+  const lowCount = $derived(items.filter((i) => i.status === 'check').length);
+  const actCount = $derived(items.filter((i) => i.status === 'act').length);
+  const healthPct = $derived(items.length ? Math.round((items.filter((i) => (i.status ?? 'ok') === 'ok').length / items.length) * 100) : 0);
+
   function count(cat: string): number {
     return items.filter((i) => i.category === cat).length;
   }
@@ -267,14 +274,18 @@
   const statusText: Record<string, string> = { ok: 'OK', check: 'Check', act: 'Act now' };
 </script>
 
-<section class="head row">
-  <div class="grow">
-    <h1>Inventory</h1>
-    <p class="sub">Everything you have, where it is, how long it lasts and when it expires.</p>
-  </div>
+<PageHeader eyebrow="SUPPLIES" title="Inventory" tagline="Everything you have, where it is, how long it lasts and when it expires.">
   <button class="btn" onclick={openPlan} title="Work out what to have on hand and how much, for your household">How much should I have?</button>
-  <button class="plus" aria-label="Create new item" title="Create new item" onclick={openNew}>+</button>
-</section>
+  <button class="btn primary" aria-label="Create new item" title="Create new item" onclick={openNew}>+ Add item</button>
+</PageHeader>
+<div class="statrow">
+  <div class="stat" style="--c: var(--blue)"><span class="ico">▣</span><span><div class="n">{items.length}</div><div class="t">Total items</div></span></div>
+  <div class="stat" style="--c: var(--cat-academy)"><span class="ico">≡</span><span><div class="n">{usedCategories}</div><div class="t">Categories</div></span></div>
+  <div class="stat" style="--c: var(--ok)"><span class="ico">✓</span><span><div class="n">{inStock}</div><div class="t">In stock</div></span></div>
+  <button class="stat" style="--c: var(--warn)" onclick={() => (show = 'low')} title="Show what is low or expiring"><span class="ico">!</span><span><div class="n">{lowCount}</div><div class="t">Low or to check</div></span></button>
+  <button class="stat" style="--c: var(--danger)" onclick={() => (show = 'low')} title="Show what needs action now"><span class="ico">✕</span><span><div class="n">{actCount}</div><div class="t">Act now</div></span></button>
+  <div class="stat" style="--c: var(--blue)"><span class="ico">♥</span><span><div class="n">{healthPct}%</div><div class="t">Inventory health</div></span></div>
+</div>
 
 {#if error}<div class="warn" role="alert">{error}</div>{/if}
 
@@ -319,7 +330,7 @@
 {/if}
 
 <div class="layout">
-  <aside class="panel">
+  <aside class="panel glow" style="--c: var(--blue)">
     <div class="label">CATEGORIES</div>
     <button class="cat" class:on={category === 'All'} onclick={() => (category = 'All')}><span>All</span><span class="muted">{items.length}</span></button>
     {#each categories as c}
@@ -564,7 +575,7 @@
   .grow { flex: 1 1 200px; }
   .plus { width: 48px; height: 48px; border-radius: 50%; border: 0; background: var(--blue); color: #07131d; font-size: 30px; font-weight: 700; line-height: 1; }
   .layout { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
-  aside { flex: 0 1 230px; min-width: 200px; display: flex; flex-direction: column; gap: 4px; }
+  aside { flex: 0 1 250px; min-width: 210px; display: flex; flex-direction: column; gap: 4px; }
   .cat { display: flex; justify-content: space-between; padding: 8px 10px; border-radius: 8px; border: 1px solid transparent; background: transparent; text-align: left; }
   .cat.on { background: var(--blue-soft); border-color: var(--blue-line); color: var(--blue); font-weight: 600; }
   .main { flex: 1 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
