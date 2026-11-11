@@ -47,9 +47,11 @@ jobs:
           cp src-tauri/target/release/cindrix-ops.exe out/Cindrix/
           # the program is not code-signed yet: print its SHA-256 so a downloaded copy can be compared (docs/49)
           sha256sum out/Cindrix/cindrix-ops.exe | tee out/cindrix-ops.sha256
-          # The program is only the program. Cards, plans, drills, courses and guides live on the drive (see the content pack);
-          # only the credits list and the tiny sample library stay beside the program.
+          # The program carries its own cards, medical cards, plans, drills, seed guides, courses and guides, so it works with nothing
+          # else beside it. Books, manuals, maps, music and .zim files stay on the drive. A drive that has its own content\<name>
+          # folder with files in it is read instead of the copy here (content_sub in src-tauri/src/lib.rs).
           mkdir -p out/Cindrix/content && cp content/sources.json out/Cindrix/content/ && cp -r content/library-sample out/Cindrix/content/
+          cp -r content/cards content/plans content/seed-guides content/drills content/academy content/guides out/Cindrix/content/
           mkdir -p out/Cindrix/models out/Cindrix/engines
           url=""
           for try in 1 2 3 4 5; do
@@ -138,7 +140,7 @@ jobs:
         run: |
           mkdir -p pack
           cp -r content/cards content/plans content/seed-guides content/drills content/academy content/guides pack/
-          printf 'Copy these folders (cards, plans, seed-guides, drills, academy, guides) onto the top of your Cindrix drive and choose Merge.\r\nThe program reads them from the drive. Your own additions go in user\\cards, user\\plans, user\\seed-guides, user\\drills, user\\academy and user\\guides (Settings, Your own cards and plans, opens each one).\r\n' > pack/README.txt
+          printf 'You do not need this for the portable build: it already carries these folders in its content folder. Use it for a drive that runs the program from somewhere else.\r\nCopy these folders (cards, plans, seed-guides, drills, academy, guides) onto the top of your Cindrix drive and choose Merge.\r\nThe program reads them from the drive. Your own additions go in user\\cards, user\\plans, user\\seed-guides, user\\drills, user\\academy and user\\guides (Settings, Your own cards and plans, opens each one).\r\n' > pack/README.txt
       - uses: actions/upload-artifact@v4
         with:
           name: Cindrix-content-pack
