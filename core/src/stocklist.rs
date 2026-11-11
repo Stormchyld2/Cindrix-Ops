@@ -5,12 +5,12 @@
 //! (see scaninbox.rs). The phones never edit the list themselves.
 //!
 //! Format: first line `#cindrix-stock-list v1`, then
-//! `name,barcode,unit,location,qty,use_by,category,updated`, one row per inventory line. UTF-8, LF.
+//! `name,barcode,unit,location,qty,use_by,category,updated,uid`, one row per inventory line. The `uid` is the line's own id in the Inventory (a phone needs it to hand in a count sheet); readers find columns by header name, so older readers ignore it. UTF-8, LF.
 
 use crate::inventory::{quote, Item};
 
 pub const MARKER: &str = "#cindrix-stock-list v1";
-pub const HEADER: &str = "name,barcode,unit,location,qty,use_by,category,updated";
+pub const HEADER: &str = "name,barcode,unit,location,qty,use_by,category,updated,uid";
 
 /// The barcode Scan left in the notes ("Barcode 0123..."), or empty.
 pub fn barcode_of(item: &Item) -> String {
@@ -32,7 +32,7 @@ pub fn build(items: &[Item], updated: &str) -> String {
     for i in items.iter().filter(|i| i.quantity > 0.0) {
         let cols = [
             quote(&i.name), quote(&barcode_of(i)), quote(&i.unit), quote(&i.location),
-            qty(i.quantity), quote(&i.use_by), quote(&i.category), quote(updated),
+            qty(i.quantity), quote(&i.use_by), quote(&i.category), quote(updated), quote(&i.uid),
         ];
         out.push_str(&cols.join(","));
         out.push('\n');
@@ -68,6 +68,14 @@ mod tests {
     }
 
     #[test]
+    fn the_line_id_travels_so_a_phone_can_count_it() {
+        let mut item = it("Rice", 3.0, "");
+        item.uid = "u-77".into();
+        let t = build(&[item], "2026-11-01T18:00:00Z");
+        assert!(t.lines().nth(2).unwrap().ends_with(",u-77"), "{}", t);
+    }
+
+    #[test]
     fn time_stamp_is_right() {
         assert_eq!(utc_stamp(0), "1970-01-01T00:00:00Z");
         assert_eq!(utc_stamp(1_782_950_400), "2026-07-02T00:00:00Z");
@@ -91,7 +99,7 @@ mod tests {
         let l: Vec<&str> = t.lines().collect();
         assert_eq!(l[0], MARKER);
         assert_eq!(l[1], HEADER);
-        assert_eq!(l[2], "\"Beans, black\",0123,can,Pantry,7,2028-03,Food,2026-11-01T18:00:00Z");
+        assert_eq!(l[2], "\"Beans, black\",0123,can,Pantry,7,2028-03,Food,2026-11-01T18:00:00Z,");
     }
 
     #[test]

@@ -37,7 +37,7 @@ None of these commands is allowed for guests (not in the guest list in `share.rs
 ## The way back: the stock list (`core/src/stocklist.rs`)
 
 Every time the inventory is saved, Ops also writes `user/outbox/stock-list.csv` (`#cindrix-stock-list v1`,
-columns `name,barcode,unit,location,qty,use_by,category,updated`; used-up lines left out; the barcode is the one
+columns `name,barcode,unit,location,qty,use_by,category,updated,uid` (uid added 2026-11-10 so a phone can hand in a count sheet); used-up lines left out; the barcode is the one
 Scan left in the notes). Cindrix Scan reads it for its "In stock" tab and its "On hand" line. Cindrix Pocket will
 read the same file. The phones never edit it.
 
