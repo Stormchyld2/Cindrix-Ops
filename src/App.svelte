@@ -269,7 +269,7 @@
     goTo(tab);
   }
   function topClick(t: Top) {
-    if (t.entries) toggleSection(t.id);
+    if (t.entries) folded = folded.includes(t.id) ? [] : [t.id];
     else if (t.tab) pick(t.tab);
   }
   /** Is this entry the screen on show? Used to light it in the left nav. */
@@ -437,7 +437,7 @@
   .dlg .fine { font-size: 12px; }
   .dlg .end { justify-content: flex-end; }
   .libnote { margin: 8px 16px 0; display: flex; gap: 12px; align-items: center; justify-content: space-between; }
-  .shell { min-height: 100vh; display: grid; grid-template-columns: 230px minmax(0, 1fr); }
+  .shell { overflow-x: clip; min-height: 100vh; display: grid; grid-template-columns: 230px minmax(0, 1fr); }
   .content { display: flex; flex-direction: column; min-width: 0; min-height: 100vh; }
   aside { position: sticky; top: 0; height: 100vh; overflow-y: auto; background: #101113; border-right: 1px solid var(--line); padding: 14px 10px; z-index: 50; }
   .logo { display: block; width: 130px; margin: 0 auto 12px; }

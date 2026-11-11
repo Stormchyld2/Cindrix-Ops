@@ -231,7 +231,10 @@
     </div>
     <div class="player">
       <article class="lbody">
-        {#if lesson.blocks[0]?.kind !== 'video'}<h1 class="ltitle">{lesson.title}</h1>{/if}
+        {#if lesson.blocks[0]?.kind !== 'video'}
+          <div class="video" role="img" aria-label="Video placeholder"><div class="play">▶</div></div>
+          <h1 class="ltitle">{lesson.title}</h1>
+        {/if}
         {#each lesson.blocks as b, bi}
           {#if b.kind === 'video'}
             <div class="video" role="img" aria-label="Video placeholder"><div class="play">▶</div></div>
@@ -593,7 +596,11 @@
   .ac .crumb { display: flex; align-items: center; gap: 12px; padding: 12px 24px; border-bottom: 1px solid var(--a-line); background: var(--a-side); }
   .ac .bar-sep { width: 1px; height: 16px; background: var(--a-line); }
   .ac .player { display: grid; grid-template-columns: minmax(0, 1fr) 290px; }
-  .ac .lbody { padding: 26px 40px 60px; max-width: 900px; }
+  .ac .lbody { padding: 26px 40px 60px; max-width: 920px; width: 100%; margin: 0 auto; min-width: 0; }
+  .ac .side { min-width: 0; }
+  .ac { overflow-x: clip; max-width: 100%; }
+  .ac .hero > :not(.back) { max-width: 56%; }
+  @media (max-width: 900px) { .ac .hero > :not(.back) { max-width: 100%; } }
   .ac .lbody p, .ac .lbody li { line-height: 1.65; }
   .ac .ltitle { font-size: 24px; margin: 20px 0 8px; }
   .ac .video { aspect-ratio: 16 / 9; border-radius: 12px; background: #000 url('/cindrix-banner.png') center / cover; position: relative; border: 1px solid var(--a-line); }
