@@ -103,6 +103,7 @@
   <div class="top">
     <div>
       <PageHeader eyebrow="CINDRIX OPS" title="Archives" tagline="The big offline library: Wikipedia, medical guides, books and websites you saved, stored on this drive as .zim files. Read them in Intel, no internet needed. New archives you copy into the library folder are picked up by themselves." />
+<div class="statrow"><div class="stat" style="--c: var(--blue)"><span class="ico">▤</span><span><div class="n">{st.archives.length}</div><div class="t">Archives</div></span></div><div class="stat" style="--c: var(--ok)"><span class="ico">✓</span><span><div class="n">{st.ready ? 'Ready' : 'Not ready'}</div><div class="t">Library server</div></span></div></div>
     </div>
     <button class="btn primary" onclick={openIntel}>Read them in Intel →</button>
   </div>

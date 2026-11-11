@@ -40,6 +40,7 @@
 
 <section>
   <PageHeader eyebrow="CINDRIX OPS" title="Drug labels" tagline="The label text for medicines, exactly as the U.S. FDA published it. Look up a brand or common name, or what it is for (for example “heartburn”)." />
+<div class="statrow"><div class="stat" style="--c: var(--blue)"><span class="ico">✚</span><span><div class="n">{st.count}</div><div class="t">Labels</div></span></div><div class="stat" style="--c: var(--ok)"><span class="ico">✓</span><span><div class="n">{st.ready ? 'Ready' : 'Not ready'}</div><div class="t">Search</div></span></div></div>
   <p class="warn note"><b>For reading only.</b> This is not advice for you or anyone else, and labels can be out of date. Do not start, stop or change a medicine because of this page: follow your doctor’s written plan or ask a pharmacist. In an emergency, call 911.</p>
   {#if error}<p class="warn" role="alert">{error}</p>{/if}
 

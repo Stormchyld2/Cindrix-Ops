@@ -1501,6 +1501,7 @@
 
 <section>
   <PageHeader eyebrow="CINDRIX OPS" title="Maps" tagline="Plan with your own points: places to meet, routes between them, and areas to avoid. Save the plan, print it, and export the route for a phone map app." />
+<div class="statrow"><div class="stat" style="--c: var(--blue)"><span class="ico">▣</span><span><div class="n">{saved.length}</div><div class="t">Saved maps</div></span></div><div class="stat" style="--c: var(--ok)"><span class="ico">●</span><span><div class="n">{pins.length}</div><div class="t">Pins</div></span></div><div class="stat" style="--c: var(--cat-academy)"><span class="ico">›</span><span><div class="n">{route.length}</div><div class="t">Route stops</div></span></div><div class="stat" style="--c: var(--danger)"><span class="ico">✕</span><span><div class="n">{nogo.length}</div><div class="t">Areas to avoid</div></span></div></div>
 </section>
 
 {#if street}

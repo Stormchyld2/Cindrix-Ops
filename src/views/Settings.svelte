@@ -167,6 +167,7 @@
 <section class="wrap">
   <div>
     <PageHeader eyebrow="CINDRIX OPS" title="Settings" tagline="Change how the program looks and behaves. Changes apply straight away and are kept on the drive, so they travel with it." />
+<div class="statrow"><div class="stat" style="--c: var(--blue)"><span class="ico">▤</span><span><div class="n">{libs.length}</div><div class="t">Libraries</div></span></div><div class="stat" style="--c: var(--cat-academy)"><span class="ico">◈</span><span><div class="n">{models.length}</div><div class="t">Assistant models</div></span></div></div>
   </div>
 
   <div class="layout">

@@ -438,6 +438,7 @@
     {:else}
       <div class="scroll">
         <PageHeader eyebrow="CINDRIX OPS" title="Intel" tagline="The offline internet. Everything here is stored on this drive, so it works with no signal. Open an archive below, or search all of them at once." />
+<div class="statrow"><div class="stat" style="--c: var(--blue)"><span class="ico">▤</span><span><div class="n">{books.length}</div><div class="t">Archives</div></span></div><div class="stat" style="--c: var(--cat-academy)"><span class="ico">▭</span><span><div class="n">{tabs.length}</div><div class="t">Open tabs</div></span></div></div>
         {#if books.length === 0}
           <div class="empty">
             <strong>No archives on the drive yet.</strong>

@@ -49,6 +49,7 @@
 
 <section>
   <PageHeader eyebrow="CINDRIX OPS" title="Comms plan" tagline="A complete plan for when phones and the internet are down: who does what, the order of ways to reach each other (PACE), channels, check-in times, meeting places, what to say, and what to do when the radios fail. Fill in every blank, save it, and print a copy for everyone. Other devices on your hotspot cannot see it, and you can add a passcode so only you can read it. For the rules and the words to use, see Radio reference in the Comms menu." />
+<div class="statrow"><div class="stat" style="--c: var(--blue)"><span class="ico">✎</span><span><div class="n">{text.trim() ? 'Written' : 'Blank'}</div><div class="t">Plan</div></span></div><div class="stat" style="--c: var(--ok)"><span class="ico">⚿</span><span><div class="n">{locked ? 'On' : 'Off'}</div><div class="t">Passcode</div></span></div></div>
   {#if pace}
     <div class="panel pace">
       <div class="row head">
