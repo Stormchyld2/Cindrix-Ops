@@ -2124,6 +2124,18 @@ struct BlockDto {
     kind: &'static str,
     text: String,
     items: Vec<String>,
+    /// Checklist items (empty for every other kind of block).
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    checks: Vec<CheckDto>,
+}
+
+#[derive(Serialize)]
+struct CheckDto {
+    text: String,
+    detail: String,
+    gear: bool,
+    /// The item's number across all the lesson's checklists, used to tick it.
+    n: usize,
 }
 
 #[derive(Serialize)]
@@ -2146,6 +2158,10 @@ struct LessonDto {
     best_score: u32,
     total: u32,
     last_date: String,
+    readiness: u32,
+    checklist: usize,
+    checks_done: usize,
+    video: bool,
 }
 
 #[derive(Serialize)]
@@ -2201,6 +2217,9 @@ struct LessonBodyDto {
     minutes: u32,
     status: String,
     source: String,
+    readiness: u32,
+    /// Numbers of the checklist items this person has ticked.
+    ticked: Vec<usize>,
     blocks: Vec<BlockDto>,
     quiz: Vec<QuestionDto>,
 }
@@ -2209,6 +2228,8 @@ struct LessonBodyDto {
 fn academy_list(person: Option<String>) -> Result<Vec<ModuleDto>, String> {
     let person = person.filter(|p| !p.trim().is_empty());
     let results = academy::Log::new(&root().join("user")).list()?;
+    let ticks = academy::Checks::new(&root().join("user")).list()?;
+    let who = person.clone().unwrap_or_default();
     let mut out = Vec::new();
     for c in academy::load_all(&academy_dirs()).courses {
         for m in c.modules {
@@ -2226,7 +2247,9 @@ fn academy_list(person: Option<String>) -> Result<Vec<ModuleDto>, String> {
                     .into_iter()
                     .map(|l| {
                         let p = academy::progress_of(&results, &l.id, person.as_deref());
-                        LessonDto { questions: l.quiz.len(), tries: p.tries, best_score: p.best_score, total: p.total, last_date: p.last_date, id: l.id, title: l.title, minutes: l.minutes, status: l.status, source: l.source }
+                        let (checks_done, checklist) = academy::check_counts(&l, &ticks, &who);
+                        let video = l.body.iter().any(|b| matches!(b, academy::Block::Video(_)));
+                        LessonDto { questions: l.quiz.len(), tries: p.tries, best_score: p.best_score, total: p.total, last_date: p.last_date, readiness: l.readiness, checklist, checks_done, video, id: l.id, title: l.title, minutes: l.minutes, status: l.status, source: l.source }
                     })
                     .collect(),
             });
@@ -2237,7 +2260,7 @@ fn academy_list(person: Option<String>) -> Result<Vec<ModuleDto>, String> {
 
 /// One lesson, found by id in the loaded course (the id is never turned into a file path).
 #[tauri::command]
-fn academy_lesson(id: String) -> Result<LessonBodyDto, String> {
+fn academy_lesson(id: String, person: Option<String>) -> Result<LessonBodyDto, String> {
     let l = academy::load_all(&academy_dirs())
         .courses
         .into_iter()
@@ -2247,23 +2270,47 @@ fn academy_lesson(id: String) -> Result<LessonBodyDto, String> {
         .ok_or("There is no such lesson.")?;
     let dirs = academy_dirs();
     let lesson_id = l.id.clone();
+    let who = person.unwrap_or_default();
+    let ticked: Vec<usize> = academy::Checks::new(&root().join("user")).list()?.into_iter().filter(|(p, li, _)| *p == who && *li == lesson_id).map(|(_, _, i)| i).collect();
+    let mut counter = 0usize;
     let blocks = l
         .body
         .into_iter()
         .map(|b| match b {
             academy::Block::Image { alt, file } => {
                 let url = academy::image_file(&dirs, &lesson_id, &file).and_then(|p| academy::image_data_url(&p)).unwrap_or_default();
-                BlockDto { kind: "image", text: alt, items: vec![url] }
+                BlockDto { kind: "image", text: alt, items: vec![url], checks: vec![] }
             }
-            academy::Block::Heading(t) => BlockDto { kind: "heading", text: t, items: vec![] },
-            academy::Block::Para(t) => BlockDto { kind: "para", text: t, items: vec![] },
-            academy::Block::Note(t) => BlockDto { kind: "note", text: t, items: vec![] },
-            academy::Block::Bullets(v) => BlockDto { kind: "bullets", text: String::new(), items: v },
-            academy::Block::Steps(v) => BlockDto { kind: "steps", text: String::new(), items: v },
+            academy::Block::Heading(t) => BlockDto { kind: "heading", text: t, items: vec![], checks: vec![] },
+            academy::Block::Para(t) => BlockDto { kind: "para", text: t, items: vec![], checks: vec![] },
+            academy::Block::Note(t) => BlockDto { kind: "note", text: t, items: vec![], checks: vec![] },
+            academy::Block::Bullets(v) => BlockDto { kind: "bullets", text: String::new(), items: v, checks: vec![] },
+            academy::Block::Steps(v) => BlockDto { kind: "steps", text: String::new(), items: v, checks: vec![] },
+            academy::Block::Video(c) => BlockDto { kind: "video", text: c, items: vec![], checks: vec![] },
+            academy::Block::Checklist(v) => {
+                let checks = v
+                    .into_iter()
+                    .map(|i| {
+                        counter += 1;
+                        CheckDto { text: i.text, detail: i.detail, gear: i.gear, n: counter - 1 }
+                    })
+                    .collect();
+                BlockDto { kind: "checklist", text: String::new(), items: vec![], checks }
+            }
         })
         .collect();
     let quiz = l.quiz.into_iter().map(|q| QuestionDto { text: q.text, options: q.options, correct: q.correct, explain: q.explain }).collect();
-    Ok(LessonBodyDto { id: l.id, title: l.title, minutes: l.minutes, status: l.status, source: l.source, blocks, quiz })
+    Ok(LessonBodyDto { id: l.id, title: l.title, minutes: l.minutes, status: l.status, source: l.source, readiness: l.readiness, ticked, blocks, quiz })
+}
+
+/// Tick or untick one checklist item for a person.
+#[tauri::command]
+fn academy_check_set(lesson: String, item: usize, on: bool, person: Option<String>) -> Result<(), String> {
+    let known = academy::load_all(&academy_dirs()).courses.into_iter().flat_map(|c| c.modules).flat_map(|m| m.lessons).any(|l| l.id == lesson);
+    if !known {
+        return Err("There is no such lesson.".into());
+    }
+    academy::Checks::new(&root().join("user")).set(person.unwrap_or_default().trim(), &lesson, item, on)
 }
 
 /// Put the courses you added (`user/academy`) into one pack file to give to another household.
@@ -3111,6 +3158,7 @@ pub fn run() {
             academy_list,
             academy_problems,
             academy_lesson,
+            academy_check_set,
             academy_save,
             training_reports,
             stock_needs,

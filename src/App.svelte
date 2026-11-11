@@ -331,7 +331,7 @@
     <div class="warn libnote" role="status">{libNote} <button class="btn" onclick={() => (libNote = '')}>OK</button></div>
   {/if}
 
-  <main class:wide={group === 'Intel' || group === 'Calendar' || group === 'Ask'}>
+  <main class:wide={group === 'Intel' || group === 'Calendar' || group === 'Ask' || group === 'Academy'}>
     {#if group === 'Dashboard'}
       <Dashboard go={goTo} />
     {:else if group === 'Security'}
@@ -466,6 +466,7 @@
   main { flex: 1; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; max-width: 1040px; width: 100%; margin: 0 auto; }
   /* the offline browser gets the whole window, so pages have room */
   main.wide { max-width: none; padding: 14px 16px; }
+  main.wide:has(> .ac) { padding: 0; gap: 0; }
   footer { display: flex; flex-wrap: wrap; gap: 6px 22px; padding: 9px 24px; margin-top: auto; background: var(--panel2); border-top: 1px solid var(--line);
     font-family: var(--mono); font-size: 12px; color: var(--muted); }
   footer .right { margin-left: auto; }

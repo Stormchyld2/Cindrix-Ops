@@ -972,29 +972,34 @@ export async function drillSave(drill: string, seconds: number, done: number, to
 
 
 // ---------- academy (the text course) ----------
-export type AcademyLessonMeta = { id: string; title: string; minutes: number; status: string; source: string; questions: number; tries: number; best_score: number; total: number; last_date: string };
+export type AcademyLessonMeta = { id: string; title: string; minutes: number; status: string; source: string; questions: number; tries: number; best_score: number; total: number; last_date: string; readiness: number; checklist: number; checks_done: number; video: boolean };
 export type AcademyModule = { id: string; title: string; summary: string; course: string; course_title: string; course_summary: string; course_author: string; course_tier: number; lessons: AcademyLessonMeta[] };
 export type CourseProblem = { place: string; message: string };
-export type AcademyBlock = { kind: 'heading' | 'para' | 'note' | 'bullets' | 'steps' | 'image'; text: string; items: string[] };
+export type AcademyCheck = { text: string; detail: string; gear: boolean; n: number };
+export type AcademyBlock = { kind: 'heading' | 'para' | 'note' | 'bullets' | 'steps' | 'image' | 'video' | 'checklist'; text: string; items: string[]; checks?: AcademyCheck[] };
 export type AcademyQuestion = { text: string; options: string[]; correct: number; explain: string };
-export type AcademyLesson = { id: string; title: string; minutes: number; status: string; source: string; blocks: AcademyBlock[]; quiz: AcademyQuestion[] };
+export type AcademyLesson = { id: string; title: string; minutes: number; status: string; source: string; readiness: number; ticked: number[]; blocks: AcademyBlock[]; quiz: AcademyQuestion[] };
 
 const previewLesson: AcademyLesson = {
-  id: '01-first-72-hours/01-water-first', title: 'Water comes first', minutes: 6, status: 'draft', source: 'Preview sample',
+  id: '01-first-72-hours/01-water-first', title: 'Water comes first', minutes: 6, status: 'draft', source: 'Preview sample', readiness: 2, ticked: [],
   blocks: [
+    { kind: 'video', text: 'Water comes first', items: [] },
     { kind: 'para', text: 'A person can last about three days without water, but thinking and judgment fail much sooner.', items: [] },
     { kind: 'heading', text: 'What to do', items: [] },
     { kind: 'bullets', text: '', items: ['Fill clean containers before the supply stops', 'Know where your backup water is'] },
     { kind: 'note', text: 'Plan on about one gallon per person per day.', items: [] },
+    { kind: 'steps', text: '', items: ['**Fill first.** Fill containers the moment you hear the supply may stop.', '**Store smart.** Keep it cool, dark and closed.', '**Have a backup.** Know a second source and how to make it safe.'] },
+    { kind: 'checklist', text: '', items: [], checks: [{ text: 'Store water for every person', detail: 'About one gallon per person per day', gear: true, n: 0 }, { text: 'Write down your backup source', detail: 'A stream, a neighbor, a rain barrel', gear: false, n: 1 }] },
   ],
   quiz: [{ text: 'How long can a person last without water?', options: ['About three weeks', 'About three days'], correct: 1, explain: 'The rule of threes: 3 minutes without air, 3 hours without shelter in harsh weather, 3 days without water, 3 weeks without food.' }],
 };
 let memAcademy: Record<string, { tries: number; best: number; total: number }> = {};
+let memChecks: number[] = [];
 
 export async function academyList(person?: string): Promise<AcademyModule[]> {
   if (inTauri) return call<AcademyModule[]>('academy_list', { person: person ?? null });
   const r = memAcademy[previewLesson.id];
-  return [{ id: 'survival-basics:01-first-72-hours', title: 'The first 72 hours', summary: 'Water, shelter and a plan for the first three days.', course: 'survival-basics', course_title: 'Survival basics', course_summary: 'The core course.', course_author: '', course_tier: 3, lessons: [{ id: previewLesson.id, title: previewLesson.title, minutes: previewLesson.minutes, status: 'draft', source: previewLesson.source, questions: previewLesson.quiz.length, tries: r?.tries ?? 0, best_score: r?.best ?? 0, total: r?.total ?? 0, last_date: r ? 'today' : '' }] }];
+  return [{ id: 'survival-basics:01-first-72-hours', title: 'The first 72 hours', summary: 'Water, shelter and a plan for the first three days.', course: 'survival-basics', course_title: 'Survival basics', course_summary: 'The core course.', course_author: '', course_tier: 3, lessons: [{ id: previewLesson.id, title: previewLesson.title, minutes: previewLesson.minutes, status: 'draft', source: previewLesson.source, questions: previewLesson.quiz.length, tries: r?.tries ?? 0, best_score: r?.best ?? 0, total: r?.total ?? 0, last_date: r ? 'today' : '', readiness: 2, checklist: 2, checks_done: memChecks.length, video: true }] }];
 }
 export async function academyProblems(): Promise<CourseProblem[]> {
   if (inTauri) return call<CourseProblem[]>('academy_problems');
@@ -1010,9 +1015,14 @@ export async function academyPackInstall(): Promise<string[]> {
   if (inTauri) return call<string[]>('academy_pack_install');
   return ['No course packs found (preview).'];
 }
-export async function academyLesson(id: string): Promise<AcademyLesson> {
-  if (inTauri) return call<AcademyLesson>('academy_lesson', { id });
-  return previewLesson;
+export async function academyLesson(id: string, person?: string): Promise<AcademyLesson> {
+  if (inTauri) return call<AcademyLesson>('academy_lesson', { id, person: person ?? null });
+  return { ...previewLesson, ticked: [...memChecks] };
+}
+/** Tick or untick one checklist item in a lesson, for one person (or the household when no name). */
+export async function academyCheckSet(lesson: string, item: number, on: boolean, person?: string): Promise<void> {
+  if (inTauri) return call<void>('academy_check_set', { lesson, item, on, person: person ?? null });
+  memChecks = on ? [...new Set([...memChecks, item])] : memChecks.filter((x) => x !== item);
 }
 // ---------- plans (what comes after the first walkthrough) ----------
 export type PlanStep = { id: string; title: string; every_days: number | null; check: string; go: string; button: string; body: string[]; state: 'todo' | 'done' | 'due'; last_done: string; due_in: number | null };

@@ -40,6 +40,18 @@ pub enum Block {
     Note(String),
     /// A picture kept next to the lesson file: `![what it shows](name.png)` on a line of its own.
     Image { alt: String, file: String },
+    /// `- [ ] Backpack | 40 to 65 litres | gear`: things to tick off. The part after the first `|` is a
+    /// line of detail; a last part of `gear` adds a "Find in Gear" button.
+    Checklist(Vec<CheckItem>),
+    /// `[video] caption` on a line of its own: the Cindrix banner stands in until a video is added.
+    Video(String),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct CheckItem {
+    pub text: String,
+    pub detail: String,
+    pub gear: bool,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -59,6 +71,8 @@ pub struct Lesson {
     /// "draft" until someone qualified has reviewed the lesson
     pub status: String,
     pub source: String,
+    /// How many points of the readiness score ticking the whole checklist is worth (header `readiness:`).
+    pub readiness: u32,
     pub body: Vec<Block>,
     pub quiz: Vec<Question>,
 }
@@ -169,6 +183,19 @@ pub fn parse_blocks(text: &str) -> Vec<Block> {
         } else if let Some(h) = line.strip_prefix("## ") {
             flush(&mut para, &mut out);
             out.push(Block::Heading(h.trim().to_string()));
+        } else if let Some(c) = line.strip_prefix("- [ ] ").or_else(|| line.strip_prefix("- [] ")) {
+            flush(&mut para, &mut out);
+            let mut parts = c.split('|').map(|s| s.trim());
+            let item = CheckItem { text: parts.next().unwrap_or("").to_string(), detail: parts.next().unwrap_or("").to_string(), gear: parts.next().map(|g| g.eq_ignore_ascii_case("gear")).unwrap_or(false) };
+            if !item.text.is_empty() {
+                match out.last_mut() {
+                    Some(Block::Checklist(v)) => v.push(item),
+                    _ => out.push(Block::Checklist(vec![item])),
+                }
+            }
+        } else if let Some(v) = line.strip_prefix("[video]") {
+            flush(&mut para, &mut out);
+            out.push(Block::Video(v.trim().to_string()));
         } else if let Some(b) = line.strip_prefix("- ") {
             flush(&mut para, &mut out);
             match out.last_mut() {
@@ -270,6 +297,7 @@ pub fn parse_lesson(id: &str, text: &str) -> Result<Lesson, String> {
         minutes: get(&pairs, "minutes").parse().unwrap_or(0),
         status: if status.is_empty() { "draft".into() } else { status },
         source: get(&pairs, "source"),
+        readiness: get(&pairs, "readiness").parse().unwrap_or(0),
         body: blocks,
         quiz: parse_quiz(&quiz)?,
     })
@@ -296,6 +324,8 @@ fn lesson_text(l: &Lesson) -> String {
             Block::Heading(x) | Block::Para(x) | Block::Note(x) => t.push_str(x),
             Block::Bullets(v) | Block::Steps(v) => t.push_str(&v.join(". ")),
             Block::Image { alt, .. } => t.push_str(alt),
+            Block::Video(x) => t.push_str(x),
+            Block::Checklist(v) => t.push_str(&v.iter().map(|i| format!("{} {}", i.text, i.detail)).collect::<Vec<_>>().join(". ")),
         }
         t.push_str(". ");
     }
@@ -549,6 +579,69 @@ impl Log {
     }
 }
 
+/// Ticked checklist items, kept per person in `user/academy-checks.csv` (one row for each ticked item).
+pub struct Checks {
+    pub path: PathBuf,
+}
+
+const CHECKS_HEADER: &str = "person,lesson,item";
+
+impl Checks {
+    pub fn new(user_dir: &Path) -> Checks {
+        Checks { path: user_dir.join("academy-checks.csv") }
+    }
+
+    /// (person, lesson, item number) for every tick. A missing file is no ticks; a damaged one is an error and is never overwritten.
+    pub fn list(&self) -> Result<Vec<(String, String, usize)>, String> {
+        let text = match fs::read_to_string(&self.path) {
+            Ok(t) => t,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(vec![]),
+            Err(e) => return Err(e.to_string()),
+        };
+        let mut lines = text.lines();
+        match lines.next() {
+            Some(h) if h.trim() == CHECKS_HEADER => {}
+            None => return Ok(vec![]),
+            _ => return Err("academy-checks.csv has an unexpected header".into()),
+        }
+        let mut out = Vec::new();
+        for (i, l) in lines.enumerate() {
+            if l.trim().is_empty() {
+                continue;
+            }
+            let f = split_record(l);
+            if f.len() != 3 {
+                return Err(format!("academy-checks.csv line {} is damaged", i + 2));
+            }
+            let n = f[2].trim().parse::<usize>().map_err(|_| format!("academy-checks.csv line {}: not a number", i + 2))?;
+            out.push((f[0].clone(), f[1].clone(), n));
+        }
+        Ok(out)
+    }
+
+    /// Tick or untick one item. Ticking twice keeps one row.
+    pub fn set(&self, person: &str, lesson: &str, item: usize, on: bool) -> Result<(), String> {
+        let mut all = self.list()?;
+        all.retain(|(p, l, i)| !(p == person && l == lesson && *i == item));
+        if on {
+            all.push((person.to_string(), lesson.to_string(), item));
+        }
+        let mut csv = String::from(CHECKS_HEADER);
+        csv.push('\n');
+        for (p, l, i) in &all {
+            csv.push_str(&format!("{},{},{}\n", quote(p), quote(l), i));
+        }
+        fsio::write_atomic(&self.path, csv.as_bytes()).map_err(|e| e.to_string())
+    }
+}
+
+/// How many items in a lesson's checklists a person has ticked: (ticked, total).
+pub fn check_counts(lesson: &Lesson, ticks: &[(String, String, usize)], person: &str) -> (usize, usize) {
+    let total: usize = lesson.body.iter().map(|b| if let Block::Checklist(v) = b { v.len() } else { 0 }).sum();
+    let done = ticks.iter().filter(|(p, l, i)| p == person && *l == lesson.id && *i < total).count();
+    (done, total)
+}
+
 /// How far along someone is in one lesson: tries and best score.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Progress {
@@ -581,6 +674,42 @@ mod tests {
     use super::*;
 
     const LESSON: &str = "---\ntitle: Water first\nminutes: 8\nsource: FM 21-76\n---\nPeople last about three days without water.\nThis line continues the paragraph.\n\n## What to do\n- Find a source\n- Make it safe\n\n1. Collect\n2. Boil\n\n> A note\n> that goes on.\n\n## Check yourself\n? How long without water?\n- Three weeks\n+ About three days\n> Rule of threes.\n? Second question\n+ Yes\n- No\n";
+
+    #[test]
+    fn checklists_and_video_lines_become_blocks() {
+        let l = parse_lesson("m/l", "---\ntitle: Bag\nreadiness: 2\n---\n[video] Pack the bag\n\nIntro text.\n\n- [ ] Backpack | 40 to 65 litres | gear\n- [ ] Cash\n- A plain bullet\n").unwrap();
+        assert_eq!(l.readiness, 2);
+        assert_eq!(l.body[0], Block::Video("Pack the bag".into()));
+        match &l.body[2] {
+            Block::Checklist(v) => {
+                assert_eq!(v.len(), 2);
+                assert!(v[0].gear && v[0].detail == "40 to 65 litres");
+                assert!(!v[1].gear && v[1].detail.is_empty());
+            }
+            b => panic!("{:?}", b),
+        }
+        assert!(matches!(l.body[3], Block::Bullets(_)));
+    }
+
+    #[test]
+    fn ticks_are_kept_per_person_and_can_be_undone() {
+        let dir = std::env::temp_dir().join(format!("cx-checks-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        let c = Checks::new(&dir);
+        assert!(c.list().unwrap().is_empty());
+        c.set("Sam", "m/l", 0, true).unwrap();
+        c.set("Sam", "m/l", 0, true).unwrap();
+        c.set("Ana", "m/l", 1, true).unwrap();
+        assert_eq!(c.list().unwrap().len(), 2);
+        let l = parse_lesson("m/l", "---\ntitle: Bag\n---\n- [ ] A\n- [ ] B\n").unwrap();
+        assert_eq!(check_counts(&l, &c.list().unwrap(), "Sam"), (1, 2));
+        c.set("Sam", "m/l", 0, false).unwrap();
+        assert_eq!(check_counts(&l, &c.list().unwrap(), "Sam"), (0, 2));
+        fs::write(&c.path, "nonsense\n").unwrap();
+        assert!(c.list().is_err());
+        let _ = fs::remove_dir_all(&dir);
+    }
 
     #[test]
     fn a_lesson_splits_into_text_blocks_and_a_quiz() {
@@ -681,6 +810,8 @@ mod tests {
                         Block::Heading(t) | Block::Para(t) | Block::Note(t) => all.push_str(&format!("{}\n", t)),
                         Block::Bullets(v) | Block::Steps(v) => v.iter().for_each(|t| all.push_str(&format!("{}\n", t))),
                         Block::Image { alt, .. } => all.push_str(&format!("{}\n", alt)),
+                        Block::Video(t) => all.push_str(&format!("{}\n", t)),
+                        Block::Checklist(v) => v.iter().for_each(|i| all.push_str(&format!("{} {}\n", i.text, i.detail))),
                     }
                 }
                 for q in &l.quiz {
@@ -808,6 +939,10 @@ mod tests {
                             Block::Heading(t) | Block::Para(t) | Block::Note(t) => all.push_str(&format!("{}\n", t)),
                             Block::Bullets(v) | Block::Steps(v) => v.iter().for_each(|t| all.push_str(&format!("{}\n", t))),
                             Block::Image { alt, .. } => all.push_str(&format!("{}\n", alt)),
+                            Block::Video(t) => all.push_str(&format!("{}\n", t)),
+                            Block::Checklist(v) => v.iter().for_each(|i| all.push_str(&format!("{} {}\n", i.text, i.detail))),
+                        Block::Video(t) => all.push_str(&format!("{}\n", t)),
+                        Block::Checklist(v) => v.iter().for_each(|i| all.push_str(&format!("{} {}\n", i.text, i.detail))),
                         }
                     }
                     for q in &les.quiz {
