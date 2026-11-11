@@ -103,7 +103,6 @@
 <PageHeader eyebrow="FAMILY" title="Family" tagline="Names, conditions, medicines as your doctor wrote them, allergies and contacts. Saved on this drive only.">
   {#if unlocked}
     <button class="btn" onclick={addPerson}>Add a person</button>
-    <button class="btn primary" onclick={save}>Save to this drive</button>
   {/if}
 </PageHeader>
 {#if unlocked}
