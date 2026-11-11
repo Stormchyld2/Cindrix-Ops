@@ -1,7 +1,7 @@
 /* System fonts only: nothing is loaded from the internet. */
 :root {
   /* Cindrix house look (same family as AirLink): charcoal surfaces, one blue accent. */
-  --bg: #1f2226;
+  --bg: #141517;
   --panel: #262a2f;
   --panel2: #1a1d20;
   --line: #363b41;
@@ -34,8 +34,6 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; color: var(--text);
   background-color: var(--bg);
-  background-image: linear-gradient(#ffffff06 1px, transparent 1px), linear-gradient(90deg, #ffffff06 1px, transparent 1px);
-  background-size: 32px 32px;
   font: 14px/1.5 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif; }
 button { font: inherit; color: inherit; cursor: pointer; }
 a { color: var(--link); }

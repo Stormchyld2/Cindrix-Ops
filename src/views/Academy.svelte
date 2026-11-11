@@ -154,6 +154,23 @@
       error = String(e);
     }
   }
+  // the Checklists tab: one goal open with all its items, then the rest
+  let goal = $state<AcademyLesson | null>(null);
+  let goalTicked: number[] = $state([]);
+  const goalPick = $derived(checklistLessons.find((l) => l.checks_done > 0 && l.checks_done < l.checklist) ?? checklistLessons.find((l) => l.checks_done < l.checklist) ?? checklistLessons[0]);
+  const goalItems = $derived((goal?.blocks ?? []).flatMap((b) => (b.kind === 'checklist' ? (b.checks ?? []) : [])));
+  async function loadGoal(id?: string) {
+    const want = id ?? goalPick?.id;
+    if (!want) { goal = null; return; }
+    try { goal = await academyLesson(want, learner.name || undefined); goalTicked = [...goal.ticked]; } catch (e) { error = String(e); }
+  }
+  async function goalTick(n: number) {
+    if (!goal) return;
+    const on = !goalTicked.includes(n);
+    goalTicked = on ? [...goalTicked, n] : goalTicked.filter((x) => x !== n);
+    try { await academyCheckSet(goal.id, n, on, learner.name || undefined); await load(); } catch (e) { error = String(e); }
+  }
+  $effect(() => { if (tab === 'checklists' && loaded && (!goal || !checklistLessons.some((l) => l.id === goal!.id))) loadGoal(); });
   function close() { lesson = null; }
   function leaveCourse() { courseId = null; lesson = null; }
 
@@ -215,7 +232,6 @@
     <div class="player">
       <article class="lbody">
         {#if lesson.blocks[0]?.kind !== 'video'}<h1 class="ltitle">{lesson.title}</h1>{/if}
-        {#if lesson.status === 'draft'}<div class="notice">This lesson has not been reviewed by a qualified person yet. Check it against your own situation and training.</div>{/if}
         {#each lesson.blocks as b, bi}
           {#if b.kind === 'video'}
             <div class="video" role="img" aria-label="Video placeholder"><div class="play">▶</div></div>
@@ -246,7 +262,7 @@
               <ol>{#each b.items as it}<li>{#each parts(it) as x}{#if x.b}<b>{x.t}</b>{:else}{x.t}{/if}{/each}</li>{/each}</ol>
             {/if}
           {:else if b.kind === 'checklist'}
-            <div class="check">
+            <div class="cklist">
               <div class="chead">
                 <b>Checklist</b>
                 {#if lesson.readiness > 0}<span class="rd">+{lesson.readiness}% READINESS</span>{/if}
@@ -467,17 +483,43 @@
           </div>
         {/if}
       {:else}
-        <div class="muted small">Every lesson with a checklist. Tick items inside the lesson; each tick moves your readiness score.</div>
-        <div class="list">
-          {#each checklistLessons as l (l.id)}
-            <button class="it" onclick={() => open(l.id)} aria-label={l.title}>
-              <span class="num">{l.checks_done >= l.checklist ? '✓' : ''}</span>
-              <span class="grow"><b>{l.title}</b><span class="muted small block">{moduleOfLesson(l.id)?.title ?? ''}</span></span>
-              <span class="muted small">{l.checks_done} of {l.checklist}</span>
-              <span class="btn dark">Open</span>
-            </button>
-          {/each}
-          {#if checklistLessons.length === 0}<p class="muted" style="padding:16px">No checklists yet.</p>{/if}
+        <div class="goals">
+          <div>
+            <h2 class="tierhead">Goals</h2>
+            <div class="muted small">The checklist you are working on. Each tick moves your readiness score.</div>
+            {#if goal}
+              {@const gm = moduleOfLesson(goal.id)}
+              <div class="gcard">
+                <div class="row"><b class="lg">{goal.title}</b>{#if goal.readiness > 0}<span class="rd">+{goal.readiness}% READINESS</span>{/if}<span class="grow"></span><span class="muted small">{goalTicked.length} of {goalItems.length} done</span></div>
+                <div class="muted small">{goalItems.length} items · {courseOfLesson(goal.id)?.title ?? ''}{gm ? ' · ' + gm.title : ''}</div>
+                <div class="bar"><i style="width:{pct(goalTicked.length, goalItems.length)}%"></i></div>
+                {#each goalItems as c (c.n)}
+                  <div class="gi" class:on={goalTicked.includes(c.n)}>
+                    <input type="checkbox" checked={goalTicked.includes(c.n)} onchange={() => goalTick(c.n)} aria-label={c.text} />
+                    <span class="grow"><span class="ct">{c.text}</span>{#if c.detail}<span class="cd">{c.detail}</span>{/if}</span>
+                    <button class="shop" onclick={() => goalTick(c.n)}>{goalTicked.includes(c.n) ? 'Undo' : 'Complete'}</button>
+                  </div>
+                {/each}
+                <div class="row"><button class="btn dark" onclick={() => open(goal!.id)}>Open the lesson</button></div>
+              </div>
+            {/if}
+            {#if checklistLessons.some((l) => l.checks_done > 0 && l.checks_done < l.checklist && l.id !== goal?.id)}
+              <h2 class="tierhead">In progress</h2>
+              <div class="list">
+                {#each checklistLessons.filter((l) => l.checks_done > 0 && l.checks_done < l.checklist && l.id !== goal?.id) as l (l.id)}
+                  <div class="it"><button class="it" onclick={() => loadGoal(l.id)} aria-label={l.title}><span class="grow"><b>{l.title}</b><span class="muted small block">{moduleOfLesson(l.id)?.title ?? ''}</span></span><span class="muted small">{l.checks_done} of {l.checklist}</span></button></div>
+                {/each}
+              </div>
+            {/if}
+            <h2 class="tierhead">Ready to start</h2>
+            <div class="muted small">Short lessons that unlock new checklists.</div>
+            <div class="cards">
+              {#each checklistLessons.filter((l) => l.checks_done === 0 && l.id !== goal?.id).slice(0, 6) as l (l.id)}
+                <div class="card"><div class="cbody"><b>{l.title}</b><span class="muted small">Unlocks a {l.checklist}-item checklist in {moduleOfLesson(l.id)?.title ?? 'this course'}.</span><div class="row"><button class="btn" onclick={() => open(l.id)}>Start lesson</button></div></div></div>
+              {/each}
+            </div>
+            {#if checklistLessons.length === 0}<p class="muted" style="padding:16px">No checklists yet.</p>{/if}
+          </div>
         </div>
       {/if}
     </div>
@@ -562,11 +604,11 @@
   .ac .ls.on { border-color: var(--a-orange); background: #67b4ff1f; color: var(--a-text); }
   .ac .lt { font-weight: 600; }
   .ac .tickmark { color: var(--a-ok); }
-  .ac .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin: 10px 0 16px; }
+  .ac .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 10px 0 16px; }
   .ac .step { background: var(--a-panel); border: 1px solid var(--a-line); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
   .ac .step b { font-size: 15px; }
   .ac .step .n { width: 30px; height: 30px; border-radius: 50%; background: var(--a-orange); color: #07131d; font-weight: 800; display: grid; place-items: center; }
-  .ac .check { background: var(--a-panel); border: 1px solid var(--a-line); border-radius: 12px; margin: 16px 0; overflow: hidden; }
+  .ac .cklist { background: var(--a-panel); border: 1px solid var(--a-line); border-radius: 12px; margin: 16px 0; overflow: hidden; }
   .ac .chead { display: flex; gap: 10px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--a-line); }
   .ac .rd { background: #6fbf731f; color: var(--a-ok); font-size: 10px; font-weight: 800; letter-spacing: .06em; padding: 3px 8px; border-radius: 5px; }
   .ac .ci { display: flex; gap: 14px; padding: 12px 16px; border-bottom: 1px solid var(--a-line); cursor: pointer; align-items: flex-start; }
@@ -575,6 +617,12 @@
   .ac .ci .ct { display: block; }
   .ac .ci.on .ct { color: var(--a-muted); text-decoration: line-through; }
   .ac .ci .cd { display: block; font-size: 12px; color: var(--a-muted); }
+  .ac .goals { max-width: 760px; }
+  .ac .gcard { background: var(--a-panel); border: 1px solid var(--a-line); border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; margin: 12px 0 20px; }
+  .ac .gi { display: flex; gap: 14px; align-items: flex-start; padding: 10px 0; border-top: 1px solid var(--a-line); }
+  .ac .gi input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--a-orange); }
+  .ac .gi .ct { display: block; } .ac .gi .cd { display: block; font-size: 12px; color: var(--a-muted); }
+  .ac .gi.on .ct { color: var(--a-muted); text-decoration: line-through; }
   .ac .shop { background: var(--a-panel2); border: 1px solid var(--a-line); border-radius: 7px; padding: 4px 10px; font-size: 12px; font-weight: 600; align-self: center; color: var(--a-text); }
   .ac .note { padding: 10px 14px; border-left: 3px solid var(--a-orange); background: var(--a-panel); border-radius: 4px; }
   .ac .pic { margin: 12px 0; text-align: center; }
