@@ -320,6 +320,8 @@
         {/if}
       {/each}
     </nav>
+    <svg class="sideart" viewBox="0 0 230 90" aria-hidden="true"><path d="M0 90 L50 40 L80 62 L125 20 L180 66 L205 48 L230 70 L230 90Z" fill="#1a2738" /><path d="M0 90 L70 58 L115 76 L165 44 L230 80 L230 90Z" fill="#131c28" /><circle cx="170" cy="16" r="7" fill="#cfe6ff" opacity=".85" /></svg>
+    <div class="sidemotto">PREPARE • EQUIP • TRAIN • SUSTAIN</div>
   </aside>
   <div class="content">
 
@@ -439,13 +441,15 @@
   .libnote { margin: 8px 16px 0; display: flex; gap: 12px; align-items: center; justify-content: space-between; }
   .shell { overflow-x: clip; min-height: 100vh; display: grid; grid-template-columns: 230px minmax(0, 1fr); }
   .content { display: flex; flex-direction: column; min-width: 0; min-height: 100vh; }
-  aside { position: sticky; top: 0; height: 100vh; overflow-y: auto; background: #101113; border-right: 1px solid var(--line); padding: 14px 10px; z-index: 50; }
+  aside { position: sticky; top: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; background: linear-gradient(180deg, #12151a, #0d0f12); border-right: 1px solid var(--line); padding: 14px 10px; z-index: 50; }
   .logo { display: block; width: 130px; margin: 0 auto 12px; }
-  nav { display: flex; flex-direction: column; gap: 2px; }
-  .item > .top { display: flex; width: 100%; gap: 10px; align-items: center; padding: 9px 12px; border-radius: 8px; border: 0; background: transparent; color: var(--muted); font-size: 14px; text-align: left; }
+  nav { display: flex; flex-direction: column; gap: 3px; }
+  .sideart { display: block; width: calc(100% + 20px); margin: auto -10px 0; padding-top: 16px; flex: none; }
+  .sidemotto { margin: 0 -10px -14px; padding: 9px 6px; text-align: center; font-family: var(--mono); font-size: 9.5px; letter-spacing: .16em; color: var(--muted); background: #0a0b0d; border-top: 1px solid var(--line); flex: none; }
+  .item > .top { display: flex; width: 100%; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 8px; border: 0; border-left: 3px solid transparent; background: transparent; color: var(--muted); font-family: 'Barlow Condensed', 'Arial Narrow', var(--display); font-stretch: condensed; font-size: 16px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; text-align: left; }
   .item > .top:hover { color: var(--text); background: #ffffff08; }
   .dia { width: 8px; height: 8px; transform: rotate(45deg); background: var(--c, var(--muted)); flex: none; }
-  .item.on > .top { background: var(--blue-soft); color: var(--blue); font-weight: 600; }
+  .item.on > .top { background: linear-gradient(90deg, color-mix(in srgb, var(--c, var(--blue)) 22%, transparent), transparent); border-left-color: var(--c, var(--blue)); color: var(--text); box-shadow: 0 0 16px color-mix(in srgb, var(--c, var(--blue)) 18%, transparent); }
   .caret { margin-left: auto; font-size: 10px; opacity: .7; }
   .subs { margin: 2px 0 6px 18px; padding-left: 8px; border-left: 1px solid var(--line); display: flex; flex-direction: column; }
   .subs button { display: flex; justify-content: space-between; gap: 8px; padding: 6px 10px; border: 0; border-left: 2px solid transparent; background: transparent; color: var(--muted); font-size: 13px; text-align: left; border-radius: 0 6px 6px 0; }
