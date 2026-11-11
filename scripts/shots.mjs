@@ -52,8 +52,10 @@ async function shoot(page, name) {
 async function nav(page, top, item) {
   const burger = page.getByRole('button', { name: 'Menu', exact: true });
   if (await burger.isVisible() && (await burger.getAttribute('aria-expanded')) !== 'true') await burger.click();
-  await page.getByRole('button', { name: top, exact: true }).click();
-  if (item) await page.getByRole('menuitem', { name: item, exact: true }).click();
+  const entry = item ? page.getByRole('menuitem', { name: item, exact: true }) : null;
+  // a section that is already folded out stays out: clicking its name again would close it
+  if (!entry || !(await entry.isVisible())) await page.getByRole('button', { name: top, exact: true }).click();
+  if (entry) await entry.click();
 }
 
 for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone', { width: 390, height: 800 }]]) {
