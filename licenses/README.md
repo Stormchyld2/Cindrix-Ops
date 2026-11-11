@@ -94,4 +94,4 @@ credited to Brent Weir. Nothing from the originals' videos, images or PDF templa
 
 ## Basic Preparedness, first section (rewritten 2026-11-10)
 
-The three lessons in `content/academy/basic-preparedness/01-intro-your-3-day-go-bag` were rewritten from public FEMA, Ready.gov, American Red Cross, CDC and NOAA guidance as original CindrixOps text. The rest of the courses supplied by the owner are being rewritten the same way; until each is, its text is not cleared for sale or sharing.
+All lessons of `content/academy/basic-preparedness` (modules 1 to 7; the review quizzes keep their questions) were rewritten on 2026-11-11 from public FEMA, Ready.gov, American Red Cross, CDC, EPA, NOAA, USDA and NFPA guidance as original CindrixOps text. The other courses supplied by the owner are being rewritten the same way; until each is, its text is not cleared for sale or sharing.
