@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PageHeader from '../lib/PageHeader.svelte';
   // Family pictures: a shared album that other devices on the hotspot can look at, and each person's own album (this computer only).
   import { onMount, onDestroy } from 'svelte';
   import { photosList, photoRead, photoAdd, photoDelete, whoami, inShare, isLocked, type Photo } from '../lib/api';
@@ -80,8 +81,7 @@
 >
   <div class="top">
     <div>
-      <h1>Photos</h1>
-      <p class="sub">{inShare ? (me ? `Joined as ${me}. You can add pictures to the shared album or your own.` : 'The shared family album.') : 'The shared album can be seen by other devices on your hotspot. Each person’s own album stays on this computer.'}</p>
+      <PageHeader eyebrow="CINDRIX OPS" title="Photos" tagline={inShare ? (me ? `Joined as ${me}. You can add pictures to the shared album or your own.` : 'The shared family album.') : 'The shared album can be seen by other devices on your hotspot. Each person’s own album stays on this computer.'} />
     </div>
     {#if canWrite}
       <div class="row">

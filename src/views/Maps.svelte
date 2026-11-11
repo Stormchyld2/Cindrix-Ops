@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PageHeader from '../lib/PageHeader.svelte';
   import { onMount, onDestroy, untrack } from 'svelte';
   import { toDms, toMgrs } from '../lib/coords';
   import { mapsList, mapLoad, mapSave, mapDelete, mapExportGpx, mapSavePicture, routeStats, mapPacks, tileUrl, placeSearch, profileLoad, type MyPlace, phoneEstimate, phoneExport, phoneDevices, phoneSend, pickFolder, type Device, directions as askDirections, type PhoneKind, type Directions, type DirRoute, type PlaceHit, type MapMeta, type LatLon, type RouteStats, type Pack } from '../lib/api';
@@ -1499,8 +1500,7 @@
 <svelte:window onkeydown={onKey} onclick={(e) => { if (!(e.target as HTMLElement).closest?.('.menuwrap')) menuFor = null; }} />
 
 <section>
-  <h1>Maps</h1>
-  <p class="sub">Plan with your own points: places to meet, routes between them, and areas to avoid. Save the plan, print it, and export the route for a phone map app.</p>
+  <PageHeader eyebrow="CINDRIX OPS" title="Maps" tagline="Plan with your own points: places to meet, routes between them, and areas to avoid. Save the plan, print it, and export the route for a phone map app." />
 </section>
 
 {#if street}

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PageHeader from '../lib/PageHeader.svelte';
   import { onMount, onDestroy } from 'svelte';
   import {
     modelStatus, listModels, selectModel, libraryStatus, sourcesList, pickFolder,
@@ -165,8 +166,7 @@
 
 <section class="wrap">
   <div>
-    <h1>Settings</h1>
-    <p class="sub">Change how the program looks and behaves. Changes apply straight away and are kept on the drive, so they travel with it.</p>
+    <PageHeader eyebrow="CINDRIX OPS" title="Settings" tagline="Change how the program looks and behaves. Changes apply straight away and are kept on the drive, so they travel with it." />
   </div>
 
   <div class="layout">

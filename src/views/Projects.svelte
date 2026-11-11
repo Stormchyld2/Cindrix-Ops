@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PageHeader from '../lib/PageHeader.svelte';
   // Projects: a named piece of work (Winter prep, The garden, Move to the cabin). It gathers its own tasks, events and
   // saved Ask chats, and links to the plans, items and guides it is about. Notes live in user/projects.txt.
   import { onMount } from 'svelte';
@@ -116,8 +117,7 @@
 </script>
 
 <section>
-  <h1>Projects</h1>
-  <p class="sub">A project gathers everything about one piece of work: its tasks, its dates, the Ask chats you had about it, and the plans, items and guides it depends on.</p>
+  <PageHeader eyebrow="CINDRIX OPS" title="Projects" tagline="A project gathers everything about one piece of work: its tasks, its dates, the Ask chats you had about it, and the plans, items and guides it depends on." />
   {#if note}<p class="notice" role="status">{note}</p>{/if}
   <div class="wrap">
     <nav class="panel list" aria-label="Projects">

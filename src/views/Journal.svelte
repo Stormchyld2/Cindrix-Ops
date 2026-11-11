@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PageHeader from '../lib/PageHeader.svelte';
   // A private daily journal, one text file per day in the person's own folder (user/people/<name>/journal).
   import { onMount } from 'svelte';
   import { journalList, journalSave, isLocked, type JournalEntry } from '../lib/api';
@@ -54,8 +55,7 @@
 </script>
 
 <section>
-  <h1>Journal</h1>
-  <p class="sub">A place to write down what happened each day. It helps to keep track, and it leaves a record. Other devices on your hotspot can never see it. Without a passcode, anyone using this computer can open the folder. With one, only you can read it.</p>
+  <PageHeader eyebrow="CINDRIX OPS" title="Journal" tagline="A place to write down what happened each day. It helps to keep track, and it leaves a record. Other devices on your hotspot can never see it. Without a passcode, anyone using this computer can open the folder. With one, only you can read it." />
   <div class="row"><PersonPick onchange={load} /></div>
   <PrivateLock person={who.name} needsUnlock={locked} onchange={load} />
   {#if note}<p class="notice" role="status">{note}</p>{/if}

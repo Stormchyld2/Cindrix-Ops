@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PageHeader from '../lib/PageHeader.svelte';
   import { onMount } from 'svelte';
   import { shelfList, shelfAdd, shelfUpdate, shelfRemove, shelfScanDrive, type Book } from '../lib/api';
   import Reader from './Reader.svelte';
@@ -141,8 +142,7 @@
   >
     <div class="top">
       <div>
-        <h1>{corner ? 'Reading Corner' : 'Shelf'}</h1>
-        <p class="sub">{corner ? 'Books to enjoy, kept on this drive: stories, adventures and something to read when you need a break. Open one to read it.' : 'Real books and manuals, kept on this drive. Open one to read it, search inside it, or ask the assistant about it.'}</p>
+        <PageHeader eyebrow="CINDRIX OPS" title={corner ? 'Reading Corner' : 'Shelf'} tagline={corner ? 'Books to enjoy, kept on this drive: stories, adventures and something to read when you need a break. Open one to read it.' : 'Real books and manuals, kept on this drive. Open one to read it, search inside it, or ask the assistant about it.'} />
       </div>
       <div class="row">
         <input bind:this={fileInput} id="add-book" class="sr" type="file" accept=".pdf,.md,.txt,application/pdf" multiple onchange={(e) => addFiles(e.currentTarget.files)} />

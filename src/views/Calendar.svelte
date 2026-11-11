@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PageHeader from '../lib/PageHeader.svelte';
   // The calendar, laid out like the calendars people already know: a big month (or week) with each day's things written
   // in it. It shows your own events, birthdays from the Family page, the tasks that fall due, things in the Inventory
   // that expire, plan checks, planting times from the Seed vault, and the usual frost days, all on the day they fall.
@@ -119,8 +120,7 @@
 </script>
 
 <section>
-  <h1>Calendar</h1>
-  <p class="sub">Your events, birthdays, tasks that fall due, things that expire, plan checks, planting times and the usual frost days, all on their days. Click a day to see it, double-click a day to add an event.</p>
+  <PageHeader eyebrow="CINDRIX OPS" title="Calendar" tagline="Your events, birthdays, tasks that fall due, things that expire, plan checks, planting times and the usual frost days, all on their days. Click a day to see it, double-click a day to add an event." />
   {#if note}<p class="notice" role="status">{note}</p>{/if}
 
   <div class="wrap">

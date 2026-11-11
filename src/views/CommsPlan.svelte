@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PageHeader from '../lib/PageHeader.svelte';
   // The family's radio and phone plan: free text that starts from a full template, kept in the person's own folder.
   import { onMount } from 'svelte';
   import { commsPlanLoad, commsPlanSave, commsPlanAddMissing, isLocked, paceLoad, type Pace } from '../lib/api';
@@ -47,8 +48,7 @@
 </script>
 
 <section>
-  <h1>Comms plan</h1>
-  <p class="sub">A complete plan for when phones and the internet are down: who does what, the order of ways to reach each other (PACE), channels, check-in times, meeting places, what to say, and what to do when the radios fail. Fill in every blank, save it, and print a copy for everyone. Other devices on your hotspot cannot see it, and you can add a passcode so only you can read it. For the rules and the words to use, see Radio reference in the Comms menu.</p>
+  <PageHeader eyebrow="CINDRIX OPS" title="Comms plan" tagline="A complete plan for when phones and the internet are down: who does what, the order of ways to reach each other (PACE), channels, check-in times, meeting places, what to say, and what to do when the radios fail. Fill in every blank, save it, and print a copy for everyone. Other devices on your hotspot cannot see it, and you can add a passcode so only you can read it. For the rules and the words to use, see Radio reference in the Comms menu." />
   {#if pace}
     <div class="panel pace">
       <div class="row head">

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PageHeader from '../lib/PageHeader.svelte';
   import { onMount, onDestroy, untrack } from 'svelte';
   import {
     zimBooks, zimFrame, zimOrigin, zimSearchAll, zimBookmarksLoad, zimBookmarksSave, libraryStatus,
@@ -436,8 +437,7 @@
       </div>
     {:else}
       <div class="scroll">
-        <h1>Intel</h1>
-        <p class="sub">The offline internet. Everything here is stored on this drive, so it works with no signal. Open an archive below, or search all of them at once.</p>
+        <PageHeader eyebrow="CINDRIX OPS" title="Intel" tagline="The offline internet. Everything here is stored on this drive, so it works with no signal. Open an archive below, or search all of them at once." />
         {#if books.length === 0}
           <div class="empty">
             <strong>No archives on the drive yet.</strong>

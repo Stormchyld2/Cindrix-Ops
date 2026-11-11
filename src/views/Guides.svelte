@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PageHeader from '../lib/PageHeader.svelte';
   // Plain pages in a themed folder: Agro (crops, planting, food, livestock, soil and water) and the radio reference.
   // They are read like emergency cards; the person can add their own in user/guides/<section>.
   import { guidesList, type Card } from '../lib/api';
@@ -24,8 +25,7 @@
 </script>
 
 <section>
-  <h1>{title}</h1>
-  <p class="sub">{intro}</p>
+  <PageHeader eyebrow="CINDRIX OPS" title={title} tagline={intro} />
   {#if error}<p class="warn" role="alert">{error}</p>{/if}
   {#if !open}
     {#if pages.length > 4}

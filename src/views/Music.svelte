@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PageHeader from '../lib/PageHeader.svelte';
   import { onMount, onDestroy } from 'svelte';
   import {
     musicStatus, musicScan, musicQuery, musicFacets, musicPlaylists, musicPlaylistsAll, musicPlaylistLoad, musicPlaylistSave, musicPlaylistDelete, musicClearCache, musicResolve,
@@ -276,8 +277,7 @@
 </script>
 
 <div>
-  <h1>Music</h1>
-  <p class="sub">Your own music, played from this drive. MP3, WAV, FLAC, OGG, Opus, M4A and AAC play straight from the file. WMA and a few others are changed into a playable form while they play; that copy is thrown away when the next song starts, so nothing piles up on the drive.</p>
+  <PageHeader eyebrow="CINDRIX OPS" title="Music" tagline="Your own music, played from this drive. MP3, WAV, FLAC, OGG, Opus, M4A and AAC play straight from the file. WMA and a few others are changed into a playable form while they play; that copy is thrown away when the next song starts, so nothing piles up on the drive." />
 </div>
 
 {#if error}<div class="warn" role="alert">{error}</div>{/if}

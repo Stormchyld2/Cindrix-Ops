@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PageHeader from '../lib/PageHeader.svelte';
   // Drug labels: the FDA's own label text, to read. Nothing here is advice and the assistant does not quote doses.
   import { onMount, onDestroy } from 'svelte';
   import { drugLabelsStatus, drugLabelsPrepare, drugLabelsSearch, drugLabelsGet, type DrugStatus, type DrugSummary, type DrugLabel } from '../lib/api';
@@ -38,8 +39,7 @@
 </script>
 
 <section>
-  <h1>Drug labels</h1>
-  <p class="sub">The label text for medicines, exactly as the U.S. FDA published it. Look up a brand or common name, or what it is for (for example “heartburn”).</p>
+  <PageHeader eyebrow="CINDRIX OPS" title="Drug labels" tagline="The label text for medicines, exactly as the U.S. FDA published it. Look up a brand or common name, or what it is for (for example “heartburn”)." />
   <p class="warn note"><b>For reading only.</b> This is not advice for you or anyone else, and labels can be out of date. Do not start, stop or change a medicine because of this page: follow your doctor’s written plan or ask a pharmacist. In an emergency, call 911.</p>
   {#if error}<p class="warn" role="alert">{error}</p>{/if}
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PageHeader from '../lib/PageHeader.svelte';
   import { onMount, onDestroy } from 'svelte';
   import {
     libraryStatus, libraryShare, driveRescan, crawlStart, crawlStatus, crawlCancel, archiveAdd, archiveCopyStatus, archiveRemove,
@@ -101,8 +102,7 @@
 <section class="wrap">
   <div class="top">
     <div>
-      <h1>Archives</h1>
-      <p class="sub">The big offline library: Wikipedia, medical guides, books and websites you saved, stored on this drive as .zim files. Read them in Intel, no internet needed. New archives you copy into the library folder are picked up by themselves.</p>
+      <PageHeader eyebrow="CINDRIX OPS" title="Archives" tagline="The big offline library: Wikipedia, medical guides, books and websites you saved, stored on this drive as .zim files. Read them in Intel, no internet needed. New archives you copy into the library folder are picked up by themselves." />
     </div>
     <button class="btn primary" onclick={openIntel}>Read them in Intel →</button>
   </div>
