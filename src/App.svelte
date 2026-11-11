@@ -307,11 +307,11 @@
               <span class="dia"></span>{t.id}{#if t.entries}<span class="caret">{open ? '▾' : '▸'}</span>{/if}
             </button>
             {#if t.entries && open}
-              <div class="subs">
+              <div class="subs" role="menu">
                 {#each t.entries as e}
                   {#if e.rule}{#if e.show !== false}<hr />{/if}
                   {:else if e.show !== false}
-                    <button class:on={entryOn(t, e)} aria-label={e.label} onclick={(ev) => { ev.stopPropagation(); pick(e.tab); }}>{e.label}{#if e.note}<small>{e.note}</small>{/if}</button>
+                    <button role="menuitem" class:on={entryOn(t, e)} aria-label={e.label} onclick={(ev) => { ev.stopPropagation(); pick(e.tab); }}>{e.label}{#if e.note}<small>{e.note}</small>{/if}</button>
                   {/if}
                 {/each}
               </div>
