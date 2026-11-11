@@ -200,6 +200,9 @@
   let settingsFromComms = $state(false);
   let openMenu: string | null = $state(null);
   let barOpen = $state(false);
+  // sections of the left nav that are folded out; the one holding the current screen opens by itself
+  let folded: string[] = $state([]);
+  function toggleSection(id: string) { folded = folded.includes(id) ? folded.filter((x) => x !== id) : [...folded, id]; }
   type Entry = { label: string; tab: string; note?: string; show?: boolean; rule?: boolean };
   type Top = { id: string; cat: string; tab?: string; entries?: Entry[]; show: boolean };
   const tops: Top[] = $derived.by(() => {
@@ -266,40 +269,49 @@
     goTo(tab);
   }
   function topClick(t: Top) {
-    if (t.entries) openMenu = openMenu === t.id ? null : t.id;
+    if (t.entries) toggleSection(t.id);
     else if (t.tab) pick(t.tab);
+  }
+  /** Is this entry the screen on show? Used to light it in the left nav. */
+  function entryOn(top: Top, e: Entry): boolean {
+    if (activeTop !== top.id) return false;
+    if (e.tab === group) return true;
+    if (e.tab === plan && group === 'Plan') return true;
+    if (e.tab === 'guide:' + guideSection && group === 'Guides') return true;
+    if (e.tab === 'settings:Sharing') return group === 'Settings' && settingsFromComms;
+    if (e.tab.startsWith('settings:') && group === 'Settings') return !settingsFromComms;
+    if (e.tab === 'training') return false;
+    if (group === 'Library' && e.tab === lib) return true;
+    return false;
   }
 </script>
 
-<svelte:window onclick={() => (openMenu = null)} onkeydown={(e) => { if (e.key === 'Escape') openMenu = null; }} />
+<svelte:window onkeydown={(e) => { if (e.key === 'Escape') barOpen = false; }} />
 
 {#if showSplash}<Splash ready={polled && settings.loaded} />{/if}
 
 <div class="shell">
-  <header class="no-print">
-    <div class="brand">
-      <svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true">
-        <defs><linearGradient id="fl" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff5a1f" /><stop offset="1" stop-color="#ffc247" /></linearGradient></defs>
-        <path d="M12 2.2c.9 3.3 4.7 5.3 4.7 9.9a4.7 4.7 0 0 1-9.4 0c0-2.1 1-3.4 2.1-4.5.2 1.5.9 2.2 1.7 2.4-.4-2.8-.2-5.4.9-7.8z" fill="url(#fl)" />
-        <path d="M12 12.6c.5 1.2 1.9 1.9 1.9 3.5a1.9 1.9 0 0 1-3.8 0c0-1 .6-1.6 1.2-2.2.4.7.7.8.7-1.3z" fill="#ffe3a0" />
-      </svg>
-      <div>
-        <div class="name">CINDRIX <span>OPS</span></div>
-        <div class="tag">Carry the library. Keep the fire.</div>
-      </div>
-    </div>
+  <div class="topbar no-print">
     <button class="burger" aria-label="Menu" aria-expanded={barOpen} onclick={(e) => { e.stopPropagation(); barOpen = !barOpen; }}>&#9776;</button>
-    <nav aria-label="Sections" class:show={barOpen}>
+    <img src="/cindrix-logo-full.png" alt="CindrixOps" />
+  </div>
+  {#if barOpen}<button class="scrim no-print" aria-label="Close the menu" onclick={() => (barOpen = false)}></button>{/if}
+  <aside class="no-print" class:show={barOpen}>
+    <img class="logo" src="/cindrix-logo-full.png" alt="CindrixOps: Survival, Preparedness, Self-Reliance" />
+    <nav aria-label="Sections">
       {#each tops as t (t.id)}
         {#if t.show}
-          <div class="item" class:on={activeTop === t.id} class:open={openMenu === t.id} style={`--c: var(--cat-${t.cat})`}>
-            <button aria-label={t.id} onclick={(e) => { e.stopPropagation(); topClick(t); }} aria-current={activeTop === t.id ? 'page' : undefined} aria-haspopup={t.entries ? 'menu' : undefined} aria-expanded={t.entries ? openMenu === t.id : undefined}>{t.id}{#if t.entries}<span class="caret">&#9660;</span>{/if}</button>
-            {#if t.entries && openMenu === t.id}
-              <div class="menu" role="menu">
+          {@const open = !!t.entries && (folded.includes(t.id) || activeTop === t.id)}
+          <div class="item" class:on={activeTop === t.id} style={`--c: var(--cat-${t.cat})`}>
+            <button class="top" aria-label={t.id} onclick={(e) => { e.stopPropagation(); topClick(t); }} aria-current={activeTop === t.id && !t.entries ? 'page' : undefined} aria-expanded={t.entries ? open : undefined}>
+              <span class="dia"></span>{t.id}{#if t.entries}<span class="caret">{open ? '▾' : '▸'}</span>{/if}
+            </button>
+            {#if t.entries && open}
+              <div class="subs">
                 {#each t.entries as e}
                   {#if e.rule}{#if e.show !== false}<hr />{/if}
                   {:else if e.show !== false}
-                    <button role="menuitem" aria-label={e.label} onclick={(ev) => { ev.stopPropagation(); pick(e.tab); }}>{e.label}{#if e.note}<small>{e.note}</small>{/if}</button>
+                    <button class:on={entryOn(t, e)} aria-label={e.label} onclick={(ev) => { ev.stopPropagation(); pick(e.tab); }}>{e.label}{#if e.note}<small>{e.note}</small>{/if}</button>
                   {/if}
                 {/each}
               </div>
@@ -308,7 +320,8 @@
         {/if}
       {/each}
     </nav>
-  </header>
+  </aside>
+  <div class="content">
 
   {#if !inShare && product?.security}
     <Alerts go={goTo} />
@@ -413,6 +426,7 @@
     <span class="right">{product ? product.name + ' · ' : ''}Sample content</span>
   </footer>
   {/if}
+  </div>
 </div>
 
 <style>
@@ -423,39 +437,36 @@
   .dlg .fine { font-size: 12px; }
   .dlg .end { justify-content: flex-end; }
   .libnote { margin: 8px 16px 0; display: flex; gap: 12px; align-items: center; justify-content: space-between; }
-  .shell { min-height: 100vh; display: flex; flex-direction: column; }
-  /* the top bar stays put while the page scrolls under it */
-  header { position: sticky; top: 0; z-index: 50; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px 24px;
-    padding: 12px 24px; background: var(--panel2); border-bottom: 1px solid var(--line); border-top: 3px solid var(--accent); }
-  .brand { display: flex; gap: 12px; align-items: center; }
-  .name { font-family: var(--display); font-weight: 700; font-size: 24px; letter-spacing: .12em; line-height: 1; }
-  .name span { color: var(--brand); }
-  .name small { font-size: 12px; letter-spacing: .2em; color: var(--muted); }
-  .tag { font-family: var(--mono); text-transform: uppercase; letter-spacing: .14em; font-size: 10px; color: var(--muted); margin-top: 4px; }
-  nav { display: flex; flex-wrap: wrap; gap: 4px; }
-  .item { position: relative; }
-  .item > button { display: flex; gap: 6px; align-items: center; padding: 8px 10px; border-radius: 6px; border: 1px solid transparent; background: transparent; color: #a9b2bc; font-family: var(--mono); font-size: 11.5px; text-transform: uppercase; letter-spacing: .1em; font-weight: 500; }
-  .item > button::before { content: '\25C6'; font-size: 9px; color: var(--c, var(--muted)); }
-  .item > button:hover { color: var(--text); }
-  .item.on > button { background: var(--blue-soft); color: var(--blue); border-color: var(--blue-line); font-weight: 600; }
-  .item.on > button, .item.open > button { box-shadow: inset 0 -2px 0 var(--c, var(--blue)); }
-  .caret { font-size: 9px; opacity: .7; }
-  .menu { position: absolute; top: calc(100% + 6px); left: 0; min-width: 210px; z-index: 60; background: #24282c; border: 1px solid var(--line); border-top: 2px solid var(--c, var(--blue)); border-radius: 0 0 6px 6px; padding: 6px; box-shadow: 0 10px 24px #000a; }
-  .menu button { display: flex; width: 100%; justify-content: space-between; gap: 14px; padding: 9px 10px; border: 0; border-radius: 4px; background: transparent; color: var(--text); font-family: var(--display); font-size: 15px; text-align: left; }
-  .menu button:hover { background: var(--blue-soft); }
-  .menu small { color: var(--muted); font-family: var(--mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; align-self: center; }
-  .menu hr { border: 0; border-top: 1px solid var(--line); margin: 6px 0; }
-  .burger { display: none; margin-left: auto; padding: 7px 11px; font-size: 16px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--text); }
+  .shell { min-height: 100vh; display: grid; grid-template-columns: 230px minmax(0, 1fr); }
+  .content { display: flex; flex-direction: column; min-width: 0; min-height: 100vh; }
+  aside { position: sticky; top: 0; height: 100vh; overflow-y: auto; background: #101113; border-right: 1px solid var(--line); padding: 14px 10px; z-index: 50; }
+  .logo { display: block; width: 130px; margin: 0 auto 12px; }
+  nav { display: flex; flex-direction: column; gap: 2px; }
+  .item > .top { display: flex; width: 100%; gap: 10px; align-items: center; padding: 9px 12px; border-radius: 8px; border: 0; background: transparent; color: var(--muted); font-size: 14px; text-align: left; }
+  .item > .top:hover { color: var(--text); background: #ffffff08; }
+  .dia { width: 8px; height: 8px; transform: rotate(45deg); background: var(--c, var(--muted)); flex: none; }
+  .item.on > .top { background: #ff9a1f1f; color: #ff9a1f; font-weight: 600; }
+  .caret { margin-left: auto; font-size: 10px; opacity: .7; }
+  .subs { margin: 2px 0 6px 18px; padding-left: 8px; border-left: 1px solid var(--line); display: flex; flex-direction: column; }
+  .subs button { display: flex; justify-content: space-between; gap: 8px; padding: 6px 10px; border: 0; border-left: 2px solid transparent; background: transparent; color: var(--muted); font-size: 13px; text-align: left; border-radius: 0 6px 6px 0; }
+  .subs button:hover { color: var(--text); background: #ffffff08; }
+  .subs button.on { color: #ff9a1f; border-left-color: #ff9a1f; }
+  .subs small { color: #6d727a; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; align-self: center; }
+  .subs hr { border: 0; border-top: 1px solid var(--line); margin: 6px 0; }
+  .topbar, .scrim { display: none; }
   @media (max-width: 900px) {
-    .burger { display: block; }
-    nav { display: none; flex: 1 1 100%; flex-direction: column; }
-    nav.show { display: flex; }
-    .menu { position: static; box-shadow: none; margin: 4px 0 4px 12px; }
+    .shell { display: flex; flex-direction: column; }
+    .topbar { display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 40; padding: 10px 14px; background: #101113; border-bottom: 1px solid var(--line); }
+    .topbar img { height: 34px; }
+    .burger { width: 40px; height: 40px; font-size: 22px; border: 1px solid var(--line); border-radius: 10px; background: transparent; color: var(--text); }
+    aside { position: fixed; left: 0; top: 0; bottom: 0; width: min(300px, 82vw); height: auto; transform: translateX(-102%); transition: transform .18s ease; box-shadow: 10px 0 30px #000c; }
+    aside.show { transform: none; }
+    .scrim { display: block; position: fixed; inset: 0; z-index: 45; background: #0009; border: 0; }
   }
   main { flex: 1; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; max-width: 1040px; width: 100%; margin: 0 auto; }
   /* the offline browser gets the whole window, so pages have room */
   main.wide { max-width: none; padding: 14px 16px; }
-  footer { display: flex; flex-wrap: wrap; gap: 6px 22px; padding: 9px 24px; background: var(--panel2); border-top: 1px solid var(--line);
+  footer { display: flex; flex-wrap: wrap; gap: 6px 22px; padding: 9px 24px; margin-top: auto; background: var(--panel2); border-top: 1px solid var(--line);
     font-family: var(--mono); font-size: 12px; color: var(--muted); }
   footer .right { margin-left: auto; }
   .dot { color: var(--ok); }
