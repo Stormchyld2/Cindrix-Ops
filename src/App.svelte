@@ -445,12 +445,12 @@
   .item > .top { display: flex; width: 100%; gap: 10px; align-items: center; padding: 9px 12px; border-radius: 8px; border: 0; background: transparent; color: var(--muted); font-size: 14px; text-align: left; }
   .item > .top:hover { color: var(--text); background: #ffffff08; }
   .dia { width: 8px; height: 8px; transform: rotate(45deg); background: var(--c, var(--muted)); flex: none; }
-  .item.on > .top { background: #ff9a1f1f; color: #ff9a1f; font-weight: 600; }
+  .item.on > .top { background: var(--blue-soft); color: var(--blue); font-weight: 600; }
   .caret { margin-left: auto; font-size: 10px; opacity: .7; }
   .subs { margin: 2px 0 6px 18px; padding-left: 8px; border-left: 1px solid var(--line); display: flex; flex-direction: column; }
   .subs button { display: flex; justify-content: space-between; gap: 8px; padding: 6px 10px; border: 0; border-left: 2px solid transparent; background: transparent; color: var(--muted); font-size: 13px; text-align: left; border-radius: 0 6px 6px 0; }
   .subs button:hover { color: var(--text); background: #ffffff08; }
-  .subs button.on { color: #ff9a1f; border-left-color: #ff9a1f; }
+  .subs button.on { color: var(--blue); border-left-color: var(--blue); }
   .subs small { color: #6d727a; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; align-self: center; }
   .subs hr { border: 0; border-top: 1px solid var(--line); margin: 6px 0; }
   .topbar, .scrim { display: none; }
