@@ -94,3 +94,15 @@ A course pack is one text file (`.ccourse`) holding a course's folders, lesson f
   `training::badge_of`) and the person page has a per-tier progress panel. A tier with no courses is never reached,
   and a Tier 2 sign-off without Tier 3 earns nothing.
 - Lessons marked `status: complete` are fully written; `reviewed` is kept for lessons a qualified person has checked.
+
+## Checklists, step cards and the video placeholder (2026-11-10)
+
+New lines a lesson may use, all optional, so older lessons still load:
+
+- `- [ ] Backpack | 40 to 65 litres | gear` is a checklist item. The part after the first `|` is a line of detail; a last part of `gear` adds a "Find in Inventory" button. Items in a row make one checklist. A lesson header may add `readiness: 2`, the points ticking the whole checklist is worth.
+- `[video] caption` on a line of its own shows the Cindrix banner as a video placeholder.
+- A numbered list whose items all start with `**Title.**` shows as step cards.
+
+Ticks are kept for each person in `user/academy-checks.csv` (`person,lesson,item`), written with `write_atomic`; a damaged file is an error and is never overwritten. `academy::check_counts` gives (ticked, total). The readiness score is the points of each lesson, scaled by how much of its checklist is ticked.
+
+The screen (`src/views/Academy.svelte`) follows `mockups/Academy.html`: Skills (guided Tier 3 to Tier 1 path, search, tier groups, nothing locked), Readiness and Checklists, a course page and a lesson player with a progress sidebar. It is dark with the Cindrix orange and has no coloured left edges. The whole program's frame is the left nav (`mockups/Shell.html`).

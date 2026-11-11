@@ -91,3 +91,7 @@ Leadership, Power Outage Preparedness, Wildfire Preparedness, Medical for Everyd
 Licenses) are written text supplied by the owner and rebranded as CindrixOps: all rights reserved,
 CindrixOps. The owner must confirm he holds the rights to the original text. Expert advice notes are
 credited to Brent Weir. Nothing from the originals' videos, images or PDF templates is included.
+
+## Basic Preparedness, first section (rewritten 2026-11-10)
+
+The three lessons in `content/academy/basic-preparedness/01-intro-your-3-day-go-bag` were rewritten from public FEMA, Ready.gov, American Red Cross, CDC and NOAA guidance as original CindrixOps text. The rest of the courses supplied by the owner are being rewritten the same way; until each is, its text is not cleared for sale or sharing.

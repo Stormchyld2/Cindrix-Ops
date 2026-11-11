@@ -676,6 +676,24 @@ mod tests {
     const LESSON: &str = "---\ntitle: Water first\nminutes: 8\nsource: FM 21-76\n---\nPeople last about three days without water.\nThis line continues the paragraph.\n\n## What to do\n- Find a source\n- Make it safe\n\n1. Collect\n2. Boil\n\n> A note\n> that goes on.\n\n## Check yourself\n? How long without water?\n- Three weeks\n+ About three days\n> Rule of threes.\n? Second question\n+ Yes\n- No\n";
 
     #[test]
+    fn the_go_bag_lessons_load_with_a_video_steps_and_checklists() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../content/academy");
+        let loaded = load_dir(&root.join("basic-preparedness"));
+        assert!(loaded.problems.iter().all(|p| !p.place.contains("01-intro-your-3-day-go-bag")), "{:?}", loaded.problems);
+        let m = loaded.courses.iter().flat_map(|c| c.modules.iter()).find(|m| m.id == "01-intro-your-3-day-go-bag").expect("module loads");
+        for want in ["01-you-re-already-ahead", "02-build-your-go-bag", "03-go-farther-together"] {
+            let l = m.lessons.iter().find(|l| l.id.ends_with(want)).unwrap_or_else(|| panic!("{} was left out", want));
+            assert!(l.body.iter().any(|b| matches!(b, Block::Checklist(_))), "{} has no checklist", want);
+            assert!(l.quiz.len() >= 3, "{} quiz", want);
+            assert!(l.readiness > 0);
+        }
+        let bag = m.lessons.iter().find(|l| l.id.ends_with("02-build-your-go-bag")).unwrap();
+        assert!(bag.body.iter().any(|b| matches!(b, Block::Video(_))));
+        let words: usize = bag.body.iter().map(|b| match b { Block::Para(t) | Block::Heading(t) | Block::Note(t) => t.split_whitespace().count(), Block::Bullets(v) | Block::Steps(v) => v.iter().map(|x| x.split_whitespace().count()).sum(), Block::Checklist(v) => v.iter().map(|i| i.text.split_whitespace().count() + i.detail.split_whitespace().count()).sum(), _ => 0 }).sum();
+        assert!(words > 1200, "the go-bag lesson should have real depth, has {} words", words);
+    }
+
+    #[test]
     fn checklists_and_video_lines_become_blocks() {
         let l = parse_lesson("m/l", "---\ntitle: Bag\nreadiness: 2\n---\n[video] Pack the bag\n\nIntro text.\n\n- [ ] Backpack | 40 to 65 litres | gear\n- [ ] Cash\n- A plain bullet\n").unwrap();
         assert_eq!(l.readiness, 2);
