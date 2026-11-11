@@ -145,6 +145,7 @@
 <section class="wrap">
   <div class="no-print">
     <PageHeader eyebrow="CINDRIX OPS" title="Binder" tagline="A paper copy of your plan, for when the screens are dark. Choose what goes in, check the preview, then print it or save it as a PDF." />
+<div class="statrow"><div class="stat" style="--c: var(--blue)"><span class="ico">▣</span><span><div class="n">{items.length}</div><div class="t">Inventory items</div></span></div><div class="stat" style="--c: var(--cat-security)"><span class="ico">✚</span><span><div class="n">{cards.length}</div><div class="t">Emergency cards</div></span></div><div class="stat" style="--c: var(--ok)"><span class="ico">▶</span><span><div class="n">{drills.length}</div><div class="t">Drills</div></span></div><div class="stat" style="--c: var(--cat-academy)"><span class="ico">▤</span><span><div class="n">{plans.length}</div><div class="t">Plans</div></span></div></div>
   </div>
   {#if error}<div class="warn no-print">{error}</div>{/if}
 

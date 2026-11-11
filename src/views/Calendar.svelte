@@ -121,6 +121,7 @@
 
 <section>
   <PageHeader eyebrow="CINDRIX OPS" title="Calendar" tagline="Your events, birthdays, tasks that fall due, things that expire, plan checks, planting times and the usual frost days, all on their days. Click a day to see it, double-click a day to add an event." />
+<div class="statrow"><div class="stat" style="--c: var(--blue)"><span class="ico">▦</span><span><div class="n">{events.length}</div><div class="t">Events</div></span></div><div class="stat" style="--c: var(--warn)"><span class="ico">●</span><span><div class="n">{agenda.length}</div><div class="t">Coming up</div></span></div><div class="stat" style="--c: var(--danger)"><span class="ico">!</span><span><div class="n">{overdueTasks.length}</div><div class="t">Late tasks</div></span></div><div class="stat" style="--c: var(--cat-academy)"><span class="ico">▤</span><span><div class="n">{projects.length}</div><div class="t">Projects</div></span></div></div>
   {#if note}<p class="notice" role="status">{note}</p>{/if}
 
   <div class="wrap">

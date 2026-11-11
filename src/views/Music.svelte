@@ -278,6 +278,7 @@
 
 <div>
   <PageHeader eyebrow="CINDRIX OPS" title="Music" tagline="Your own music, played from this drive. MP3, WAV, FLAC, OGG, Opus, M4A and AAC play straight from the file. WMA and a few others are changed into a playable form while they play; that copy is thrown away when the next song starts, so nothing piles up on the drive." />
+<div class="statrow"><div class="stat" style="--c: var(--blue)"><span class="ico">♪</span><span><div class="n">{tracks.length}</div><div class="t">Songs shown</div></span></div><div class="stat" style="--c: var(--cat-academy)"><span class="ico">≡</span><span><div class="n">{playlists.length}</div><div class="t">Playlists</div></span></div></div>
 </div>
 
 {#if error}<div class="warn" role="alert">{error}</div>{/if}

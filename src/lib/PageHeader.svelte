@@ -29,7 +29,7 @@
 </header>
 
 <style>
-  .ph { position: relative; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 18px; min-height: 132px; padding: 20px 24px; border: 1px solid var(--line2); border-radius: 14px; overflow: hidden; background: #141c27; }
+  .ph { position: relative; width: 100%; box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 18px; min-height: 132px; padding: 20px 24px; border: 1px solid var(--line2); border-radius: 14px; overflow: hidden; background: #141c27; }
   .art { position: absolute; inset: 0; width: 100%; height: 100%; }
   .ph::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(20, 21, 23, .92) 0%, rgba(20, 21, 23, .55) 55%, rgba(20, 21, 23, 0) 100%); pointer-events: none; }
   .txt, .acts { position: relative; z-index: 1; }

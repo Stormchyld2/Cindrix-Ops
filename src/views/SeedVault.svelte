@@ -101,6 +101,7 @@
 <section class="head row">
   <div class="grow">
     <PageHeader eyebrow="CINDRIX OPS" title="Seed vault" tagline="Seeds are food you can grow again. Learn what to buy and how to keep it, and keep count of what you have." />
+<div class="statrow"><div class="stat" style="--c: var(--ok)"><span class="ico">✿</span><span><div class="n">{seeds.length}</div><div class="t">Seeds kept</div></span></div><div class="stat" style="--c: var(--blue)"><span class="ico">▤</span><span><div class="n">{guides.length}</div><div class="t">Guides</div></span></div><div class="stat" style="--c: var(--cat-academy)"><span class="ico">+</span><span><div class="n">{suggested.length}</div><div class="t">Suggested seeds</div></span></div></div>
   </div>
   <button class="btn" onclick={() => go('Academy')} title="Open the Academy, where the seed vault course is">Seed vault course →</button>
 </section>

@@ -143,6 +143,7 @@
     <div class="top">
       <div>
         <PageHeader eyebrow="CINDRIX OPS" title={corner ? 'Reading Corner' : 'Shelf'} tagline={corner ? 'Books to enjoy, kept on this drive: stories, adventures and something to read when you need a break. Open one to read it.' : 'Real books and manuals, kept on this drive. Open one to read it, search inside it, or ask the assistant about it.'} />
+<div class="statrow"><div class="stat" style="--c: var(--blue)"><span class="ico">▤</span><span><div class="n">{everyBook.length}</div><div class="t">Books</div></span></div><div class="stat" style="--c: var(--ok)"><span class="ico">▣</span><span><div class="n">{books.length}</div><div class="t">Shown now</div></span></div></div>
       </div>
       <div class="row">
         <input bind:this={fileInput} id="add-book" class="sr" type="file" accept=".pdf,.md,.txt,application/pdf" multiple onchange={(e) => addFiles(e.currentTarget.files)} />

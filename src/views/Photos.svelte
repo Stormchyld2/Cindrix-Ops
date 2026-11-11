@@ -82,6 +82,7 @@
   <div class="top">
     <div>
       <PageHeader eyebrow="CINDRIX OPS" title="Photos" tagline={inShare ? (me ? `Joined as ${me}. You can add pictures to the shared album or your own.` : 'The shared family album.') : 'The shared album can be seen by other devices on your hotspot. Each person’s own album stays on this computer.'} />
+<div class="statrow"><div class="stat" style="--c: var(--blue)"><span class="ico">▣</span><span><div class="n">{photos.length}</div><div class="t">Pictures</div></span></div></div>
     </div>
     {#if canWrite}
       <div class="row">

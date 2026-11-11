@@ -56,6 +56,7 @@
 
 <section>
   <PageHeader eyebrow="CINDRIX OPS" title="Journal" tagline="A place to write down what happened each day. It helps to keep track, and it leaves a record. Other devices on your hotspot can never see it. Without a passcode, anyone using this computer can open the folder. With one, only you can read it." />
+<div class="statrow"><div class="stat" style="--c: var(--blue)"><span class="ico">✎</span><span><div class="n">{entries.length}</div><div class="t">Entries</div></span></div><div class="stat" style="--c: var(--ok)"><span class="ico">✓</span><span><div class="n">{new Set(entries.map((e) => e.date)).size}</div><div class="t">Days written</div></span></div></div>
   <div class="row"><PersonPick onchange={load} /></div>
   <PrivateLock person={who.name} needsUnlock={locked} onchange={load} />
   {#if note}<p class="notice" role="status">{note}</p>{/if}
