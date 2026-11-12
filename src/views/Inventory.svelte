@@ -216,7 +216,63 @@
   );
   let allSelected = $derived(shown.length > 0 && shown.every((i) => selected.includes(i.id)));
 
-  const usedCategories = categories.length;
+  // the list of categories: the built-in ones plus the person's own, minus any they hide (this only hides the name from the list; items stay)
+  type CatCfg = { extra: string[]; hidden: string[] };
+  function loadCats(): CatCfg {
+    try { const t = localStorage.getItem('cindrix.inventory.cats'); if (t) { const j = JSON.parse(t); return { extra: j.extra ?? [], hidden: j.hidden ?? [] }; } } catch { /* use the defaults */ }
+    return { extra: [], hidden: [] };
+  }
+  let catCfg: CatCfg = $state(loadCats());
+  function saveCats() { try { localStorage.setItem('cindrix.inventory.cats', JSON.stringify(catCfg)); } catch { /* not kept */ } }
+  const allCats = $derived([...categories, ...catCfg.extra.filter((c) => !categories.includes(c))]);
+  const cats = $derived(allCats.filter((c) => !catCfg.hidden.includes(c)));
+  const isOwn = (c: string) => catCfg.extra.includes(c) && !categories.includes(c);
+  const usedCategories = $derived(cats.length);
+  let catDlg: HTMLDialogElement;
+  let catNew = $state('');
+  let catNote = $state('');
+  let renaming = $state('');
+  let renameTo = $state('');
+  function addCat() {
+    const n = catNew.trim().replace(/[,\n\r]/g, ' ').replace(/\s+/g, ' ');
+    catNote = '';
+    if (!n) return;
+    if (allCats.some((c) => c.toLowerCase() === n.toLowerCase())) { catNote = 'You already have a category with that name.'; return; }
+    catCfg.extra = [...catCfg.extra, n];
+    saveCats();
+    catNew = '';
+    catNote = `Added "${n}".`;
+  }
+  function toggleHide(c: string) {
+    catCfg.hidden = catCfg.hidden.includes(c) ? catCfg.hidden.filter((x) => x !== c) : [...catCfg.hidden, c];
+    if (category === c) category = 'All';
+    saveCats();
+  }
+  async function doRename(c: string) {
+    const n = renameTo.trim().replace(/[,\n\r]/g, ' ').replace(/\s+/g, ' ');
+    catNote = '';
+    if (!n || n === c) { renaming = ''; return; }
+    if (allCats.some((x) => x.toLowerCase() === n.toLowerCase())) { catNote = 'You already have a category with that name.'; return; }
+    try {
+      for (const i of items.filter((x) => x.category === c)) await inventorySave({ ...i, category: n });
+      items = await inventoryList();
+    } catch (e) { catNote = String(e); return; }
+    catCfg.extra = catCfg.extra.map((x) => (x === c ? n : x));
+    catCfg.hidden = catCfg.hidden.map((x) => (x === c ? n : x));
+    if (category === c) category = n;
+    saveCats();
+    renaming = '';
+    catNote = `Renamed to "${n}". Its items moved with it.`;
+  }
+  function removeCat(c: string) {
+    if (count(c) > 0) { catNote = 'Move or delete the items in it first.'; return; }
+    catCfg.extra = catCfg.extra.filter((x) => x !== c);
+    catCfg.hidden = catCfg.hidden.filter((x) => x !== c);
+    if (category === c) category = 'All';
+    saveCats();
+    catNote = `Removed "${c}".`;
+  }
+  function showOnly(c: string) { category = c; catDlg.close(); }
   const inStock = $derived(items.filter((i) => i.quantity > 0).length);
   const nowMonth = new Date().toISOString().slice(0, 7);
   const isExpired = (i: Item) => !!i.use_by && i.use_by < nowMonth;
@@ -307,6 +363,7 @@
 
 <PageHeader icon="cube" title="Inventory" tagline="Everything you have, where it is, how long it lasts and when it expires.">
   <button class="btn ico" aria-label="Create new item" title="Create new item" onclick={openNew}><Icon name="plus" size={18} /> Add item</button>
+  <button class="btn ico" onclick={() => { catNote = ''; renaming = ''; catDlg.showModal(); }} title="Show only one kind of item, or add, rename and hide categories"><Icon name="layers" size={18} /> Categories</button>
   <button class="btn ico" onclick={() => { ioNote = ''; ioDlg.showModal(); }} title="Save the Inventory as a spreadsheet file, or add items from one"><Icon name="swap" size={18} /> Import / Export</button>
   <button class="btn ico" onclick={openPlan} title="Work out what to have on hand and how much, for your household"><Icon name="help" size={18} /> How much should I have?</button>
 </PageHeader>
@@ -365,7 +422,7 @@
   <aside class="dbl" style="--c: var(--glow-blue)">
     <div class="pnl-h nosl"><Icon name="users" size={22} /> Categories</div>
     <button class="cat" class:on={category === 'All'} onclick={() => (category = 'All')}><span class="cn"><Icon name="grid" size={16} /> All items</span><span>{items.length}</span></button>
-    {#each categories as c}
+    {#each cats as c}
       <button class="cat" class:on={category === c} onclick={() => (category = c)}><span class="cn"><Icon name={catIcon(c)} size={16} /> {c}</span><span>{count(c)}</span></button>
     {/each}
   </aside>
@@ -373,7 +430,7 @@
   <section class="dbl main" style="--c: var(--glow-blue)">
     <select class="input catselect" aria-label="Category" bind:value={category}>
       <option value="All">All categories ({items.length})</option>
-      {#each categories as c}<option value={c}>{c} ({count(c)})</option>{/each}
+      {#each cats as c}<option value={c}>{c} ({count(c)})</option>{/each}
     </select>
     <div class="row">
       <label class="srch grow"><Icon name="search" size={20} /><input type="search" placeholder="Search your inventory, or ask where something is…" aria-label="Search" bind:value={search} /></label>
@@ -440,6 +497,37 @@
   </section>
 </div>
 
+<dialog bind:this={catDlg} aria-label="Categories">
+  <div class="dform">
+    <h2>Categories</h2>
+    <p class="muted hint">Pick one to show only those items. You can also add your own category, rename one you added, or hide one you do not use. Hiding only takes the name off the list. Your items are never deleted.</p>
+    <div class="row"><button class="btn" onclick={() => showOnly('All')}>Show all items ({items.length})</button></div>
+    <ul class="catman">
+      {#each allCats as c (c)}
+        <li class:hid={catCfg.hidden.includes(c)}>
+          {#if renaming === c}
+            <input class="input grow" aria-label="New name" bind:value={renameTo} onkeydown={(e) => { if (e.key === 'Enter') doRename(c); }} />
+            <button class="btn primary" onclick={() => doRename(c)}>Save name</button>
+            <button class="btn" onclick={() => (renaming = '')}>Cancel</button>
+          {:else}
+            <span class="cn grow"><Icon name={catIcon(c)} size={16} /> {c} <span class="muted">({count(c)})</span>{#if catCfg.hidden.includes(c)} <em class="muted">hidden</em>{/if}</span>
+            {#if !catCfg.hidden.includes(c)}<button class="btn" onclick={() => showOnly(c)} title="Show only {c}">Show only</button>{/if}
+            {#if isOwn(c)}
+              <button class="btn" onclick={() => { renaming = c; renameTo = c; }}>Rename</button>
+              <button class="btn" onclick={() => removeCat(c)} title="Only possible when it has no items">Remove</button>
+            {/if}
+            {#if c !== 'Water' && c !== 'Food'}<button class="btn" onclick={() => toggleHide(c)}>{catCfg.hidden.includes(c) ? 'Show in list' : 'Hide'}</button>{/if}
+          {/if}
+        </li>
+      {/each}
+    </ul>
+    <div class="row"><input class="input grow" placeholder="Name of a new category" aria-label="New category" bind:value={catNew} onkeydown={(e) => { if (e.key === 'Enter') addCat(); }} /><button class="btn primary" onclick={addCat}>Add category</button></div>
+    <p class="muted hint">Water and Food stay on the list because the Dashboard counts your days from them. The built-in names cannot be renamed for the same reason.</p>
+    {#if catNote}<p role="status">{catNote}</p>{/if}
+    <div class="row end"><button class="btn" onclick={() => catDlg.close()}>Close</button></div>
+  </div>
+</dialog>
+
 <dialog bind:this={ioDlg} aria-label="Import or export">
   <div class="dform">
     <h2>Import / Export</h2>
@@ -460,7 +548,7 @@
       <legend>1. What is it?</legend>
       <label>Item<input class="input" bind:value={form.name} required placeholder="Bottled water" /></label>
       <label>Category
-        <select class="input" bind:value={form.category}>{#each categories as c}<option>{c}</option>{/each}</select>
+        <select class="input" bind:value={form.category}>{#each (allCats.includes(form.category) ? allCats : [...allCats, form.category]) as c}<option>{c}</option>{/each}</select>
         {#if categoryHint[form.category]}<span class="muted hint">For example: {categoryHint[form.category]}</span>{/if}
       </label>
       <div class="row">
@@ -622,6 +710,10 @@
   .hbar { height: 12px; border-radius: 7px; background: #1b2735; margin-top: 8px; overflow: hidden; }
   .hbar span { display: block; height: 100%; background: linear-gradient(90deg, #2bbf55, #43e06b); box-shadow: 0 0 10px #43e06b; }
   aside.dbl { padding: 14px; }
+  .catman { list-style: none; margin: 8px 0; padding: 0; display: grid; gap: 6px; max-height: 46vh; overflow: auto; }
+  .catman li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; }
+  .catman li.hid { opacity: .6; }
+  .catman .cn { display: inline-flex; align-items: center; gap: 8px; }
   .cat .cn { display: inline-flex; align-items: center; gap: 10px; }
   .cat { padding: 5px 10px; border-radius: 6px; color: #e6edf5; }
   .cat.on { background: linear-gradient(90deg, rgba(61, 155, 255, .25), transparent); border-color: #4db0ff; color: #fff; }
