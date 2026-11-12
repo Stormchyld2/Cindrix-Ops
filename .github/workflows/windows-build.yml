@@ -53,6 +53,8 @@ jobs:
           mkdir -p out/Cindrix/content && cp content/sources.json out/Cindrix/content/ && cp -r content/library-sample out/Cindrix/content/
           cp -r content/cards content/plans content/seed-guides content/drills content/academy content/guides out/Cindrix/content/
           mkdir -p out/Cindrix/models out/Cindrix/engines
+          # dl <file> <url>: a cut-off download is carried on from where it stopped, up to 40 times, so a bad connection does not fail the build
+          dl() { for n in $(seq 1 40); do curl -fsSL -C - --connect-timeout 30 -o "$1" "$2" && return 0; echo "download cut off (try $n); carrying on"; sleep 5; done; return 1; }
           url=""
           for try in 1 2 3 4 5; do
             url=$(gh api "repos/ggml-org/llama.cpp/releases?per_page=15" --jq '[.[].assets[] | select(.name | test("bin-win-cpu-x64\\.zip$"))][0].browser_download_url' || true)
@@ -61,7 +63,7 @@ jobs:
           done
           if [ -z "$url" ] || [ "$url" = "null" ]; then echo "::error::no llama.cpp windows cpu asset found"; exit 1; fi
           echo "llama.cpp: $url"
-          curl -fsSL --retry 5 --retry-delay 10 --retry-all-errors -o llama.zip "$url"
+          dl llama.zip "$url"
           powershell -NoProfile -Command "Expand-Archive -Path llama.zip -DestinationPath llama-extract"
           ls llama-extract || true
           cp -r llama-extract/* out/Cindrix/engines/
@@ -70,7 +72,7 @@ jobs:
           kt=$(grep -oE 'kiwix-tools_win-i686-[0-9.]+\.zip' kt.html | sort -uV | tail -n1 || true)
           if [ -n "$kt" ]; then
             echo "kiwix-tools: $kt"
-            curl -fsSL --retry 5 --retry-delay 10 --retry-all-errors -o kt.zip "https://download.kiwix.org/release/kiwix-tools/$kt"
+            dl kt.zip "https://download.kiwix.org/release/kiwix-tools/$kt"
             powershell -NoProfile -Command "Expand-Archive -Path kt.zip -DestinationPath kt-extract"
             cp -r kt-extract/*/* out/Cindrix/engines/ 2>/dev/null || cp -r kt-extract/* out/Cindrix/engines/
           else
@@ -79,7 +81,7 @@ jobs:
           # ffmpeg (LGPL build) lets the music player play WMA and similar. Optional: the build goes on without it.
           mkdir -p out/Cindrix/music out/Cindrix/LICENSES
           ff=$(gh api "repos/BtbN/FFmpeg-Builds/releases/latest" --jq '[.assets[] | select(.name | test("^ffmpeg-master-latest-win64-lgpl\\.zip$"))][0].browser_download_url' || true)
-          if [ -n "$ff" ] && [ "$ff" != "null" ] && curl -fsSL --retry 5 --retry-delay 10 --retry-all-errors -o ffmpeg.zip "$ff"; then
+          if [ -n "$ff" ] && [ "$ff" != "null" ] && dl ffmpeg.zip "$ff"; then
             powershell -NoProfile -Command "Expand-Archive -Path ffmpeg.zip -DestinationPath ffmpeg-extract"
             cp ffmpeg-extract/*/bin/ffmpeg.exe out/Cindrix/engines/ || echo "::warning::ffmpeg.exe not found in the download"
             cp ffmpeg-extract/*/LICENSE.txt out/Cindrix/LICENSES/ffmpeg-LICENSE.txt 2>/dev/null || true
