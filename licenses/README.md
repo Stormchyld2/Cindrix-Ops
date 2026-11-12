@@ -95,3 +95,7 @@ credited to Brent Weir. Nothing from the originals' videos, images or PDF templa
 ## Basic Preparedness, first section (rewritten 2026-11-10)
 
 All lessons of `content/academy/basic-preparedness` (modules 1 to 7; the review quizzes keep their questions) were rewritten on 2026-11-11 from public FEMA, Ready.gov, American Red Cross, CDC, EPA, NOAA, USDA and NFPA guidance as original CindrixOps text. The other courses supplied by the owner are being rewritten the same way; until each is, its text is not cleared for sale or sharing.
+
+## Screen artwork (`public/ui/`)
+
+The banner, drill, plan, security and tile pictures in `public/ui/` are cut from the owner's own screen mockups. They are the owner's own artwork and come from no outside source.

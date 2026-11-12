@@ -88,3 +88,33 @@ button.stat:hover { border-color: var(--c, var(--blue)); }
 /* ---- whole-program theme: every panel gets the soft glow and the condensed heading ---- */
 .panel { background: linear-gradient(180deg, color-mix(in srgb, var(--c, var(--blue)) 6%, var(--panel)), var(--panel) 60%); box-shadow: 0 0 18px color-mix(in srgb, var(--c, var(--blue)) 8%, transparent); }
 .panel > .label, .panel > .row > .label:first-child { font-family: 'Barlow Condensed', 'Arial Narrow', var(--display); font-stretch: condensed; font-size: 17px; font-weight: 700; letter-spacing: .08em; color: var(--text); }
+
+/* ---- mockup look: glowing coloured metric tiles, double-line panels, status pills, panel headings ---- */
+:root { --glow-cyan: #34c8ff; --glow-amber: #ffb02e; --glow-green: #43e06b; --glow-red: #ff5a52; --glow-blue: #3d9bff; }
+.mt { position: relative; display: flex; align-items: center; gap: 12px; min-height: 84px; padding: 12px 16px; text-align: left; color: var(--text); overflow: hidden; border-radius: 12px; border: 1.5px solid var(--c, var(--glow-blue)); background: linear-gradient(135deg, color-mix(in srgb, var(--c, var(--glow-blue)) 16%, #0d1722) 0%, #0b121b 70%); box-shadow: 0 0 16px color-mix(in srgb, var(--c, var(--glow-blue)) 38%, transparent), inset 0 0 18px color-mix(in srgb, var(--c, var(--glow-blue)) 12%, transparent); }
+button.mt:hover { box-shadow: 0 0 22px color-mix(in srgb, var(--c, var(--glow-blue)) 60%, transparent), inset 0 0 18px color-mix(in srgb, var(--c, var(--glow-blue)) 18%, transparent); }
+.mt .mico { flex: none; display: inline-flex; color: var(--c, var(--glow-blue)); }
+.mt .mico svg { filter: drop-shadow(0 0 5px var(--c, var(--glow-blue))); }
+.mt .mt-t { font-family: 'Barlow Condensed', 'Arial Narrow', var(--display); font-stretch: condensed; font-size: 17px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #e6edf5; }
+.mt .mt-n { font-size: 30px; font-weight: 600; line-height: 1.05; }
+.mt .mt-s { font-size: 13px; color: var(--muted); }
+.mt .bg { position: absolute; right: 0; top: 0; bottom: 0; width: 46%; background-size: cover; background-position: center; opacity: .55; -webkit-mask-image: linear-gradient(90deg, transparent, #000 55%); mask-image: linear-gradient(90deg, transparent, #000 55%); pointer-events: none; }
+.mt > * { position: relative; z-index: 1; }
+.mt > .bg { position: absolute; z-index: 0; }
+.dbl { border: 1.5px solid color-mix(in srgb, var(--c, var(--glow-blue)) 70%, #000); border-radius: 14px; background: linear-gradient(180deg, color-mix(in srgb, var(--c, var(--glow-blue)) 7%, #0c141e), #0a1018 70%); box-shadow: 0 0 20px color-mix(in srgb, var(--c, var(--glow-blue)) 22%, transparent), inset 0 0 0 3px #0a1018, inset 0 0 0 4px color-mix(in srgb, var(--c, var(--glow-blue)) 28%, transparent); }
+.pnl-h { display: flex; align-items: center; gap: 12px; margin: 0 0 10px; font-family: 'Barlow Condensed', 'Arial Narrow', var(--display); font-stretch: condensed; font-size: 24px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #f1f5fa; }
+.pnl-h svg { color: var(--glow-blue); filter: drop-shadow(0 0 5px rgba(61, 155, 255, .6)); }
+.pnl-h::after { content: ''; margin-left: auto; width: 54px; height: 12px; background: repeating-linear-gradient(115deg, #2f86e8 0 10px, transparent 10px 15px); }
+.pnl-h.nosl::after { display: none; }
+.pill { display: inline-flex; align-items: center; justify-content: center; min-width: 64px; padding: 3px 12px; border-radius: 999px; border: 1.5px solid var(--glow-cyan); color: var(--glow-cyan); font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; background: rgba(52, 200, 255, .07); }
+.pill.on { border-color: var(--glow-green); color: var(--glow-green); background: rgba(67, 224, 107, .08); }
+.pill.warn { border-color: var(--glow-amber); color: var(--glow-amber); background: rgba(255, 176, 46, .08); }
+.pill.red { border-color: var(--glow-red); color: var(--glow-red); background: rgba(255, 90, 82, .08); }
+.pill.off { border-color: #7d8da0; color: #cfd8e3; background: transparent; }
+.btn.primary { background: linear-gradient(180deg, #38a4ff, #1c7fe0); border-color: #4db0ff; color: #fff; box-shadow: 0 0 14px rgba(56, 164, 255, .45); }
+.btn.primary:hover:not(:disabled) { background: linear-gradient(180deg, #5db6ff, #2b8cee); color: #fff; }
+.btn.ico { display: inline-flex; align-items: center; gap: 8px; background: rgba(8, 14, 22, .7); border-color: #3a6fa8; }
+.btn.ico.primary { background: linear-gradient(180deg, #38a4ff, #1c7fe0); }
+.mfoot { position: relative; display: flex; align-items: center; justify-content: center; gap: 26px; min-height: 64px; padding: 10px 20px; border-radius: 12px; border: 1px solid #1d3550; background: #060d17 url('/ui/footer-pines.jpg') center bottom / cover no-repeat; font-family: var(--mono); font-size: 13px; letter-spacing: .26em; color: #e6edf5; overflow: hidden; }
+.mfoot .cmp { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #4aa8ff; }
+.mfoot span.d { color: #3d9bff; }

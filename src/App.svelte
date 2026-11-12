@@ -378,7 +378,7 @@
       {:else if plan === 'What next'}
         <Plans go={goTo} />
       {:else if plan === 'Drills'}
-        <Drills />
+        <Drills go={goTo} />
       {:else if plan === 'Binder'}
         <Binder />
       {:else if plan === 'Family'}

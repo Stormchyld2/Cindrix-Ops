@@ -1842,6 +1842,30 @@ fn export_text(name: String, text: String) -> Result<String, String> {
     user().write_export(&name, &text).map(|p| p.display().to_string())
 }
 
+/// The whole Inventory as one file (a .csv that opens in a spreadsheet), for Import / Export.
+#[tauri::command]
+fn inventory_csv() -> Result<String, String> {
+    Ok(inventory::serialize(&user().load_inventory()?))
+}
+
+#[derive(Serialize)]
+struct ImportResultDto {
+    added: usize,
+    skipped: usize,
+}
+
+/// Add the lines of a file made by Export (or by hand in the same columns). Nothing already there is changed.
+#[tauri::command]
+fn inventory_import(text: String) -> Result<ImportResultDto, String> {
+    let incoming = inventory::parse(&text).map_err(|e| format!("That file could not be read: {}", e.0))?;
+    let u = user();
+    let (list, added, skipped) = inventory::import_merge(u.load_inventory()?, incoming);
+    if added > 0 {
+        u.save_inventory(&list)?;
+    }
+    Ok(ImportResultDto { added, skipped })
+}
+
 #[derive(Serialize)]
 struct ChatInfoDto {
     name: String,
@@ -2772,6 +2796,8 @@ struct PlanDto {
     author: String,
     status: String,
     followed: bool,
+    /// Written by the person: the file is in their own plans folder
+    mine: bool,
     steps: Vec<PlanStepDto>,
 }
 
@@ -2811,7 +2837,8 @@ fn plans_list(person: Option<String>) -> Result<Vec<PlanDto>, String> {
                     }
                 })
                 .collect();
-            PlanDto { id: p.id, title: p.title, summary: p.summary, kind: p.kind, author: p.author, status: p.status, followed, steps }
+            let mine = root().join("user").join("plans").join(format!("{}.md", p.id)).is_file();
+            PlanDto { id: p.id, title: p.title, summary: p.summary, kind: p.kind, author: p.author, status: p.status, followed, mine, steps }
         })
         .collect())
 }
@@ -2903,6 +2930,8 @@ struct DrillDto {
     /// Most recent result, if the drill has been done
     last: Option<DrillResultDto>,
     times_done: usize,
+    /// Every time it was done, oldest first
+    history: Vec<DrillResultDto>,
 }
 
 #[tauri::command]
@@ -2915,6 +2944,7 @@ fn drills_list() -> Result<Vec<DrillDto>, String> {
             DrillDto {
                 last: mine.last().map(|r| DrillResultDto { date: r.date.clone(), seconds: r.seconds, done: r.done, total: r.total, notes: r.notes.clone() }),
                 times_done: mine.len(),
+                history: mine.iter().map(|r| DrillResultDto { date: r.date.clone(), seconds: r.seconds, done: r.done, total: r.total, notes: r.notes.clone() }).collect(),
                 id: d.id,
                 title: d.title,
                 minutes: d.minutes,
@@ -2930,6 +2960,51 @@ fn drills_list() -> Result<Vec<DrillDto>, String> {
 #[tauri::command]
 fn drill_save(drill: String, seconds: u32, done: u32, total: u32, notes: String) -> Result<(), String> {
     drills::Log::new(&root().join("user")).add(drills::Result_ { date: calendar::today_string(), drill, seconds, done, total, notes })
+}
+
+/// A file in `dir` named from `title` that does not replace one already there ("name.md", "name-2.md" ...).
+fn free_file(dir: &std::path::Path, title: &str) -> PathBuf {
+    let base = drills::slug(title);
+    let mut n = 1;
+    loop {
+        let name = if n == 1 { format!("{}.md", base) } else { format!("{}-{}.md", base, n) };
+        let p = dir.join(name);
+        if !p.exists() {
+            return p;
+        }
+        n += 1;
+    }
+}
+
+/// Save a drill the person wrote, as a plain file in `user/drills`. Returns the drill's id.
+#[tauri::command]
+fn drill_create(title: String, minutes: u32, place: String, summary: String, steps: Vec<String>) -> Result<String, String> {
+    let text = drills::render(&title, minutes, &place, &summary, &steps)?;
+    let dir = root().join("user").join("drills");
+    std::fs::create_dir_all(&dir).map_err(|e| format!("The folder could not be made: {}", e))?;
+    let file = free_file(&dir, &title);
+    cindrix_core::fsio::write_atomic(&file, text.as_bytes()).map_err(|e| format!("The drill could not be saved: {}", e))?;
+    Ok(file.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default())
+}
+
+#[derive(Deserialize)]
+struct NewPlanStep {
+    title: String,
+    every_days: Option<u32>,
+    body: Vec<String>,
+}
+
+/// Save a plan the person wrote, as a plain file in `user/plans`. Returns the plan's id.
+#[tauri::command]
+fn plan_create(title: String, summary: String, kind: String, author: String, steps: Vec<NewPlanStep>) -> Result<String, String> {
+    let steps: Vec<plans::NewStep> = steps.into_iter().map(|s| plans::NewStep { title: s.title, every_days: s.every_days, body: s.body }).collect();
+    let text = plans::render(&title, &summary, &kind, &author, &steps)?;
+    plans::parse_plan("check", &text).map_err(|e| format!("The plan could not be saved: {}", e))?;
+    let dir = root().join("user").join("plans");
+    std::fs::create_dir_all(&dir).map_err(|e| format!("The folder could not be made: {}", e))?;
+    let file = free_file(&dir, &title);
+    cindrix_core::fsio::write_atomic(&file, text.as_bytes()).map_err(|e| format!("The plan could not be saved: {}", e))?;
+    Ok(file.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default())
 }
 
 /// The list of sources and licenses shown in Settings (a JSON file that ships with the content).
@@ -3196,6 +3271,10 @@ pub fn run() {
             plan_tick,
             drills_list,
             drill_save,
+            drill_create,
+            inventory_csv,
+            inventory_import,
+            plan_create,
             sources_list,
             crawl_start,
             crawl_status,

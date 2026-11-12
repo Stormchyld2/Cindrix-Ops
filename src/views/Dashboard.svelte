@@ -1,5 +1,6 @@
 <script lang="ts">
   import PageHeader from '../lib/PageHeader.svelte';
+  import Icon from '../lib/Icon.svelte';
   import { onMount } from 'svelte';
   import { inShare, whatFailsNext, inventoryList, drillsList, mapPacks, modelStatus, listModels, libraryStatus, shareInfo, shareSet, dashboardSuggestions, agendaGet, changesRecent, securityOverview, type SecurityOverview, type AgendaItem, type Change, plansList, academyList, familyStatus, productInfo, type ProductInfo, type ShareInfo, type Cascade, type Suggestion, type PlanInfo, type AcademyModule } from '../lib/api';
   import { gatherFacts, planCounts, nextStep, stepStatus, KIND_NAME, type PlanFacts } from '../lib/planfacts';
@@ -171,11 +172,8 @@
   const today = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
 </script>
 
-<PageHeader eyebrow={(product?.name ?? 'CINDRIX OPS').toUpperCase()} title="Dashboard" tagline={'Where you stand today, ' + today + '. Worked out from what you have filled in.'}>
-  <button class="btn primary" onclick={() => go('Start')} title="The step-by-step walkthrough">Get ready</button>
-  <button class="btn" onclick={() => go('Inventory')}>Inventory</button>
-</PageHeader>
-<nav class="shortcuts glow" aria-label="Shortcuts">
+<PageHeader title="Dashboard" tagline="Readiness • Planning • Operations • Family • Continuity" />
+<nav class="shortcuts dbl" aria-label="Shortcuts">
   {#each tiles as t (t.label)}
     <button class="sc" aria-label={'Open ' + t.label} title={'Open ' + t.label} onclick={() => go(t.tab)}>
       <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={ICONS[t.icon]} /></svg>
@@ -189,33 +187,33 @@
 
 {#if data}
   <div class="tiles">
-    <button class="tile" style="--c: var(--cat-intel)" onclick={() => openDetail('water')} aria-haspopup="dialog"><div class="label">WATER</div><div class="big {data.water_days == null ? '' : tone(data.water_days)}">{fmt(data.water_days)}</div></button>
-    <button class="tile" style="--c: var(--cat-ops)" onclick={() => openDetail('food')} aria-haspopup="dialog"><div class="label">FOOD</div><div class="big {data.food_days == null ? '' : tone(data.food_days)}">{fmt(data.food_days)}</div></button>
-    <button class="tile" style="--c: var(--cat-ops)" onclick={() => openDetail('low')} aria-haspopup="dialog"><div class="label">RUNNING LOW</div><div class="big {low.length ? 'check' : 'ok'}">{low.length} item{low.length === 1 ? '' : 's'}</div></button>
-    <button class="tile" style="--c: var(--cat-ops)" onclick={() => openDetail('date')} aria-haspopup="dialog"><div class="label">PAST OR NEAR DATE</div><div class="big {past ? 'act' : data.expiring.length ? 'check' : 'ok'}">{data.expiring.length} item{data.expiring.length === 1 ? '' : 's'}</div></button>
-    <button class="tile" style="--c: var(--cat-ops)" onclick={() => openDetail('checks')} aria-haspopup="dialog"><div class="label">PLAN CHECKS DUE</div><div class="big {checksDue ? 'check' : followed.length ? 'ok' : ''}">{followed.length ? checksDue : 'None'}</div></button>
-    <button class="tile" style="--c: var(--cat-ops)" onclick={() => openDetail('drills')} aria-haspopup="dialog"><div class="label">DRILLS DONE</div><div class="big {drillsDone ? 'ok' : 'check'}">{drillsDone} of {drillsTotal}</div></button>
+    <button class="mt" style="--c: var(--glow-cyan)" onclick={() => openDetail('water')} aria-haspopup="dialog"><span class="mico"><Icon name="drop" size={34} /></span><span><div class="mt-t">Water</div><div class="mt-n {data.water_days == null ? '' : tone(data.water_days)}">{fmt(data.water_days)}</div></span></button>
+    <button class="mt" style="--c: var(--glow-amber)" onclick={() => openDetail('food')} aria-haspopup="dialog"><span class="mico"><Icon name="fork" size={34} /></span><span><div class="mt-t">Food</div><div class="mt-n {data.food_days == null ? '' : tone(data.food_days)}">{fmt(data.food_days)}</div></span></button>
+    <button class="mt" style="--c: var(--glow-green)" onclick={() => openDetail('low')} aria-haspopup="dialog"><span class="mico"><Icon name="layers" size={34} /></span><span><div class="mt-t">Running low</div><div class="mt-n {low.length ? 'check' : 'ok'}">{low.length} item{low.length === 1 ? '' : 's'}</div></span></button>
+    <button class="mt" style="--c: var(--glow-green)" onclick={() => openDetail('date')} aria-haspopup="dialog"><span class="mico"><Icon name="cal" size={34} /></span><span><div class="mt-t">Past or near date</div><div class="mt-n {past ? 'act' : data.expiring.length ? 'check' : 'ok'}">{data.expiring.length} item{data.expiring.length === 1 ? '' : 's'}</div></span></button>
+    <button class="mt" style="--c: var(--glow-cyan)" onclick={() => openDetail('checks')} aria-haspopup="dialog"><span class="mico"><Icon name="check" size={34} /></span><span><div class="mt-t">Plan checks due</div><div class="mt-n {checksDue ? 'check' : followed.length ? 'ok' : ''}">{followed.length ? checksDue : 'None'}</div></span></button>
+    <button class="mt" style="--c: var(--glow-amber)" onclick={() => openDetail('drills')} aria-haspopup="dialog"><span class="mico"><Icon name="tools" size={34} /></span><span><div class="mt-t">Drills done</div><div class="mt-n {drillsDone ? 'ok' : 'check'}">{drillsDone} of {drillsTotal}</div></span></button>
   </div>
 {/if}
 
 {#if sec}
   {@const unset = sec.headline === 'unknown'}
   <div class="tiles sec" aria-label="Security">
-    <button class="tile" style="--c: var(--cat-security)" onclick={() => go('Security')} title="Open Security Operations"><div class="label">SECURITY POSTURE</div><div class="big {sec.headline === 'normal' ? 'ok' : sec.headline === 'emergency' ? 'act' : 'check'}">{sec.sites.length === 0 ? 'No site yet' : sec.headline === 'unknown' ? 'Unknown' : sec.headline === 'normal' && !sec.all_normal_confirmed ? 'Normal' : sec.headline[0].toUpperCase() + sec.headline.slice(1)}</div>{#if unset && sec.sites.length}<div class="muted small">{sec.unknown ? sec.unknown + ' not set' : 'Check due'}. Unknown is not safe.</div>{:else if sec.sites.length > 1}<div class="muted small">{sec.sites.length} sites</div>{/if}</button>
-    <button class="tile" style="--c: var(--cat-security)" onclick={() => go('Security')} title="Open Security Operations"><div class="label">ON WATCH NOW</div><div class="big {sec.sites_on_watch ? 'ok' : 'check'}">{sec.sites_on_watch} of {sec.sites.length}</div><div class="muted small">sites with someone on watch</div></button>
-    <button class="tile" style="--c: var(--cat-security)" onclick={() => go('Security')} title="Open Security Operations"><div class="label">SECURITY NEEDS A LOOK</div><div class="big {sec.needs_a_look ? 'check' : 'ok'}">{sec.needs_a_look}</div></button>
-    <button class="tile" style="--c: var(--cat-security)" onclick={() => go('Security')} title="Open Security Operations"><div class="label">LIVE INCIDENTS</div><div class="big {sec.live_incidents ? 'act' : 'ok'}">{sec.live_incidents}</div><div class="muted small">practice drills not counted</div></button>
+    <button class="mt" style="--c: var(--glow-amber)" onclick={() => go('Security')} title="Open Security Operations"><span class="bg" style="background-image:url(/ui/sec-tower.jpg)"></span><span class="mico"><Icon name="shield" size={34} /></span><span><div class="mt-t">Security posture</div><div class="mt-n {sec.headline === 'normal' ? 'ok' : sec.headline === 'emergency' ? 'act' : 'check'}">{sec.sites.length === 0 ? 'No site yet' : sec.headline === 'unknown' ? 'Unknown' : sec.headline === 'normal' && !sec.all_normal_confirmed ? 'Normal' : sec.headline[0].toUpperCase() + sec.headline.slice(1)}</div>{#if unset && sec.sites.length}<div class="mt-s">{sec.unknown ? sec.unknown + ' not set' : 'Check due'}. Unknown is not safe.</div>{:else if sec.sites.length > 1}<div class="mt-s">{sec.sites.length} sites</div>{/if}</span></button>
+    <button class="mt" style="--c: var(--glow-amber)" onclick={() => go('Security')} title="Open Security Operations"><span class="bg" style="background-image:url(/ui/sec-lookout.jpg)"></span><span class="mico"><Icon name="eye" size={34} /></span><span><div class="mt-t">On watch now</div><div class="mt-n {sec.sites_on_watch ? 'ok' : 'check'}">{sec.sites_on_watch} of {sec.sites.length}</div><div class="mt-s">sites with someone on watch</div></span></button>
+    <button class="mt" style="--c: var(--glow-green)" onclick={() => go('Security')} title="Open Security Operations"><span class="bg" style="background-image:url(/ui/sec-radar.jpg)"></span><span class="mico"><Icon name="eye" size={34} /></span><span><div class="mt-t">Security needs a look</div><div class="mt-n {sec.needs_a_look ? 'check' : 'ok'}">{sec.needs_a_look}</div></span></button>
+    <button class="mt" style="--c: var(--glow-green)" onclick={() => go('Security')} title="Open Security Operations"><span class="bg" style="background-image:url(/ui/sec-antenna.jpg)"></span><span class="mico"><Icon name="bolt" size={34} /></span><span><div class="mt-t">Live incidents</div><div class="mt-n {sec.live_incidents ? 'act' : 'ok'}">{sec.live_incidents}</div><div class="mt-s">practice drills not counted</div></span></button>
   </div>
 {/if}
 
 <div class="dgrid">
-  <section class="panel {inShare ? 's12' : 's8'} h1" style="--c: var(--accent)">
-    <div class="label">NEEDS YOUR ATTENTION</div>
+  <section class="panel dbl {inShare ? 's12' : 's8'} h1" style="--c: var(--accent)">
+    <div class="pnl-h"><Icon name="clipboard" size={28} /> NEEDS YOUR ATTENTION</div>
     <div class="scroll">
       {#if loaded && !tips.length}<p class="muted">Nothing to suggest right now.</p>{/if}
       {#each tips.slice(0, 3) as t}
         <div class="tip">
-          <span class="chip {t.level}">{label[t.level]}</span>
+          <span class="pill {t.level === 'urgent' ? 'red' : ''}">{label[t.level]}</span>
           <div class="grow">
             <strong>{t.title}</strong>
             <div class="muted small">{t.text}</div>
@@ -229,24 +227,24 @@
   </section>
 
   {#if !inShare}
-  <section class="panel s4 h1 sharing" style="--c: var(--cat-comms)">
-    <div class="label">SHARING</div>
+  <section class="panel dbl s4 h1 sharing" style="--c: var(--cat-comms)">
+    <div class="pnl-h"><Icon name="share" size={28} /> SHARING</div>
     <div class="scroll">
-      <div class="line"><div class="grow">Sharing with other devices</div><span class="chip {sharing.on ? 'good' : 'soon'}">{sharing.on ? 'On' : 'Off'}</span></div>
-      <div class="line"><div class="grow">Hotspot</div><span class="chip {sharing.hotspot_up ? 'good' : 'soon'}">{sharing.hotspot_up ? 'On' : 'Off'}</span></div>
-      <div class="line"><div class="grow">Guests signed in</div><span>{sharing.signed_in}</span></div>
-      <div class="line"><div class="grow">Family devices</div><span>{sharing.trusted}</span></div>
+      <div class="line"><Icon name="monitor" size={26} /><div class="grow">Sharing with other devices</div><span class="pill {sharing.on ? 'on' : 'off'}">{sharing.on ? 'On' : 'Off'}</span></div>
+      <div class="line"><Icon name="wifi" size={26} /><div class="grow">Hotspot</div><span class="pill {sharing.hotspot_up ? 'on' : 'off'}">{sharing.hotspot_up ? 'On' : 'Off'}</span></div>
+      <div class="line"><Icon name="users" size={26} /><div class="grow">Guests signed in</div><span>{sharing.signed_in}</span></div>
+      <div class="line"><Icon name="phone" size={26} /><div class="grow">Family devices</div><span>{sharing.trusted}</span></div>
     </div>
     {#if shareError}<p class="warn small" role="alert">{shareError}</p>{/if}
     <div class="row gap">
-      <button class="btn primary" disabled={shareBusy} onclick={toggleSharing} title={sharing.on ? 'Stop sharing. Other devices lose the connection.' : 'Start sharing now, if it did not start by itself'}>{sharing.on ? 'Turn sharing off' : 'Turn sharing on'}</button>
+      <button class="btn primary ico" disabled={shareBusy} onclick={toggleSharing} title={sharing.on ? 'Stop sharing. Other devices lose the connection.' : 'Start sharing now, if it did not start by itself'}>{sharing.on ? 'Turn sharing off' : 'Turn sharing on'}</button>
       <button class="btn" onclick={() => go('settings:Sharing')} title="The PIN, the code to scan and family invites">PIN and codes</button>
     </div>
   </section>
   {/if}
 
-  <section class="panel s6 h2" style="--c: var(--cat-ops)">
-    <div class="label">INVENTORY</div>
+  <section class="panel dbl s6 h2" style="--c: var(--cat-ops)">
+    <div class="pnl-h"><Icon name="cube" size={28} /> INVENTORY</div>
     {#if data && items === 0}<p class="muted small">The Inventory is empty. <button class="link" onclick={() => go('Inventory')}>Add your supplies</button>.</p>
     {:else if data && data.runs_out.length === 0}<p class="muted small">No item has a "used per day" amount yet, so nothing can be counted down.</p>
     {:else if data && low.length === 0}<p class="muted small">Nothing runs out within {settings.values.planCheckDays} days.</p>
@@ -264,8 +262,8 @@
     <div class="row gap"><button class="btn" onclick={() => go('Inventory')}>Open Inventory</button><button class="btn" onclick={() => go('What fails')}>What fails next</button></div>
   </section>
 
-  <section class="panel s6 h2" style="--c: var(--cat-ops)">
-    <div class="label">PLANS YOU FOLLOW</div>
+  <section class="panel dbl s6 h2" style="--c: var(--cat-ops)">
+    <div class="pnl-h"><Icon name="plans" size={28} /> PLANS YOU FOLLOW</div>
     <div class="scroll">
       {#if followed.length === 0}
         <p class="muted">You are not following any plan yet. Plans keep going after the first walkthrough: repeating checks, learning and emergency plans.</p>
@@ -286,8 +284,8 @@
     <div class="row gap"><button class="btn" onclick={() => go('What next')}>{followed.length ? 'All plans' : 'Choose plans to follow'}</button><button class="btn" onclick={() => go('Start')}>The first walkthrough</button></div>
   </section>
 
-  <section class="panel s6 h3" style="--c: var(--cat-academy)">
-    <div class="label">ACADEMY</div>
+  <section class="panel dbl s6 h3" style="--c: var(--cat-academy)">
+    <div class="pnl-h"><Icon name="academy" size={28} /> ACADEMY</div>
     <div class="scroll">
       {#if lessons.length === 0}<p class="muted">No lessons found.</p>
       {:else}
@@ -299,8 +297,8 @@
     <div class="row gap"><button class="btn" onclick={() => go('Academy')}>Open the Academy</button></div>
   </section>
 
-  <section class="panel s6 h3" style="--c: var(--cat-intel)">
-    <div class="label">IS THIS DRIVE READY?</div>
+  <section class="panel dbl s6 h3" style="--c: var(--cat-intel)">
+    <div class="pnl-h"><Icon name="check" size={28} /> IS THIS DRIVE READY?</div>
     <div class="scroll">
       {#each readyFirst as r}
         <div class="line">
@@ -313,8 +311,8 @@
   </section>
 
   {#if !inShare}
-  <section class="panel s6 h4" style="--c: var(--cat-ops)">
-    <div class="label">COMING UP</div>
+  <section class="panel dbl s6 h4" style="--c: var(--cat-ops)">
+    <div class="pnl-h"><Icon name="cal" size={28} /> COMING UP</div>
     <div class="scroll">
       {#if coming.length === 0}<p class="muted">Nothing is due in the next 60 days. Add tasks and events and they appear here, with things that expire and plan checks.</p>{/if}
       {#each coming.slice(0, 30) as a (a.kind + a.id + a.date)}
@@ -327,8 +325,8 @@
     <div class="row gap"><button class="btn" onclick={() => go('Todo')}>To-do list</button><button class="btn" onclick={() => go('Calendar')}>Calendar</button><button class="btn" onclick={() => go('Projects')}>Projects</button></div>
   </section>
 
-  <section class="panel s6 h4" style="--c: var(--cat-system)">
-    <div class="label">WHAT CHANGED LATELY</div>
+  <section class="panel dbl s6 h4" style="--c: var(--cat-system)">
+    <div class="pnl-h"><Icon name="pulse" size={28} /> WHAT CHANGED LATELY</div>
     <div class="scroll">
       {#if changes.length === 0}<p class="muted">Changes to tasks, events and projects are listed here.</p>{/if}
       {#each changes as c (c.when + c.kind + c.id + c.action)}
@@ -339,7 +337,7 @@
   {/if}
 </div>
 
-<div class="motto" aria-hidden="true"><span>PREPARE</span><span>EQUIP</span><span>TRAIN</span><span>SUSTAIN</span></div>
+<div class="mfoot" aria-hidden="true"><span class="cmp"><Icon name="compass" size={44} /></span><span>PREPARE</span><span class="d">•</span><span>EQUIP</span><span class="d">•</span><span>TRAIN</span><span class="d">•</span><span>SUSTAIN</span></div>
 
 <svelte:window onkeydown={(e) => { if (e.key === 'Escape') detail = null; }} />
 
@@ -406,17 +404,14 @@
   .herotop { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
   .herologo { width: 52px; height: 52px; object-fit: contain; }
   .hero h1 { margin: 0; }
-  .shortcuts { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; --c: var(--blue); }
+  .shortcuts { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 10px; padding: 14px; --c: var(--glow-blue); }
   .est { margin: 0; font-size: 13px; }
-  .sc { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 76px; padding: 10px 6px; text-align: center; color: var(--text); background: var(--panel2); border: 1px solid var(--line2); border-radius: 12px; font-size: 12.5px; letter-spacing: .02em; }
+  .sc { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 76px; padding: 10px 6px; text-align: center; color: var(--text); background: linear-gradient(180deg, #131f2e, #0c141e); border: 1.5px solid #2a4a70; border-radius: 12px; font-size: 13px; letter-spacing: .02em; box-shadow: 0 0 10px rgba(61, 155, 255, .14); }
   .sc svg { color: var(--accent); }
   .sc:hover { border-color: var(--blue-line); }
   .sc:active { transform: scale(.97); }
   @media (max-width: 600px) { .shortcuts { grid-template-columns: repeat(3, 1fr); } .sc { min-height: 84px; } }
   /* a colour stripe on the left of each panel and tile, and a condensed heading (mockups/Navigation.html) */
-  .panel { border-left: 3px solid var(--c, var(--line2)); }
-  .panel > .label { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-family: 'Barlow Condensed', 'Arial Narrow', var(--display); font-stretch: condensed; font-size: 19px; font-weight: 700; letter-spacing: .06em; color: var(--text); }
-  .panel > .label::before { content: '\25C6'; font-size: 11px; color: var(--c, var(--muted)); }
   .meter { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
   .meter span { display: block; height: 100%; background: var(--blue); }
   .dotmark { flex: 0 0 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line2); color: var(--accent); font-size: 12px; }
@@ -430,7 +425,7 @@
   .big { font-size: 24px; font-weight: 600; margin-top: 2px; }
   /* every block has one set size, and shows only the most important lines; the rest scrolls inside it */
   .dgrid { display: grid; grid-template-columns: repeat(12, 1fr); grid-template-rows: 340px 400px 320px; grid-auto-rows: 320px; gap: 12px; align-items: stretch; }
-  .dgrid .panel { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+  .dgrid .panel { border-left-width: 1.5px; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
   /* no scroll bars: the mouse wheel (or a finger) moves the list inside the block, and a soft fade at the bottom shows there is more */
   .dgrid .scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; -ms-overflow-style: none; padding-bottom: 22px; -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 22px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 22px), transparent); }
   .dgrid .scroll::-webkit-scrollbar { display: none; width: 0; height: 0; }
@@ -447,7 +442,7 @@
   .line.cat { padding: 8px 0; gap: 10px; }
   .line.cat.none .grow, .line.cat.none .count { color: var(--muted); }
   .line.cat .count { font-family: var(--mono); font-size: 13px; min-width: 76px; text-align: right; }
-  .tip { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 12px 0; border-top: 1px solid var(--line); margin-top: 6px; }
+  .tip { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 10px 12px; border: 1px solid #1e3a5a; border-radius: 10px; background: #0a121b; margin-top: 8px; }
   .chip { flex: 0 0 auto; min-width: 66px; text-align: center; padding: 2px 8px; border-radius: 999px; font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; border: 1px solid var(--line2); }
   .chip.urgent { color: var(--danger); border-color: var(--danger-line); background: var(--danger-bg); }
   .chip.soon { color: var(--accent); border-color: var(--accent-line); background: var(--accent-soft); }

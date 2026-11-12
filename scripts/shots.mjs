@@ -345,7 +345,7 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   const md = String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0');
   await nav(page, 'Operations', 'Family');
   await page.getByLabel('Birthday').first().fill('2000-' + md);
-  await page.getByRole('button', { name: 'Save to this drive' }).click();
+  await page.getByRole('button', { name: 'Save to drive' }).click();
   await page.getByText(/^Saved/).first().waitFor();
   await nav(page, 'Operations', 'Calendar');
   await page.locator('.chip.bday', { hasText: /birthday/ }).first().waitFor();

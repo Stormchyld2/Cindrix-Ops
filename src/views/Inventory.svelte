@@ -1,6 +1,7 @@
 <script lang="ts">
   import PageHeader from '../lib/PageHeader.svelte';
-  import { inventoryList, inventorySave, inventoryDelete, scanInboxList, scanInboxPreview, scanInboxAccept, scanInboxDismiss, syncInboxList, syncMerge, stockNeeds, profileLoad, inventoryPlaces, inventoryWhere, shelfLifeSuggest, placeParts, insidePlace, type Item, type Need, type Place, type Found, type ShelfGuess, type ScanFile, type ScanLine } from '../lib/api';
+  import Icon from '../lib/Icon.svelte';
+  import { inventoryCsv, inventoryImport, exportText, inventoryList, inventorySave, inventoryDelete, scanInboxList, scanInboxPreview, scanInboxAccept, scanInboxDismiss, syncInboxList, syncMerge, stockNeeds, profileLoad, inventoryPlaces, inventoryWhere, shelfLifeSuggest, placeParts, insidePlace, type Item, type Need, type Place, type Found, type ShelfGuess, type ScanFile, type ScanLine } from '../lib/api';
   import { onMount } from 'svelte';
   import { categories, categoryHint, categoryUnits, categoryAsk, forWhomChoices, conditionChoices } from '../lib/categories';
   import { learner, loadPeople } from '../lib/learner.svelte';
@@ -215,11 +216,41 @@
   );
   let allSelected = $derived(shown.length > 0 && shown.every((i) => selected.includes(i.id)));
 
-  const usedCategories = $derived(new Set(items.map((i) => i.category)).size);
+  const usedCategories = categories.length;
   const inStock = $derived(items.filter((i) => i.quantity > 0).length);
-  const lowCount = $derived(items.filter((i) => i.status === 'check').length);
-  const actCount = $derived(items.filter((i) => i.status === 'act').length);
-  const healthPct = $derived(items.length ? Math.round((items.filter((i) => (i.status ?? 'ok') === 'ok').length / items.length) * 100) : 0);
+  const nowMonth = new Date().toISOString().slice(0, 7);
+  const isExpired = (i: Item) => !!i.use_by && i.use_by < nowMonth;
+  const expiredCount = $derived(items.filter(isExpired).length);
+  const lowCount = $derived(items.filter((i) => !isExpired(i) && (i.status ?? 'ok') !== 'ok').length);
+  const healthPct = $derived(items.length ? Math.round((items.filter((i) => (i.status ?? 'ok') === 'ok' && !isExpired(i)).length / items.length) * 100) : 0);
+
+  // pictures for the category list
+  const CAT_ICON: Record<string, string> = {
+    'Water': 'drop', 'Food': 'fork', 'Medical and diabetes': 'medical', 'Power and light': 'bolt', 'Tools and repair': 'tools',
+    'Shelter and clothing': 'shield', 'Hygiene and sanitation': 'drop', 'Documents and cash': 'folder', 'Cooking and fuel': 'bolt',
+    'Communication and navigation': 'comms', 'Safety and protection': 'shield', 'Babies and children': 'users', 'Pets and animals': 'user',
+    'Vehicle and go-bag': 'run', 'Comfort and morale': 'heart', 'Fuel and heat': 'bolt', 'Cleaning and laundry': 'drop',
+    'Garden and long-term food': 'fork', 'Medical equipment and special needs': 'pulse', 'Fishing and outdoors': 'tag',
+  };
+  const catIcon = (c: string) => CAT_ICON[c] ?? 'tag';
+  // import and export
+  let ioDlg: HTMLDialogElement;
+  let ioNote = $state('');
+  async function exportAll() {
+    ioNote = '';
+    try { ioNote = 'Saved: ' + (await exportText('inventory.csv', await inventoryCsv())) + '. It opens in a spreadsheet.'; } catch (e) { ioNote = String(e); }
+  }
+  async function importFile(e: Event) {
+    ioNote = '';
+    const f = (e.currentTarget as HTMLInputElement).files?.[0];
+    if (!f) return;
+    try {
+      const r = await inventoryImport(await f.text());
+      items = await inventoryList();
+      ioNote = `Added ${r.added} item${r.added === 1 ? '' : 's'}.${r.skipped ? ` ${r.skipped} already there, so left alone.` : ''} Nothing you already had was changed.`;
+    } catch (err) { ioNote = String(err); }
+    (e.currentTarget as HTMLInputElement).value = '';
+  }
 
   function count(cat: string): number {
     return items.filter((i) => i.category === cat).length;
@@ -274,17 +305,18 @@
   const statusText: Record<string, string> = { ok: 'OK', check: 'Check', act: 'Act now' };
 </script>
 
-<PageHeader eyebrow="SUPPLIES" title="Inventory" tagline="Everything you have, where it is, how long it lasts and when it expires.">
-  <button class="btn" onclick={openPlan} title="Work out what to have on hand and how much, for your household">How much should I have?</button>
-  <button class="btn primary" aria-label="Create new item" title="Create new item" onclick={openNew}>+ Add item</button>
+<PageHeader icon="cube" title="Inventory" tagline="Everything you have, where it is, how long it lasts and when it expires.">
+  <button class="btn ico" aria-label="Create new item" title="Create new item" onclick={openNew}><Icon name="plus" size={18} /> Add item</button>
+  <button class="btn ico" onclick={() => { ioNote = ''; ioDlg.showModal(); }} title="Save the Inventory as a spreadsheet file, or add items from one"><Icon name="swap" size={18} /> Import / Export</button>
+  <button class="btn ico" onclick={openPlan} title="Work out what to have on hand and how much, for your household"><Icon name="help" size={18} /> How much should I have?</button>
 </PageHeader>
-<div class="statrow">
-  <div class="stat" style="--c: var(--blue)"><span class="ico">▣</span><span><div class="n">{items.length}</div><div class="t">Total items</div></span></div>
-  <div class="stat" style="--c: var(--cat-academy)"><span class="ico">≡</span><span><div class="n">{usedCategories}</div><div class="t">Categories</div></span></div>
-  <div class="stat" style="--c: var(--ok)"><span class="ico">✓</span><span><div class="n">{inStock}</div><div class="t">In stock</div></span></div>
-  <button class="stat" style="--c: var(--warn)" onclick={() => (show = 'low')} title="Show what is low or expiring"><span class="ico">!</span><span><div class="n">{lowCount}</div><div class="t">Low or to check</div></span></button>
-  <button class="stat" style="--c: var(--danger)" onclick={() => (show = 'low')} title="Show what needs action now"><span class="ico">✕</span><span><div class="n">{actCount}</div><div class="t">Act now</div></span></button>
-  <div class="stat" style="--c: var(--blue)"><span class="ico">♥</span><span><div class="n">{healthPct}%</div><div class="t">Inventory health</div></span></div>
+<div class="invtiles">
+  <div class="mt" style="--c: var(--glow-blue)"><span class="mico"><Icon name="cube" size={40} /></span><span><div class="mt-t">Total items</div><div class="mt-n">{items.length}</div></span></div>
+  <div class="mt" style="--c: var(--glow-blue)"><span class="mico"><Icon name="layers" size={40} /></span><span><div class="mt-t">Categories</div><div class="mt-n">{usedCategories}</div></span></div>
+  <div class="mt" style="--c: var(--glow-green)"><span class="mico"><Icon name="check" size={40} /></span><span><div class="mt-t">In stock</div><div class="mt-n">{inStock}</div></span></div>
+  <button class="mt" style="--c: var(--glow-amber)" onclick={() => (show = 'low')} title="Show what is low or to check"><span class="mico"><Icon name="warn" size={40} /></span><span><div class="mt-t">Low stock</div><div class="mt-n">{lowCount}</div></span></button>
+  <button class="mt" style="--c: var(--glow-red)" onclick={() => (show = 'low')} title="Show what is past its date"><span class="mico"><Icon name="calx" size={40} /></span><span><div class="mt-t">Expired</div><div class="mt-n">{expiredCount}</div></span></button>
+  <div class="mt health" style="--c: var(--glow-blue)"><span class="grow"><div class="mt-t">Inventory health</div><div class="hbar"><span style="width:{healthPct}%"></span></div></span><span class="mt-n">{healthPct}%</span></div>
 </div>
 
 {#if error}<div class="warn" role="alert">{error}</div>{/if}
@@ -330,21 +362,21 @@
 {/if}
 
 <div class="layout">
-  <aside class="panel glow" style="--c: var(--blue)">
-    <div class="label">CATEGORIES</div>
-    <button class="cat" class:on={category === 'All'} onclick={() => (category = 'All')}><span>All</span><span class="muted">{items.length}</span></button>
+  <aside class="dbl" style="--c: var(--glow-blue)">
+    <div class="pnl-h nosl"><Icon name="users" size={22} /> Categories</div>
+    <button class="cat" class:on={category === 'All'} onclick={() => (category = 'All')}><span class="cn"><Icon name="grid" size={16} /> All items</span><span>{items.length}</span></button>
     {#each categories as c}
-      <button class="cat" class:on={category === c} onclick={() => (category = c)}><span>{c}</span><span class="muted">{count(c)}</span></button>
+      <button class="cat" class:on={category === c} onclick={() => (category = c)}><span class="cn"><Icon name={catIcon(c)} size={16} /> {c}</span><span>{count(c)}</span></button>
     {/each}
   </aside>
 
-  <section class="panel main">
+  <section class="dbl main" style="--c: var(--glow-blue)">
     <select class="input catselect" aria-label="Category" bind:value={category}>
       <option value="All">All categories ({items.length})</option>
       {#each categories as c}<option value={c}>{c} ({count(c)})</option>{/each}
     </select>
     <div class="row">
-      <input class="input grow" type="search" placeholder="Search your inventory, or ask where something is" aria-label="Search" bind:value={search} />
+      <label class="srch grow"><Icon name="search" size={20} /><input type="search" placeholder="Search your inventory, or ask where something is…" aria-label="Search" bind:value={search} /></label>
       <select class="input" aria-label="Show" bind:value={show}>
         <option value="all">Show all</option>
         <option value="low">Low or expiring</option>
@@ -371,7 +403,7 @@
       </div>
     {/if}
 
-    <div class="bar row">
+    <div class="bar row selbar">
       <label class="row"><input type="checkbox" checked={allSelected} onchange={toggleAll} aria-label="Select all items" /> Select all</label>
       <span class="muted">{selected.length} selected</span>
       {#if confirming}
@@ -390,7 +422,7 @@
       <div class="item">
         <input type="checkbox" bind:group={selected} value={i.id} aria-label={'Select ' + i.name} />
         <button class="name" onclick={() => openEdit(i)}>
-          <strong>{i.name}</strong>
+          <strong><span class="ci"><Icon name={catIcon(i.category)} size={20} /></span>{i.name}</strong>
           <span class="muted small">{i.location || 'No place set'}{i.brand ? ' · ' + i.brand : ''}{i.size ? ' · ' + i.size : ''}{i.for_whom ? ' · for ' + i.for_whom : ''}{i.target ? ' · want ' + i.target : ''}{i.notes ? ' · ' + i.notes : ''}</span>
         </button>
         <div class="qty">
@@ -400,13 +432,24 @@
         </div>
         <div class="small cell lasts">{lasts(i)}</div>
         <div class="small cell useby">{i.use_by || '—'}</div>
-        <div class="small cell st {i.status}">● {statusText[i.status ?? 'ok']}</div>
+        <div class="small cell st {i.status}">● {statusText[i.status ?? 'ok']} <button class="kebab" aria-label={'Edit ' + i.name} title="Edit" onclick={() => openEdit(i)}>⋮</button></div>
       </div>
     {/each}
 
-    <div class="warn">Medicine is counted only. Doses and changes are never suggested here. Follow your doctor's written plan.</div>
+    <div class="medicine"><Icon name="info" size={22} /> Medicine is counted only. Doses and changes are never suggested here. Follow your doctor's written plan.</div>
   </section>
 </div>
+
+<dialog bind:this={ioDlg} aria-label="Import or export">
+  <div class="dform">
+    <h2>Import / Export</h2>
+    <p class="muted hint">Export saves everything in your Inventory as one file that opens in a spreadsheet. Import adds the lines from a file like that. A line that is already in your Inventory is skipped, and nothing you already have is changed.</p>
+    <div class="row"><button class="btn primary" onclick={exportAll}>Save the Inventory as a file</button></div>
+    <label>Add items from a file<input class="input" type="file" accept=".csv,text/csv,text/plain" onchange={importFile} /></label>
+    {#if ioNote}<p role="status">{ioNote}</p>{/if}
+    <div class="row end"><button class="btn" onclick={() => ioDlg.close()}>Close</button></div>
+  </div>
+</dialog>
 
 <dialog bind:this={dlg} aria-labelledby="dt">
   <form class="dform" onsubmit={(e) => { e.preventDefault(); saveForm(); }}>
@@ -571,6 +614,26 @@
 </dialog>
 
 <style>
+  .invtiles { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
+  @media (max-width: 1200px) { .invtiles { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 600px) { .invtiles { grid-template-columns: repeat(2, 1fr); } }
+  .invtiles .mt-n { font-size: 32px; }
+  .mt.health { flex-direction: row; }
+  .hbar { height: 12px; border-radius: 7px; background: #1b2735; margin-top: 8px; overflow: hidden; }
+  .hbar span { display: block; height: 100%; background: linear-gradient(90deg, #2bbf55, #43e06b); box-shadow: 0 0 10px #43e06b; }
+  aside.dbl { padding: 14px; }
+  .cat .cn { display: inline-flex; align-items: center; gap: 10px; }
+  .cat { padding: 5px 10px; border-radius: 6px; color: #e6edf5; }
+  .cat.on { background: linear-gradient(90deg, rgba(61, 155, 255, .25), transparent); border-color: #4db0ff; color: #fff; }
+  .main.dbl { padding: 14px 16px; }
+  .srch { display: flex; align-items: center; gap: 10px; padding: 0 14px; height: 44px; border: 1px solid #2a4a70; border-radius: 10px; background: #0a121b; color: #9fb4c9; }
+  .srch input { flex: 1; background: transparent; border: 0; outline: 0; color: var(--text); font: inherit; }
+  .selbar { background: linear-gradient(90deg, #2a0f0c, #1a0d0b); border: 1.5px solid #8a2a20; }
+  .ci { display: inline-flex; vertical-align: middle; margin-right: 10px; color: var(--glow-blue); }
+  .kebab { background: none; border: 0; color: #e6edf5; font-size: 20px; margin-left: 14px; padding: 0 6px; cursor: pointer; }
+  .medicine { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 1.5px solid #8a7420; border-radius: 10px; background: linear-gradient(90deg, #2a2408, #1a1706); color: #f3e9b8; }
+  .medicine :global(svg) { color: var(--glow-amber); flex: none; }
+  .end { justify-content: flex-end; }
   .head { justify-content: space-between; flex-wrap: nowrap; }
   .grow { flex: 1 1 200px; }
   .plus { width: 48px; height: 48px; border-radius: 50%; border: 0; background: var(--blue); color: #07131d; font-size: 30px; font-weight: 700; line-height: 1; }

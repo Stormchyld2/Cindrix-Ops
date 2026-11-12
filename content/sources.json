@@ -57,6 +57,12 @@
           "license": "GPL-3.0",
           "status": "you add",
           "note": "Free radio programming software for Windows. Put the installer from chirpmyradio.com in the resources/CHIRP folder on the drive. We do not change it. Source code: github.com/kk7ds/chirp (the project's own site is chirpmyradio.com). Taught in the Radio Licenses course."
+        },
+        {
+          "name": "Screen artwork (public/ui)",
+          "license": "Owner's own artwork",
+          "status": "in this build",
+          "note": "Pictures cut from the owner's own screen mockups: the moon, wolf and mountains banner, the drill and plan pictures, the security tile pictures, the tent and the footer pines. Not from any outside source."
         }
       ]
     },

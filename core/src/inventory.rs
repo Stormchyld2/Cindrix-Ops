@@ -165,6 +165,26 @@ pub fn same_content(a: &Item, b: &Item) -> bool {
     strip(a) == strip(b)
 }
 
+/// Add the lines of an imported file to the Inventory. A line that says exactly what one already there says is skipped,
+/// and every other line is added as a new item with a new number, so nothing already in the Inventory is changed.
+/// Returns the new list, how many were added and how many were skipped as already there.
+pub fn import_merge(existing: Vec<Item>, incoming: Vec<Item>) -> (Vec<Item>, usize, usize) {
+    let mut out = existing;
+    let (mut added, mut skipped) = (0, 0);
+    for mut it in incoming {
+        if out.iter().any(|x| same_content(x, &it)) {
+            skipped += 1;
+            continue;
+        }
+        let max = out.iter().filter_map(|i| i.id.parse::<u64>().ok()).max().unwrap_or(0);
+        it.id = (max + 1).to_string();
+        it.uid = String::new();
+        out.push(it);
+        added += 1;
+    }
+    (out, added, skipped)
+}
+
 /// Whole days the item lasts at the current use rate, or None if it is not used up daily.
 pub fn days_left(item: &Item) -> Option<f64> {
     if item.use_per_day > 0.0 {
@@ -230,6 +250,28 @@ pub fn delete_ids(items: Vec<Item>, ids: &[String]) -> Vec<Item> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn importing_adds_new_lines_and_never_changes_what_is_there() {
+        let a = Item { id: "1".into(), category: "Water".into(), name: "Water".into(), quantity: 4.0, unit: "gal".into(), ..Default::default() };
+        let same = Item { id: "9".into(), ..a.clone() };
+        let other = Item { id: "1".into(), category: "Food".into(), name: "Rice".into(), quantity: 2.0, unit: "bag".into(), ..Default::default() };
+        let (list, added, skipped) = import_merge(vec![a.clone()], vec![same, other.clone(), other.clone()]);
+        assert_eq!((added, skipped), (1, 2), "the copy of Water and the second Rice are skipped");
+        assert_eq!(list.len(), 2);
+        assert_eq!(list[0], a, "the old line is untouched");
+        assert_eq!(list[1].name, "Rice");
+        assert_eq!(list[1].id, "2", "a clashing number is replaced by a new one");
+    }
+
+    #[test]
+    fn an_exported_file_imports_into_an_empty_inventory() {
+        let items = vec![Item { id: "1".into(), category: "Water".into(), name: "Water, bottled".into(), quantity: 4.0, unit: "gal".into(), ..Default::default() }];
+        let text = serialize(&items);
+        let (list, added, _) = import_merge(Vec::new(), parse(&text).unwrap());
+        assert_eq!(added, 1);
+        assert_eq!(list[0].name, "Water, bottled");
+    }
+
     use super::*;
 
     fn sample() -> Item {
