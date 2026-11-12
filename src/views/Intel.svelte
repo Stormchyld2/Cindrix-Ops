@@ -221,6 +221,19 @@
     else scheduleSave();
   }
 
+  /** If the page has not reported back after a few seconds, say plainly why the box is empty (instead of a blank white frame). */
+  async function diagnose(path: string, address: string) {
+    await new Promise((r) => setTimeout(r, 4000));
+    if (pending !== path) return; // it loaded
+    try {
+      const r = await fetch(address);
+      const t = await r.text();
+      if (!r.ok) notice = `This page did not open. The archive answered "${r.status}": ${t.slice(0, 160) || 'nothing'}. Address: ${path}`;
+      else notice = `The page came back (${t.length} characters) but is not showing. Address: ${path}. It begins: ${t.slice(0, 120).replace(/\s+/g, ' ')}`;
+    } catch (e) {
+      notice = `This page did not open. The program could not reach its own page server (${String(e).slice(0, 120)}). Address: ${path}`;
+    }
+  }
   /** Put what a location holds on screen. */
   async function show(l: Loc) {
     if (l.t === 'page' && serverOn && st?.url) {
@@ -236,6 +249,7 @@
       src = f.src;
       srcdoc = f.srcdoc;
       if (f.title) titles[l.path] = f.title;
+      if (f.src) void diagnose(l.path, f.src);
     } else {
       pending = null;
       src = undefined;
