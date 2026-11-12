@@ -135,8 +135,8 @@
   }
   let tickable = $derived(steps.filter((s) => s.done !== null));
   let inProgress = $derived(tickable.filter((s) => s.done === false && (ticks[steps.indexOf(s)] ?? []).some(Boolean)).length);
-  let notStarted = $derived(tickable.length - doneCount - inProgress);
   let doneCount = $derived(tickable.filter((s) => s.done).length);
+  let notStarted = $derived(tickable.length - doneCount - inProgress);
 </script>
 
 <PageHeader title="Get ready" tagline="Build Readiness • Close Gaps • Be Prepared" />
