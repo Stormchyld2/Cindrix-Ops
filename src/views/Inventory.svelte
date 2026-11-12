@@ -224,9 +224,10 @@
   }
   let catCfg: CatCfg = $state(loadCats());
   function saveCats() { try { localStorage.setItem('cindrix.inventory.cats', JSON.stringify(catCfg)); } catch { /* not kept */ } }
-  const allCats = $derived([...categories, ...catCfg.extra.filter((c) => !categories.includes(c))]);
+  const builtIn: string[] = [...categories];
+  const allCats = $derived([...builtIn, ...catCfg.extra.filter((c) => !builtIn.includes(c))]);
   const cats = $derived(allCats.filter((c) => !catCfg.hidden.includes(c)));
-  const isOwn = (c: string) => catCfg.extra.includes(c) && !categories.includes(c);
+  const isOwn = (c: string) => catCfg.extra.includes(c) && !builtIn.includes(c);
   const usedCategories = $derived(cats.length);
   let catDlg: HTMLDialogElement;
   let catNew = $state('');
