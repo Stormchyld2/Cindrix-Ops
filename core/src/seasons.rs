@@ -132,6 +132,50 @@ pub fn seasonal_dates(seeds: &[Seed], last_frost: &str, first_frost: &str, from:
     v
 }
 
+/// One wild food, game or fish and the months it is in season. `region` is "wv", "tn" or "both".
+#[derive(Debug, Clone, PartialEq)]
+pub struct Forage {
+    pub item: String,
+    pub region: String,
+    pub from_month: u32,
+    pub to_month: u32,
+}
+
+/// Read `content/forage-seasons.csv` (`item,region,from_month,to_month`). A month range may run over New Year (10 to 1).
+pub fn parse_forage(text: &str) -> Result<Vec<Forage>, String> {
+    let mut lines = text.lines();
+    match lines.next() {
+        Some(h) if h.trim() == "item,region,from_month,to_month" => {}
+        None => return Ok(vec![]),
+        _ => return Err("The in-season list has an unexpected first line.".into()),
+    }
+    let mut out = Vec::new();
+    for (i, l) in lines.enumerate() {
+        if l.trim().is_empty() {
+            continue;
+        }
+        let f = crate::inventory::split_record(l);
+        let months = if f.len() == 4 { (f[2].trim().parse::<u32>(), f[3].trim().parse::<u32>()) } else { (Ok(0), Ok(0)) };
+        match months {
+            (Ok(a), Ok(b)) if f.len() == 4 && (1..=12).contains(&a) && (1..=12).contains(&b) && !f[0].trim().is_empty() => {
+                out.push(Forage { item: f[0].trim().into(), region: f[1].trim().into(), from_month: a, to_month: b })
+            }
+            _ => return Err(format!("The in-season list, line {}, is damaged.", i + 2)),
+        }
+    }
+    Ok(out)
+}
+
+/// What is in season in `month` (1 to 12). `region` "wv" or "tn" keeps that state's items and the ones for both; an empty region keeps all.
+pub fn in_season(list: &[Forage], month: u32, region: &str) -> Vec<Forage> {
+    let r = region.trim().to_lowercase();
+    list.iter()
+        .filter(|f| if f.from_month <= f.to_month { (f.from_month..=f.to_month).contains(&month) } else { month >= f.from_month || month <= f.to_month })
+        .filter(|f| r.is_empty() || f.region == "both" || f.region == r)
+        .cloned()
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -207,6 +251,35 @@ mod tests {
     fn every_suggested_seed_has_planting_words_the_calendar_understands() {
         for x in crate::seedlist::SUGGESTED {
             assert!(parse_when(x.plant_when).is_some(), "{}: {}", x.crop, x.plant_when);
+        }
+    }
+
+    #[test]
+    fn in_season_handles_a_range_over_new_year_and_the_region() {
+        let l = parse_forage("item,region,from_month,to_month\nRamps,both,4,5\nDeer,both,10,1\nFiddleheads,wv,4,5\nCatfish,tn,5,9\n").unwrap();
+        let names = |m: u32, r: &str| in_season(&l, m, r).into_iter().map(|f| f.item).collect::<Vec<_>>();
+        assert_eq!(names(4, "wv"), vec!["Ramps", "Fiddleheads"]);
+        assert_eq!(names(4, "tn"), vec!["Ramps"]);
+        assert_eq!(names(12, ""), vec!["Deer"]);
+        assert_eq!(names(1, "wv"), vec!["Deer"]);
+        assert_eq!(names(2, ""), Vec::<String>::new());
+        assert_eq!(names(7, ""), vec!["Catfish"]);
+    }
+
+    #[test]
+    fn a_damaged_in_season_list_is_an_error() {
+        assert!(parse_forage("wrong\n").is_err());
+        assert!(parse_forage("item,region,from_month,to_month\nRamps,both,13,5\n").is_err());
+        assert!(parse_forage("item,region,from_month,to_month\nRamps,both\n").is_err());
+    }
+
+    #[test]
+    fn the_shipped_in_season_list_reads_and_something_is_in_season_every_month() {
+        let p = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../content/forage-seasons.csv");
+        let l = parse_forage(&std::fs::read_to_string(p).unwrap()).unwrap();
+        assert!(l.len() >= 25);
+        for m in 1..=12 {
+            assert!(!in_season(&l, m, "").is_empty(), "nothing in season in month {}", m);
         }
     }
 }

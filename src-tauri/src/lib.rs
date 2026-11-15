@@ -25,6 +25,7 @@ use tauri_plugin_dialog::DialogExt;
 mod bible;
 mod druglabels;
 mod fetch;
+mod hybrid;
 mod libs;
 mod music;
 mod podcasts;
@@ -3387,6 +3388,12 @@ pub fn run() {
             photo_delete,
             training_enrol,
             training_signoff,
+            hybrid::skills_grid,
+            hybrid::skills_signoff,
+            hybrid::replacements_list,
+            hybrid::replacement_set,
+            hybrid::readiness_row,
+            hybrid::in_season_now,
             plans_list,
             plans_problems,
             plan_follow,

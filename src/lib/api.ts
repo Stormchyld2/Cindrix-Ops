@@ -1254,6 +1254,52 @@ export async function trainingEnrol(person: string, course: string, on: boolean)
   const k = person + '|' + course;
   memTrain[k] = { ...(memTrain[k] ?? { signed_by: '', signed_date: '' }), chosen: on };
 }
+// ---------- skills, what replaces it, readiness, in season (docs/51) ----------
+export type SkillRow = { skill: string; area: string; must_have: boolean; proof: string; cells: ('signed' | 'learning' | 'none')[]; signed: number; flags: string[] };
+export type SkillsGrid = { people: string[]; rows: SkillRow[]; bar: number; must_total: number; must_covered: number };
+export type Replacement = { need: string; replaced_by: string; skill: string; lead_time: string; state: 'notstarted' | 'learning' | 'inplace'; supply_days: number | null; warning: string | null };
+export type ReadinessRow = { supplies_days: number | null; skills_covered: number; skills_total: number; self_in_place: number; self_total: number };
+export type InSeason = { item: string; region: string; from_month: number; to_month: number };
+
+const memSign: Record<string, boolean> = {};
+export async function skillsGrid(people: string[]): Promise<SkillsGrid> {
+  if (inTauri) return call<SkillsGrid>('skills_grid', { people });
+  const skills = [['Make water safe to drink', 'Water'], ['Light a fire in the rain', 'Warmth and shelter'], ['Hunt and care for game', 'Food']];
+  const rows: SkillRow[] = skills.map(([skill, area]) => {
+    const cells = people.map((p) => (memSign[p + '|' + skill] ? 'signed' : 'none') as 'signed' | 'none');
+    const signed = cells.filter((c) => c === 'signed').length;
+    const flags = signed === 0 ? ['Nobody can do this yet'] : signed === 1 && people.length > 1 ? ['Only one person can do this'] : [];
+    return { skill, area, must_have: true, proof: 'Signed off by hand', cells, signed, flags };
+  });
+  const bar = Math.min(2, Math.max(1, people.length));
+  return { people, rows, bar, must_total: rows.length, must_covered: rows.filter((r) => r.signed >= bar).length };
+}
+export async function skillsSignoff(person: string, skill: string, by: string, on: boolean): Promise<void> {
+  if (inTauri) return call<void>('skills_signoff', { person, skill, by, on });
+  memSign[person + '|' + skill] = on;
+}
+const memRepl: Replacement[] = [
+  { need: 'Vegetables', replaced_by: 'A garden with canning and drying', skill: 'Grow a garden and save seed', lead_time: '1 season', state: 'notstarted', supply_days: 30, warning: 'Start now: this takes a season and your stored supply lasts about 30 days.' },
+  { need: 'Fire starting', replaced_by: 'A ferro rod then friction fire', skill: 'Light a fire in the rain', lead_time: '1 month', state: 'inplace', supply_days: null, warning: null },
+];
+export async function replacementsList(): Promise<Replacement[]> {
+  if (inTauri) return call<Replacement[]>('replacements_list');
+  return memRepl;
+}
+export async function replacementSet(need: string, state: Replacement['state']): Promise<void> {
+  if (inTauri) return call<void>('replacement_set', { need, state });
+  const r = memRepl.find((x) => x.need === need);
+  if (r) r.state = state;
+}
+export async function readinessRow(people: string[]): Promise<ReadinessRow> {
+  if (inTauri) return call<ReadinessRow>('readiness_row', { people });
+  return { supplies_days: 18, skills_covered: 4, skills_total: 31, self_in_place: 1, self_total: 15 };
+}
+export async function inSeasonNow(): Promise<InSeason[]> {
+  if (inTauri) return call<InSeason[]>('in_season_now');
+  return [{ item: 'Black walnuts', region: 'both', from_month: 9, to_month: 11 }, { item: 'White-tailed deer', region: 'both', from_month: 10, to_month: 1 }];
+}
+
 export async function trainingSignoff(person: string, course: string, by: string, on: boolean): Promise<void> {
   if (inTauri) return call<void>('training_signoff', { person, course, by, on });
   const k = person + '|' + course;

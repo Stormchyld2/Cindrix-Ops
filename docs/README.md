@@ -54,7 +54,7 @@ Mockups of every screen are in [`../mockups`](../mockups).
 - [48. Alerts](48-alerts.md): the bar, beep and title count when something needs a look (host, while open)
 - [49. Real-hardware test plan](49-hardware-test-plan.md): every real test in one order
 - [50. The comms PACE plan](50-pace-plan.md): questions in Settings, the structured plan on the Comms plan page
-- [51. Survivalist and prepper hybrid](51-survivalist-hybrid.md): skills and long-term self-reliance measured beside supplies; eight parts, design only
+- [51. Survivalist and prepper hybrid](51-survivalist-hybrid.md): skills and long-term self-reliance measured beside supplies; eight parts, built
 - [52. Bible study (Canonleaf's files)](52-bible-study.md): the Bible, commentaries, dictionaries and cross-references read from Canonleaf's folders; Ask quotes verses
 - [53. Garden beds and rotation](53-garden-beds-and-rotation.md)
 - [54. Comms: Wi-Fi Direct and Meshenger](54-comms-wifi-direct-and-meshenger.md)

@@ -4,7 +4,7 @@
   // in it. It shows your own events, birthdays from the Family page, the tasks that fall due, things in the Inventory
   // that expire, plan checks, planting times from the Seed vault, and the usual frost days, all on the day they fall.
   // Events can repeat. Saved in user/events.txt.
-  import { opsLoad, agendaGet, eventSave, eventDelete, type AgendaItem, type EventRec, type ProjectRec, type Link } from '../lib/api';
+  import { inSeasonNow, type InSeason, opsLoad, agendaGet, eventSave, eventDelete, type AgendaItem, type EventRec, type ProjectRec, type Link } from '../lib/api';
   import Connected from '../lib/Connected.svelte';
   import { openLink, nav } from '../lib/nav.svelte';
   import { settings } from '../lib/settings.svelte';
@@ -32,6 +32,8 @@
   let projects: ProjectRec[] = $state([]);
   let overdueTasks: AgendaItem[] = $state([]);
   let note = $state('');
+  let season: InSeason[] = $state([]);
+  $effect(() => { inSeasonNow().then((x) => (season = x)).catch(() => (season = [])); });
   let editing: EventRec | null = $state(null);
   let loadN = 0;
 
@@ -121,6 +123,9 @@
 
 <section>
   <PageHeader eyebrow="CINDRIX OPS" title="Calendar" tagline="Your events, birthdays, tasks that fall due, things that expire, plan checks, planting times and the usual frost days, all on their days. Click a day to see it, double-click a day to add an event." />
+  {#if season.length}
+    <div class="inseason" aria-label="In season now"><strong>In season now:</strong> {season.map((x) => x.item).join(', ')}. <span class="muted small">Check your state's seasons and licences before you hunt or fish.</span></div>
+  {/if}
 <div class="statrow"><div class="stat" style="--c: var(--blue)"><span class="ico">▦</span><span><div class="n">{events.length}</div><div class="t">Events</div></span></div><div class="stat" style="--c: var(--warn)"><span class="ico">●</span><span><div class="n">{agenda.length}</div><div class="t">Coming up</div></span></div><div class="stat" style="--c: var(--danger)"><span class="ico">!</span><span><div class="n">{overdueTasks.length}</div><div class="t">Late tasks</div></span></div><div class="stat" style="--c: var(--cat-academy)"><span class="ico">▤</span><span><div class="n">{projects.length}</div><div class="t">Projects</div></span></div></div>
   {#if note}<p class="notice" role="status">{note}</p>{/if}
 
@@ -192,6 +197,7 @@
 </section>
 
 <style>
+  .inseason { margin: 8px 0; padding: 8px 12px; border: 1px solid var(--line); border-left: 3px solid var(--glow-green, #4ade80); border-radius: 10px; }
   .wrap { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 14px; margin-top: 12px; align-items: start; }
   .panel { border-left: 3px solid var(--cat-ops); }
   .cal { display: flex; flex-direction: column; gap: 10px; min-width: 0; }

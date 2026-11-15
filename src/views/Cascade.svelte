@@ -1,6 +1,6 @@
 <script lang="ts">
   import PageHeader from '../lib/PageHeader.svelte';
-  import { whatFailsNext, type Cascade } from '../lib/api';
+  import { whatFailsNext, replacementsList, replacementSet, type Cascade, type Replacement } from '../lib/api';
   import { onMount } from 'svelte';
   import { settings } from '../lib/settings.svelte';
 
@@ -8,10 +8,12 @@
 
   let data: Cascade | null = $state(null);
   let error = $state('');
+  let repl: Replacement[] = $state([]);
 
   onMount(async () => {
     try {
       data = await whatFailsNext();
+      repl = await replacementsList();
     } catch (e) {
       error = String(e);
     }
@@ -28,6 +30,10 @@
   function openPlan(id: string) {
     try { sessionStorage.setItem('cindrix.openPlan', id); } catch { /* the Plans page just opens on its list */ }
     go('What next');
+  }
+  const stateWord: Record<string, string> = { notstarted: 'Not started', learning: 'Learning it', inplace: 'In place' };
+  async function setState(need: string, st: Replacement['state']) {
+    try { await replacementSet(need, st); repl = await replacementsList(); } catch (e) { error = String(e); }
   }
   function fmt(d: number | null): string {
     return d == null ? 'Not set' : d < 10 ? d.toFixed(1) + ' days' : Math.round(d) + ' days';
@@ -79,6 +85,26 @@
 {/if}
 
 <section class="panel">
+  <div class="label">WHAT REPLACES IT</div>
+  <p class="muted">Stored food and supplies run out. Each line below says what takes over when they do, the skill you need for it, and how long it takes to get going. Mark where you are.</p>
+  {#each repl as r (r.need)}
+    <div class="line wrap">
+      <div class="grow">
+        <strong>{r.need}</strong> <span class="muted">is replaced by</span> {r.replaced_by}
+        <div class="muted small">Skill: {r.skill} · Takes about {r.lead_time}</div>
+        {#if r.warning && r.state !== 'inplace'}<div class="check small">{r.warning}</div>{/if}
+      </div>
+      <div class="row seg" role="group" aria-label={`Where you are with ${r.need}`}>
+        {#each ['notstarted', 'learning', 'inplace'] as st}
+          <button class="btn sm" class:primary={r.state === st} onclick={() => setState(r.need, st as Replacement['state'])} title={`Mark ${r.need} as: ${stateWord[st]}`}>{stateWord[st]}</button>
+        {/each}
+      </div>
+    </div>
+  {/each}
+  <div class="row"><button class="btn" onclick={() => go('training')} title="Open the skills grid">Open the skills grid</button></div>
+</section>
+
+<section class="panel">
   <div class="label">HOW TO KEEP IT FROM FAILING</div>
   <p class="muted">Counting what runs out is the first half. Each walkthrough below shows what to do, and how, so that thing does not fail in the first place. Pick the one that is short or running low.</p>
   <div class="row keep">
@@ -94,6 +120,7 @@
   .big { font-size: 24px; font-weight: 600; margin-top: 2px; }
   .line { display: flex; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); align-items: center; }
   .grow { flex: 1; }
+  .line.wrap { flex-wrap: wrap; }
   .small { font-size: 13px; }
   .keep { gap: 8px; margin-top: 8px; }
 </style>

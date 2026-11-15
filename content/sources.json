@@ -349,6 +349,41 @@
           "note": "Ideas for FieldLog."
         }
       ]
+    },
+    {
+      "title": "Added 2026-11-15 (survivalist hybrid)",
+      "items": [
+        {
+          "name": "Survivalist hybrid courses: Fieldcraft essentials, Living off the land, The long stay, Trades and repair",
+          "license": "Ours",
+          "status": "in this build",
+          "note": "Written in our own words from US government and public guidance (US Army FM 21-76, FEMA, CDC, Red Cross, USDA FSIS, OSHA, state Extension services). Nothing is copied. Not yet reviewed by a qualified person."
+        },
+        {
+          "name": "Wild food of the Appalachians (course) and its plant, fungus, game and fish cards",
+          "license": "Ours",
+          "status": "in this build",
+          "note": "Written in our own words from WVU Extension and University of Tennessee Extension foraging guides, North American Mycological Association guidance, WV Division of Natural Resources and Tennessee Wildlife Resources Agency rules, and USDA FSIS safe temperatures. Always check current seasons, licences and chronic wasting disease rules."
+        },
+        {
+          "name": "Trades and repair cards and drills (sharpening, sewing, leather, soap, candles, woodwork, metalwork)",
+          "license": "Ours",
+          "status": "in this build",
+          "note": "Written in our own words from public craft, OSHA and National Center for Home Food Preservation guidance."
+        },
+        {
+          "name": "Skills list, 'What replaces it' list and wild-food season list (skills.csv, replacements.csv, forage-seasons.csv)",
+          "license": "Ours",
+          "status": "in this build",
+          "note": "Lists we wrote. Season months are a guide for the central Appalachians, not a promise."
+        },
+        {
+          "name": "The first year, Year two and after, and The long emergency plans",
+          "license": "Ours",
+          "status": "in this build",
+          "note": "Shaped by the five emergency-management ideas (prevention, preparedness, response, recovery, mitigation) from FEMA public guidance."
+        }
+      ]
     }
   ]
 }

@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { trainingReports, trainingEnrol, trainingSignoff, type TrainReport, type TrainCourse } from '../lib/api';
   import { learner, loadPeople } from '../lib/learner.svelte';
+  import SkillsMatrix from './SkillsMatrix.svelte';
 
   let { back, goFamily, openCourse, openLesson }: {
     back: () => void;
@@ -111,6 +112,7 @@
         <button class="btn" onclick={goFamily}>Open the Family page</button>
       </div>
     {:else}
+      <SkillsMatrix people={learner.people} />
       <div class="cards">
         {#each reports as r (r.person)}
           <button class="card" onclick={() => (who = r.person)} aria-label={`Open the training page for ${r.person}`}>

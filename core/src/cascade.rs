@@ -86,6 +86,20 @@ pub fn category_days(items: &[Item], category: &str) -> Option<f64> {
         .min_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
 }
 
+/// Days the supply behind a need lasts. `keyword` is matched, ignoring case, against each supply's name and category;
+/// the one that runs out first sets the number. None when nothing matching is used up daily.
+pub fn days_for_need(items: &[Item], keyword: &str) -> Option<f64> {
+    let k = keyword.trim().to_lowercase();
+    if k.is_empty() {
+        return None;
+    }
+    groups(items)
+        .into_iter()
+        .filter(|g| g.per_day > 0.0 && (g.name.to_lowercase().contains(&k) || g.category.to_lowercase().contains(&k)))
+        .map(|g| g.quantity / g.per_day)
+        .min_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -134,5 +148,20 @@ mod tests {
         let r = runs_out_first(&items);
         assert_eq!(r.len(), 1);
         assert_eq!(r[0].days, 4.5);
+    }
+
+    #[test]
+    fn a_need_is_matched_by_name_or_category() {
+        let items = vec![
+            it("Canned beans", "Food", 20.0, 2.0, "", ""),
+            it("Rice", "Food", 30.0, 1.0, "", ""),
+            it("Candles", "Light", 4.0, 0.0, "", ""),
+        ];
+        assert_eq!(days_for_need(&items, "canned"), Some(10.0));
+        assert_eq!(days_for_need(&items, "food"), Some(10.0));
+        assert_eq!(days_for_need(&items, "RICE"), Some(30.0));
+        assert_eq!(days_for_need(&items, "candles"), None);
+        assert_eq!(days_for_need(&items, ""), None);
+        assert_eq!(days_for_need(&items, "fuel"), None);
     }
 }

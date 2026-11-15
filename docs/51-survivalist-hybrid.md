@@ -1,6 +1,18 @@
 # 51. Survivalist and prepper hybrid
 
-**DESIGN (owner approved all eight parts, 2026-11-15). Nothing here is built yet.**
+**BUILT (owner approved all eight parts, 2026-11-15; built the same day).** The Rust is tested in `core/`; the Tauri commands (`src-tauri/src/hybrid.rs`) and Svelte screens are checked only in CI.
+
+What was built, and where:
+1. Dashboard readiness row: `core/src/readiness.rs`, `Dashboard.svelte`.
+2. Skills grid: `content/skills.csv`, `core/src/skills.rs`, `src/views/SkillsMatrix.svelte` (shown in Academy > Training sign-off). Coverage bar is 2 people for groups of two or more, 1 for one person.
+3. What replaces it: `content/replacements.csv`, `core/src/replace.rs`, `Cascade.svelte`.
+4. No-gear track: courses Fieldcraft essentials (tier 3), Living off the land (tier 2), The long stay (tier 1).
+5. Appalachian wild food: course, plant, fungus, game and fish cards, `content/forage-seasons.csv`, "In season now" on `Calendar.svelte` (`core/src/seasons.rs`).
+6. Trades and repair: course, seven cards, drills 45 to 51.
+7. Plans: The long emergency (rewritten), The first year, Year two and after.
+8. Wording: README first line and status.
+
+Open: Pocket's skills grid and "In season now" (separate repo). All new lessons, cards and drills still need review by a qualified person; wild-food and game rules must be checked against current West Virginia and Tennessee rules. The original design follows.
 
 Cindrix Ops has counted readiness the prepper way: what is on the shelf and when it runs out. The owner plans for
 a long disruption, where supplies are a bridge and skills carry the group afterwards. This doc gives skills and

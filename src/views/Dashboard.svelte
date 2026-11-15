@@ -1,8 +1,9 @@
 <script lang="ts">
+  import { learner, loadPeople } from '../lib/learner.svelte';
   import PageHeader from '../lib/PageHeader.svelte';
   import Icon from '../lib/Icon.svelte';
   import { onMount } from 'svelte';
-  import { inShare, whatFailsNext, inventoryList, drillsList, mapPacks, modelStatus, listModels, libraryStatus, shareInfo, shareSet, dashboardSuggestions, agendaGet, changesRecent, securityOverview, type SecurityOverview, type AgendaItem, type Change, plansList, academyList, familyStatus, productInfo, type ProductInfo, type ShareInfo, type Cascade, type Suggestion, type PlanInfo, type AcademyModule } from '../lib/api';
+  import { inShare, whatFailsNext, inventoryList, drillsList, mapPacks, modelStatus, listModels, libraryStatus, shareInfo, shareSet, dashboardSuggestions, agendaGet, changesRecent, securityOverview, type SecurityOverview, readinessRow, type ReadinessRow, type AgendaItem, type Change, plansList, academyList, familyStatus, productInfo, type ProductInfo, type ShareInfo, type Cascade, type Suggestion, type PlanInfo, type AcademyModule } from '../lib/api';
   import { gatherFacts, planCounts, nextStep, stepStatus, KIND_NAME, type PlanFacts } from '../lib/planfacts';
   import { categories } from '../lib/categories';
   import { settings } from '../lib/settings.svelte';
@@ -18,6 +19,7 @@
   let loaded = $state(false);
   let product: ProductInfo | null = $state(null);
   let sec: SecurityOverview | null = $state(null);
+  let ready: ReadinessRow | null = $state(null);
   let sharing: ShareInfo = $state({ on: false, auto: true, reason: '', pin: '', port: 8765, addresses: [], hotspot_up: false, signed_in: 0, trusted: 0 });
   // the Sharing panel follows the real state, so it changes by itself when a hotspot starts
   let shareBusy = $state(false);
@@ -70,6 +72,9 @@
       error = String(e);
     }
     try { product = await productInfo(); } catch { /* every tile is shown */ }
+    if (!learner.loaded) { try { await loadPeople(); } catch { /* names stay empty */ } }
+    // Readiness row (supplies, skills, self-reliance): host-only, a failure just leaves it out.
+    if (!inShare) { try { ready = await readinessRow(learner.people); } catch { ready = null; } }
     // Security Operations summary: host-only and only where this edition has it. Read from the same records as the Security screen.
     if (!inShare && product?.security) { try { sec = await securityOverview(); } catch { sec = null; } }
     // These never block the rest of the page: a failure just leaves that panel empty.
@@ -193,6 +198,14 @@
     <button class="mt" style="--c: var(--glow-green)" onclick={() => openDetail('date')} aria-haspopup="dialog"><span class="mico"><Icon name="cal" size={34} /></span><span><div class="mt-t">Past or near date</div><div class="mt-n {past ? 'act' : data.expiring.length ? 'check' : 'ok'}">{data.expiring.length} item{data.expiring.length === 1 ? '' : 's'}</div></span></button>
     <button class="mt" style="--c: var(--glow-cyan)" onclick={() => openDetail('checks')} aria-haspopup="dialog"><span class="mico"><Icon name="check" size={34} /></span><span><div class="mt-t">Plan checks due</div><div class="mt-n {checksDue ? 'check' : followed.length ? 'ok' : ''}">{followed.length ? checksDue : 'None'}</div></span></button>
     <button class="mt" style="--c: var(--glow-amber)" onclick={() => openDetail('drills')} aria-haspopup="dialog"><span class="mico"><Icon name="tools" size={34} /></span><span><div class="mt-t">Drills done</div><div class="mt-n {drillsDone ? 'ok' : 'check'}">{drillsDone} of {drillsTotal}</div></span></button>
+  </div>
+{/if}
+
+{#if ready}
+  <div class="tiles rdy" aria-label="Readiness">
+    <button class="tile" style="--c: var(--glow-green)" onclick={() => go('What fails')} title="Open What fails next"><div class="label">SUPPLIES</div><div class="big">{ready.supplies_days == null ? 'Not set' : Math.round(ready.supplies_days) + ' days'}</div><div class="muted small">before the first thing runs out</div></button>
+    <button class="tile" style="--c: var(--glow-amber)" onclick={() => go('training')} title="Open the skills grid"><div class="label">SKILLS</div><div class="big">{ready.skills_covered} of {ready.skills_total}</div><div class="muted small">must-have skills covered</div></button>
+    <button class="tile" style="--c: var(--glow-green)" onclick={() => go('What fails')} title="Open What replaces it"><div class="label">SELF-RELIANCE</div><div class="big">{ready.self_in_place} of {ready.self_total}</div><div class="muted small">needs with a replacement in place</div></button>
   </div>
 {/if}
 
@@ -418,6 +431,7 @@
   .dotmark.ok { background: var(--ok-bg); border-color: var(--ok-line); color: var(--ok); }
   .tiles { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 12px; }
   .tiles.sec { grid-template-columns: repeat(4, 1fr); }
+  .tiles.rdy { grid-template-columns: repeat(3, 1fr); }
   @media (max-width: 1100px) { .tiles { grid-template-columns: repeat(3, 1fr); } .tiles.sec { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 560px) { .tiles { grid-template-columns: repeat(2, 1fr); } }
   .tile { display: flex; flex-direction: column; justify-content: space-between; gap: 8px; min-height: 84px; padding: 14px; text-align: left; background: linear-gradient(180deg, color-mix(in srgb, var(--c, var(--line)) 9%, var(--panel)), var(--panel) 70%); border: 1px solid var(--line); border-left: 3px solid var(--c, var(--line)); border-radius: 12px; box-shadow: 0 0 18px color-mix(in srgb, var(--c, var(--blue)) 10%, transparent); }
