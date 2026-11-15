@@ -5,27 +5,36 @@ status: draft
 reviewer:
 reviewed:
 ---
-For colds, flu, COVID-19, strep throat, pink eye and most other infections that pass from person to person.
+For colds, flu, COVID-19, strep throat, pink eye and most infections that pass from person to person.
 
 **Wash your hands the right way:**
 1. Wet your hands with clean running water, turn off the tap, and add soap.
 2. Lather the backs of your hands, between your fingers and under your nails.
-3. Scrub for **at least 20 seconds**.
+3. Scrub for **at least 20 seconds.**
 4. Rinse well, then dry with a clean towel.
-5. No soap and water? Use hand sanitizer with **at least 60% alcohol**. Soap and water is better.
+5. No soap and water? Use hand sanitizer with **at least 60% alcohol.**
 
-**Wash after:** coughing, sneezing or blowing your nose; using the toilet or changing a diaper; touching a sick person or their things. **Before and after:** eating, making food, and caring for someone with vomiting or diarrhea.
+**If phones work, call 911** for trouble breathing, chest pain, new confusion, cannot wake up, or blue or gray lips.
 
-**Around a sick person:**
-- Keep them in one room if you can. Open a window for fresh air. A well-fitted mask on the sick person (and on you) helps, most of all if you cannot stay apart.
-- Cover coughs and sneezes. Do not touch your eyes, nose or mouth.
-- No sharing cups, forks, towels, bedding, makeup or glasses. Clean what they touch every day.
-- Take extra care around anyone at higher risk: babies, older people, pregnant people, and people with a long-term illness or a weak immune system. If they get sick, call their provider early.
+## If no help is coming
 
-**When can the sick person stop staying away?** For colds, flu and COVID-19: when, for at least 24 hours, they are getting better overall AND have had no fever without fever medicine. Then take extra care for 5 more days. People with a weak immune system may spread illness for longer.
+- **Wash after:** coughing, sneezing, the toilet, touching a sick person or their things. **Before and after:** eating, making food, caring for someone with vomiting or diarrhea.
+- **Around a sick person:** one room, window open, a well-fitted mask on both. No sharing cups, forks, towels or bedding. Clean what they touch daily.
+- **No soap:** use ash and water, or clean sand and water, and scrub hard. It is better than nothing.
+- **Cover coughs and sneezes** with your elbow. Do not touch your face.
+- **Protect the high-risk:** babies, older people, pregnant people, and people with long-term illness. Keep them in a separate area.
+- **When can the sick person stop staying away?** When for at least 24 hours they are better overall and have had no fever without fever medicine. Then take extra care for 5 more days.
 
-**Call 911 for:** trouble breathing, chest pain, new confusion, cannot wake up, or blue or gray lips.
+## Know more
+
+### Why hands
+Hands carry most germs to the mouth, nose and eyes.
+
+### Water and soap
+A hand-washing station at the toilet and the kitchen prevents more illness than any medicine.
+
+
 
 Source: CDC, About Handwashing and Preventing Spread of Respiratory Viruses When You're Sick, checked 2026-10-31.
 
-Reference only, not medical advice. In an emergency, call 911.
+Reference only, not medical advice. Where help can be reached, call 911.
