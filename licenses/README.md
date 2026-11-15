@@ -107,3 +107,6 @@ AGPL-3.0. We use its feature list as inspiration for `core/src/rotation.rs` only
 
 ## Survivalist hybrid content (added 2026-11-15)
 The courses Fieldcraft essentials, Living off the land, The long stay, Trades and repair and Wild food of the Appalachians, their cards and drills, the skills, "what replaces it" and wild-food season lists, and the plans The long emergency, The first year and Year two and after are ours. They are written in our own words from US government and public guidance (US Army FM 21-76, FEMA, CDC, Red Cross, USDA FSIS, OSHA, state Extension services, WV DNR and TWRA rules, North American Mycological Association guidance). Nothing is copied. They are complete but not yet reviewed by a qualified person; wild food and game rules must be checked against the current state rules and a local teacher.
+
+## Photos in content/images/ (added 2026-11-15)
+Supplied by the owner for personal use. Licences are not tracked per picture. Do not redistribute them, and take them off any drive that is sold or given out; many need credit to the photographer. A card or lesson shows a photo only when its file is there.
