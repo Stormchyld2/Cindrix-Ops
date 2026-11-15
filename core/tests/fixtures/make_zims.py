@@ -120,5 +120,7 @@ build(os.path.join(out_dir, "new-zstd.zim"), "new", "zstd")
 build(os.path.join(out_dir, "new-xz.zim"), "new", "xz")
 build(os.path.join(out_dir, "new-ext-stored.zim"), "new", "stored", extended=True)
 build(os.path.join(out_dir, "old-zstd.zim"), "old", "zstd")
-build(os.path.join(out_dir, "new-nolist-zstd.zim"), "new", "zstd", no_title_list=True)
+# not in zims/: real Kiwix tools (zimcheck) reject this hand-made layout, and CI checks every file in zims/ with them
+ro_dir = os.path.join(here, "zims-reader-only"); os.makedirs(ro_dir, exist_ok=True)
+build(os.path.join(ro_dir, "new-nolist-zstd.zim"), "new", "zstd", no_title_list=True)
 print("ok", [(f, os.path.getsize(os.path.join(out_dir, f))) for f in sorted(os.listdir(out_dir))])

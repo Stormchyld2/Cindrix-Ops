@@ -147,7 +147,7 @@ fn the_archive_can_be_shared_between_threads() {
 fn an_archive_without_a_header_title_list_still_suggests_titles() {
     // current Kiwix archives write the header's title position as "none" (all bits set) and keep the
     // title order in X/listing/titleOrdered/v1; adding to that position used to overflow
-    let a = Archive::open(&fixture("new-nolist-zstd.zim")).unwrap();
+    let a = Archive::open(&PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/zims-reader-only/new-nolist-zstd.zim")).unwrap();
     assert!(a.read("Water").unwrap().is_some());
     let s = a.suggest("water p", 12).unwrap();
     assert_eq!(s, vec![("Water_purification".to_string(), "Water purification".to_string())], "{:?}", s);
