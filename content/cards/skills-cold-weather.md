@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Written from general field guidance and not yet checked line by line against its source or by a qualified person.**
-
 **Keep Clean, avoid Overheating, wear Loose layers, keep Dry.**
 
 1. **Layers:** a wicking layer next to your skin, an insulating layer (fleece or wool), and a windproof, waterproof outer layer. No cotton next to the skin. It holds water.

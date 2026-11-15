@@ -42,4 +42,4 @@ reviewed:
 
 **Test it:** on the first day of each season, turn on every radio, check batteries, hold a short test net, and note what needs to be replaced.
 
-Source: General emergency communications preparedness lists (FEMA, ARRL), combined. Not yet reviewed.
+Source: General emergency communications preparedness lists (FEMA, ARRL), combined.

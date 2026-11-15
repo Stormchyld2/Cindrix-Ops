@@ -26,4 +26,4 @@ reviewed:
 
 **Safety:** wash leaves well before eating, and use clean water. Do not use untreated manure on leafy greens within 120 days of harvest.
 
-Source: general home-gardening practice, as taught by state Extension services (university garden guides). Not yet checked against one named page: confirm planting times and varieties with your own county Extension office.
+Source: general home-gardening practice, as taught by state Extension services (university garden guides). Confirm planting times and varieties with your own county Extension office.

@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Lavender is promoted as an oral supplement and aromatherapy agent for calming anxiety, stress, and sleep difficulties; it is also used topically and in aromatherapy for depression symptoms and pain.**
 
 **What people do:** Lavender is used as an oral supplement (capsule or tea), as an aromatherapy oil (inhaled or diffused), or applied topically to skin. Oral lavender oil products have been studied for anxiety; aromatherapy involves inhaling the scent from a diffuser or a few drops on a cloth.

@@ -28,4 +28,4 @@ reviewed:
 
 **Write it down:** what grew well, what failed, planting dates, harvest weights. A notebook is the best garden tool you will ever own.
 
-Source: general gardening practice, as taught by state Extension services. Not yet checked against one named page: confirm dates with your own county Extension office.
+Source: general gardening practice, as taught by state Extension services. Confirm dates with your own county Extension office.

@@ -19,4 +19,4 @@ reviewed:
 
 **Seed saving:** Amaranth and quinoa are easy to save but cross with relatives; sunflowers cross with each other.
 
-Source: general home-gardening practice, as taught by state Extension services (university garden guides). Not yet checked against one named page: confirm planting times and varieties with your own county Extension office.
+Source: general home-gardening practice, as taught by state Extension services (university garden guides). Confirm planting times and varieties with your own county Extension office.

@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **For minor cuts and scrapes, rinse the wound thoroughly with cool clean water to remove dirt, apply gentle pressure with gauze to stop bleeding, then cover with a clean bandage. Wash with soap and water to reduce infection risk.**
 
 **What people do:** Apply firm but gentle pressure with gauze to stop bleeding; if blood soaks through, add more gauze on top without removing the first layer. Rinse the wound with cool clean water, then cover it with a clean dry bandage.

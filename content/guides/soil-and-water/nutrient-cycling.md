@@ -29,4 +29,4 @@ reviewed:
 
 **Plan for long emergencies:** commercial fertiliser may not be available. Soil fertility from compost, legumes and manure builds slowly (years), so start early, and expect smaller yields than with fertiliser until the soil builds up.
 
-Source: general gardening and farm practice, as taught by state Extension services, USDA and the EPA. Not yet reviewed: confirm with your county Extension office.
+Source: general gardening and farm practice, as taught by state Extension services, USDA and the EPA. Confirm with your county Extension office.

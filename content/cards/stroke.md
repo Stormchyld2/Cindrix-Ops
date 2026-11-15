@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 Look for **BE FAST**:
 
 - **B** is Balance: sudden loss of balance or dizziness

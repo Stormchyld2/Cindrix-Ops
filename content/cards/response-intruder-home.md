@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Your safety and your family's come before property. Do not go looking for them. Call 911 when it is safe to.**
 
 1. **Get everyone to one safe room** you can lock or block: the room you picked ahead of time. Take phones and car keys if they are close.

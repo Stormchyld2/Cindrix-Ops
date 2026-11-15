@@ -55,3 +55,10 @@ Mockups of every screen are in [`../mockups`](../mockups).
 - [49. Real-hardware test plan](49-hardware-test-plan.md): every real test in one order
 - [50. The comms PACE plan](50-pace-plan.md): questions in Settings, the structured plan on the Comms plan page
 - [51. Survivalist and prepper hybrid](51-survivalist-hybrid.md): skills and long-term self-reliance measured beside supplies; eight parts, design only
+- [52. Bible study (Canonleaf's files)](52-bible-study.md): the Bible, commentaries, dictionaries and cross-references read from Canonleaf's folders; Ask quotes verses
+- [53. Garden beds and rotation](53-garden-beds-and-rotation.md)
+- [54. Comms: Wi-Fi Direct and Meshenger](54-comms-wifi-direct-and-meshenger.md)
+- [55. Cindrix FieldLog](55-fieldlog.md)
+- [56. Private team chat](56-private-team-chat.md)
+- [57. Status and open work](57-status-and-open-work.md): audit of 2026-11-07, what is built and what is left
+- [58. Podcasts](58-podcasts.md): saved episodes played from the drive, in Morale next to Music

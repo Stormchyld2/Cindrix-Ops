@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Only change channels for a reason everyone agreed to. FRS channels are shared and not private.**
 
 1. **Decide it is needed:** the main channel is noisy, busy with strangers, or cannot be understood.

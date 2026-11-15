@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 1. **Do not touch the person** while they may still be in contact with the electricity.
 2. **Turn off the power** at the switch or breaker if you can. If you cannot, use a dry object that does not conduct, such as cardboard, plastic or wood, to move the source away.
 3. **Stay at least 20 feet (6 metres) away from downed high-voltage wires.** Farther if they are sparking.

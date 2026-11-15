@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Eating 6–8 small bland meals throughout the day (crackers, toast, baked chicken, rice, potatoes) instead of 3 large meals reduces nausea and eases indigestion. As diarrhea symptoms improve, soft bland foods can be introduced gradually.**
 
 **What people do:** Eat smaller meals more often and stick to bland foods, avoiding spicy, fatty, or salty options. If you have trouble keeping food down, start with small sips of clear liquids frequently and add bland solids only when tolerated.

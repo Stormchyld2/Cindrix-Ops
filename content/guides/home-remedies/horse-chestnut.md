@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Horse chestnut seed extract is promoted for chronic venous insufficiency (leg pain and swelling from poor circulation) and has historically been used for hemorrhoids, arthritis, and menstrual cramps.**
 
 **What people do:** Use only standardized horse chestnut seed extract (a dietary supplement) — never raw seeds, bark, flowers, or leaves, which are toxic when taken orally. Research has used standardized extract for up to 12 weeks; follow the product label and consult a healthcare provider before use.

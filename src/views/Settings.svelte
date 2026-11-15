@@ -118,6 +118,24 @@
       error = String(e);
     }
   }
+  async function chooseBibleFolder() {
+    error = '';
+    try {
+      const p = await pickFolder();
+      if (p) settings.set('bibleFolder', [p]);
+    } catch (e) {
+      error = String(e);
+    }
+  }
+  async function choosePodcastsFolder() {
+    error = '';
+    try {
+      const p = await pickFolder();
+      if (p) settings.set('podcastsFolder', [p]);
+    } catch (e) {
+      error = String(e);
+    }
+  }
   async function chooseMusicFolder() {
     error = '';
     try {
@@ -238,6 +256,7 @@
       <p class="muted fine">The emergency cards are always searched. Turn off anything you do not want it to use.</p>
       {@render toggle('searchBooks', 'Your books on the Shelf', 'Books you added or that were found on the drive, once their text has been read.')}
       {@render toggle('searchArchives', 'The archives (Wikipedia, guides, saved websites as archives)', 'Every .zim file on the drive, searched by title, and by full text when the library server is running.')}
+      {@render toggle('searchBible', 'Bible study books', 'The Bible, commentaries and Bible dictionaries in the library\\bible folder. A question that names a verse brings in that verse and its notes.')}
       {@render toggle('searchFiles', 'Files and folders on the drive', 'Text, Markdown and web page files anywhere on the drive and in the folders you add below. PDFs are read through the Shelf.')}
       {@render toggle('searchSavedSites', 'Websites you saved with the website saver', 'The plain-text copies made when a site is saved.')}
     </div>
@@ -262,7 +281,7 @@
       {/if}
       <div class="row"><button class="btn" onclick={addFolder}>Add a folder…</button></div>
     </div>
-    {@render reset(['searchBooks', 'searchArchives', 'searchFiles', 'searchSavedSites', 'answerSources', 'answerLength', 'answerStyle', 'followUpMemory', 'searchSpeed', 'showSourceChips', 'extraFolders'])}
+    {@render reset(['searchBooks', 'searchArchives', 'searchBible', 'searchFiles', 'searchSavedSites', 'answerSources', 'answerLength', 'answerStyle', 'followUpMemory', 'searchSpeed', 'showSourceChips', 'extraFolders'])}
   {:else if tab === 'PACE plan'}
     <PaceSettings {go} />
   {:else if tab === 'My details'}
@@ -288,7 +307,16 @@
       <div class="row"><button class="btn" onclick={openArchives}>Archives, saving websites and sharing →</button></div>
       <p class="muted fine">Sharing the library with other devices is never turned on by a setting. It is off every time the program starts, and you turn it on in Archives.</p>
     </div>
-    {@render reset(['autoScanShelf', 'autoRestartLibrary'])}
+    <div class="panel">
+      <div class="label">BIBLE STUDY BOOKS</div>
+      <p class="muted fine">Bible study (Intel) reads the Bible, commentaries and dictionaries from the <b>library\bible</b> folder on the drive. If you already use <b>Canonleaf</b>, choose its folder here and the books are read where they are, with nothing copied or changed. A folder on this computer is only available while this computer is running the program. Copy the files onto the drive for a stick or phone that must work on its own.</p>
+      <div class="row">
+        <div class="grow path">{settings.values.bibleFolder[0] ?? 'Only the library\\bible folder on the drive'}</div>
+        <button class="btn" onclick={chooseBibleFolder}>Choose a folder…</button>
+        {#if settings.values.bibleFolder.length}<button class="btn" onclick={() => settings.set('bibleFolder', [])}>Use only the drive</button>{/if}
+      </div>
+    </div>
+    {@render reset(['autoScanShelf', 'autoRestartLibrary', 'bibleFolder'])}
   {:else if tab === 'Intel'}
     <div class="panel">
       <div class="label">INTEL, THE OFFLINE INTERNET</div>
@@ -314,7 +342,16 @@
         {#if settings.values.musicFolder.length}<button class="btn" onclick={() => settings.set('musicFolder', [])}>Use the drive's folder</button>{/if}
       </div>
     </div>
-    {@render reset(['showMiniPlayer', 'scanMusicOnStart', 'musicFolder'])}
+    <div class="panel">
+      <div class="label">PODCASTS FOLDER</div>
+      <p class="muted fine">Podcast episodes are read from the <b>podcasts</b> folder on the drive, one folder for each show. Choose another folder to play from there instead. Nothing is copied or changed.</p>
+      <div class="row">
+        <div class="grow path">{settings.values.podcastsFolder[0] ?? 'The podcasts folder on the drive'}</div>
+        <button class="btn" onclick={choosePodcastsFolder}>Choose a folder…</button>
+        {#if settings.values.podcastsFolder.length}<button class="btn" onclick={() => settings.set('podcastsFolder', [])}>Use the drive's folder</button>{/if}
+      </div>
+    </div>
+    {@render reset(['showMiniPlayer', 'scanMusicOnStart', 'musicFolder', 'podcastsFolder'])}
   {:else if tab === 'Maps'}
     <div class="panel">
       <div class="label">MAPS</div>
@@ -444,7 +481,7 @@
     <div class="panel">
       <div class="label">ABOUT</div>
       <p><strong>Cindrix Ops Survival Library</strong> · Carry the library. Keep the fire.</p>
-      <p class="muted">A reference tool, not a doctor, lawyer or rescuer. In an emergency, call 911. Content marked DRAFT has not been reviewed by a clinician. The assistant can be wrong: check anything that matters against the source it names.</p>
+      <p class="muted">A reference tool, not a doctor, lawyer or rescuer. In an emergency, call 911. The assistant can be wrong: check anything that matters against the source it names.</p>
       <p class="muted">The program works without internet and only talks to itself on this device. The one exception is <b>Save a website</b> in Archives, which uses the internet only while you run it. Sharing the library with other devices is off unless you turn it on.</p>
       <p class="muted fine">The program is free software (GPL-3.0-or-later). The full license texts are in the LICENSES folder.</p>
     </div>

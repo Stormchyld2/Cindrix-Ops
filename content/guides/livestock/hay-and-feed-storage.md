@@ -17,4 +17,4 @@ reviewed:
 
 **Silage and other options:** Sprouted barley fodder, root crops (mangels, turnips, pumpkins), tree leaves and branches in autumn can stretch feed. Dry leafy branches from safe trees (willow, poplar, maple, elm, ash) for goats and sheep.
 
-Source: general livestock practice as taught by state Extension services and the USDA (for example Penn State, Oregon State and Cornell small-farm guides). Not yet checked against one named page: confirm feed amounts, housing and health care with your county Extension office and a large-animal vet.
+Source: general livestock practice as taught by state Extension services and the USDA (for example Penn State, Oregon State and Cornell small-farm guides). Confirm feed amounts, housing and health care with your county Extension office and a large-animal vet.

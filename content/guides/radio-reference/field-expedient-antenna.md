@@ -27,4 +27,4 @@ reviewed:
 
 **Safety:** keep wire antennas away from power lines. Do not touch an antenna while transmitting. Keep the antenna above head height, so nobody walks into it.
 
-Source: ARRL and standard amateur radio practice (half-wave dipole formula 468 divided by frequency in MHz). Not yet reviewed.
+Source: ARRL and standard amateur radio practice (half-wave dipole formula 468 divided by frequency in MHz).

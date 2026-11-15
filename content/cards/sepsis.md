@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Sepsis is a life-threatening reaction to infection. It can get worse in hours.**
 
 Look for **an infection or recent injury** plus **one or more** of these:

@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **An alert means "go and verify safely", not "someone is attacking". Check in pairs, and keep one person in camp. Call 911 if anyone is in danger and you have signal.**
 
 1. **Wake or call the watch lead.** Do not go and look alone.

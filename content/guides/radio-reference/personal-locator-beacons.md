@@ -26,4 +26,4 @@ reviewed:
 
 **Plan:** tell someone where you are going and when you will be back. A beacon does not replace that.
 
-Source: COSPAS-SARSAT and NOAA guidance on 406 MHz beacons; manufacturer documentation. Not yet reviewed.
+Source: COSPAS-SARSAT and NOAA guidance on 406 MHz beacons; manufacturer documentation.

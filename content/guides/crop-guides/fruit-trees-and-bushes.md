@@ -19,4 +19,4 @@ reviewed:
 
 **Seed saving:** Fruit trees are grafted: seed does not come true. Buy or make grafted trees; learn grafting from your Extension office.
 
-Source: general home-gardening practice, as taught by state Extension services (university garden guides). Not yet checked against one named page: confirm planting times and varieties with your own county Extension office.
+Source: general home-gardening practice, as taught by state Extension services (university garden guides). Confirm planting times and varieties with your own county Extension office.

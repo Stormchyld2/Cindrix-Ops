@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Say it plainly. FRS is a shared channel and anyone can hear it. Call 911 if you can reach it and someone is in danger.**
 
 **Red** is danger to life: serious injury, fire, a missing person with urgent worry. **Amber** is a significant problem: failed radio, low power, a late return. **Green** is a routine "task done". Green does not mean the whole place is secure.

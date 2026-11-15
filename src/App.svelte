@@ -23,8 +23,12 @@
   import SecurityOps from './views/SecurityOps.svelte';
   import Plans from './views/Plans.svelte';
   import SeedVault from './views/SeedVault.svelte';
+  import GardenBeds from './views/GardenBeds.svelte';
   import Music from './views/Music.svelte';
+  import Podcasts from './views/Podcasts.svelte';
+  import PodMiniPlayer from './lib/PodMiniPlayer.svelte';
   import Guides from './views/Guides.svelte';
+  import Bible from './views/Bible.svelte';
   import DrugLabels from './views/DrugLabels.svelte';
   import Journal from './views/Journal.svelte';
   import Photos from './views/Photos.svelte';
@@ -32,7 +36,7 @@
   import MiniPlayer from './lib/MiniPlayer.svelte';
   import Splash from './lib/Splash.svelte';
   import { onMount } from 'svelte';
-  import { intelRequest, sourceRequest, viewRequest } from './lib/chat.svelte';
+  import { intelRequest, sourceRequest, viewRequest, bibleRequest } from './lib/chat.svelte';
   import { inShare, modelStatus, libraryStatus, productInfo, librariesList, libraryAnswer, privacySetIdle, type ModelStatus, type ProductInfo, type LibraryEntry } from './lib/api';
   import { settings, applyUiScale } from './lib/settings.svelte';
   import { installTooltips, removeTooltips } from './lib/tooltips';
@@ -88,24 +92,24 @@
   $effect(() => { if (settings.loaded) void privacySetIdle(settings.values.privateLockMinutes); });
 
   // Intel is the offline internet: the archives read like web pages. It goes with the library.
-  type Group = 'Dashboard' | 'Ask' | 'Library' | 'Intel' | 'Academy' | 'Maps' | 'Music' | 'Plan' | 'Inventory' | 'Settings' | 'Corner' | 'Guides' | 'Journal' | 'Photos' | 'CommsPlan' | 'Todo' | 'Calendar' | 'Projects' | 'DrugLabels' | 'Security' | 'Soon';
-  const allGroups: Group[] = ['Dashboard', 'Ask', 'Library', 'Intel', 'Academy', 'Maps', 'Music', 'Plan', 'Inventory', 'Settings', 'Corner', 'Journal', 'Photos', 'CommsPlan', 'Todo', 'Calendar', 'Projects', 'DrugLabels', 'Security'];
+  type Group = 'Dashboard' | 'Ask' | 'Library' | 'Intel' | 'Academy' | 'Maps' | 'Music' | 'Podcasts' | 'Plan' | 'Inventory' | 'Settings' | 'Corner' | 'Guides' | 'Journal' | 'Photos' | 'CommsPlan' | 'Todo' | 'Calendar' | 'Projects' | 'DrugLabels' | 'Security' | 'Bible' | 'Soon';
+  const allGroups: Group[] = ['Dashboard', 'Ask', 'Library', 'Intel', 'Academy', 'Maps', 'Music', 'Podcasts', 'Plan', 'Inventory', 'Settings', 'Corner', 'Journal', 'Photos', 'CommsPlan', 'Todo', 'Calendar', 'Projects', 'DrugLabels', 'Security', 'Bible'];
   // Each product switches parts of the program on or off (core/src/product.rs).
   const groups = $derived(
     allGroups.filter((g) => {
       if (!product) return true;
       if (g === 'Ask') return product.assistant;
-      if (g === 'Library' || g === 'Intel' || g === 'Corner') return product.library;
+      if (g === 'Library' || g === 'Intel' || g === 'Corner' || g === 'Bible') return product.library;
       if (g === 'DrugLabels') return product.library && !inShare;
       if (g === 'Maps') return product.maps;
-      if (g === 'Music') return product.music;
+      if (g === 'Music' || g === 'Podcasts') return product.music;
       if (g === 'Security') return product.security && !inShare;
       if (g === 'Plan' || g === 'Inventory') return product.plan;
       if (g === 'Todo' || g === 'Calendar' || g === 'Projects') return !inShare;
       return true;
     })
   );
-  const planTabs = ['Start', 'What next', 'Drills', 'Family', 'Binder', 'Seed vault', 'What fails'] as const;
+  const planTabs = ['Start', 'What next', 'Drills', 'Family', 'Binder', 'Seed vault', 'Garden beds', 'What fails'] as const;
 
   let group: Group = $state('Dashboard');
   // If the current screen is switched off for this product, move to the first one that is on.
@@ -128,6 +132,12 @@
   function openSource(link: string) {
     if (link.startsWith('card:')) { openCard(link.slice(5)); return; }
     if (link.startsWith('/content/')) { intelRequest.path = link; group = 'Intel'; return; }
+    if (link.startsWith('bible:')) {
+      const r = link.slice(6);
+      if (r.startsWith('term:')) bibleRequest.term = r.slice(5); else bibleRequest.ref = r;
+      group = 'Bible';
+      return;
+    }
     if (link.startsWith('academy:')) { sourceRequest.lesson = link.slice(8); group = 'Academy'; return; }
     if (link.startsWith('guide:')) { guideSection = link.slice(6).split('/')[0]; group = 'Guides'; return; }
     if (link.startsWith('plan:')) {
@@ -194,7 +204,7 @@
     'food-preservation': { title: 'Food preservation', intro: 'Keeping the harvest safe to eat. Food safety rules here come from the official guides and are not shortened.' },
     'livestock': { title: 'Livestock', intro: 'Keeping animals for eggs, milk and meat. Nothing here gives medicine amounts: for sick animals, ask a vet.' },
     'soil-and-water': { title: 'Soil and water', intro: 'Looking after the ground and the water your food depends on.' },
-    'home-remedies': { title: 'Home remedies', intro: 'Simple home measures and herbal products, from CDC, MedlinePlus and the U.S. National Institutes of Health. These pages are drafts until a qualified person has checked them. They give no medicine amounts: for medicines, ask a pharmacist or doctor.' },
+    'home-remedies': { title: 'Home remedies', intro: 'Simple home measures and herbal products, from CDC, MedlinePlus and the U.S. National Institutes of Health. They give no medicine amounts: for medicines, ask a pharmacist or doctor.' },
     'radio-reference': { title: 'Radio reference', intro: 'Family radios, ham radio, antennas, check-in plans, signalling, beacons and mesh radios, with the rules for the United States. Rules differ in other countries, and they change: check fcc.gov.' },
   };
   let settingsFromComms = $state(false);
@@ -220,7 +230,7 @@
         { label: 'Projects', tab: 'Projects', show: !inShare } ] },
       { id: 'Intel', cat: 'intel', show: lib_, entries: [
         { label: 'Offline browser', tab: 'Intel', note: 'archives' }, { label: 'Shelf', tab: 'Shelf', note: 'manuals' },
-        { label: 'Archives', tab: 'Archives' }, { label: 'Emergency cards', tab: 'Cards' },
+        { label: 'Archives', tab: 'Archives' }, { label: 'Emergency cards', tab: 'Cards' }, { label: 'Bible study', tab: 'Bible', note: 'Canonleaf' },
         { label: 'Home remedies', tab: 'guide:home-remedies' }, { label: 'Drug labels', tab: 'DrugLabels', note: 'FDA', show: !inShare } ] },
       { id: 'Academy', cat: 'academy', show: true, entries: [
         { label: 'Courses', tab: 'Academy' }, { label: 'Training sign-off', tab: 'training' } ] },
@@ -228,12 +238,12 @@
         { label: 'Crop guides', tab: 'guide:crop-guides' }, { label: 'Planting calendar', tab: 'guide:planting-calendar' },
         { label: 'Food preservation', tab: 'guide:food-preservation' }, { label: 'Livestock', tab: 'guide:livestock' },
         { label: 'Soil and water', tab: 'guide:soil-and-water' }, { label: '', tab: '', rule: true },
-        { label: 'Seed vault', tab: 'Seed vault' } ] },
+        { label: 'Seed vault', tab: 'Seed vault' }, { label: 'Garden beds', tab: 'Garden beds' } ] },
       { id: 'Maps', cat: 'maps', tab: 'Maps', show: p ? p.maps : true },
       { id: 'Security', cat: 'security', tab: 'Security', show: !inShare && (p ? p.security : true) },
       { id: 'Morale', cat: 'morale', show: true, entries: [
         { label: 'Reading Corner', tab: 'Corner', note: 'enjoyment books', show: p ? p.library : true },
-        { label: 'Music', tab: 'Music', show: p ? p.music : true }, { label: '', tab: '', rule: true },
+        { label: 'Music', tab: 'Music', show: p ? p.music : true }, { label: 'Podcasts', tab: 'Podcasts', note: 'saved episodes', show: p ? p.music : true }, { label: '', tab: '', rule: true },
         { label: 'Journal', tab: 'Journal', note: 'private', show: !inShare }, { label: 'Photos', tab: 'Photos' } ] },
       { id: 'Comms', cat: 'comms', show: true, entries: [
         { label: 'Comms plan', tab: 'CommsPlan', note: 'private', show: !inShare }, { label: 'Radio reference', tab: 'guide:radio-reference' },
@@ -246,10 +256,10 @@
   /** Which word in the top bar the current screen belongs under. */
   const activeTop = $derived.by(() => {
     switch (group) {
-      case 'Library': case 'Intel': case 'DrugLabels': return 'Intel';
-      case 'Music': case 'Corner': case 'Journal': case 'Photos': return 'Morale';
+      case 'Library': case 'Intel': case 'DrugLabels': case 'Bible': return 'Intel';
+      case 'Music': case 'Podcasts': case 'Corner': case 'Journal': case 'Photos': return 'Morale';
       case 'CommsPlan': return 'Comms';
-      case 'Plan': return plan === 'Seed vault' ? 'Agro' : 'Operations';
+      case 'Plan': return plan === 'Seed vault' || plan === 'Garden beds' ? 'Agro' : 'Operations';
       case 'Inventory': case 'Todo': case 'Calendar': case 'Projects': return 'Operations';
       case 'Settings': return settingsFromComms ? 'Comms' : 'System';
       case 'Guides': {
@@ -331,7 +341,7 @@
     <div class="warn libnote" role="status">{libNote} <button class="btn" onclick={() => (libNote = '')}>OK</button></div>
   {/if}
 
-  <main class:wide={group === 'Intel' || group === 'Calendar' || group === 'Ask' || group === 'Academy'}>
+  <main class:wide={group === 'Intel' || group === 'Bible' || group === 'Calendar' || group === 'Ask' || group === 'Academy'}>
     {#if group === 'Dashboard'}
       <Dashboard go={goTo} />
     {:else if group === 'Security'}
@@ -354,8 +364,12 @@
       <Maps />
     {:else if group === 'Music'}
       <Music />
+    {:else if group === 'Podcasts'}
+      <Podcasts />
     {:else if group === 'Guides'}
       <Guides section={guideSection} title={guideInfo[guideSection]?.title ?? 'Guides'} intro={guideInfo[guideSection]?.intro ?? ''} />
+    {:else if group === 'Bible'}
+      <Bible />
     {:else if group === 'DrugLabels'}
       <DrugLabels />
     {:else if group === 'Journal'}
@@ -385,6 +399,8 @@
         <Family />
       {:else if plan === 'Seed vault'}
         <SeedVault go={goTo} />
+      {:else if plan === 'Garden beds'}
+        <GardenBeds />
       {:else}
         <Cascade go={goTo} />
       {/if}
@@ -416,7 +432,7 @@
     </dialog>
   {/if}
 
-  {#if product?.music !== false && settings.values.showMiniPlayer}<MiniPlayer open={() => (group = 'Music')} />{/if}
+  {#if product?.music !== false && settings.values.showMiniPlayer}<MiniPlayer open={() => (group = 'Music')} /><PodMiniPlayer open={() => (group = 'Podcasts')} />{/if}
 
   {#if settings.values.showStatusBar}
   <footer class="no-print">

@@ -5,7 +5,7 @@ where: at home
 summary: Make sure the family has what it needs to keep taking care of health.
 status: draft
 ---
-Draft checklist. Walk through and actually look, do not just tick.
+Walk through and actually look, do not just tick.
 - List each person who needs regular medicine or supplies, without writing amounts here
 - Check how many days of each you have, and ask your doctor or pharmacy about getting extra
 - Check expiry dates and how each must be stored, including keeping cool

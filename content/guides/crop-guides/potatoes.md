@@ -16,4 +16,4 @@ reviewed:
 
 **Green skin or sprouts:** potatoes that have turned green in the light contain a bitter poison. Cut the green parts away, and throw away a potato that is very green or bitter.
 
-Source: general home-gardening practice, as taught by state Extension services. Not yet checked against one named page: check planting times with your own Extension office.
+Source: general home-gardening practice, as taught by state Extension services. Check planting times with your own Extension office.

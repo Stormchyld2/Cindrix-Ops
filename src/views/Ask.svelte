@@ -57,6 +57,7 @@
     [
       settings.values.searchBooks && 'your books',
       settings.values.searchArchives && 'the archives',
+      settings.values.searchBible && 'Bible study books',
       settings.values.searchFiles && 'files and folders',
       settings.values.searchSavedSites && 'saved websites',
     ].filter((x): x is string => typeof x === 'string'),

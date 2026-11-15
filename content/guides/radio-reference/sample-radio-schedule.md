@@ -19,4 +19,4 @@ reviewed:
 
 **News:** Listen to a weather radio and a local AM/FM station at 7:00 and 19:00.
 
-Source: Published United States radio rules and guidance (FCC Parts 95 and 97, NOAA, U.S. Coast Guard, FAA, ARRL). Frequencies and rules change and differ by country: check a current FCC or ARRL chart before relying on a number. Not yet checked line by line.
+Source: Published United States radio rules and guidance (FCC Parts 95 and 97, NOAA, U.S. Coast Guard, FAA, ARRL). Frequencies and rules change and differ by country: check a current FCC or ARRL chart before relying on a number.

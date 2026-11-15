@@ -607,6 +607,39 @@ export async function shelfRead(id: string): Promise<Uint8Array> {
   return b.bytes.slice();
 }
 
+/**
+ * Save a copy of a book as a plain file, so it can be read later without this library.
+ * In a browser on another device the browser does the saving (the host sends the file); in the program
+ * a Save window asks where it should go. Returns a sentence to show, or '' when the person cancelled.
+ */
+export async function shelfDownload(book: Book): Promise<string> {
+  if (inShare) {
+    const a = document.createElement('a');
+    a.href = '/api/shelf_download?id=' + encodeURIComponent(book.id);
+    a.download = '';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    return `Downloading “${book.title}”. When it finishes, look for it in your Downloads.`;
+  }
+  if (tauriHost) {
+    const where = await call<string | null>('shelf_save_copy', { id: book.id });
+    return where ? `Saved “${book.title}” to ${where}.` : '';
+  }
+  // a browser tab outside the program (screen preview): hand over the sample
+  const b = memBooks.find((x) => x.meta.id === book.id);
+  if (!b) throw 'No such book.';
+  const url = URL.createObjectURL(new Blob([b.bytes as unknown as BlobPart]));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${book.title}.${book.kind}`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  return `Downloading “${book.title}”.`;
+}
+
 export async function shelfUpdate(id: string, title: string, author: string, category: string): Promise<void> {
   if (inTauri) return call<void>('shelf_update', { id, title, author, category });
   const b = memBooks.find((x) => x.meta.id === id);
@@ -1096,6 +1129,38 @@ export async function academySave(lesson: string, score: number, total: number, 
   memAcademy[lesson] = r;
 }
 
+
+// ---------- garden beds and crop rotation ----------
+export type BedRow = { bed: string; year: number; crop: string; notes: string };
+export type BedClash = { bed: string; year: number; crop: string; earlier_year: number; earlier_crop: string; family: string; wait_until: number };
+export type BedReview = { rows: BedRow[]; clashes: BedClash[]; hints: { bed: string; next: string[] }[] };
+let memBeds: BedRow[] = [
+  { bed: 'Bed 1', year: 2025, crop: 'Tomato', notes: '' },
+  { bed: 'Bed 1', year: 2026, crop: 'Pepper', notes: '' },
+  { bed: 'Bed 2', year: 2026, crop: 'Pole bean', notes: '' },
+];
+function memReview(): BedReview {
+  const clashes: BedClash[] = [];
+  const fam = (c: string) => (/tomato|pepper|potato|eggplant/i.test(c) ? 'nightshade' : /bean|pea/i.test(c) ? 'legume' : '');
+  const wait: Record<string, number> = { nightshade: 3, legume: 1 };
+  for (const r of memBeds) {
+    const f = fam(r.crop);
+    const e = memBeds.filter((x) => x.bed.toLowerCase() === r.bed.toLowerCase() && x.year < r.year && f && fam(x.crop) === f && r.year - x.year <= wait[f]).sort((a, b) => b.year - a.year)[0];
+    if (e) clashes.push({ bed: r.bed, year: r.year, crop: r.crop, earlier_year: e.year, earlier_crop: e.crop, family: f, wait_until: e.year + wait[f] + 1 });
+  }
+  const beds = [...new Set(memBeds.map((r) => r.bed))];
+  return { rows: memBeds, clashes, hints: beds.map((bed) => ({ bed, next: ['bean and pea family', 'leafy greens'] })) };
+}
+export async function bedsList(): Promise<BedReview> {
+  if (inTauri) return call<BedReview>('beds_list');
+  return memReview();
+}
+export async function bedsSave(rows: BedRow[]): Promise<BedReview> {
+  if (inTauri) return call<BedReview>('beds_save', { rows });
+  memBeds = rows.filter((r) => r.bed.trim() && r.crop.trim());
+  return memReview();
+}
+
 // ---------- seed vault ----------
 export type Seed = {
   id: string; crop: string; variety: string; kind: string; packets: number; seeds_per_packet: number; year_packed: number;
@@ -1298,6 +1363,51 @@ export async function musicSource(rel: string): Promise<string> {
   // The program hands back `t/<path in the music folder>` or `c/<name>` as plain text; convertFileSrc encodes it once.
   return convertFileSrc(path, 'cindrix-music');
 }
+// ---------- podcasts ----------
+export type PodEpisode = { rel: string; title: string; date: string; size: number };
+export type PodShow = { folder: string; name: string; episodes: PodEpisode[] };
+export type PodList = { folder_found: boolean; shows: PodShow[] };
+export type PodProgress = { rel: string; seconds: number; done: boolean };
+
+const samplePodcasts: PodList = {
+  folder_found: true,
+  shows: [
+    { folder: 'Sample Show', name: 'Sample Show', episodes: [
+      { rel: 'Sample Show/2026-11-02 - Second sample episode.mp3', title: 'Second sample episode', date: '2026-11-02', size: 4_000_000 },
+      { rel: 'Sample Show/2026-10-26 - First sample episode.mp3', title: 'First sample episode', date: '2026-10-26', size: 3_500_000 },
+    ] },
+  ],
+};
+let memPodProgress: PodProgress[] = [];
+
+/** Every show and episode in the podcasts folder (newest first). */
+export async function podcastsList(): Promise<PodList> {
+  if (inTauri) return call<PodList>('podcasts_list');
+  return samplePodcasts;
+}
+/** Where each episode was left off. Guests on the share server have no saved places (host-only). */
+export async function podcastsProgressLoad(): Promise<PodProgress[]> {
+  if (inShare) return [];
+  if (inTauri) return call<PodProgress[]>('podcasts_progress_load');
+  return memPodProgress;
+}
+export async function podcastsProgressSave(rel: string, seconds: number, done: boolean): Promise<void> {
+  if (inShare) return;
+  if (inTauri) return call<void>('podcasts_progress_save', { rel, seconds, done });
+  memPodProgress = [...memPodProgress.filter((p) => p.rel !== rel), { rel, seconds, done }];
+}
+/** An address the audio element can play for an episode. */
+export async function podcastSource(rel: string): Promise<string> {
+  if (!inTauri) {
+    let u = toneCache.get('pod:' + rel);
+    if (!u) { u = wavTone(330, 30); toneCache.set('pod:' + rel, u); }
+    return u;
+  }
+  if (inShare) return hostUrl('/pod/', 'e/' + rel);
+  const { convertFileSrc } = await import('@tauri-apps/api/core');
+  return convertFileSrc('e/' + rel, 'cindrix-pod');
+}
+
 /** The cover picture for a track (embedded or in its folder), or null in the browser preview. */
 export async function musicArtUrl(rel: string): Promise<string | null> {
   if (!inTauri) return null;
@@ -1941,4 +2051,59 @@ export async function securityPocketAccept(name: string, allowMoved = false): Pr
 export async function securityPocketSetAside(name: string): Promise<void> {
   if (tauriHost) return call<void>('security_pocket_set_aside', { name });
   throw new Error('Reports are handled in the program, not in the browser preview.');
+}
+
+// ---------- Bible study (Canonleaf's files, read from library\bible; read-only, guests may use it) ----------
+export type BibleModule = { id: string; title: string; kind: string; license: string; attribution: string };
+export type BibleStatus = { found: boolean; default_bible: string | null; modules: BibleModule[]; where_to_put: string };
+export type BibleBook = { code: string; name: string; chapters: number };
+export type BibleVerse = { number: string; text: string };
+export type BibleNote = { label: string; text: string };
+export type BibleRef = { text: string; code: string };
+export type BibleCross = { source: string; items: { anchor: string; refs: BibleRef[] }[] };
+export type BibleHit = { book: string; name: string; chapter: number; verse: string; text: string };
+export type BiblePlace = { book: string; chapter: number; verse: number | null };
+export type BibleEntry = { source: string; kind: string; title: string; body: string; refs: BibleRef[] };
+export type BibleStrongs = { number: string; lemma: string; transliteration: string; gloss: string; morphology: string; source: string };
+
+// Outside the program and the share page there is no drive to read, so these show nothing (never made-up text).
+export async function bibleStatus(fresh = false): Promise<BibleStatus> {
+  if (inTauri) return call<BibleStatus>('bible_status', { fresh });
+  return { found: false, default_bible: null, modules: [], where_to_put: 'the folder library\\bible on the drive' };
+}
+export async function bibleBooks(bible: string): Promise<BibleBook[]> {
+  return inTauri ? call<BibleBook[]>('bible_books', { bible }) : [];
+}
+export async function bibleChapter(bible: string, book: string, chapter: number): Promise<BibleVerse[]> {
+  return inTauri ? call<BibleVerse[]>('bible_chapter', { bible, book, chapter }) : [];
+}
+export async function bibleNotes(module: string, book: string, chapter: number, verse: number | null): Promise<BibleNote[]> {
+  return inTauri ? call<BibleNote[]>('bible_notes', { module, book, chapter, verse }) : [];
+}
+export async function bibleCrossrefs(bible: string, book: string, chapter: number, verse: number): Promise<BibleCross> {
+  return inTauri ? call<BibleCross>('bible_crossrefs', { bible, book, chapter, verse }) : { source: '', items: [] };
+}
+export async function bibleSearch(bible: string, query: string): Promise<BibleHit[]> {
+  return inTauri ? call<BibleHit[]>('bible_search', { bible, query }) : [];
+}
+export async function bibleParse(text: string): Promise<BiblePlace | null> {
+  return inTauri ? call<BiblePlace | null>('bible_parse', { text }) : null;
+}
+export async function bibleDefine(term: string): Promise<BibleEntry[]> {
+  return inTauri ? call<BibleEntry[]>('bible_define', { term }) : [];
+}
+export type BibleMention = {
+  module_id: string;
+  source: string;
+  kind: string;
+  title: string;
+  points: string[];
+  excerpt: string;
+  verses: string[];
+};
+export async function bibleMentions(verses: string[]): Promise<BibleMention[]> {
+  return inTauri && verses.length ? call<BibleMention[]>('bible_mentions', { verses }) : [];
+}
+export async function bibleStrongs(number: string): Promise<BibleStrongs[]> {
+  return inTauri ? call<BibleStrongs[]>('bible_strongs', { number }) : [];
 }

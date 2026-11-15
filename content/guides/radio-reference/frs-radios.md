@@ -24,4 +24,4 @@ reviewed:
 
 **Emergency use:** FRS can be used in an emergency, including channel 9 (462.6125 MHz) or any channel you agree on. Listen first so you do not talk over someone else.
 
-Source: FCC rules (47 CFR Parts 95 and 97) and FCC consumer guides, paraphrased, as understood in the United States. Rules change: check fcc.gov before you rely on a number. Not yet reviewed.
+Source: FCC rules (47 CFR Parts 95 and 97) and FCC consumer guides, paraphrased, as understood in the United States. Rules change: check fcc.gov before you rely on a number.

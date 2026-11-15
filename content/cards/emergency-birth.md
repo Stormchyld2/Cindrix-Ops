@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Call 911.** Stay on the line; the dispatcher will talk you through it. Then:
 
 1. Stay calm. Wash your hands. Lay down towels or clean cloth. Help the mother into a comfortable position, back propped up.

@@ -23,4 +23,4 @@ reviewed:
 
 **Plan:** put GMRS channel and "privacy code" settings in the Comms plan so every radio in the family uses the same ones.
 
-Source: FCC rules (47 CFR Parts 95 and 97) and FCC consumer guides, paraphrased, as understood in the United States. Rules change: check fcc.gov before you rely on a number. Not yet reviewed.
+Source: FCC rules (47 CFR Parts 95 and 97) and FCC consumer guides, paraphrased, as understood in the United States. Rules change: check fcc.gov before you rely on a number.

@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Passionflower is marketed as a dietary supplement for anxiety, sleep problems, and stress.**
 
 **What people do:** Passionflower is taken as a tea (studied for up to 7 nights) or as an oral extract supplement (studied for up to 8 weeks). Follow package directions and consult a healthcare provider before use, especially if you take other medications or are scheduled for surgery.

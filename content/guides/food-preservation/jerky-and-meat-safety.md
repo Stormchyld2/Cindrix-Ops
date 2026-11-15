@@ -28,4 +28,4 @@ reviewed:
 
 **Safe temperatures:** keep cold food at **40 degrees F or below** and hot food at **140 degrees F or above**. Between is the "danger zone" where bacteria multiply fast.
 
-Source: USDA Food Safety and Inspection Service (FSIS) guidance on jerky and food safety, paraphrased. Not yet reviewed; curing and smoking need training: learn from a tested source before relying on them.
+Source: USDA Food Safety and Inspection Service (FSIS) guidance on jerky and food safety, paraphrased. Curing and smoking need training: learn from a tested source before relying on them.

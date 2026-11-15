@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 If told to **shelter in place**, or you see or smell a chemical release:
 
 1. **Go indoors now.** Bring pets in. Close and lock doors and windows.

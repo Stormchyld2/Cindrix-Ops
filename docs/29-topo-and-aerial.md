@@ -43,3 +43,20 @@ suspects were USGS's own generalised small-scale tiles, or tiles from zoom 10 up
 lines from elevation data (the original plan in docs/05) instead of using USGS's pictures.
 The `.part` / index / header fixes above still apply to the aerial layer.
 
+
+
+## The owner's areas (approximate boxes, 2026-11-07)
+Boxes are `west,south,east,north` and are deliberately generous. Check each against the Maps screen once the
+files exist, and tighten them if a box is far larger than needed. Use `-MaxZoom 16` for sharp detail.
+
+| Area | Counties | `-Bbox` |
+|---|---|---|
+| `tn-middle` | Davidson, Dickson, Montgomery, Cheatham, Robertson (TN) | `-87.70,35.90,-86.45,36.66` |
+| `wv-north` | Marion, Harrison, Lewis, Monongalia (WV) | `-80.80,38.85,-79.85,39.76` |
+
+```
+powershell -File scripts\get-imagery.ps1 -Target D:\ -Layer aerial -Bbox:"-87.70,35.90,-86.45,36.66" -Name tn-middle -MaxZoom 16
+powershell -File scripts\get-imagery.ps1 -Target D:\ -Layer aerial -Bbox:"-80.80,38.85,-79.85,39.76" -Name wv-north -MaxZoom 16
+```
+Run the same two with `-Layer topo`. Cheatham and Robertson are inside the `tn-middle` box. The boxes are my estimate,
+not surveyed county outlines.

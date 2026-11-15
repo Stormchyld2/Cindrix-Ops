@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **At home:**
 1. Stay inside. Dress in layers. Close off rooms you do not need.
 2. Never heat with an oven, grill or camp stove. Use alarms for carbon monoxide.

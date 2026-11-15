@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 1. **Do not pull the object out.** It may be plugging a blood vessel.
 2. **Call 911.**
 3. Keep the person still. Wash your hands or put on gloves if you can.

@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 1. **Baby under 3 months with a temperature of 100.4 F (38 C) or higher: call the doctor or go to the emergency room right away,** day or night.
 2. For an older child, take the temperature and note it. Dress them lightly, keep the room comfortable, and offer fluids often.
 3. Do not bundle them up or use cold baths or alcohol rubs.

@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Bromelain, an enzyme from pineapple, is promoted for reducing postoperative pain and swelling, sinusitis, osteoarthritis, and exercise-induced muscle soreness. A topical formulation has FDA approval for debridement of severe burns.**
 
 **What the evidence says:** Some studies suggest oral bromelain may reduce certain symptoms after wisdom tooth surgery; evidence for sinusitis is insufficient. The topical formulation has been successfully used by health professionals for burn debridement as an alternative to surgical debridement.

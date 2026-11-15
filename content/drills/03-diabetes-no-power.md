@@ -5,7 +5,7 @@ where: diabetes pack
 summary: Keep medicines cool, count supplies, and know who to call.
 status: draft
 ---
-Draft checklist, pending review by a clinician. It never gives doses: follow your doctor's written plan.
+It never gives doses: follow your doctor's written plan.
 - Take out your doctor's written plan and put it where everyone can find it
 - Count meter strips, lancets, pen needles or pump supplies, and glucose tablets or fast sugar
 - Check expiry dates and write the earliest one down

@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 1. Keep the baby warm: skin to skin on your chest, covered with a blanket and a hat. Newborns lose heat fast.
 2. Feed often: at least 8 to 12 times a day by breast or formula. A baby that is feeding well has about 6 wet diapers a day after the first week.
 3. Always lay a baby on the back to sleep, on a firm flat surface, with no pillows, loose blankets or toys.

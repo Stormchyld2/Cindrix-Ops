@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **The person going off watch stays responsible until the next person says "I have the watch." An unattended radio is not a watch.**
 
 1. **Is the next person here and fit for duty?** Rested, awake, and able to listen.

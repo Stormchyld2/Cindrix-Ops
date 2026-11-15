@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 1. **Leave early when told.** Do not wait to see flames. Take the go-bag, papers, medicines, pets and phone chargers. Fill the car with fuel.
 2. If you have time: close all windows and doors, turn off gas at the meter, move furniture away from windows, hook up garden hoses, bring in outdoor things that burn.
 3. Wear long sleeves, long pants, boots and a mask (an N95 helps with smoke).

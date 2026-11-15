@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 1. **Call 911 or Poison Control (1-800-222-1222) right away** if you think a child swallowed a button battery or a magnet, even if they seem fine.
 2. Do not make the person vomit. Do not let them eat or drink if a battery was swallowed.
 3. Note what was swallowed, when, and the size. Keep the packaging or a matching item to show.

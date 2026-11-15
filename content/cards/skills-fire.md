@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Written from general field guidance and not yet checked line by line against its source or by a qualified person.**
-
 **You need three things: heat, fuel and air.** Prepare **everything before you light.**
 
 1. **Pick the spot:** sheltered from wind, on bare ground or stones, away from overhanging branches. Clear a circle at least 3 feet (1 m) wide of anything that burns.

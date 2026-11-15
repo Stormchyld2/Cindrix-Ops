@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 1. **Keep insulin cool but not frozen.** Unopened insulin keeps in the fridge until its date. Insulin in use can usually be kept at room temperature (below about 86°F / 30°C) for about 28 days; **check your own label**.
 2. Without a fridge: keep insulin out of sun and heat. A cool-pack case, or a jar in cool water, helps. Do not let it touch ice or freeze. Throw out cloudy insulin that should be clear.
 3. Keep a meter, strips, spare batteries and a paper log. Test as your doctor said.

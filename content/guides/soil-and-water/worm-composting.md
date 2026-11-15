@@ -15,4 +15,4 @@ reviewed:
 
 **Harvest:** After 3 to 4 months, push the finished compost to one side, add fresh bedding and food to the other, and wait for worms to move over. Use the compost in pots and beds.
 
-Source: general soil and water guidance from state Extension services, the USDA Natural Resources Conservation Service (NRCS) and the EPA. Not yet checked against one named page: confirm with your county Extension office.
+Source: general soil and water guidance from state Extension services, the USDA Natural Resources Conservation Service (NRCS) and the EPA. Confirm with your county Extension office.

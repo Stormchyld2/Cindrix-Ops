@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 Carbon monoxide (CO) has no smell and no color. Signs: headache, dizzy, weak, upset stomach, vomiting, chest pain, confusion. People asleep can die before they notice.
 
 1. If an alarm sounds or you think you have it: **get everyone, including pets, outside into fresh air now.**

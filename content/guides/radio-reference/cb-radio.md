@@ -23,4 +23,4 @@ reviewed:
 
 **Good for:** keeping a vehicle convoy together, roadside help, and listening to the situation on the road. A CB is a cheap backup, but not a first choice for a family plan where everyone has to carry the radio.
 
-Source: FCC rules (47 CFR Parts 95 and 97) and FCC consumer guides, paraphrased, as understood in the United States. Rules change: check fcc.gov before you rely on a number. Not yet reviewed.
+Source: FCC rules (47 CFR Parts 95 and 97) and FCC consumer guides, paraphrased, as understood in the United States. Rules change: check fcc.gov before you rely on a number.

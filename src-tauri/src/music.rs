@@ -117,7 +117,7 @@ fn st_cancel(app: &tauri::AppHandle, v: bool) {
 
 // ---------- the cindrix-music address ----------
 
-fn reply(status: u16, content_range: Option<String>, ctype: &str, body: Vec<u8>) -> tauri::http::Response<Vec<u8>> {
+pub(crate) fn reply(status: u16, content_range: Option<String>, ctype: &str, body: Vec<u8>) -> tauri::http::Response<Vec<u8>> {
     let mut b = tauri::http::Response::builder()
         .status(status)
         .header("Access-Control-Allow-Origin", "*")
@@ -169,34 +169,38 @@ pub fn serve_music(req: &tauri::http::Request<Vec<u8>>) -> tauri::http::Response
             }
             reply(404, None, "", Vec::new())
         }
-        serve::Route::Track(path) | serve::Route::Converted(path) => {
-            let Ok(len) = std::fs::metadata(&path).map(|m| m.len()) else {
-                return reply(404, None, "", Vec::new());
-            };
-            let ctype = media::mime_of_ext(&media::ext_of(&path));
-            let header = req.headers().get("range").and_then(|v| v.to_str().ok()).map(|s| s.to_string());
-            let range = match header {
-                Some(h) => maps::parse_range(&h, len),
-                // No Range: the whole file when it is small, otherwise the first piece.
-                None if len == 0 => Err(maps::RangeError::Unsatisfiable),
-                None => Ok((0, (len - 1).min(maps::MAX_RANGE_BYTES - 1))),
-            };
-            match range {
-                Ok((start, end)) => match maps::read_range(&path, start, end) {
-                    Ok(bytes) => {
-                        let whole = start == 0 && end == len - 1 && req.headers().get("range").is_none();
-                        if whole {
-                            reply(200, None, ctype, bytes)
-                        } else {
-                            reply(206, Some(format!("bytes {}-{}/{}", start, end, len)), ctype, bytes)
-                        }
-                    }
-                    Err(_) => reply(500, None, "", Vec::new()),
-                },
-                Err(maps::RangeError::Unsatisfiable) => reply(416, Some(format!("bytes */{}", len)), "", Vec::new()),
-                Err(maps::RangeError::Unsupported) => reply(400, None, "", Vec::new()),
+        serve::Route::Track(path) | serve::Route::Converted(path) => serve_range(req, &path),
+    }
+}
+
+/// Answers a request for one audio file, with Range requests in pieces of up to 32 MB. Shared by the
+/// music and podcast addresses.
+pub(crate) fn serve_range(req: &tauri::http::Request<Vec<u8>>, path: &std::path::Path) -> tauri::http::Response<Vec<u8>> {
+    let Ok(len) = std::fs::metadata(path).map(|m| m.len()) else {
+        return reply(404, None, "", Vec::new());
+    };
+    let ctype = media::mime_of_ext(&media::ext_of(path));
+    let header = req.headers().get("range").and_then(|v| v.to_str().ok()).map(|s| s.to_string());
+    let range = match header {
+        Some(h) => maps::parse_range(&h, len),
+        // No Range: the whole file when it is small, otherwise the first piece.
+        None if len == 0 => Err(maps::RangeError::Unsatisfiable),
+        None => Ok((0, (len - 1).min(maps::MAX_RANGE_BYTES - 1))),
+    };
+    match range {
+        Ok((start, end)) => match maps::read_range(path, start, end) {
+            Ok(bytes) => {
+                let whole = start == 0 && end == len - 1 && req.headers().get("range").is_none();
+                if whole {
+                    reply(200, None, ctype, bytes)
+                } else {
+                    reply(206, Some(format!("bytes {}-{}/{}", start, end, len)), ctype, bytes)
+                }
             }
-        }
+            Err(_) => reply(500, None, "", Vec::new()),
+        },
+        Err(maps::RangeError::Unsatisfiable) => reply(416, Some(format!("bytes */{}", len)), "", Vec::new()),
+        Err(maps::RangeError::Unsupported) => reply(400, None, "", Vec::new()),
     }
 }
 

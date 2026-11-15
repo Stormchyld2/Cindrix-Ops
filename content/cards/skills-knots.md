@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Written from general field guidance and not yet checked line by line against its source or by a qualified person.**
-
 1. **Square (reef) knot:** joins two ropes of the same size. Right over left and under, then left over right and under. **Not safe for anything critical.**
 2. **Bowline:** a loop that will not slip. Make a small loop in the standing end (the "rabbit hole"), bring the working end up through it (the rabbit comes out), around behind the tree (standing end), and back down the hole. Pull tight.
 3. **Clove hitch:** fast way to tie a rope to a post or a pole. Two turns around, crossing, with the end tucked under the last turn.

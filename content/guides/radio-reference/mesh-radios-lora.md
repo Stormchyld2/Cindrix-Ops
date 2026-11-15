@@ -28,4 +28,4 @@ reviewed:
 
 **The Cindrix phone map** can be loaded on the same phone, so the same device shows where you are and sends a short note.
 
-Source: Meshtastic project documentation and FCC rules for the 902-928 MHz ISM band (47 CFR Part 15). Rules, devices and range vary. Not yet reviewed.
+Source: Meshtastic project documentation and FCC rules for the 902-928 MHz ISM band (47 CFR Part 15). Rules, devices and range vary.

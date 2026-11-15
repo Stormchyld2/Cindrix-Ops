@@ -19,4 +19,4 @@ reviewed:
 
 **Animals per acre:** Roughly: **1 cow or horse per 1.5 to 3 acres** of good pasture; **5 to 6 sheep or goats per acre**; **6 to 10 pigs per acre** on rotational pasture. Dry country needs far more land per animal.
 
-Source: general livestock practice as taught by state Extension services and the USDA (for example Penn State, Oregon State and Cornell small-farm guides). Not yet checked against one named page: confirm feed amounts, housing and health care with your county Extension office and a large-animal vet.
+Source: general livestock practice as taught by state Extension services and the USDA (for example Penn State, Oregon State and Cornell small-farm guides). Confirm feed amounts, housing and health care with your county Extension office and a large-animal vet.

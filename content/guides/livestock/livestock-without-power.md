@@ -21,4 +21,4 @@ reviewed:
 
 **Feed:** Without feed shops, grow, store and ration. Be ready to cull the herd down to what you can feed through winter before autumn, not after.
 
-Source: general livestock practice as taught by state Extension services and the USDA (for example Penn State, Oregon State and Cornell small-farm guides). Not yet checked against one named page: confirm feed amounts, housing and health care with your county Extension office and a large-animal vet.
+Source: general livestock practice as taught by state Extension services and the USDA (for example Penn State, Oregon State and Cornell small-farm guides). Confirm feed amounts, housing and health care with your county Extension office and a large-animal vet.

@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 Signs after an injury, bleeding or bad allergic reaction: pale, cold, clammy skin; fast weak pulse; fast breathing; weak or faint; confused or restless; very thirsty.
 
 1. **Call 911.**

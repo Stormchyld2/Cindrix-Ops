@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 1. **Bucket toilet:** line a 5-gallon bucket (or the toilet bowl) with a heavy garbage bag. Add a seat if you have one.
 2. After each use, **cover the waste with** cat litter, sawdust, ash or dry soil, to cut smell and flies.
 3. Tie the bag when about half full. Keep it in a lidded container, away from where you live, cook and store water. Follow local rules for disposal.

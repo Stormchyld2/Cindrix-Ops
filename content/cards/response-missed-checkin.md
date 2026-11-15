@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **A missed check-in is a reason to verify, not to panic or assume the worst. Call 911 if you have reason to think someone is hurt or in danger.**
 
 1. **Wait the agreed grace time**, then try again on the main channel and the back-up channel.

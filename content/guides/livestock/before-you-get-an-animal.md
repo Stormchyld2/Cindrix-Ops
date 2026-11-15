@@ -15,4 +15,4 @@ reviewed:
 6. **A vet or an experienced neighbour** you can call. Write down their number.
 7. **Starting small:** begin with a few animals. Learn on those before you grow.
 
-Source: general livestock-keeping practice from state Extension services. Not yet checked against one named page.
+Source: general livestock-keeping practice from state Extension services.

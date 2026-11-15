@@ -5,7 +5,7 @@ where: in the neighbourhood
 summary: Know who may need help.
 status: draft
 ---
-Draft checklist. Walk through and actually look, do not just tick.
+Walk through and actually look, do not just tick.
 - List neighbours who are older, ill, have small children or live alone
 - Write down their phone numbers and a way to reach them
 - Agree who checks on whom after a storm or outage

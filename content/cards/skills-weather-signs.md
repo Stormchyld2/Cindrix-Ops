@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Written from general field guidance and not yet checked line by line against its source or by a qualified person.**
-
 1. **Falling pressure and rising wind** often mean a storm is coming. A barometer or phone barometer helps.
 2. **Dark, towering clouds** and a sudden temperature drop mean thunderstorms. Move to shelter. See the **lightning** card.
 3. **Wide grey, low cloud** and steady rain can last for a day or more.

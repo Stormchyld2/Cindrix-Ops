@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Licorice root is promoted for digestive and respiratory support and is used topically for skin conditions. Research has focused on mouth rinses for canker sores, gargles or lozenges for sore throat prevention, and topical gels for eczema and burn healing.**
 
 **What people do:** For canker sores, licorice is used as a mouth rinse or gargle; for sore throat prevention around surgery, as a gargle or lozenge; for eczema or burn healing, as a topical gel applied to the skin. Avoid long-term or high-dose oral use due to serious cardiovascular risks.

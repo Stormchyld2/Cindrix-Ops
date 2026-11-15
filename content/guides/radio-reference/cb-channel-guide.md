@@ -15,4 +15,4 @@ reviewed:
 
 **Antenna:** A properly tuned antenna matters more than power. Check SWR (standing wave ratio) below about 2.0.
 
-Source: Published United States radio rules and guidance (FCC Parts 95 and 97, NOAA, U.S. Coast Guard, FAA, ARRL). Frequencies and rules change and differ by country: check a current FCC or ARRL chart before relying on a number. Not yet checked line by line.
+Source: Published United States radio rules and guidance (FCC Parts 95 and 97, NOAA, U.S. Coast Guard, FAA, ARRL). Frequencies and rules change and differ by country: check a current FCC or ARRL chart before relying on a number.

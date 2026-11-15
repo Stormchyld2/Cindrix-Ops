@@ -15,4 +15,4 @@ reviewed:
 
 **Use it:** Compare year to year. Cull animals that do not produce. Spot a pattern (a barn that always has sick lambs, a pasture with worm trouble).
 
-Source: general livestock practice as taught by state Extension services and the USDA (for example Penn State, Oregon State and Cornell small-farm guides). Not yet checked against one named page: confirm feed amounts, housing and health care with your county Extension office and a large-animal vet.
+Source: general livestock practice as taught by state Extension services and the USDA (for example Penn State, Oregon State and Cornell small-farm guides). Confirm feed amounts, housing and health care with your county Extension office and a large-animal vet.

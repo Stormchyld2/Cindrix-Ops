@@ -549,7 +549,7 @@ fn route(app: &tauri::AppHandle, req: &Request, who: &str, stream: &mut TcpStrea
     // everything else needs the sign-in
     let role = role_of(app, req);
     if role == Role::Nobody {
-        let api = req.path.starts_with("/api/") || req.path.starts_with("/tiles/") || req.path.starts_with("/music/");
+        let api = req.path.starts_with("/api/") || req.path.starts_with("/tiles/") || req.path.starts_with("/music/") || req.path.starts_with("/pod/");
         send(stream, &if api { json_err(401, "Type the PIN first.") } else { pin_page("") });
         return;
     }
@@ -597,11 +597,27 @@ fn route(app: &tauri::AppHandle, req: &Request, who: &str, stream: &mut TcpStrea
         send(stream, &r);
         return;
     }
+    if req.path == "/api/shelf_download" {
+        // a plain file for the browser to save, so the book can be read later without this host (guests may, like reading)
+        let r = if !share::command_allowed(&role, "shelf_download") {
+            Response::text(403, "This can only be done on the host computer or phone.")
+        } else {
+            let id = req.query_value("id").unwrap_or("").to_string();
+            match crate::shelf_for(&id).download(&id) {
+                Ok(d) => share::download_reply(&d.name, d.mime, d.bytes, req.header("range")),
+                Err(e) => Response::text(404, &e),
+            }
+        };
+        send(stream, &r);
+        return;
+    }
     // maps, music and archive pages are answered by the same code the app's own windows use
     let media = if let Some(rest) = req.raw_path.strip_prefix("/tiles") {
         Some(("tiles", rest.to_string()))
     } else if let Some(rest) = req.raw_path.strip_prefix("/music") {
         Some(("music", rest.to_string()))
+    } else if let Some(rest) = req.raw_path.strip_prefix("/pod") {
+        Some(("pod", rest.to_string()))
     } else if req.raw_path.starts_with("/content/") || req.raw_path == "/suggest" || req.raw_path == "/search" || req.raw_path.starts_with("/skin/") {
         Some(("zim", req.raw_path.clone()))
     } else {
@@ -674,12 +690,23 @@ fn dispatch(app: &tauri::AppHandle, cmd: &str, a: &Value, role: &Role) -> Result
         "music_query" => tv(crate::music::music_query(st, arg(a, "args")?, arg(a, "offset")?, arg(a, "limit")?)),
         "music_facets" => tv(crate::music::music_facets(st, arg(a, "kind")?, arg(a, "prefix")?)),
         "music_resolve" => tv(crate::music::music_resolve(st, arg(a, "rels")?)),
+        "podcasts_list" => tv(tauri::async_runtime::block_on(crate::podcasts::podcasts_list())),
         "music_prepare" => tv(tauri::async_runtime::block_on(crate::music::music_prepare(st, arg(a, "rel")?))?),
         "academy_list" => tv(crate::academy_list(arg(a, "person")?)?),
         "academy_lesson" => tv(crate::academy_lesson(arg(a, "id")?, None)?),
         "plans_list" => tv(crate::plans_list(None)?),
         "drills_list" => tv(crate::drills_list()?),
         "shelf_list" => tv(crate::shelf_list()?),
+        "bible_status" => tv(crate::bible::bible_status(a.get("fresh").and_then(|v| v.as_bool()))),
+        "bible_books" => tv(crate::bible::bible_books(arg(a, "bible")?)?),
+        "bible_chapter" => tv(crate::bible::bible_chapter(arg(a, "bible")?, arg(a, "book")?, arg(a, "chapter")?)?),
+        "bible_notes" => tv(crate::bible::bible_notes(arg(a, "module")?, arg(a, "book")?, arg(a, "chapter")?, a.get("verse").and_then(|v| v.as_u64()).map(|v| v as u32))?),
+        "bible_crossrefs" => tv(crate::bible::bible_crossrefs(arg(a, "bible")?, arg(a, "book")?, arg(a, "chapter")?, arg(a, "verse")?)?),
+        "bible_search" => { let (b, q): (String, String) = (arg(a, "bible")?, arg(a, "query")?); tv(crate::bible::search_for(&b, &q)?) }
+        "bible_parse" => tv(crate::bible::bible_parse(arg(a, "text")?)),
+        "bible_define" => { let t: String = arg(a, "term")?; tv(crate::bible::define_for(&t)?) }
+        "bible_mentions" => { let v: Vec<String> = arg(a, "verses")?; tv(crate::bible::mentions_for(&v)?) }
+        "bible_strongs" => { let n: String = arg(a, "number")?; tv(crate::bible::strongs_for(&n)?) }
         "sources_list" => tv(crate::sources_list()),
         "settings_load" => tv(crate::settings::settings_load()),
         "dashboard_suggestions" => tv(crate::suggestions_for(
@@ -749,6 +776,7 @@ fn media_reply(app: &tauri::AppHandle, req: &Request, kind: &str, path: &str) ->
     let resp = match kind {
         "tiles" => crate::serve_tile(&hreq),
         "music" => crate::music::serve_music(&hreq),
+        "pod" => crate::podcasts::serve_podcast(&hreq),
         _ => crate::zimview::serve(app, &hreq),
     };
     let mut out = Response { status: resp.status().as_u16(), headers: vec![], body: resp.body().clone() };

@@ -31,4 +31,4 @@ reviewed:
 
 **Keep records**, and have the number of a vet. Learn the normal look and behaviour of each animal so you spot illness early.
 
-Source: general small-farm practice, as taught by state Extension services. Not yet reviewed: ask a local vet or Extension office. This page gives no medicine amounts.
+Source: general small-farm practice, as taught by state Extension services. Ask a local vet or Extension office. This page gives no medicine amounts.

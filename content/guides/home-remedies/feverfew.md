@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Feverfew is promoted for migraine headache prevention and for minor head and tension pain. Topically, it is marketed for itching and skin irritation.**
 
 **What the evidence says:** A 2020 systematic review of seven migraine studies found inconsistent results, though some evidence suggests feverfew may reduce migraine frequency and associated symptoms such as nausea and light sensitivity. There is little or no evidence supporting feverfew for other health conditions.
