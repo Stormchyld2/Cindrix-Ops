@@ -136,8 +136,8 @@
   let people = $derived((family?.people ?? []).filter((p) => p.name.trim() || p.conditions.trim() || p.medicines.trim() || p.allergies.trim() || p.doctor.trim()));
 
   // Plain rendering of a card's Markdown (bold, numbered and bullet lines) without any HTML injection.
-  function lines(body: string): { text: string; list: boolean }[] {
-    return body.split('\n').filter((l) => l.trim()).map((l) => ({ text: l.replace(/\*\*/g, '').replace(/^\s*(\d+\.|-)\s+/, (m) => (m.includes('.') ? m.trim() + ' ' : '• ')), list: /^\s*(\d+\.|-)\s+/.test(l) }));
+  function lines(body: string): { text: string; list: boolean; head: boolean }[] {
+    return body.split('\n').filter((l) => l.trim()).map((l) => ({ text: l.replace(/\*\*/g, '').replace(/^\s*#{2,3}\s+/, '').replace(/^\s*(\d+\.|-)\s+/, (m) => (m.includes('.') ? m.trim() + ' ' : '• ')), list: /^\s*(\d+\.|-)\s+/.test(l), head: /^\s*#{2,3}\s+/.test(l) }));
   }
 </script>
 
@@ -332,7 +332,7 @@
       {#each chosenCards as c (c.id)}
         <section class="card">
           <h2>{c.title}</h2>
-          {#each lines(c.body) as l}<p class:li={l.list}>{l.text}</p>{/each}
+          {#each lines(c.body) as l}<p class:li={l.list} class:sub={l.head}>{l.text}</p>{/each}
         </section>
       {/each}
 
@@ -354,7 +354,7 @@
       {#each chosenGuides as g (g.k)}
         <section class="card">
           <h2>{g.c.title}</h2>
-          {#each lines(g.c.body) as l}<p class:li={l.list}>{l.text}</p>{/each}
+          {#each lines(g.c.body) as l}<p class:li={l.list} class:sub={l.head}>{l.text}</p>{/each}
         </section>
       {/each}
 
@@ -396,6 +396,7 @@
   .sheet th { width: 34%; font-weight: 600; }
   .sheet table.grid th { width: auto; }
   .li { padding-left: 14px; text-indent: -14px; }
+  .sub { font-weight: 700; margin-top: 8px; }
   .boxes { list-style: none; padding: 0; margin: 6px 0; }
   .boxes li { margin: 5px 0; display: flex; gap: 10px; align-items: flex-start; }
   .box { width: 14px; height: 14px; border: 2px solid #111; flex: none; margin-top: 3px; }

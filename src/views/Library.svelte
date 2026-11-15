@@ -2,7 +2,7 @@
   import PageHeader from '../lib/PageHeader.svelte';
   import { listCards, type Card } from '../lib/api';
   import { onMount } from 'svelte';
-  import { parts, blocks } from '../lib/cardtext';
+  import { parts, sections, type TextBlock } from '../lib/cardtext';
 
   let { cardToOpen = $bindable(null) }: { cardToOpen: string | null } = $props();
 
@@ -31,6 +31,14 @@
 
 </script>
 
+{#snippet text(list: TextBlock[])}
+  {#each list as b}
+    {#if b.kind === 'p'}<p>{#each parts(b.lines[0]) as x}{#if x.b}<b>{x.t}</b>{:else}{x.t}{/if}{/each}</p>
+    {:else if b.kind === 'ol'}<ol>{#each b.lines as l}<li>{#each parts(l) as x}{#if x.b}<b>{x.t}</b>{:else}{x.t}{/if}{/each}</li>{/each}</ol>
+    {:else}<ul>{#each b.lines as l}<li>{#each parts(l) as x}{#if x.b}<b>{x.t}</b>{:else}{x.t}{/if}{/each}</li>{/each}</ul>{/if}
+  {/each}
+{/snippet}
+
 <section>
   <PageHeader eyebrow="CINDRIX OPS" title="Emergency cards" tagline={`One screen each. No model needed. You can add your own in Settings, “Your own cards and plans”.`} />
 <div class="statrow"><div class="stat" style="--c: var(--blue)"><span class="ico">▤</span><span><div class="n">{cards.length}</div><div class="t">Cards</div></span></div><div class="stat" style="--c: var(--cat-security)"><span class="ico">≡</span><span><div class="n">{groups.length}</div><div class="t">Groups</div></span></div></div>
@@ -52,10 +60,16 @@
     <div class="row"><button class="btn" onclick={() => (open = null)}>← All cards</button></div>
     <article class="panel">
       <h2>{open.title}</h2>
-      {#each blocks(open.body) as b}
-        {#if b.kind === 'p'}<p>{#each parts(b.lines[0]) as x}{#if x.b}<b>{x.t}</b>{:else}{x.t}{/if}{/each}</p>
-        {:else if b.kind === 'ol'}<ol>{#each b.lines as l}<li>{#each parts(l) as x}{#if x.b}<b>{x.t}</b>{:else}{x.t}{/if}{/each}</li>{/each}</ol>
-        {:else}<ul>{#each b.lines as l}<li>{#each parts(l) as x}{#if x.b}<b>{x.t}</b>{:else}{x.t}{/if}{/each}</li>{/each}</ul>{/if}
+      {#each sections(open.body) as s}
+        {#if s.fold}
+          <details class="more">
+            <summary title="Show or hide this part">{s.title}</summary>
+            {@render text(s.blocks)}
+          </details>
+        {:else}
+          {#if s.title}<h3>{s.title}</h3>{/if}
+          {@render text(s.blocks)}
+        {/if}
       {/each}
     </article>
   {/if}
@@ -72,4 +86,8 @@
   article h2 { margin-bottom: 8px; }
   article p, article li { line-height: 1.6; }
   article ol, article ul { padding-left: 22px; }
+  article h3 { margin: 18px 0 6px; font-size: 16px; color: var(--blue); }
+  .more { margin: 10px 0; border: 1px solid var(--line); border-radius: 10px; padding: 0 14px; background: var(--panel2); }
+  .more summary { cursor: pointer; padding: 11px 0; font-weight: 700; }
+  .more[open] summary { border-bottom: 1px solid var(--line); margin-bottom: 8px; }
 </style>
