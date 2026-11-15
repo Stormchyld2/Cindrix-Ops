@@ -194,7 +194,13 @@ Water needs go up in the heat. Work early and late, rest at midday, watch for he
 Harvest, dry, can and store. Gather nuts. Cut and stack wood. Mend the shelter. Plan for the winter count.
 
 ## When someone dies
-Death in a long emergency is hard and must be handled with care. Keep the body cool, away from water and food. Notify any family you can reach. Bury at least 200 feet (60 metres) from any water source, deep enough that animals cannot reach it, and mark the place. Allow people to grieve and to say goodbye in their own way. Keep a written record.
+Death in a long emergency is hard and must be handled with care, for the person, the family and your water. Follow the plan "Remains management and water protection (SOP)" and the card "Dealing with a death when no help comes".
+go: Plans
+button: Open Plans
+- Record who, when and where, take a photograph of the face and note any ID, wrap the body and keep it cold.
+- Allow a farewell and the customs the person would have wanted.
+- Do not bury from a distance rule alone. Check the soil, groundwater, drainage, karst and the law first. Limestone country can carry contamination far underground.
+- Keep a written record and a map.
 
 ## Know when to move
 go: Plans
