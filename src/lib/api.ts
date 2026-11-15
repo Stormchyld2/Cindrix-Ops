@@ -1020,7 +1020,7 @@ export async function drillSave(drill: string, seconds: number, done: number, to
 export async function drillCreate(title: string, minutes: number, place: string, summary: string, steps: string[]): Promise<string> {
   if (inTauri) return call<string>('drill_create', { title, minutes, place, summary, steps });
   const id = 'my-' + title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-  memDrills.push({ id, title, minutes, place, summary, status: 'draft', steps: steps.filter((x) => x.trim()), last: null, times_done: 0, history: [] });
+  memDrills.push({ id, title, minutes, place, summary, status: 'draft', steps: steps.filter((x) => x.trim()), last: null, times_done: 0, history: [], sections: [] });
   return id;
 }
 export type NewPlanStep = { title: string; every_days: number | null; body: string[] };
