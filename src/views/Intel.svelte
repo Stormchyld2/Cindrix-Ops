@@ -32,6 +32,8 @@
   let pending: string | null = null;
   let notice = $state('');
   let unreadable = $state('');
+  let checkText = $state('');
+  let checking = $state(false);
   let zoom = $state(100);
   let bookmarks: ZimBookmark[] = $state([]);
   let showMarks = $state(false);
@@ -239,6 +241,42 @@
       notice = `This page did not open. The program could not reach its own page server (${String(e).slice(0, 120)}). Address: ${path}`;
     }
   }
+  /** "Check the reader": shows the address the reader uses and what its page server answers, so a problem can be read off the screen. */
+  async function readerCheck() {
+    checking = true;
+    const out: string[] = [];
+    try {
+      const origin = await zimOrigin();
+      out.push(`Reader address: ${origin || '(none)'}`);
+      let list: ZimBook[] = [];
+      try { list = await zimBooks(); } catch (e) { out.push(`Could not list the archives: ${String(e).slice(0, 120)}`); }
+      out.push(`Archives found: ${list.length}`);
+      try {
+        const bad = await zimUnreadable();
+        out.push(bad.length ? `Archives that could not be opened: ${bad.join('; ')}` : 'Archives that could not be opened: none');
+      } catch { /* skip this line */ }
+      const pick = list.filter((b) => b.name === bookHere).concat(list.filter((b) => b.name !== bookHere)).slice(0, 4);
+      for (const b of pick) {
+        const path = `/content/${encodeURIComponent(b.name)}`;
+        try {
+          const f = await zimFrame(path);
+          if (!f.src) { out.push(`${b.name}: no address (browser preview)`); continue; }
+          const r = await fetch(f.src);
+          const t = await r.text();
+          out.push(`${b.name}: asked ${f.src} -> ${r.status}, ${r.headers.get('content-type') || 'no type'}, ${t.length} characters${r.ok ? '' : ', ' + (t.slice(0, 100) || 'empty answer')}`);
+          const sg = await fetch(`${origin}/suggest?content=${encodeURIComponent(b.name)}&term=a`);
+          out.push(`${b.name}: title suggestions -> ${sg.status}`);
+        } catch (e) {
+          out.push(`${b.name}: the page server did not answer (${String(e).slice(0, 120)})`);
+        }
+      }
+      if (st?.url) out.push(`Library server (for full-text search): ${st.url}`); else out.push('Library server (for full-text search): not running');
+    } catch (e) {
+      out.push(`The check itself stopped: ${String(e).slice(0, 160)}`);
+    }
+    checkText = out.join('\n');
+    checking = false;
+  }
   /** Put what a location holds on screen. */
   async function show(l: Loc) {
     if (l.t === 'page' && serverOn && st?.url) {
@@ -414,8 +452,10 @@
     <button class="btn" onclick={() => setZoom(10)} aria-label="Larger text">A＋</button>
     <button class="btn" class:on={marked} onclick={toggleMark} disabled={!here} aria-pressed={marked} aria-label={marked ? 'Remove bookmark' : 'Bookmark this page'}>{marked ? '★' : '☆'}</button>
     <button class="btn" onclick={() => (showMarks = !showMarks)} aria-expanded={showMarks}>Bookmarks{bookmarks.length ? ` (${bookmarks.length})` : ''}</button>
+    <button class="btn" onclick={readerCheck} disabled={checking} title="Shows what the reader asks for and what comes back, to find out why a page does not open">{checking ? 'Checking…' : 'Check the reader'}</button>
   </div>
 
+  {#if checkText}<pre class="warn" role="status" style="white-space:pre-wrap;user-select:text">{checkText}</pre>{/if}
   {#if notice}<div class="warn" role="status">{notice}</div>{/if}
   {#if unreadable}<div class="warn" role="status">{unreadable}</div>{/if}
   {#if showMarks}

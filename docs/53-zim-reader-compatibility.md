@@ -29,3 +29,5 @@ Archives from the official Kiwix catalog must read the same in our reader as in 
 - `core/tests/library.rs`: doubled slash, referer, query, failed archives.
 
 `core/examples/diagnose_zim.rs` is read-only and prints names, start page, namespaces, redirects, and a sampled byte comparison for any `.zim`: `cargo run --release --example diagnose_zim -- file.zim [kiwix-serve]`. Never delete it. Do not modify or replace a user's ZIM files.
+
+Intel has a "Check the reader" button. It prints the address the reader uses, the archives found and any that could not be opened, and for up to four archives what the page server answers (status, type, size) and whether title suggestions work. If a page ever fails to open on a real machine, send that text.
