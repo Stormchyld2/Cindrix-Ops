@@ -5,17 +5,31 @@ status: draft
 reviewer:
 reviewed:
 ---
-Use this when you are lost but can see two or three landmarks that are marked on your map (a hilltop, a tower, a bend in a road).
+Use this when you are lost but can see two or three landmarks that are marked on your map.
+1. **Orient the map** so north on the map points to north on the ground.
+2. **Choose two or three landmarks** you can see and find on the map, at least 60 degrees apart, ideally about 90.
+3. **Take a bearing to the first.** Point the travel arrow at it, turn the dial until the needle sits in the orienting arrow, and read the bearing.
+4. **Change to a map bearing:** **add** the declination if east, **subtract** it if west.
+5. **Make it a back bearing** by adding or subtracting 180 degrees. You are somewhere along that line.
+6. **Draw the line:** put the compass edge on the landmark on the map, turn the whole compass until its orienting lines run parallel to the north-south grid lines, and draw along the edge.
+7. **Repeat for the second.** Where the lines cross is your position. A third line makes a small triangle: you are inside it.
+8. **Check it** against what you can see before you trust it.
 
-1. **Orient the map** so north on the map points to north on the ground, using your compass.
-2. **Choose two or three landmarks** you can see and find on the map. They should be at least 60 degrees apart, ideally about 90.
-3. **Take a bearing to the first landmark.** Point the travel arrow at it, turn the dial until the needle sits inside the orienting arrow, and read the bearing.
-4. **Change it to a map bearing.** Compass to map: **add** the declination if it is east, **subtract** it if it is west (the declination is printed in the map margin).
-5. **Turn it into a back bearing** by adding or subtracting 180 degrees. You are somewhere along the line that runs from the landmark in that direction.
-6. **Draw the line:** put the compass edge on the landmark on the map, turn the whole compass until its orienting lines run parallel to the map's north-south grid lines (orienting arrow pointing to the top of the map), and draw along the edge.
-7. **Repeat for the second landmark.** Where the lines cross is your position. A third line makes a small triangle: you are inside it.
-8. **Check it** against what you can see around you (a stream, a slope, a road) before you trust it.
+## If you have less gear
 
-Source: US Army Ranger Handbook (SH 21-76) and Army field manual on land navigation (FM 3-25.26), paraphrased
+- **No protractor or compass:** use the map edge as a straight edge and a stick to sight along, and draw two lines.
+- **One landmark and a line feature** (a road, a stream) also fixes you where they cross.
+
+## Know more
+
+### Common mistakes
+Forgetting declination, using the wrong back bearing, and landmarks too close together.
+
+### Practice
+Fix your position from a hilltop where you know where you are and check the answer.
+
+**Train:** Academy course "Land navigation".
+
+Source: US Army Ranger Handbook (SH 21-76) and Army field manual on land navigation (FM 3-25.26), paraphrased.
 
 Reference only. Practise these skills before you need them.
