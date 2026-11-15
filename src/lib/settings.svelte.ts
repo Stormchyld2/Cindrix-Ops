@@ -46,6 +46,8 @@ export type Settings = {
   musicFolder: string[];
   /** Canonleaf's folder (or any folder of its resources), read where it is. At most one. */
   bibleFolder: string[];
+  /** Empty, or one folder to use instead of the drive's podcasts folder. */
+  podcastsFolder: string[];
   // Maps
   mapUnits: 'imperial' | 'metric';
   // Calendar
@@ -91,6 +93,7 @@ export const DEFAULTS: Settings = {
   scanMusicOnStart: true,
   musicFolder: [],
   bibleFolder: [],
+  podcastsFolder: [],
   mapUnits: 'imperial',
   weekStart: 'sunday',
   timeFormat: '12h',
@@ -143,7 +146,7 @@ export function sanitize(raw: unknown): Settings {
     const d = (DEFAULTS as Record<string, unknown>)[key];
     const v = r[key];
     if (Array.isArray(d)) {
-      out[key] = Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string').map((x) => x.trim()).filter((x) => x !== '').slice(0, key === 'musicFolder' || key === 'bibleFolder' ? 1 : 30) : [];
+      out[key] = Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string').map((x) => x.trim()).filter((x) => x !== '').slice(0, key === 'musicFolder' || key === 'bibleFolder' || key === 'podcastsFolder' ? 1 : 30) : [];
     } else if (typeof d === 'boolean') {
       out[key] = typeof v === 'boolean' ? v : d;
     } else if (typeof d === 'number') {
