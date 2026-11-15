@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Academy mockup (dark)</title>
+<style>
+:root{--bg:#141517;--side:#101113;--panel:#1c1e21;--panel2:#232629;--line:#303338;--text:#eceae6;--muted:#9a9ea5;--orange:#ff9a1f;--orange2:#e8620c;--orange-soft:#ff9a1f1f;--ok:#6fbf73}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 'Segoe UI',system-ui,sans-serif}
+.app{display:grid;grid-template-columns:210px 1fr;min-height:100vh}
+.side{background:var(--side);border-right:1px solid var(--line);padding:14px 10px;display:flex;flex-direction:column;gap:4px}
+.side img{width:120px;margin:0 auto 10px;display:block}
+.side a{padding:9px 12px;border-radius:8px;color:var(--muted);display:block}
+.side a.on{background:var(--orange-soft);color:var(--orange);font-weight:600}
+.main{padding:26px 34px 60px;max-width:1180px}
+h1{font-size:28px;margin:0 0 14px}h2{font-size:18px;margin:26px 0 4px}
+.muted{color:var(--muted)}.small{font-size:12px}
+.search{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;color:var(--muted);margin-bottom:12px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.chip{border:1px solid var(--line);border-radius:99px;padding:5px 14px;color:var(--muted);background:var(--panel)}
+.chip.on{background:var(--orange);color:#1a1000;border-color:var(--orange);font-weight:700}
+.tier{display:inline-block;background:var(--orange);color:#1a1000;font-size:11px;font-weight:800;border-radius:5px;padding:2px 7px;margin-right:8px;letter-spacing:.04em}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+.thumb{height:130px;background:#0b0b0c url(../public/cindrix-banner.png) center/cover}
+.card .b{padding:14px;display:flex;flex-direction:column;gap:7px;flex:1}
+.card b{font-size:15px}
+.tags{display:flex;gap:5px;flex-wrap:wrap}.tags span{font-size:10px;letter-spacing:.05em;background:var(--panel2);color:var(--muted);padding:3px 8px;border-radius:5px;text-transform:uppercase}
+.row{display:flex;align-items:center;gap:10px}.sp{flex:1}
+.btn{background:var(--orange);color:#1a1000;font-weight:700;border-radius:8px;padding:8px 18px;display:inline-block}
+.btn.dark{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--orange2),var(--orange))}
+/* course page */
+.hero{height:300px;border-radius:16px;background:linear-gradient(90deg,#141517 38%,#14151700 75%),url(../public/cindrix-banner.png) 100% 40%/auto 150% no-repeat #0b0b0c;display:flex;flex-direction:column;justify-content:flex-end;padding:26px;gap:8px}
+.kick{color:var(--orange);font-weight:700;font-size:12px;letter-spacing:.1em}
+.stats{display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr;background:var(--panel);border:1px solid var(--line);border-radius:14px;margin:18px 0}
+.stats>div{padding:16px 20px;border-right:1px solid var(--line)}.stats>div:last-child{border:0}
+.ring{width:54px;height:54px;border-radius:50%;border:5px solid var(--line);display:grid;place-items:center;font-weight:700;color:var(--ok)}
+.list{background:var(--panel);border:1px solid var(--line);border-radius:14px}
+.list .it{display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid var(--line)}.list .it:last-child{border:0}
+.num{width:26px;height:26px;border:2px solid var(--line);border-radius:50%;display:grid;place-items:center;color:var(--muted);font-size:12px}
+/* lesson */
+.crumb{padding:12px 24px;border-bottom:1px solid var(--line);color:var(--muted);background:var(--side)}.crumb b{color:var(--text)}
+.lesson{display:grid;grid-template-columns:1fr 290px}
+.lbody{padding:26px 40px 60px;max-width:860px}
+.video{aspect-ratio:16/9;border-radius:12px;background:#000 url(../public/cindrix-banner.png) center/cover;position:relative;border:1px solid var(--line)}
+.play{position:absolute;inset:0;margin:auto;width:64px;height:64px;border-radius:50%;background:#000a;border:2px solid #fff6;display:grid;place-items:center;font-size:24px}
+.side2{border-left:1px solid var(--line);background:var(--side);padding:22px 18px}
+.label{font-size:11px;letter-spacing:.1em;color:var(--muted);font-weight:700}
+.ls{border:1px solid transparent;border-radius:10px;padding:12px;margin-top:8px}
+.ls.on{border-color:var(--orange);background:var(--orange-soft)}.ls.on b{color:var(--text)}.ls b{color:var(--muted)}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0}
+.step{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+.step .n{width:30px;height:30px;border-radius:50%;background:var(--orange);color:#1a1000;font-weight:800;display:grid;place-items:center;margin-bottom:8px}
+.check{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin:16px 0}
+.check .h{display:flex;gap:10px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line)}
+.rd{background:#6fbf731f;color:var(--ok);font-size:10px;font-weight:800;letter-spacing:.06em;padding:3px 8px;border-radius:5px}
+.ci{display:flex;gap:14px;padding:12px 16px;border-bottom:1px solid var(--line)}.ci:last-child{border:0}
+.box{width:20px;height:20px;border:2px solid var(--line);border-radius:5px;flex:none;margin-top:2px}
+.shop{background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:4px 10px;font-size:12px;font-weight:600;align-self:center}
+/* dashboard */
+.score{display:flex;gap:26px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 24px}
+.areas{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 22px;flex:1}
+.resume{height:230px;border-radius:16px;background:linear-gradient(90deg,#141517 38%,#14151700 80%),url(../public/cindrix-banner.png) 100% 40%/auto 150% no-repeat #0b0b0c;padding:34px;display:flex;flex-direction:column;gap:10px;justify-content:center;border:1px solid var(--line)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.pn{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+.screen{display:none}.screen:target,.screen.def{display:block}body:has(.screen:target) .screen.def:not(:target){display:none}
+</style></head><body>
+<div class="app">
+<nav class="side"><img src="../public/cindrix-logo-full.png" alt="">
+<a>Dashboard</a><a class="on">Academy</a><a>Library</a><a>Maps</a><a>Plan</a><a>Family</a><a>Security</a><a>Settings</a></nav>
+<div>
+
+<div class="screen def" id="shelf"><div class="main">
+<div class="row"><h1>Academy</h1><span class="sp"></span><span class="btn dark">Training sign-off</span></div>
+<div class="search">Search lessons…</div>
+<div class="chips"><span class="chip on">All</span><span class="chip">Readiness score</span><span class="chip">Checklists</span><span class="chip">Hazard prep</span><span class="chip">Sign-off</span></div>
+<h2><span class="tier">TIER 3</span>Foundation</h2><div class="muted small">Finish all of Tier 3 to reach your first 100% readiness score.</div>
+<div class="cards">
+<div class="card"><div class="thumb"></div><div class="b"><b>Basic Preparedness</b><div class="tags"><span>3-day go-bag</span><span>Food supply</span><span>Water</span></div><div class="muted small">10 sections · 26 lessons</div><div class="row"><div class="bar sp"><i style="width:8%"></i></div><span class="btn">Resume</span></div></div></div>
+<div class="card"><div class="thumb"></div><div class="b"><b>Communications</b><div class="tags"><span>Radio kit</span><span>GMRS channels</span><span>Group plan</span></div><div class="muted small">3 sections</div><div class="row"><span class="muted small sp">Not started</span><span class="btn">Start</span></div></div></div>
+<div class="card"><div class="thumb"></div><div class="b"><b>Mobility &amp; Evacuation</b><div class="tags"><span>Evac planning</span><span>Vehicle kit</span></div><div class="muted small">3 sections</div><div class="row"><span class="muted small sp">Not started</span><span class="btn">Start</span></div></div></div>
+</div>
+<h2><span class="tier">TIER 2</span>Practitioner</h2><div class="muted small">Deeper skills for the person who leads each area.</div>
+<div class="cards"><div class="card"><div class="thumb"></div><div class="b"><b>Casualty Care</b><div class="muted small">4 sections</div><div class="row"><span class="muted small sp">Not started</span><span class="btn">Start</span></div></div></div></div>
+</div></div>
+
+<div class="screen" id="course"><div class="main">
+<div class="hero"><div class="kick">TIER 3 · FOUNDATION</div><h1 style="margin:0">Basic Preparedness</h1><div class="muted">Your first stop: go-bags, food, water and a plan the whole household knows.</div><div class="tags"><span>3-day go-bag</span><span>Food supply</span><span>Water supply</span><span>Household plan</span></div><div><span class="btn">▶ Start</span></div></div>
+<div class="stats"><div class="row"><div class="ring">0%</div><div><b>Course progress</b><div class="muted small">0 of 7 sections done</div></div></div>
+<div><div class="row small"><b>Lessons</b><span class="sp"></span><span class="muted">0 of 26</span></div><div class="bar" style="margin:8px 0"><i style="width:0"></i></div></div>
+<div><div class="row small"><b>Checklists</b><span class="sp"></span><span class="muted">0 of 22</span></div><div class="bar" style="margin:8px 0"><i style="width:0"></i></div></div>
+<div><div class="row small"><b>Quizzes</b><span class="sp"></span><span class="muted">0 of 7</span></div><div class="bar" style="margin:8px 0"><i style="width:0"></i></div></div></div>
+<div class="label">CONTENTS · 7</div><div class="list" style="margin-top:10px">
+<div class="it"><span class="num">1</span><div class="sp"><b>Intro &amp; Your 3-Day Go-Bag</b><div class="muted small">The few things that put you ahead of most households. 3 lessons · 3 checklists</div></div><span class="btn dark">Start</span></div>
+<div class="it"><span class="num">2</span><div class="sp"><b>Kit Up: Protective Gear &amp; Basic Tools</b><div class="muted small">2 lessons · 2 checklists · 1 quiz</div></div><span class="btn dark">Start</span></div>
+<div class="it"><span class="num">3</span><div class="sp"><b>Create a Household Plan</b><div class="muted small">5 lessons · 2 checklists · 1 quiz</div></div><span class="btn dark">Start</span></div>
+<div class="it"><span class="num">4</span><div class="sp"><b>Food Supply</b><div class="muted small">4 lessons · 4 checklists</div></div><span class="btn dark">Start</span></div>
+<div class="it"><span class="num">5</span><div class="sp"><b>Water Supply</b><div class="muted small">5 lessons · 3 checklists</div></div><span class="btn dark">Start</span></div>
+</div></div></div>
+
+<div class="screen" id="lesson">
+<div class="crumb">← Basic Preparedness &nbsp;|&nbsp; <b>Intro &amp; Your 3-Day Go-Bag</b></div>
+<div class="lesson"><div class="lbody">
+<div class="video"><div class="play">▶</div></div>
+<h2 style="font-size:22px;margin-top:22px">Build your go-bag</h2>
+<p>The go-bag exists for one job: getting you away from danger and to a safe place with three days of what you need. Each person in the house gets their own. Start with what you already own and improve it over a few weekends.</p>
+<div class="label">HOW IT WORKS · 3 OF 5</div>
+<div class="steps"><div class="step"><div class="n">1</div><b>Done beats perfect</b><div class="muted small">A half-packed bag by the door beats a perfect one you never finished.</div></div>
+<div class="step"><div class="n">2</div><b>Keep it carryable</b><div class="muted small">Aim for 15 to 20 percent of body weight. If you cannot walk a mile with it, trim it.</div></div>
+<div class="step"><div class="n">3</div><b>Two is one</b><div class="muted small">Anything that matters gets a backup: fire, light, water treatment.</div></div></div>
+<div class="check"><div class="h"><b>Checklist</b><span class="rd">+2% READINESS</span><span class="sp"></span><span class="muted small">0/16 done · Print</span></div>
+<div class="ci"><span class="box"></span><div class="sp"><div>Backpack</div><div class="muted small">40 to 65 litres; sized to your frame, not the biggest you can find</div></div><span class="shop">Find in Gear</span></div>
+<div class="ci"><span class="box"></span><div class="sp"><div>Three days of food</div><div class="muted small">Ready-to-eat plus items that only need hot water</div></div><span class="shop">Find in Gear</span></div>
+<div class="ci"><span class="box"></span><div class="sp"><div>Three light sources</div><div class="muted small">Headlamp, small lantern, backup flashlight; spare batteries</div></div><span class="shop">Find in Gear</span></div>
+<div class="ci"><span class="box"></span><div class="sp"><div>Copies of personal papers</div><div class="muted small">IDs, insurance, key phone numbers on paper</div></div></div></div>
+<span class="btn">Next →</span>
+</div>
+<div class="side2"><div class="label">PROGRESS</div><div style="font-size:28px;font-weight:800;margin:4px 0">33%</div><div class="bar"><i style="width:33%"></i></div><div class="muted small" style="margin:6px 0 18px">1/3 complete</div>
+<div class="label">INTRO &amp; YOUR 3-DAY GO-BAG</div>
+<div class="ls"><b>You are already ahead</b><div class="muted small">Reading + checklist · 3 min ✓</div></div>
+<div class="ls on"><b>Build your go-bag</b><div class="muted small">Video + steps · 9 min</div></div>
+<div class="ls"><b>Go farther together</b><div class="muted small">Reading + checklist · 3 min</div></div></div></div></div>
+
+<div class="screen" id="dash"><div class="main">
+<div class="row"><h1>Readiness</h1></div>
+<div class="score"><div class="ring" style="width:84px;height:84px;font-size:24px;color:var(--orange)">4</div><div><b style="font-size:18px">Your readiness score</b><div class="muted small">22% to Beginning</div></div>
+<div class="areas"><div><div class="row small"><span class="sp">Basic prep</span>1%</div><div class="bar"><i style="width:1%"></i></div></div><div><div class="row small"><span class="sp">Comms</span>0%</div><div class="bar"></div></div><div><div class="row small"><span class="sp">Mobility</span>0%</div><div class="bar"></div></div><div><div class="row small"><span class="sp">Area studies</span>0%</div><div class="bar"></div></div><div><div class="row small"><span class="sp">Self-defense</span>0%</div><div class="bar"></div></div><div><div class="row small"><span class="sp">Medical</span>0%</div><div class="bar"></div></div><div><div class="row small"><span class="sp">Leadership</span>0%</div><div class="bar"></div></div></div></div>
+<h2>Pick up where you left off</h2>
+<div class="resume"><div class="kick">BASIC PREPAREDNESS · TIER 3</div><div style="font-size:30px;font-weight:800">Build your go-bag</div><div class="muted">Intro &amp; Your 3-Day Go-Bag</div><div class="row"><span class="btn">Resume</span><div class="bar" style="width:220px"><i style="width:33%"></i></div><span class="muted small">1 of 3 lessons</span></div></div>
+<div class="two" style="margin-top:18px"><div class="pn"><div class="label">GOAL · BUILD YOUR GO-BAG</div><div class="bar" style="margin:10px 0"><i style="width:0"></i></div><div class="row"><span class="box"></span>Backpack</div><div class="row" style="margin-top:8px"><span class="box"></span>Three days of food</div><div class="row" style="margin-top:8px"><span class="box"></span>Warm, waterproof clothing</div></div>
+<div class="pn"><div class="label">THIS WEEK'S DRILL</div><b>Practice your family meeting point</b><div class="muted small" style="margin:6px 0 12px">Walk the route on foot. Time it. Note one thing that would stop you in the dark.</div><span class="btn">Mark done</span></div></div>
+</div></div>
+
+</div></div></body></html>

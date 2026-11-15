@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PageHeader from '../lib/PageHeader.svelte';
   import { onMount, onDestroy } from 'svelte';
   import {
     modelStatus, listModels, selectModel, libraryStatus, sourcesList, pickFolder,
@@ -6,6 +7,7 @@
     type ModelStatus, type ModelChoice, type LibraryStatus, type Sources, type LibraryEntry,
   } from '../lib/api';
   import MyDetails from './MyDetails.svelte';
+  import PaceSettings from './PaceSettings.svelte';
   import Sharing from './Sharing.svelte';
   import Devices from './Devices.svelte';
   import SafeBackups from './SafeBackups.svelte';
@@ -14,7 +16,7 @@
   import { viewRequest } from '../lib/chat.svelte';
   import { settings, RANGES, SCREENS, type Settings } from '../lib/settings.svelte';
 
-  let { openArchives }: { openArchives: () => void } = $props();
+  let { openArchives, go }: { openArchives: () => void; go?: (where: string) => void } = $props();
 
   let own: OwnFolder[] = $state([]);
   let ownNote: Record<string, string> = $state({});
@@ -31,11 +33,11 @@
     }
   }
 
-  const tabs = ['General', 'Assistant', 'My details', 'Sharing', 'Devices', 'Backups', 'Protection', 'Safe backups', 'Library', 'Intel', 'Music', 'Maps', 'Plan', 'Calendar', 'Your own cards and plans', 'Drive', 'Sources and licenses', 'About'] as const;
+  const tabs = ['General', 'Assistant', 'My details', 'PACE plan', 'Sharing', 'Devices', 'Backups', 'Protection', 'Safe backups', 'Library', 'Intel', 'Music', 'Maps', 'Plan', 'Calendar', 'Your own cards and plans', 'Drive', 'Sources and licenses', 'About'] as const;
   let tab: (typeof tabs)[number] = $state('General');
   // the tabs, in groups, down the left side (the short names stay the same; only what is shown changes)
   const tabGroups: { title: string; tabs: (typeof tabs)[number][] }[] = [
-    { title: 'YOU', tabs: ['General', 'My details', 'Sharing', 'Devices', 'Backups', 'Protection', 'Safe backups'] },
+    { title: 'YOU', tabs: ['General', 'My details', 'PACE plan', 'Sharing', 'Devices', 'Backups', 'Protection', 'Safe backups'] },
     { title: 'THE SCREENS', tabs: ['Assistant', 'Library', 'Intel', 'Music', 'Maps', 'Plan', 'Calendar'] },
     { title: 'THE DRIVE', tabs: ['Drive', 'Your own cards and plans', 'Sources and licenses', 'About'] },
   ];
@@ -164,8 +166,8 @@
 
 <section class="wrap">
   <div>
-    <h1>Settings</h1>
-    <p class="sub">Change how the program looks and behaves. Changes apply straight away and are kept on the drive, so they travel with it.</p>
+    <PageHeader eyebrow="CINDRIX OPS" title="Settings" tagline="Change how the program looks and behaves. Changes apply straight away and are kept on the drive, so they travel with it." />
+<div class="statrow"><div class="stat" style="--c: var(--blue)"><span class="ico">▤</span><span><div class="n">{libs.length}</div><div class="t">Libraries</div></span></div><div class="stat" style="--c: var(--cat-academy)"><span class="ico">◈</span><span><div class="n">{models.length}</div><div class="t">Assistant models</div></span></div></div>
   </div>
 
   <div class="layout">
@@ -261,6 +263,8 @@
       <div class="row"><button class="btn" onclick={addFolder}>Add a folder…</button></div>
     </div>
     {@render reset(['searchBooks', 'searchArchives', 'searchFiles', 'searchSavedSites', 'answerSources', 'answerLength', 'answerStyle', 'followUpMemory', 'searchSpeed', 'showSourceChips', 'extraFolders'])}
+  {:else if tab === 'PACE plan'}
+    <PaceSettings {go} />
   {:else if tab === 'My details'}
     <MyDetails />
   {:else if tab === 'Backups'}

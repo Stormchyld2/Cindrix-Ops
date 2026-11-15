@@ -1,7 +1,7 @@
 ---
 title: Scale and distance
 minutes: 9
-status: draft
+status: complete
 source: Army FM 3-25.26 Map Reading and Land Navigation (US government, public domain); USGS topographic map symbols and map reading guidance (US government, public domain)
 ---
 **Scale** tells you how far a distance on the map is on the ground. It is printed in the margin in two or three ways.
@@ -30,6 +30,23 @@ Lay a piece of string or a blade of grass along the road or trail, following eve
 The map shows distance as if the ground were flat. Hills add to the real walk. Plan more time, not just more distance.
 
 > Make your own ruler. Mark a strip of paper with the bar scale and keep it with the map.
+
+## Going deeper: choose a scale for the job
+- **Large scale (1:24,000):** one inch is 2,000 feet. Good for walking, with plenty of detail.
+- **Medium scale (1:50,000 to 1:100,000):** good for planning longer trips and vehicles.
+- **Small scale (1:250,000 and up):** good for regional planning, with little detail.
+
+## Measuring practice
+1. Lay the edge of a piece of paper along your route, marking each end and each turn.
+2. Move the paper to the bar scale and read the total.
+3. For curves, use a piece of string laid along the route, then straighten it against the scale.
+4. Add extra for hills. A steep climb is longer on the ground than on the map.
+
+## Turn distance into time
+A rough walking pace is about 2 to 3 miles an hour on flat ground. Add roughly an hour for every 1,000 feet of climbing (Naismith's rule) and allow for rest, load and fatigue. Build the time into your plan.
+
+## Check your pace
+Measure a known 100 meters, count your double steps and note it. Later lessons use this for pace counting.
 
 ## Check yourself
 ? On a 1:50,000 map, how far is 2 centimeters?

@@ -1,7 +1,7 @@
 ---
 title: Converting between map and compass
 minutes: 14
-status: draft
+status: complete
 source: Army FM 3-25.26 Map Reading and Land Navigation (US government, public domain)
 ---
 A compass gives **magnetic** directions. A map grid is drawn to **grid north**. The angle between them is the **grid-magnetic angle (G-M angle)**, printed in the declination diagram in the map margin. The diagram's lines are not drawn to scale, so read the number.

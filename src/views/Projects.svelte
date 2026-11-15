@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PageHeader from '../lib/PageHeader.svelte';
   // Projects: a named piece of work (Winter prep, The garden, Move to the cabin). It gathers its own tasks, events and
   // saved Ask chats, and links to the plans, items and guides it is about. Notes live in user/projects.txt.
   import { onMount } from 'svelte';
@@ -116,8 +117,13 @@
 </script>
 
 <section>
-  <h1>Projects</h1>
-  <p class="sub">A project gathers everything about one piece of work: its tasks, its dates, the Ask chats you had about it, and the plans, items and guides it depends on.</p>
+  <PageHeader eyebrow="CINDRIX OPS" title="Projects" tagline="A project gathers everything about one piece of work: its tasks, its dates, the Ask chats you had about it, and the plans, items and guides it depends on." />
+  <div class="statrow">
+    <div class="stat" style="--c: var(--blue)"><span class="ico">▤</span><span><div class="n">{projects.filter((p) => p.status !== 'done').length}</div><div class="t">Open projects</div></span></div>
+    <div class="stat" style="--c: var(--ok)"><span class="ico">✓</span><span><div class="n">{projects.filter((p) => p.status === 'done').length}</div><div class="t">Finished</div></span></div>
+    <div class="stat" style="--c: var(--warn)"><span class="ico">●</span><span><div class="n">{tasks.filter((t) => !t.done).length}</div><div class="t">Open tasks</div></span></div>
+    <div class="stat" style="--c: var(--cat-academy)"><span class="ico">▦</span><span><div class="n">{events.length}</div><div class="t">Dates</div></span></div>
+  </div>
   {#if note}<p class="notice" role="status">{note}</p>{/if}
   <div class="wrap">
     <nav class="panel list" aria-label="Projects">

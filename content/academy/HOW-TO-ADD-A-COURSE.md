@@ -26,6 +26,7 @@ summary: Growing food at home with little money and no internet.
 author: Your name
 version: 1
 license: Who may copy it (for example "CC BY 4.0" or "All rights reserved")
+tier: 3, 2 or 1 (3 is the foundation, 2 builds on it, 1 is the operator level). A person has reached a tier when every course of that tier and of every lower tier is done.
 ---
 ```
 
@@ -61,7 +62,7 @@ Rules the Academy checks:
 - Every question needs at least two answers and exactly one `+` answer.
 - **Lessons never give medicine amounts (doses).** A lesson that does is left out. Say to follow the
   label or to ask a doctor or pharmacist.
-- `status: reviewed` means a qualified person has checked the lesson. Anything else shows as a
+- `status: complete` means the lesson is fully written. `status: reviewed` means a qualified person has checked the lesson. Anything else shows as a
   draft, with a plain notice, so readers know.
 
 If a file is left out, the Academy tells you which one and why (at the bottom of its screen). The

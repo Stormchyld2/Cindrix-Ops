@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PageHeader from '../lib/PageHeader.svelte';
   // The to-do list: one place for everything that needs doing. Tasks can repeat, belong to a project, and link to
   // an item, plan, card or guide. Saved as plain text in user/tasks.txt.
   import { onMount } from 'svelte';
@@ -55,8 +56,14 @@
 </script>
 
 <section>
-  <h1>To-do list</h1>
-  <p class="sub">Everything that needs doing, in one place. Give a task a day, make it come back on its own (every week, every 6 months), file it under a project, and link it to the item or plan it is about.</p>
+  <PageHeader eyebrow="CINDRIX OPS" title="To-do list" tagline="Everything that needs doing, in one place. Give a task a day, make it come back on its own (every week, every 6 months), file it under a project, and link it to the item or plan it is about." />
+  <div class="statrow">
+    <div class="stat" style="--c: var(--danger)"><span class="ico">!</span><span><div class="n">{late.length}</div><div class="t">Late</div></span></div>
+    <div class="stat" style="--c: var(--warn)"><span class="ico">●</span><span><div class="n">{dueToday.length}</div><div class="t">Due today</div></span></div>
+    <div class="stat" style="--c: var(--blue)"><span class="ico">›</span><span><div class="n">{soon.length}</div><div class="t">Coming up</div></span></div>
+    <div class="stat" style="--c: var(--cat-academy)"><span class="ico">○</span><span><div class="n">{anytime.length}</div><div class="t">Any day</div></span></div>
+    <div class="stat" style="--c: var(--ok)"><span class="ico">✓</span><span><div class="n">{done.length}</div><div class="t">Finished</div></span></div>
+  </div>
   {#if note}<p class="notice" role="status">{note}</p>{/if}
 
   <div class="panel addbox">

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PageHeader from '../lib/PageHeader.svelte';
   // Security Operations: one screen with six subtabs (docs/44). All six subtabs are built (some parts of each are still waiting, see docs/44 section 17).
   import SecurityCommand from './SecurityCommand.svelte';
   import SecurityOperations from './SecurityOperations.svelte';
@@ -33,8 +34,7 @@
 </script>
 
 <div class="head">
-  <h1>Security Operations</h1>
-  <p class="sub">Keep watch over your sites, plan for trouble, and keep a clear record. Everything here stays on this computer.</p>
+  <PageHeader eyebrow="CINDRIX OPS" title="Security Operations" tagline="Keep watch over your sites, plan for trouble, and keep a clear record. Everything here stays on this computer." />
   <div class="row who">
     <label class="label" for="me">Your name</label>
     <input id="me" class="input" placeholder="Written on every record you make" bind:value={me} onchange={rememberMe} />

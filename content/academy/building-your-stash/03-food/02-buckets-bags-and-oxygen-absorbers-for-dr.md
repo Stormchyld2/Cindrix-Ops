@@ -1,7 +1,7 @@
 ---
 title: Buckets, bags and oxygen absorbers for dry food
 minutes: 9
-status: draft
+status: complete
 source: US university extension services (for example Utah State University Extension) guidance on long-term food storage
 ---
 > Basic planning guidance. Prices change, so this course names no prices. Check anything about chemicals or food storage against the sources named in the lesson before you rely on it.
@@ -29,6 +29,28 @@ For rice, dried beans and similar dry food, sealed storage can keep it good for 
 Name of food, date, and your own use-by guess.
 
 > Dry, clean, sealed and labelled. If in doubt about moisture, do not seal it.
+
+## Going deeper: what suits long-term storage
+Oxygen absorbers and sealed bags work best for **dry foods with low moisture** (about 10 percent or less), such as white rice, dried beans, wheat, rolled oats, pasta and dried corn. They slow insects and stale flavors.
+
+## Do not use them with
+- **Moist or oily foods,** such as brown sugar, dried fruit that is soft, jerky that is not fully dry, nuts with high oil, or garlic and herbs in oil. Sealing these without oxygen raises the risk of **botulism**, a serious poisoning.
+- **Brown rice and whole-grain flour** keep for a much shorter time because of their natural oils. Rotate them within a year or so.
+- **Salt, sugar and honey** need no absorbers. Keep them dry and sealed.
+
+## Step by step
+1. Use food-grade buckets (marked with a food-safe symbol, often number 2 HDPE) with gasket lids, and Mylar bags that fit inside.
+2. Make sure the food is dry and free from pests. For grains and flour, freezing for several days first can kill insect eggs.
+3. Fill the bag, add the right number of absorbers for the volume (the package gives guidance) and squeeze out the extra air.
+4. Seal the bag by pressing it with a hot iron or a hair straightener across the top, leaving no gaps.
+5. Place in the bucket, close the lid firmly and label with the contents and date.
+6. Open only what you will use soon, and reseal leftovers, or move them to a jar.
+
+## Check your work
+After a day, the bag should look vacuum-tight and shrink a little around the food. If it still looks puffy, the absorber may be old, or the seal may leak.
+
+## Keep it safe
+Never store food in buckets that held paint or chemicals. Do not use garbage bags as liners, because they can carry odors and fire-retardants. Keep buckets off the floor and away from heat.
 
 ## Check yourself
 ? Which buckets are safe for food?

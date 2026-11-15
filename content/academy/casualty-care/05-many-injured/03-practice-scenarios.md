@@ -1,7 +1,7 @@
 ---
 title: Practice scenarios
 minutes: 12
-status: draft
+status: complete
 source: CoTCCC Tactical Combat Casualty Care Guidelines (public); Stop the Bleed (American College of Surgeons)
 ---
 Work through these with your family or group. Talk through what you would do and in what order. Then act them out. There is no single right answer, but some answers are better than others.
@@ -31,6 +31,37 @@ Discuss:
 Write down the lessons and fix the kit.
 
 > A calm talk-through beats a panicked guess. Do these once a year with everyone in the house.
+
+## Going deeper: how to run scenarios well
+A scenario is a story you act out, so your mind and hands learn the order of work before a real emergency.
+
+## Setting up
+1. Choose a scenario and write a short script: where, what happened, number of casualties and injuries.
+2. Use volunteers as casualties, and give them cards with their signs: breathing rate, pulse, injuries, behavior.
+3. Add make-believe wounds with tape or washable paint, or just cards.
+4. Appoint an observer to take notes and keep time.
+5. Keep it safe: no real tourniquets tightened for long, no real injuries.
+
+## Run it
+The leader gives orders, the team treats, and the observer notes what happens. Stop to coach, or let it run, then discuss.
+
+## Ask afterwards
+- Was the scene made safe?
+- Who took charge? Was the plan clear?
+- Were the worst injuries found first?
+- Was massive bleeding stopped quickly?
+- Did the team talk to each other clearly?
+- Were records kept?
+- What would we do differently?
+
+## Build up
+Start with one casualty, move to two or three, then add stress: darkness, noise, rain, a frightened bystander, a missing supply.
+
+## Make variations
+Try a kitchen fire, a fall from a ladder, a car crash on a rural road, a storm with downed trees and a child with a wound. Repeat each scenario until the team handles it smoothly.
+
+## Remember
+Training does not replace a course taught by qualified instructors.
 
 ## Check yourself
 ? In a crash with fuel leaking, what comes first?

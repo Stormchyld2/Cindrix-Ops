@@ -1,7 +1,7 @@
 ---
 title: Parts of a compass
 minutes: 8
-status: draft
+status: complete
 source: Army FM 3-25.26 Map Reading and Land Navigation (US government, public domain)
 ---
 There are two common hand compasses. Learn the parts of both and you can use almost any.
@@ -27,6 +27,30 @@ A baseplate compass with a **declination adjustment**, a **luminous** needle or 
 - A needle that points the wrong way after a lightning strike or a strong magnet is **reversed**. Test it against a trusted one.
 
 > Tie a lanyard to your compass so you do not drop it in water.
+
+## Going deeper: choose and test your compass
+A reliable compass is among the best-value pieces of kit you can own.
+
+## What to look for
+- A **liquid-filled capsule** that settles quickly.
+- A **rotating bezel** marked in 2-degree steps.
+- **Luminous marks** for night use.
+- **Declination adjustment,** which saves arithmetic.
+- A **clear baseplate** with rulers and a scale that matches your maps.
+- A **sighting mirror** for accuracy, if you can afford it.
+- A **lanyard,** so it does not get lost.
+
+## Brands and cost
+Established makers such as Suunto, Silva and Brunton make dependable models, often between $20 and $60. Avoid toy compasses.
+
+## Carry two
+Keep one in your pack and a spare in a pocket or on your bag strap. Keep a simple compass in each vehicle and kit.
+
+## Learn its parts
+Name each part on your compass: baseplate, direction-of-travel arrow, bezel, orienting arrow, orienting lines, needle and index line. The next lessons use them.
+
+## Care
+Keep it away from magnets, steel and electronics, and avoid heat, which can make bubbles appear in the liquid.
 
 ## Check yourself
 ? Which end of the needle points to magnetic north?

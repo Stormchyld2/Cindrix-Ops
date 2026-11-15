@@ -1,7 +1,7 @@
 ---
 title: Coordinates in detail: grid and latitude/longitude
 minutes: 14
-status: draft
+status: complete
 source: Army FM 3-25.26 Map Reading and Land Navigation (US government, public domain); USGS topographic map symbols and map reading guidance (US government, public domain)
 ---
 ## Latitude and longitude

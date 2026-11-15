@@ -1,4 +1,4 @@
 ---
-title: Planning and saving your own seed
-summary: What to grow and how to save seed.
+title: Planning, growing and saving
+summary: Planning a garden, growing it well, and saving your own seed.
 ---

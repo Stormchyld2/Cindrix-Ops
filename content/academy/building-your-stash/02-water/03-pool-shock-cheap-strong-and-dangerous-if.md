@@ -1,7 +1,7 @@
 ---
 title: Pool shock: cheap, strong and dangerous if misused
 minutes: 9
-status: draft
+status: complete
 source: CDC pool chemical safety guidance (US government, public domain); CDC emergency water disinfection
 ---
 > Basic planning guidance. Prices change, so this course names no prices. Check anything about chemicals or food storage against the sources named in the lesson before you rely on it.
@@ -52,6 +52,24 @@ Always check these amounts against the current CDC page ("Making Water Safe in a
 - Use a clean measuring spoon only for this.
 
 > A little goes a long way, and so does a mistake. Treat it like the strong chemical it is.
+
+## Going deeper: handling a strong chemical sensibly
+Calcium hypochlorite pool shock is a strong oxidizer. It is stable in a cool, dry, sealed container, but it can start a fire or release toxic chlorine gas if it touches fuels, acids, ammonia, oils, other pool chemicals or even a small amount of water in a closed space. Treat it as a hazardous material, not as a pantry item.
+
+## Rules that prevent accidents
+- **Buy only the plain kind.** Check the label for the active ingredient and the percentage. Avoid products with added algaecides, stabilizers, clarifiers or fragrance.
+- **Keep it away from living space.** Store it outdoors, or in a cool, dry, ventilated shed or garage, in its original sealed container, on a high shelf out of reach of children and pets.
+- **Keep it apart** from fuel, paint, cleaners, fertilizer, vinegar and any other chemical, since mixing is the main cause of fire and gas release.
+- **Never mix the dry powder** with other chemicals, and never add water to a bucket of dry powder. Add powder to water slowly, outdoors or in good airflow.
+- **Wear protection:** splash goggles, chemical-resistant gloves and a long-sleeved shirt. Do not breathe the dust or fumes.
+- **Use dedicated tools** and containers. Label each one so nobody drinks from them.
+- **Dispose of spills** carefully. Sweep up dry powder with a clean, dry tool into a clean container and follow your local hazardous-waste rules. Flood small wet spills with plenty of water outdoors.
+
+## Test your batch if you can
+Chlorine test strips or a pool test kit let you check the strength of your stock solution, since the powder weakens over time. If you cannot measure it, use boiling or a tested filter instead.
+
+## When not to use it
+If you are unsure of the product, the numbers or the safety steps, do not guess. Boiling and filtering need no chemicals. Pool shock is a backup for larger volumes, used only by an adult who has practiced, read the label and follows these steps exactly.
 
 ## Check yourself
 ? Which kind of pool shock do you want?

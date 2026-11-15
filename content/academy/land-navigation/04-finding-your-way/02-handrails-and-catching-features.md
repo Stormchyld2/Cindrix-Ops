@@ -1,7 +1,7 @@
 ---
 title: Handrails, backstops and aiming off
 minutes: 9
-status: draft
+status: complete
 source: Army FM 3-25.26 Map Reading and Land Navigation (US government, public domain)
 ---
 Even a good navigator does not walk on a bearing for miles. Real travel uses the landscape to stay on track and to catch small errors.
@@ -27,6 +27,24 @@ Tick off landmarks as you pass them: "Stream crossing. Hill on the left. Fence. 
 - Keep the group together and count heads at every stop.
 
 > If two features do not match the map, you are probably not where you think you are. Stop and check.
+
+## Going deeper: make it hard to get lost
+Good navigators use features of the land to make mistakes show up early and stop big errors.
+
+- **Handrail:** a long feature you can follow, such as a stream, a fence, a ridge or a road. It keeps you on track with little compass work.
+- **Catching feature (backstop):** a feature that tells you that you have gone too far, such as a road or river beyond your target.
+- **Attack point:** an obvious feature near your target, from which you take a short, careful bearing or pace count to the goal.
+- **Collecting feature:** one along the route that confirms progress, and "collects" your attention.
+- **Aiming off:** deliberately aim to one side of a target on a line feature, so you know which way to turn when you reach it.
+
+## Combine them
+Plan the route as a chain: leave the start, follow the handrail, check collecting features, reach the attack point and then use a precise approach, with a catching feature behind the goal.
+
+## Why it works
+Compass bearings and pace counts accumulate error, and features reset it. The best route is often not the straight line but one with good handrails and a clear attack point.
+
+## Practice
+Plan a short route near home using a handrail, an attack point and a backstop. Walk it, then explain what each feature did.
 
 ## Check yourself
 ? What is a handrail in navigation?

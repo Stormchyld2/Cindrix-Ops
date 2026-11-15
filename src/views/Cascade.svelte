@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PageHeader from '../lib/PageHeader.svelte';
   import { whatFailsNext, type Cascade } from '../lib/api';
   import { onMount } from 'svelte';
   import { settings } from '../lib/settings.svelte';
@@ -37,11 +38,7 @@
 </script>
 
 <section>
-  <div class="row">
-    <h1>What fails next</h1>
-    <span class="badge">Estimate · not a prediction</span>
-  </div>
-  <p class="sub">What runs out first, using the numbers in your Inventory. Change the amounts or the "used per day" and this updates.</p>
+  <PageHeader eyebrow="ESTIMATE · NOT A PREDICTION" title="What fails next" tagline="What runs out first, using the numbers in your Inventory. Change the amounts or the &quot;used per day&quot; and this updates." />
 </section>
 
 {#if error}<div class="warn" role="alert">{error}</div>{/if}

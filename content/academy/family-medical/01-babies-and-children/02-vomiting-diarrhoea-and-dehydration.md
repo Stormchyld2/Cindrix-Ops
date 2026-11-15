@@ -1,7 +1,7 @@
 ---
 title: Vomiting, diarrhoea and dehydration
 minutes: 7
-status: draft
+status: complete
 source: American Academy of Pediatrics HealthyChildren.org guidance; CDC child health pages (public); WHO oral rehydration guidance
 ---
 > Basic awareness only. It does not replace a doctor or a hands-on class. Call emergency services first whenever you can. This course never gives medicine amounts: for those, read the package or ask a pharmacist or doctor.
@@ -29,6 +29,33 @@ In a long disruption, dehydration from a stomach bug is one of the biggest dange
 - A baby who cannot keep anything down
 
 > Keep a few packets of oral rehydration salts in every kit. They are light and cheap, and they save lives.
+
+## Going deeper: why dehydration is the real danger
+Most stomach illnesses pass in a few days. What hurts children, especially babies, is losing more fluid than they take in. Small bodies dehydrate fast.
+
+## Mild versus severe
+- **Mild:** thirsty, a dry mouth, fewer wet nappies, but still alert and drinking.
+- **Moderate:** no tears when crying, sunken eyes, a sunken soft spot on a baby, very dry mouth, little urine, tiredness.
+- **Severe (emergency):** very sleepy or hard to wake, cold hands and feet, fast breathing, no urine for many hours, wrinkled skin that stays pinched.
+
+## Giving fluids
+- Use **oral rehydration solution** (ORS) from a pharmacy, and keep packets in your kit. Follow the package.
+- Give small, frequent sips, a spoonful or a syringe full every few minutes, rather than big gulps that bring on vomiting.
+- **Keep breastfeeding** and keep giving formula. Continue normal food once vomiting settles.
+- Avoid fruit juice and soda in large amounts, which can worsen diarrhea.
+
+## Safety
+- **Wash hands** with soap after toilet and nappy changes and before food.
+- Keep sick people apart where you can, and use their own towels and cup.
+- Clean surfaces with a bleach-based or other suitable cleaner.
+- Use safe water to mix any formula or ORS.
+- Anti-diarrhea medicines are not for young children without a doctor's advice.
+
+## Get help urgently if
+Blood in stool or vomit, green vomit, severe belly pain, a swollen belly, a high fever, signs of moderate or severe dehydration, a baby under three months with vomiting or diarrhea, or no improvement after a day or two.
+
+## When help is far away
+Keep giving small sips, keep the child cool and calm, and plan how to reach care early rather than late.
 
 ## Check yourself
 ? Which is a sign of dehydration in a child?

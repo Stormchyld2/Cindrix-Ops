@@ -1,7 +1,7 @@
 ---
 title: The order of care: M-A-R-C-H
 minutes: 8
-status: draft
+status: complete
 source: CoTCCC Tactical Combat Casualty Care Guidelines (public); Stop the Bleed (American College of Surgeons)
 ---
 > This course is basic awareness for people who cannot reach help right away. It does not replace a hands-on class. Call emergency services first whenever you can.
@@ -24,6 +24,23 @@ Stopping bleeding comes before checking breathing because blood loss is fastest.
 - Look for **spurting or pooling blood**, soaked clothing, or blood that will not stop.
 
 > Say what you are doing out loud, in a calm voice. "I am going to stop the bleeding." It keeps you steady and helps the injured person.
+
+## Going deeper: where M.A.R.C.H. comes from
+MARCH is a memory aid used in tactical combat casualty care: **M**assive bleeding, **A**irway, **R**espiration (breathing), **C**irculation and **H**ead injury and **H**ypothermia. It puts the fastest killers first. A person can bleed to death from a limb wound in a few minutes, but may take longer to die from a blocked airway or a chest wound, and even longer from cold. Civilian courses such as Stop the Bleed teach the same first step: find and stop life-threatening bleeding before anything else.
+
+## How to run it
+1. **Scene safe?** Do not become the second casualty.
+2. **Massive bleeding:** look for blood pooling, soaked clothes and spurting. Stop it with pressure, packing or a tourniquet.
+3. **Airway:** can the person speak? If not, open the airway, and clear the mouth if you can see something blocking it.
+4. **Respiration:** look, listen and feel for breathing. Count the rate. Check the chest for wounds and treat them.
+5. **Circulation:** recheck bleeding, feel for a pulse, and look at skin color and warmth for shock.
+6. **Head and hypothermia:** check for head injury, and prevent heat loss with blankets, a ground layer and a hat.
+
+## Reassess again and again
+Care is a loop. A tourniquet can slip, a dressing can soak through and a person who was talking can fade. Go back to M every few minutes.
+
+## Call early
+Send someone to call 911 as soon as you know it is serious, or do it yourself on speaker while you work. Give the location, what happened, how many are hurt and what you are doing.
 
 ## Check yourself
 ? In the M-A-R-C-H order, what comes first?

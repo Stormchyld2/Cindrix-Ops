@@ -203,6 +203,55 @@ pub fn parse_plan(id: &str, text: &str) -> Result<Plan, String> {
 pub const PACK_HEADER: &str = "CINDRIX-PLAN-PACK 1";
 const PACK_MARK: &str = "@@@ plan ";
 
+/// One step of a plan the person writes in the program.
+pub struct NewStep {
+    pub title: String,
+    /// Days until it is due again; None for a one-time step.
+    pub every_days: Option<u32>,
+    /// Plain lines that explain the step.
+    pub body: Vec<String>,
+}
+
+fn clean_head(s: &str) -> String {
+    // the header reader stops a value at "(", so the brackets are not kept
+    s.split_whitespace().collect::<Vec<_>>().join(" ").replace(['(', ')'], "-")
+}
+
+/// The text of a plan file for a plan written in the program. It reads back with `parse_plan`.
+pub fn render(title: &str, summary: &str, kind: &str, author: &str, steps: &[NewStep]) -> Result<String, String> {
+    let title = clean_head(title);
+    if title.is_empty() {
+        return Err("Give the plan a name.".into());
+    }
+    let kind = if ["checks", "learning", "scenario"].contains(&kind) { kind } else { "checks" };
+    let steps: Vec<&NewStep> = steps.iter().filter(|s| !s.title.trim().is_empty()).collect();
+    if steps.is_empty() {
+        return Err("Add at least one step.".into());
+    }
+    let mut out = format!("---\ntitle: {}\nsummary: {}\nkind: {}\nauthor: {}\nversion: 1\nstatus: draft\n---\n", title, clean_head(summary), kind, clean_head(author));
+    for s in steps {
+        out.push_str(&format!("\n## {}\n", clean_head(&s.title)));
+        if let Some(n) = s.every_days.filter(|n| *n > 0) {
+            out.push_str(&format!("every: {}\n", n));
+        }
+        for line in &s.body {
+            let l = line.trim();
+            if l.is_empty() {
+                continue;
+            }
+            let low = l.to_lowercase();
+            let keyword = ["go:", "button:", "every:", "check:"].iter().any(|k| low.starts_with(k));
+            if l.starts_with('#') || l == "---" || keyword {
+                out.push_str("- ");
+            }
+            out.push_str(l);
+            out.push('\n');
+        }
+    }
+    Ok(out)
+}
+
+
 /// Put plans (id, the plan file's text) into one pack file.
 pub fn pack(plans: &[(String, String)]) -> String {
     let mut out = String::from(PACK_HEADER);
@@ -537,6 +586,25 @@ pub fn step_state(step: &Step, last_done: Option<&str>, today: i64) -> (StepStat
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn a_plan_written_in_the_program_reads_back_the_same() {
+        let steps = vec![
+            NewStep { title: "Check the lamp".into(), every_days: Some(90), body: vec!["Press the switch.".into(), "check: water".into()] },
+            NewStep { title: "  ".into(), every_days: None, body: vec![] },
+            NewStep { title: "Tell the family".into(), every_days: None, body: vec![] },
+        ];
+        let text = render("My plan (for the cabin)", "Keep the cabin ready.", "checks", "Me", &steps).unwrap();
+        let p = parse_plan("my-plan", &text).unwrap();
+        assert_eq!(p.title, "My plan -for the cabin-");
+        assert_eq!(p.kind, "checks");
+        assert_eq!(p.steps.len(), 2);
+        assert_eq!(p.steps[0].every_days, Some(90));
+        assert_eq!(p.steps[0].check, "", "a line that only looks like a keyword stays plain text");
+        assert!(render("", "", "checks", "", &steps).is_err());
+        assert!(render("A", "", "checks", "", &[]).is_err());
+        assert!(render("A", "", "nonsense", "", &steps).unwrap().contains("kind: checks"));
+    }
+
     use super::*;
 
     const SAMPLE: &str = "---\ntitle: Keep it fresh\nsummary: Repeat these.\nkind: checks\nauthor: Me\nversion: 2\nstatus: draft\n---\n## Turn over your water\nevery: 180 (days)\ncheck: water\ngo: Inventory\nbutton: Open Inventory\nUse the oldest first.\n- Label the date\n- Refill\n\n## Test the radio\nevery: 90\nCheck the batteries.\n\n## Write the plan down\nOnce is enough.\n";

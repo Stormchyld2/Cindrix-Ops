@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PageHeader from '../lib/PageHeader.svelte';
   import { onMount } from 'svelte';
   import { familyStatus, familyLoad, inventoryList, listCards, drillsList, plansList, guidesList, mapsList, mapPicture, type MapMeta, opsLoad, agendaGet, type Family, type Item, type Card, type Drill, type PlanInfo, type OpsData, type AgendaItem } from '../lib/api';
 
@@ -143,8 +144,8 @@
 
 <section class="wrap">
   <div class="no-print">
-    <h1>Binder</h1>
-    <p class="sub">A paper copy of your plan, for when the screens are dark. Choose what goes in, check the preview, then print it or save it as a PDF.</p>
+    <PageHeader eyebrow="CINDRIX OPS" title="Binder" tagline="A paper copy of your plan, for when the screens are dark. Choose what goes in, check the preview, then print it or save it as a PDF." />
+<div class="statrow"><div class="stat" style="--c: var(--blue)"><span class="ico">▣</span><span><div class="n">{items.length}</div><div class="t">Inventory items</div></span></div><div class="stat" style="--c: var(--cat-security)"><span class="ico">✚</span><span><div class="n">{cards.length}</div><div class="t">Emergency cards</div></span></div><div class="stat" style="--c: var(--ok)"><span class="ico">▶</span><span><div class="n">{drills.length}</div><div class="t">Drills</div></span></div><div class="stat" style="--c: var(--cat-academy)"><span class="ico">▤</span><span><div class="n">{plans.length}</div><div class="t">Plans</div></span></div></div>
   </div>
   {#if error}<div class="warn no-print">{error}</div>{/if}
 

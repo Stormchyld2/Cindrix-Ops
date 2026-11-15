@@ -1,7 +1,7 @@
 ---
 title: What a map tells you
 minutes: 8
-status: draft
+status: complete
 source: Army FM 3-25.26 Map Reading and Land Navigation (US government, public domain); USGS topographic map symbols and map reading guidance (US government, public domain)
 ---
 A map is a picture of the ground seen from straight above, drawn smaller than real life. Before you look at the picture, read the edges. The border of a good map is full of facts.
@@ -22,6 +22,24 @@ Almost all maps are drawn with north at the top, but not always. **Look for the 
 When you pick up any map, spend one minute on the margin first: title, scale, legend, date, north arrow. Then find where you are and one big feature you can see around you, such as a river, a road or a hill.
 
 > Fold the map so the area you are using is on top and keep it in a clear bag. A wet map is of no use.
+
+## Going deeper: a map is a model, not the ground
+A map is a flat, simplified picture of a curved, changing world. It leaves things out, draws others larger than life and was true on the day it was surveyed. Check the **date** and the **revision** in the margin. Roads, trails, buildings, bridges and forests change, and rivers move. A ten-year-old map may show a road that is now a trail or a bridge that has washed out.
+
+## Read the margin first
+- **Title and sheet name,** so you know you have the right map.
+- **Scale,** to judge distance.
+- **Contour interval,** to judge height and steepness.
+- **Legend,** to decode symbols and colors. They differ between maps.
+- **Declination diagram,** to link compass and map.
+- **Grid or coordinate system,** and the datum, so a position you note matches another person's.
+- **Neighbouring sheets,** in case your route crosses the edge.
+
+## Build the habit
+Before you walk, orient yourself: find north, find where you are, find where you want to go and look at what lies between. Compare the map with what you can see. If they disagree, trust your eyes for new features and the map for the large shapes.
+
+## Carry the right ones
+Keep a regional map for the big picture and a detailed one for the area you will travel. Keep them in a clear, waterproof bag, with a pencil.
 
 ## Check yourself
 ? Where do you find the meaning of the map's symbols?

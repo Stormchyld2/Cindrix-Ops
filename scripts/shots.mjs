@@ -52,8 +52,10 @@ async function shoot(page, name) {
 async function nav(page, top, item) {
   const burger = page.getByRole('button', { name: 'Menu', exact: true });
   if (await burger.isVisible() && (await burger.getAttribute('aria-expanded')) !== 'true') await burger.click();
-  await page.getByRole('button', { name: top, exact: true }).click();
-  if (item) await page.getByRole('menuitem', { name: item, exact: true }).click();
+  const entry = item ? page.getByRole('menuitem', { name: item, exact: true }) : null;
+  // a section that is already folded out stays out: clicking its name again would close it
+  if (!entry || !(await entry.isVisible())) await page.getByRole('button', { name: top, exact: true }).click();
+  if (entry) await entry.click();
 }
 
 for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone', { width: 390, height: 800 }]]) {
@@ -153,8 +155,9 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   await page.getByRole('heading', { name: 'Academy' }).waitFor();
   await shoot(page, `${label}-2c1-academy-list`);
   await page.getByRole('button', { name: /Open the course/ }).first().click();
-  await page.getByRole('button', { name: '← All courses' }).waitFor();
-  await page.getByRole('button', { name: /Water comes first/ }).click();
+  await page.getByRole('button', { name: '← Skills' }).waitFor();
+  await shoot(page, `${label}-2c0-academy-course`);
+  await page.getByRole('button', { name: 'The first 72 hours' }).click();
   await page.getByRole('heading', { name: 'Water comes first' }).waitFor();
   await page.getByRole('button', { name: 'Take the quiz' }).click();
   await page.getByRole('radio', { name: 'About three days' }).check();
@@ -164,8 +167,8 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   await page.getByRole('button', { name: 'Save result' }).click();
   await page.getByText('Saved: 1 of 1.').waitFor();
   // Training sign-off: a card for each person on the Family page, then that person's page.
-  await page.getByRole('button', { name: '← Back to the course' }).click();
-  await page.getByRole('button', { name: '← All courses' }).click();
+  await page.getByRole('button', { name: /← Survival basics/ }).click();
+  await page.getByRole('button', { name: '← Skills' }).click();
   await page.getByRole('button', { name: 'Training sign-off' }).click();
   await page.getByRole('heading', { name: 'Training sign-off' }).waitFor();
   await page.getByRole('button', { name: /Open the training page for Person 1/ }).waitFor();
@@ -342,7 +345,7 @@ for (const [label, size] of [['desktop', { width: 1180, height: 780 }], ['phone'
   const md = String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0');
   await nav(page, 'Operations', 'Family');
   await page.getByLabel('Birthday').first().fill('2000-' + md);
-  await page.getByRole('button', { name: 'Save to this drive' }).click();
+  await page.getByRole('button', { name: 'Save to drive' }).click();
   await page.getByText(/^Saved/).first().waitFor();
   await nav(page, 'Operations', 'Calendar');
   await page.locator('.chip.bday', { hasText: /birthday/ }).first().waitFor();

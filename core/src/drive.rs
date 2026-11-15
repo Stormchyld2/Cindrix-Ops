@@ -100,6 +100,10 @@ pub fn candidate_roots() -> Vec<PathBuf> {
                 v.push(p);
             }
         }
+    } else if cfg!(target_os = "android") {
+        // A phone has no drive letters. A plugged-in drive appears as /storage/<id>, and the phone's own
+        // storage as /storage/emulated/0 (needs "All files access" to be allowed for the app).
+        v.extend(android_roots(Path::new("/storage")));
     } else {
         for base in ["/media", "/run/media", "/mnt", "/Volumes"] {
             let base = PathBuf::from(base);
@@ -122,6 +126,24 @@ pub fn candidate_roots() -> Vec<PathBuf> {
         }
     }
     v
+}
+
+/// The places on an Android phone that can hold a Cindrix drive, under `storage` (normally `/storage`).
+/// Removable drives come first, then the phone's own storage. `self` and the other users' folders are skipped.
+pub fn android_roots(storage: &Path) -> Vec<PathBuf> {
+    let mut out = Vec::new();
+    let Ok(rd) = fs::read_dir(storage) else { return out };
+    let mut names: Vec<String> = rd.flatten().filter(|e| e.path().is_dir()).map(|e| e.file_name().to_string_lossy().to_string()).collect();
+    names.sort();
+    for n in &names {
+        if n != "self" && n != "emulated" {
+            out.push(storage.join(n));
+        }
+    }
+    if storage.join("emulated").is_dir() {
+        out.push(storage.join("emulated").join("0"));
+    }
+    out
 }
 
 /// All Cindrix drives among `candidates`, in the order given.
@@ -162,6 +184,17 @@ mod tests {
         let _ = fs::remove_dir_all(&p);
         fs::create_dir_all(&p).unwrap();
         p
+    }
+
+    #[test]
+    fn android_lists_removable_drives_before_phone_storage() {
+        let d = tmp("android-roots");
+        for n in ["self", "emulated/0", "1A2B-3C4D", "9999-0000"] {
+            std::fs::create_dir_all(d.join(n)).unwrap();
+        }
+        let got: Vec<String> = android_roots(&d).iter().map(|p| p.strip_prefix(&d).unwrap().to_string_lossy().replace('\\', "/")).collect();
+        assert_eq!(got, vec!["1A2B-3C4D", "9999-0000", "emulated/0"]);
+        assert!(android_roots(&d.join("nope")).is_empty());
     }
 
     #[test]

@@ -84,3 +84,7 @@ from the drive's own folder when the shipped content is not there.
 * Each source under an answer carries a link (`Passage.link`, `Reply.links`): archive pages open in Intel in a tab of their own.
   Sources from books, files and saved sites have no page to open yet and stay as labels.
 * The top bar (brand, sections and the sub-tabs) is fixed at the top; the brand reads CINDRIX OPS with no edition name.
+
+## The portable build carries these folders (2026-11-10)
+
+The Windows portable build now has `cards`, `plans`, `seed-guides`, `drills`, `academy` and `guides` inside its own `content` folder, so cards, medical cards, plans, drills and courses work with nothing else beside it (the owner moved the pack onto the drive and the program did not read it, so the build now carries them). Books, manuals, maps, music and `.zim` files stay on the drive. `content_sub` (`src-tauri/src/lib.rs`) reads the drive's own `content\<name>` folder when it has files in it, and the copy beside the program otherwise; the folders `cards`, `academy` and so on at the top of the drive, other libraries and `user\...` are still added on top. The content pack artifact stays for drives that run the program from somewhere else.

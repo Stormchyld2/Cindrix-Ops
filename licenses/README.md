@@ -34,6 +34,7 @@ their full text.
 | FDA drug labels (openFDA, `scripts/get-druglabels.ps1`) | The label text for medicines, read in Intel > Drug labels | U.S. government information; openFDA terms (https://open.fda.gov/terms/) | Show it as published, say it is not advice and not endorsed by the FDA; the program never downloads it itself |
 | Home remedies pages (`content/guides/home-remedies`) | Reworded from NOMAD's `home_remedies.json` and `natural_remedies.json`, which summarize CDC, MedlinePlus and NCCIH pages | Public domain (U.S. government), NOMAD Apache-2.0 | Keep each page's `Source:` line; keep them marked draft until a qualified person has checked them |
 | ffmpeg (LGPL build) | Plays WMA by converting for a moment | LGPL-2.1-or-later | Keep license; offer the ffmpeg source (link below); we run it as a separate program |
+| CHIRP (radio programming software) | Taught in the Radio Licenses course; you put its installer in `resources/CHIRP` on the drive | GPL-3.0 | We do not change or rebuild it; link to its source and keep its license with the installer |
 | Our own code in `core/` and `crypto/` | All the logic, including our own zstd and xz readers | The project's license (see "Our own license") | |
 
 ## What we ship or tell people to download
@@ -47,7 +48,8 @@ their full text.
 | Wikipedia, WikiMed, WikEM and similar archives | CC BY-SA 4.0 | Credit and link; share-alike for anything we change |
 | US government manuals and guides (Army, FEMA, CDC, FDA, USGS) | Public domain | Record edition and date |
 | Project Gutenberg titles | Public domain in the US | Check each title |
-| Academy lessons we wrote (Survival basics, Seed vault, Map reading and land navigation, Casualty care in a crisis, Family medical care without a clinic, Building your stash) | Ours, from public-domain US government manuals where noted | Drafts until reviewed by a qualified person |
+| Academy lessons we wrote (Survival basics, Seed vault, Map reading and land navigation, Casualty care in a crisis, Family medical care without a clinic, Building your stash, Earthquake Preparedness, Stop the Bleed, CPR and First Aid) | Ours, from public-domain US government manuals where noted | Complete, but not yet signed off by a qualified reviewer |
+| Academy Tier 2 and Tier 1 courses we wrote (Water and Sanitation, Food Production and Preservation, Home and Site Security, Vehicle Readiness, and the six Operator courses) and the two study-path plans | Ours, in our own words from US government and public guidance (FEMA, CDC, EPA, NRC, US DOT ERG, NHTSA, NWS, USDA NCHFP, US Army field manuals for civilian principles) | Complete, but not yet signed off by a qualified reviewer |
 | Academy courses someone else wrote | Set by the author in `course.md` (`license:`) | The Academy shows the author; do not ship a course with no license |
 | Music and books you add yourself | Yours | Not part of what we ship |
 
@@ -58,6 +60,7 @@ and any copyrighted book (see doc 3).
 - This program: the repository https://github.com/Stormchyld2/Cindrix-Ops
 - Kiwix tools: https://github.com/kiwix/kiwix-tools
 - ffmpeg: https://ffmpeg.org/download.html (the build we use is from https://github.com/BtbN/FFmpeg-Builds)
+- CHIRP: https://chirpmyradio.com (source: https://github.com/kk7ds/chirp)
 - llama.cpp: https://github.com/ggml-org/llama.cpp
 
 ## Our own license
@@ -81,3 +84,18 @@ Written for this project (`content/guides`; 128 agro pages and 55 radio pages; t
 
 ## Security Operations content
 Written for this project: the ten situation-response cards (`content/cards/response-*.md`), the plan `content/plans/comms-and-watch.md`, the two starter plans in `content/security-plans/` (Defensive security plan, Operational Response plan) and the radio and watch standard in `docs/46` and `docs/COPS-COM-001-communications-and-watch-plan.md`. They are starting procedures for a family to edit, not legal or tactical advice, and are drafts until someone qualified has reviewed them. They draw on public guidance (DHS "Run, Hide, Fight", National Park Service search-and-rescue guidance, Ready.gov, FCC 47 CFR Part 95 for the radio services) paraphrased in our own words; nothing is copied. The list of NOAA Weather Radio stations in `core/src/security_comms.rs` (call sign, frequency, place) is public information from the National Weather Service; a station must still be checked on a real radio. US government material is public domain.
+
+## Academy courses supplied by the owner
+Ten courses (Basic Preparedness, Self-Defense, Communications, Area Studies, Mobility, Admin and
+Leadership, Power Outage Preparedness, Wildfire Preparedness, Medical for Everyday Citizens and Radio
+Licenses) are written text supplied by the owner and rebranded as CindrixOps: all rights reserved,
+CindrixOps. The owner must confirm he holds the rights to the original text. Expert advice notes are
+credited to Brent Weir. Nothing from the originals' videos, images or PDF templates is included.
+
+## Basic Preparedness, first section (rewritten 2026-11-10)
+
+All lessons of `content/academy/basic-preparedness` (modules 1 to 7; the review quizzes keep their questions) were rewritten on 2026-11-11 from public FEMA, Ready.gov, American Red Cross, CDC, EPA, NOAA, USDA and NFPA guidance as original CindrixOps text. The other courses supplied by the owner are being rewritten the same way; until each is, its text is not cleared for sale or sharing.
+
+## Screen artwork (`public/ui/`)
+
+The banner, drill, plan, security and tile pictures in `public/ui/` are cut from the owner's own screen mockups. They are the owner's own artwork and come from no outside source.

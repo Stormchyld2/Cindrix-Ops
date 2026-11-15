@@ -1,7 +1,7 @@
 ---
 title: Setting up a practice course
 minutes: 9
-status: draft
+status: complete
 source: Army FM 3-25.26 Map Reading and Land Navigation (US government, public domain)
 ---
 A course tests your skills before you must rely on them. Set one up once or twice a year and practice again, because navigation skills fade fast.

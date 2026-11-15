@@ -1,7 +1,7 @@
 ---
 title: Safety before care
 minutes: 7
-status: draft
+status: complete
 source: CoTCCC Tactical Combat Casualty Care Guidelines (public); Stop the Bleed (American College of Surgeons)
 ---
 The first rule of rescue: **you cannot help anyone if you become another casualty.** The right action depends on whether the danger is still present.
@@ -23,6 +23,24 @@ When you need to move, a tourniquet applied high and tight on a limb that is ble
 Call emergency services as soon as it is safe. Tell them where you are, what happened, how many are hurt and what you have done.
 
 > Do not run into danger to reach a casualty. A rescuer who goes down makes the situation twice as bad.
+
+## Going deeper: the three zones
+Responders speak of zones. They help you decide what care is possible and when.
+- **Hot zone (under threat):** a fire, a shooter, a collapse, traffic, rising water. The only thing you should do is get yourself and others out of danger, and stop massive bleeding with a tourniquet if it takes seconds.
+- **Warm zone (threat reduced):** you have cover, but the danger is nearby. Do quick lifesaving steps: bleeding, airway.
+- **Cold zone (safe):** you can do the full assessment and care.
+
+## Safety checks
+Ask: what hazards are here? Fire, gas, electric wires, unstable structures, traffic, chemicals, smoke, a violent person, water, animals. What are the risks to me, to the casualty and to bystanders? Can I make it safer: turn off the engine, put on hazard lights, set out warning triangles, shut off power, or cover and get away from a threat?
+
+## When a person is dangerous
+If someone is violent, a weapon is present, or the scene is unsafe, do not enter. Call 911, keep back, and give care only when police say it is safe. Your safety comes first. A dead rescuer helps no one.
+
+## Time pressure
+When massive bleeding is life-threatening and the area is unsafe, apply a tourniquet quickly, move the person to cover and finish care there.
+
+## Calling for help
+State your location (address, cross streets, mile marker), what happened, number of injured, their condition and any hazards. Stay on the line and follow instructions. If phones are down, send a runner, use a radio or signal with a whistle or a bright cloth.
 
 ## Check yourself
 ? What is your first priority when danger is still present?

@@ -1,7 +1,7 @@
 ---
 title: Contour lines and the shape of the land
 minutes: 12
-status: draft
+status: complete
 source: Army FM 3-25.26 Map Reading and Land Navigation (US government, public domain); USGS topographic map symbols and map reading guidance (US government, public domain)
 ---
 Contour lines are the brown lines that show the height and shape of the land. Each line joins points that are the same height above sea level. Once you can read them, a flat sheet of paper turns into hills and valleys in your head.

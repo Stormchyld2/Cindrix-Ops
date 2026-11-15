@@ -1,7 +1,7 @@
 ---
 title: Going around obstacles and aiming off
 minutes: 10
-status: draft
+status: complete
 source: Army FM 3-25.26 Map Reading and Land Navigation (US government, public domain)
 ---
 ## Going around an obstacle

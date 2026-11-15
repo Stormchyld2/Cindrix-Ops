@@ -54,6 +54,14 @@ fn root() -> PathBuf {
 static ROOT_OVERRIDE: Mutex<Option<PathBuf>> = Mutex::new(None);
 
 fn program_dir() -> PathBuf {
+    // On Android the program sits in a read-only folder, so the app's own writable folder stands in for it
+    #[cfg(target_os = "android")]
+    {
+        let d = PathBuf::from("/data/data/org.cindrix.ops/files");
+        let _ = std::fs::create_dir_all(&d);
+        return d;
+    }
+    #[cfg(not(target_os = "android"))]
     std::env::current_exe()
         .ok()
         .and_then(|p| p.parent().map(|d| d.to_path_buf()))
@@ -672,6 +680,43 @@ fn place_in(p: MyPlaceDto) -> cindrix_core::profile::Place {
 }
 fn place_out(p: &cindrix_core::profile::Place) -> MyPlaceDto {
     MyPlaceDto { name: p.name.clone(), address: p.address.clone(), lat: p.lat, lon: p.lon }
+}
+
+#[derive(Serialize)]
+struct PaceQuestionDto { key: String, tier: String, tier_name: String, tier_when: String, prompt: String, hint: String, example: String }
+#[derive(Serialize)]
+struct PaceItemDto { prompt: String, answer: String }
+#[derive(Serialize)]
+struct PaceLevelDto { code: String, name: String, when: String, items: Vec<PaceItemDto>, missing: Vec<String> }
+#[derive(Serialize)]
+struct PacePlanDto { empty: bool, answered: usize, total: usize, levels: Vec<PaceLevelDto>, text: String }
+#[derive(Serialize)]
+struct PaceDto { questions: Vec<PaceQuestionDto>, answers: Vec<(String, String)>, plan: PacePlanDto }
+
+fn pace_dto(answers: Vec<(String, String)>) -> PaceDto {
+    use cindrix_core::pace;
+    let plan = pace::build(&answers);
+    let text = pace::to_text(&plan);
+    PaceDto {
+        questions: pace::QUESTIONS.iter().map(|q| PaceQuestionDto { key: q.key.into(), tier: q.tier.into(), tier_name: pace::tier_name(q.tier).into(), tier_when: pace::tier_when(q.tier).into(), prompt: q.prompt.into(), hint: q.hint.into(), example: q.example.into() }).collect(),
+        answers,
+        plan: PacePlanDto {
+            empty: plan.empty, answered: plan.answered, total: plan.total, text,
+            levels: plan.levels.iter().map(|l| PaceLevelDto { code: l.code.clone(), name: l.name.clone(), when: l.when.clone(), items: l.items.iter().map(|i| PaceItemDto { prompt: i.prompt.clone(), answer: i.answer.clone() }).collect(), missing: l.missing.clone() }).collect(),
+        },
+    }
+}
+
+#[tauri::command]
+fn pace_load() -> Result<PaceDto, String> {
+    Ok(pace_dto(cindrix_core::pace::load(&root().join("user"))?))
+}
+
+#[tauri::command]
+fn pace_save(answers: Vec<(String, String)>) -> Result<PaceDto, String> {
+    let user = root().join("user");
+    cindrix_core::pace::save(&user, &answers)?;
+    Ok(pace_dto(cindrix_core::pace::load(&user)?))
 }
 
 #[tauri::command]
@@ -1797,6 +1842,30 @@ fn export_text(name: String, text: String) -> Result<String, String> {
     user().write_export(&name, &text).map(|p| p.display().to_string())
 }
 
+/// The whole Inventory as one file (a .csv that opens in a spreadsheet), for Import / Export.
+#[tauri::command]
+fn inventory_csv() -> Result<String, String> {
+    Ok(inventory::serialize(&user().load_inventory()?))
+}
+
+#[derive(Serialize)]
+struct ImportResultDto {
+    added: usize,
+    skipped: usize,
+}
+
+/// Add the lines of a file made by Export (or by hand in the same columns). Nothing already there is changed.
+#[tauri::command]
+fn inventory_import(text: String) -> Result<ImportResultDto, String> {
+    let incoming = inventory::parse(&text).map_err(|e| format!("That file could not be read: {}", e.0))?;
+    let u = user();
+    let (list, added, skipped) = inventory::import_merge(u.load_inventory()?, incoming);
+    if added > 0 {
+        u.save_inventory(&list)?;
+    }
+    Ok(ImportResultDto { added, skipped })
+}
+
 #[derive(Serialize)]
 struct ChatInfoDto {
     name: String,
@@ -1955,12 +2024,23 @@ struct CopyDto {
 /// Let the owner pick a folder on this computer (Settings: folders for the assistant to search).
 #[tauri::command]
 async fn pick_folder(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    // A phone has no folder picker the program can read from. A plugged-in drive is found by its marker file,
+    // and the phone's own storage is read once "All files access" is allowed for the app.
+    #[cfg(target_os = "android")]
+    {
+        let _ = app;
+        return Err("On a phone, folders are found by themselves. Plug in the drive, or allow All files access for Cindrix in the phone's settings.".into());
+    }
+    #[cfg(not(target_os = "android"))]
     let picked = tauri::async_runtime::spawn_blocking(move || app.dialog().file().blocking_pick_folder())
         .await
         .map_err(|e| e.to_string())?;
-    let Some(fp) = picked else { return Ok(None) };
-    let p = fp.into_path().map_err(|e| e.to_string())?;
-    Ok(Some(p.to_string_lossy().to_string()))
+    #[cfg(not(target_os = "android"))]
+    {
+        let Some(fp) = picked else { return Ok(None) };
+        let p = fp.into_path().map_err(|e| e.to_string())?;
+        Ok(Some(p.to_string_lossy().to_string()))
+    }
 }
 
 /// Ask for a .zim file and copy it into the library (in the background; poll `archive_copy_status`).
@@ -2068,6 +2148,18 @@ struct BlockDto {
     kind: &'static str,
     text: String,
     items: Vec<String>,
+    /// Checklist items (empty for every other kind of block).
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    checks: Vec<CheckDto>,
+}
+
+#[derive(Serialize)]
+struct CheckDto {
+    text: String,
+    detail: String,
+    gear: bool,
+    /// The item's number across all the lesson's checklists, used to tick it.
+    n: usize,
 }
 
 #[derive(Serialize)]
@@ -2090,6 +2182,10 @@ struct LessonDto {
     best_score: u32,
     total: u32,
     last_date: String,
+    readiness: u32,
+    checklist: usize,
+    checks_done: usize,
+    video: bool,
 }
 
 #[derive(Serialize)]
@@ -2102,6 +2198,7 @@ struct ModuleDto {
     course_title: String,
     course_summary: String,
     course_author: String,
+    course_tier: u8,
     lessons: Vec<LessonDto>,
 }
 
@@ -2144,6 +2241,9 @@ struct LessonBodyDto {
     minutes: u32,
     status: String,
     source: String,
+    readiness: u32,
+    /// Numbers of the checklist items this person has ticked.
+    ticked: Vec<usize>,
     blocks: Vec<BlockDto>,
     quiz: Vec<QuestionDto>,
 }
@@ -2152,6 +2252,8 @@ struct LessonBodyDto {
 fn academy_list(person: Option<String>) -> Result<Vec<ModuleDto>, String> {
     let person = person.filter(|p| !p.trim().is_empty());
     let results = academy::Log::new(&root().join("user")).list()?;
+    let ticks = academy::Checks::new(&root().join("user")).list()?;
+    let who = person.clone().unwrap_or_default();
     let mut out = Vec::new();
     for c in academy::load_all(&academy_dirs()).courses {
         for m in c.modules {
@@ -2163,12 +2265,15 @@ fn academy_list(person: Option<String>) -> Result<Vec<ModuleDto>, String> {
                 course_title: c.title.clone(),
                 course_summary: c.summary.clone(),
                 course_author: c.author.clone(),
+                course_tier: c.tier,
                 lessons: m
                     .lessons
                     .into_iter()
                     .map(|l| {
                         let p = academy::progress_of(&results, &l.id, person.as_deref());
-                        LessonDto { questions: l.quiz.len(), tries: p.tries, best_score: p.best_score, total: p.total, last_date: p.last_date, id: l.id, title: l.title, minutes: l.minutes, status: l.status, source: l.source }
+                        let (checks_done, checklist) = academy::check_counts(&l, &ticks, &who);
+                        let video = l.body.iter().any(|b| matches!(b, academy::Block::Video(_)));
+                        LessonDto { questions: l.quiz.len(), tries: p.tries, best_score: p.best_score, total: p.total, last_date: p.last_date, readiness: l.readiness, checklist, checks_done, video, id: l.id, title: l.title, minutes: l.minutes, status: l.status, source: l.source }
                     })
                     .collect(),
             });
@@ -2179,7 +2284,7 @@ fn academy_list(person: Option<String>) -> Result<Vec<ModuleDto>, String> {
 
 /// One lesson, found by id in the loaded course (the id is never turned into a file path).
 #[tauri::command]
-fn academy_lesson(id: String) -> Result<LessonBodyDto, String> {
+fn academy_lesson(id: String, person: Option<String>) -> Result<LessonBodyDto, String> {
     let l = academy::load_all(&academy_dirs())
         .courses
         .into_iter()
@@ -2189,23 +2294,47 @@ fn academy_lesson(id: String) -> Result<LessonBodyDto, String> {
         .ok_or("There is no such lesson.")?;
     let dirs = academy_dirs();
     let lesson_id = l.id.clone();
+    let who = person.unwrap_or_default();
+    let ticked: Vec<usize> = academy::Checks::new(&root().join("user")).list()?.into_iter().filter(|(p, li, _)| *p == who && *li == lesson_id).map(|(_, _, i)| i).collect();
+    let mut counter = 0usize;
     let blocks = l
         .body
         .into_iter()
         .map(|b| match b {
             academy::Block::Image { alt, file } => {
                 let url = academy::image_file(&dirs, &lesson_id, &file).and_then(|p| academy::image_data_url(&p)).unwrap_or_default();
-                BlockDto { kind: "image", text: alt, items: vec![url] }
+                BlockDto { kind: "image", text: alt, items: vec![url], checks: vec![] }
             }
-            academy::Block::Heading(t) => BlockDto { kind: "heading", text: t, items: vec![] },
-            academy::Block::Para(t) => BlockDto { kind: "para", text: t, items: vec![] },
-            academy::Block::Note(t) => BlockDto { kind: "note", text: t, items: vec![] },
-            academy::Block::Bullets(v) => BlockDto { kind: "bullets", text: String::new(), items: v },
-            academy::Block::Steps(v) => BlockDto { kind: "steps", text: String::new(), items: v },
+            academy::Block::Heading(t) => BlockDto { kind: "heading", text: t, items: vec![], checks: vec![] },
+            academy::Block::Para(t) => BlockDto { kind: "para", text: t, items: vec![], checks: vec![] },
+            academy::Block::Note(t) => BlockDto { kind: "note", text: t, items: vec![], checks: vec![] },
+            academy::Block::Bullets(v) => BlockDto { kind: "bullets", text: String::new(), items: v, checks: vec![] },
+            academy::Block::Steps(v) => BlockDto { kind: "steps", text: String::new(), items: v, checks: vec![] },
+            academy::Block::Video(c) => BlockDto { kind: "video", text: c, items: vec![], checks: vec![] },
+            academy::Block::Checklist(v) => {
+                let checks = v
+                    .into_iter()
+                    .map(|i| {
+                        counter += 1;
+                        CheckDto { text: i.text, detail: i.detail, gear: i.gear, n: counter - 1 }
+                    })
+                    .collect();
+                BlockDto { kind: "checklist", text: String::new(), items: vec![], checks }
+            }
         })
         .collect();
     let quiz = l.quiz.into_iter().map(|q| QuestionDto { text: q.text, options: q.options, correct: q.correct, explain: q.explain }).collect();
-    Ok(LessonBodyDto { id: l.id, title: l.title, minutes: l.minutes, status: l.status, source: l.source, blocks, quiz })
+    Ok(LessonBodyDto { id: l.id, title: l.title, minutes: l.minutes, status: l.status, source: l.source, readiness: l.readiness, ticked, blocks, quiz })
+}
+
+/// Tick or untick one checklist item for a person.
+#[tauri::command]
+fn academy_check_set(lesson: String, item: usize, on: bool, person: Option<String>) -> Result<(), String> {
+    let known = academy::load_all(&academy_dirs()).courses.into_iter().flat_map(|c| c.modules).flat_map(|m| m.lessons).any(|l| l.id == lesson);
+    if !known {
+        return Err("There is no such lesson.".into());
+    }
+    academy::Checks::new(&root().join("user")).set(person.unwrap_or_default().trim(), &lesson, item, on)
 }
 
 /// Put the courses you added (`user/academy`) into one pack file to give to another household.
@@ -2534,6 +2663,7 @@ struct TrainCourseDto {
     id: String,
     title: String,
     summary: String,
+    tier: u8,
     chosen: bool,
     signed_by: String,
     signed_date: String,
@@ -2550,12 +2680,23 @@ struct TrainSuggestionDto {
     reason: String,
 }
 #[derive(Serialize)]
+struct TierDto {
+    tier: u8,
+    name: &'static str,
+    courses: u32,
+    done: u32,
+    reached: bool,
+}
+#[derive(Serialize)]
 struct TrainReportDto {
     person: String,
     passed: u32,
     needed: u32,
     signed: u32,
     chosen: u32,
+    badge: u8,
+    badge_name: &'static str,
+    tiers: Vec<TierDto>,
     courses: Vec<TrainCourseDto>,
     suggestions: Vec<TrainSuggestionDto>,
 }
@@ -2577,13 +2718,16 @@ fn training_reports(people: Vec<String>) -> Result<Vec<TrainReportDto>, String> 
                 needed: r.needed,
                 signed: r.signed,
                 chosen: r.chosen,
+                badge: r.badge,
+                badge_name: training::tier_name(r.badge),
+                tiers: r.tiers.iter().map(|t| TierDto { tier: t.tier, name: training::tier_name(t.tier), courses: t.courses, done: t.done, reached: t.reached }).collect(),
                 courses: r
                     .courses
                     .into_iter()
                     .map(|c| {
                         let complete = c.complete();
                         TrainCourseDto {
-                            id: c.id, title: c.title, summary: c.summary, chosen: c.chosen, signed_by: c.signed_by, signed_date: c.signed_date,
+                            id: c.id, title: c.title, summary: c.summary, tier: c.tier, chosen: c.chosen, signed_by: c.signed_by, signed_date: c.signed_date,
                             passed: c.passed, needed: c.needed, minutes_left: c.minutes_left, complete,
                             lessons: c.lessons.into_iter().map(|l| TrainLessonDto { id: l.id, title: l.title, module: l.module, minutes: l.minutes, questions: l.questions, state: l.state, best_score: l.best_score, total: l.total, last_date: l.last_date }).collect(),
                         }
@@ -2652,6 +2796,8 @@ struct PlanDto {
     author: String,
     status: String,
     followed: bool,
+    /// Written by the person: the file is in their own plans folder
+    mine: bool,
     steps: Vec<PlanStepDto>,
 }
 
@@ -2691,7 +2837,8 @@ fn plans_list(person: Option<String>) -> Result<Vec<PlanDto>, String> {
                     }
                 })
                 .collect();
-            PlanDto { id: p.id, title: p.title, summary: p.summary, kind: p.kind, author: p.author, status: p.status, followed, steps }
+            let mine = root().join("user").join("plans").join(format!("{}.md", p.id)).is_file();
+            PlanDto { id: p.id, title: p.title, summary: p.summary, kind: p.kind, author: p.author, status: p.status, followed, mine, steps }
         })
         .collect())
 }
@@ -2783,6 +2930,8 @@ struct DrillDto {
     /// Most recent result, if the drill has been done
     last: Option<DrillResultDto>,
     times_done: usize,
+    /// Every time it was done, oldest first
+    history: Vec<DrillResultDto>,
 }
 
 #[tauri::command]
@@ -2795,6 +2944,7 @@ fn drills_list() -> Result<Vec<DrillDto>, String> {
             DrillDto {
                 last: mine.last().map(|r| DrillResultDto { date: r.date.clone(), seconds: r.seconds, done: r.done, total: r.total, notes: r.notes.clone() }),
                 times_done: mine.len(),
+                history: mine.iter().map(|r| DrillResultDto { date: r.date.clone(), seconds: r.seconds, done: r.done, total: r.total, notes: r.notes.clone() }).collect(),
                 id: d.id,
                 title: d.title,
                 minutes: d.minutes,
@@ -2810,6 +2960,51 @@ fn drills_list() -> Result<Vec<DrillDto>, String> {
 #[tauri::command]
 fn drill_save(drill: String, seconds: u32, done: u32, total: u32, notes: String) -> Result<(), String> {
     drills::Log::new(&root().join("user")).add(drills::Result_ { date: calendar::today_string(), drill, seconds, done, total, notes })
+}
+
+/// A file in `dir` named from `title` that does not replace one already there ("name.md", "name-2.md" ...).
+fn free_file(dir: &std::path::Path, title: &str) -> PathBuf {
+    let base = drills::slug(title);
+    let mut n = 1;
+    loop {
+        let name = if n == 1 { format!("{}.md", base) } else { format!("{}-{}.md", base, n) };
+        let p = dir.join(name);
+        if !p.exists() {
+            return p;
+        }
+        n += 1;
+    }
+}
+
+/// Save a drill the person wrote, as a plain file in `user/drills`. Returns the drill's id.
+#[tauri::command]
+fn drill_create(title: String, minutes: u32, place: String, summary: String, steps: Vec<String>) -> Result<String, String> {
+    let text = drills::render(&title, minutes, &place, &summary, &steps)?;
+    let dir = root().join("user").join("drills");
+    std::fs::create_dir_all(&dir).map_err(|e| format!("The folder could not be made: {}", e))?;
+    let file = free_file(&dir, &title);
+    cindrix_core::fsio::write_atomic(&file, text.as_bytes()).map_err(|e| format!("The drill could not be saved: {}", e))?;
+    Ok(file.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default())
+}
+
+#[derive(Deserialize)]
+struct NewPlanStep {
+    title: String,
+    every_days: Option<u32>,
+    body: Vec<String>,
+}
+
+/// Save a plan the person wrote, as a plain file in `user/plans`. Returns the plan's id.
+#[tauri::command]
+fn plan_create(title: String, summary: String, kind: String, author: String, steps: Vec<NewPlanStep>) -> Result<String, String> {
+    let steps: Vec<plans::NewStep> = steps.into_iter().map(|s| plans::NewStep { title: s.title, every_days: s.every_days, body: s.body }).collect();
+    let text = plans::render(&title, &summary, &kind, &author, &steps)?;
+    plans::parse_plan("check", &text).map_err(|e| format!("The plan could not be saved: {}", e))?;
+    let dir = root().join("user").join("plans");
+    std::fs::create_dir_all(&dir).map_err(|e| format!("The folder could not be made: {}", e))?;
+    let file = free_file(&dir, &title);
+    cindrix_core::fsio::write_atomic(&file, text.as_bytes()).map_err(|e| format!("The plan could not be saved: {}", e))?;
+    Ok(file.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default())
 }
 
 /// The list of sources and licenses shown in Settings (a JSON file that ships with the content).
@@ -2984,6 +3179,8 @@ pub fn run() {
             share::devices_list,
             share::devices_action,
             profile_load,
+            pace_load,
+            pace_save,
             profile_save,
             phone_estimate,
             phone_devices,
@@ -3036,6 +3233,7 @@ pub fn run() {
             academy_list,
             academy_problems,
             academy_lesson,
+            academy_check_set,
             academy_save,
             training_reports,
             stock_needs,
@@ -3073,6 +3271,10 @@ pub fn run() {
             plan_tick,
             drills_list,
             drill_save,
+            drill_create,
+            inventory_csv,
+            inventory_import,
+            plan_create,
             sources_list,
             crawl_start,
             crawl_status,

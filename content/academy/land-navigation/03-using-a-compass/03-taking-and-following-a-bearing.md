@@ -1,7 +1,7 @@
 ---
 title: Taking and following a bearing
 minutes: 12
-status: draft
+status: complete
 source: Army FM 3-25.26 Map Reading and Land Navigation (US government, public domain)
 ---
 There are two jobs: **read a bearing** to something you can see, and **follow a bearing** to a place you cannot see.

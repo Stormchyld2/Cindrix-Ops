@@ -1,7 +1,7 @@
 ---
 title: Kinds of maps, care and folding
 minutes: 9
-status: draft
+status: complete
 source: Army FM 3-25.26 Map Reading and Land Navigation (US government, public domain)
 ---
 Not every map is the same kind. Knowing what you are holding tells you what to trust it for.

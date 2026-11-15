@@ -1,7 +1,7 @@
 ---
 title: Bearings and azimuths
 minutes: 10
-status: draft
+status: complete
 source: Army FM 3-25.26 Map Reading and Land Navigation (US government, public domain)
 ---
 To give a direction, we use the **angle from north**, measured clockwise. It is written in **degrees** from 0 to 360, and called an **azimuth** or a **bearing**.
@@ -34,6 +34,29 @@ Examples: 60 becomes 240. 300 becomes 120.
 Your trail goes at 135 degrees. What is the back bearing? (315.)
 
 > Write bearings with a small circle (135°) and the letter M or T if you may mix them up.
+
+## Going deeper: the language of direction
+A **bearing** or **azimuth** is an angle measured clockwise from north, from 0 to 360 degrees. North is 0 (or 360), east is 90, south is 180 and west is 270. Use degrees, not "a bit east of north."
+
+## Reading and saying a bearing
+Say each digit: "two seven zero" for 270. Always say whether it is magnetic or true. People in your group must use the same one.
+
+## Back bearing
+To return along the way you came, turn 180 degrees. If the bearing is under 180, add 180. If it is 180 or more, subtract 180. Example: 70 becomes 250. 250 becomes 70.
+
+## Practice with the points
+- N = 0, NE = 45, E = 90, SE = 135
+- S = 180, SW = 225, W = 270, NW = 315
+Stand in a field, and point at things while guessing their bearings, then check with a compass. Your accuracy will climb quickly.
+
+## Common mistakes
+- Mixing up magnetic and grid bearings.
+- Reading the wrong end of the needle.
+- Forgetting to add or subtract declination.
+- Counting degrees anticlockwise.
+
+## A quick check
+Does your bearing match what you see on the map? If you intended to go northeast and get 225, something is wrong.
 
 ## Check yourself
 ? What is the bearing of due west?

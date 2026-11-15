@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PageHeader from '../lib/PageHeader.svelte';
   import { listCards, type Card } from '../lib/api';
   import { onMount } from 'svelte';
   import { parts, blocks } from '../lib/cardtext';
@@ -31,8 +32,8 @@
 </script>
 
 <section>
-  <h1>Emergency cards</h1>
-  <p class="sub">One screen each. No model needed. {cards.length} cards. You can add your own in Settings, “Your own cards and plans”.</p>
+  <PageHeader eyebrow="CINDRIX OPS" title="Emergency cards" tagline={`One screen each. No model needed. You can add your own in Settings, “Your own cards and plans”.`} />
+<div class="statrow"><div class="stat" style="--c: var(--blue)"><span class="ico">▤</span><span><div class="n">{cards.length}</div><div class="t">Cards</div></span></div><div class="stat" style="--c: var(--cat-security)"><span class="ico">≡</span><span><div class="n">{groups.length}</div><div class="t">Groups</div></span></div></div>
   {#if !open}
     <input class="input find" type="search" placeholder="Find a card (bleeding, flood, choking…)" aria-label="Find a card" bind:value={q} />
     {#each groups as g (g.title)}

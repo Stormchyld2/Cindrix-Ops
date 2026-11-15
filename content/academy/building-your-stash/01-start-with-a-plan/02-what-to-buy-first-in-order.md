@@ -1,7 +1,7 @@
 ---
 title: What to buy first, in order
 minutes: 8
-status: draft
+status: complete
 source: Ready.gov / FEMA: Build a Kit and Make a Plan (US government, public domain)
 ---
 > Basic planning guidance. Prices change, so this course names no prices. Check anything about chemicals or food storage against the sources named in the lesson before you rely on it.
@@ -27,6 +27,26 @@ Buy in the order of how fast you would be in trouble without it.
 - A way to cook that is safe (see module 3)
 
 > Do not spend on fancy gear while the water shelf is empty.
+
+## Going deeper: why this order works
+The order follows the "rule of threes" used by survival instructors: you can last about three minutes without air, three hours in harsh weather without shelter, three days without water and three weeks without food. That is why **water and shelter come before food, and food before gadgets.**
+
+- **First:** water, and a way to make more water safe. It is cheap and fills the biggest gap.
+- **Second:** food that needs no cooking and no refrigerator.
+- **Third:** light, a battery or hand-crank radio, and spare batteries, so you can see and hear alerts.
+- **Fourth:** a first aid kit and any prescription supplies, with a written list of what each person takes.
+- **Fifth:** warmth and shelter: blankets, sleeping bags, tarps and a safe way to heat.
+- **Sixth:** sanitation: trash bags, toilet supplies, soap, wipes and hand sanitizer.
+- **Seventh:** tools, papers and cash.
+
+## Buy for the people you actually have
+Babies need formula, diapers and wipes. Older relatives need glasses, hearing-aid batteries and mobility aids. Pets need food, water and a leash or carrier. Someone on a special diet needs food they can really eat. Write each person's needs beside their name before you shop.
+
+## Avoid the common traps
+- **Buying a fancy kit and stopping.** A ready-made bag is a fine start, but check what is missing for your family.
+- **Buying food you do not eat.** Stored food that nobody likes is wasted.
+- **Skipping the boring items.** Trash bags, a can opener and a lighter beat a costly gadget.
+- **Never opening the box.** Test every tool once, so you know it works.
 
 ## Check yourself
 ? What do you buy first?

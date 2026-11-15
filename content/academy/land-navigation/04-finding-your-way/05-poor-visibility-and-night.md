@@ -1,7 +1,7 @@
 ---
 title: Fog, dark and bad weather
 minutes: 8
-status: draft
+status: complete
 source: Army FM 3-25.26 Map Reading and Land Navigation (US government, public domain); Army FM 21-76 Survival (US government, public domain)
 ---
 Most people get lost when they cannot see: in fog, snow, rain or darkness. Travel in these conditions is slower and riskier. The best choice is often to **stop**.
@@ -33,6 +33,26 @@ Move only if staying is unsafe, and only along something you can trust: a track,
 If you stop, mark where you left the route and where you went, with arrows from sticks or stones. Make yourself easy to see (a bright cloth, a fire, a whistle: three blasts is a distress signal).
 
 > When in doubt, wait for daylight. A night in a good shelter costs less than one mistake in the dark.
+
+## Going deeper: the safest choice is often to wait
+In fog, whiteout, heavy rain or darkness, navigation errors multiply and hazards hide. If you are safe, warm and have supplies, staying put is often the right choice.
+
+## If you must move
+- Use the compass and a pace count carefully, keep legs short, and take bearings often.
+- Keep the group close, with a person at the front and one at the back.
+- **Use a handrail** where you can, such as a fence, a track or a stream.
+- Mark your path with tape or cairns so you can retrace it.
+- Use the technique of leapfrogging: a partner walks out to the limit of vision on your bearing, you line them up, and then you walk to them.
+- Move slowly and test the ground with a pole.
+
+## At night
+Let your eyes adapt for twenty or thirty minutes and use dim red light. Keep your night vision by not looking at bright lights. Use a headlamp for map reading, but turn it off when walking, if you can. Judge distances shorter and slopes steeper than they look.
+
+## Dangers
+Cliffs, rivers, ice and ditches are hard to see. Stay away from steep ground at night.
+
+## Signals
+Carry a whistle and light, signal for help with three blasts, and be ready to shelter in place.
 
 ## Check yourself
 ? What is often the best decision when you cannot see where you are?

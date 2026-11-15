@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PageHeader from '../lib/PageHeader.svelte';
   import { onMount, onDestroy, untrack } from 'svelte';
   import {
     zimBooks, zimFrame, zimOrigin, zimSearchAll, zimBookmarksLoad, zimBookmarksSave, libraryStatus,
@@ -220,6 +221,19 @@
     else scheduleSave();
   }
 
+  /** If the page has not reported back after a few seconds, say plainly why the box is empty (instead of a blank white frame). */
+  async function diagnose(path: string, address: string) {
+    await new Promise((r) => setTimeout(r, 4000));
+    if (pending !== path) return; // it loaded
+    try {
+      const r = await fetch(address);
+      const t = await r.text();
+      if (!r.ok) notice = `This page did not open. The archive answered "${r.status}": ${t.slice(0, 160) || 'nothing'}. Address: ${path}`;
+      else notice = `The page came back (${t.length} characters) but is not showing. Address: ${path}. It begins: ${t.slice(0, 120).replace(/\s+/g, ' ')}`;
+    } catch (e) {
+      notice = `This page did not open. The program could not reach its own page server (${String(e).slice(0, 120)}). Address: ${path}`;
+    }
+  }
   /** Put what a location holds on screen. */
   async function show(l: Loc) {
     if (l.t === 'page' && serverOn && st?.url) {
@@ -235,6 +249,7 @@
       src = f.src;
       srcdoc = f.srcdoc;
       if (f.title) titles[l.path] = f.title;
+      if (f.src) void diagnose(l.path, f.src);
     } else {
       pending = null;
       src = undefined;
@@ -436,8 +451,8 @@
       </div>
     {:else}
       <div class="scroll">
-        <h1>Intel</h1>
-        <p class="sub">The offline internet. Everything here is stored on this drive, so it works with no signal. Open an archive below, or search all of them at once.</p>
+        <PageHeader eyebrow="CINDRIX OPS" title="Intel" tagline="The offline internet. Everything here is stored on this drive, so it works with no signal. Open an archive below, or search all of them at once." />
+<div class="statrow"><div class="stat" style="--c: var(--blue)"><span class="ico">▤</span><span><div class="n">{books.length}</div><div class="t">Archives</div></span></div><div class="stat" style="--c: var(--cat-academy)"><span class="ico">▭</span><span><div class="n">{tabs.length}</div><div class="t">Open tabs</div></span></div></div>
         {#if books.length === 0}
           <div class="empty">
             <strong>No archives on the drive yet.</strong>

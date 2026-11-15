@@ -1,7 +1,7 @@
 ---
 title: Dead reckoning and steering marks
 minutes: 12
-status: draft
+status: complete
 source: Army FM 3-25.26 Map Reading and Land Navigation (US government, public domain)
 ---
 **Dead reckoning** means travelling a set distance along a set direction. First you work out the direction and distance on the map. Then you use a compass and a way of measuring distance (pace count, odometer or time) on the ground.

@@ -1,41 +1,135 @@
 ---
 title: Lost: stay or go?
-minutes: 7
-status: draft
-source: Army FM 21-76; National Park Service lost-hiker guidance
+minutes: 15
+status: complete
+readiness: 3
+source: U.S. Army FM 3-25.26 Map Reading and Land Navigation; NOAA; National Association for Search and Rescue; search and rescue guidance (Hug-A-Tree program, NASAR)
 ---
-Most lost people are found close to where they were last known to be. The usual best advice is to **stay put**, with exceptions.
+[video] Lost: stay or go?
 
-## Before you leave home
-Tell someone **where you are going and when you will be back**. This one habit makes the biggest difference.
+Getting lost happens to experienced people too. What you do in the first minutes matters.
 
-## When you realize you are lost
-1. **STOP.** Sit and think. Do not keep walking in a panic.
-2. Look at the map or recall the last place you were sure of.
-3. If someone knows your plan, **stay where you are**, make yourself visible and wait.
+## Signs you are lost
+- You do not recognize landmarks.
+- Your map does not match what you see.
+- You have been walking longer than you expected.
+- You have gone in a circle (people tend to walk in circles).
+**The moment you realize it, stop.**
 
-## When moving may be right
-- No one knows where you are.
-- Your spot is unsafe (flooding, avalanche, cold exposure).
-- You are sure of a nearby road, trail or landmark.
+## Use STOP
+Stop. Think. Observe. Plan. Sit and calm down.
 
-If you move, mark your route with arrows or piles of rocks so searchers can follow.
+## Stay or go?
+**Stay put** (this is usually best) when:
+- **Someone knows where you are** and expects you back.
+- **It is getting dark** or the weather is turning.
+- **You are injured,** ill or exhausted.
+- **You have shelter, water** and a place that is easy to find.
+- **You are a child.** Children should hug a tree and stay.
+- **You have no idea** which way to go.
+Rescuers search where you were last seen. Staying makes you easier to find.
 
-> Stay warm, stay dry, and keep your signals ready. Waiting is hard work.
+**Move** (carefully) when:
+- **No one knows** where you are, and no one will look soon.
+- **You are in danger** from flood, fire, rock fall or severe weather.
+- **You know where you are** and a safe way out, with enough daylight.
+- **Water and shelter are not available** and you know where to find them.
+- **You are certain** of a direction toward help, such as a road, a river or a trail.
+
+## If you stay
+1. **Make yourself visible:** bright clothing, a signal mirror, a whistle, a fire and smoke, ground signals. See the signaling lesson.
+2. **Make shelter,** and protect from cold and rain.
+3. **Find water** nearby, and mark the way back.
+4. **Stay warm** and dry, and keep your energy up.
+5. **Do the right thing** if a search starts. Stay put. Blow your whistle in threes.
+6. **Leave signs** if you do move: arrows of sticks, rocks or scratch marks, and a note, so searchers can follow.
+
+## If you go
+1. **Mark your starting point,** and leave a note.
+2. **Choose a direction** using landmarks, a map or the sun, not by guessing.
+3. **Follow handrails:** streams (downstream often leads to people), ridges, roads, power lines and trails.
+4. **Travel in daylight,** and stop early to build shelter.
+5. **Keep track** of landmarks, time and direction. Look back often so you know what the way back looks like.
+6. **Avoid** steep terrain, thick brush and water crossings you cannot see through.
+7. **Do not follow a stream** into a canyon or waterfalls if the terrain looks dangerous.
+8. **Stop and rest** at intervals.
+
+## Never
+- **Never leave an injured person alone** unless you must to get help.
+- **Never take risks** to save time.
+- **Never panic-run.**
+
+## Before you go: prevent being lost
+- **Tell someone your plan,** route and when you will return.
+- **Carry the ten essentials:** navigation, headlamp, sun protection, first aid, knife, fire, shelter, extra food, extra water and extra clothes.
+- **Check the forecast.**
+- **Stay on trails.**
+- **Check your map often.**
+- **Turn back** if unsure.
+
+> If no one is looking for you, you may need to move. If someone is, stay and be easy to find.
+
+> This is basic awareness, not a substitute for hands-on training. Practice skills close to home before you depend on them.
+
+## Why staying usually wins
+Search teams find far more people who stayed put than people who kept moving. A stationary person is easier to find, uses less energy and water and avoids injury and getting more lost. Moving makes sense only when you are sure of where you are going, when you have a clear and safe route, or when staying is dangerous.
+
+## Decide with a short test
+Stay if: someone knows your plan and expects you back, you are injured, it is getting dark, the weather is bad, you have no clear route or you are near a road or trail.
+Go if: you are in immediate danger, no one knows where you are and you have a reliable way out such as a clear trail, a known road or a distinct landmark, and you have the strength and daylight to get there.
+
+## If you stay
+1. **Make yourself visible:** bright clothes, a signal fire, a mirror, a whistle.
+2. **Make a shelter** and keep warm and dry.
+3. **Ration effort,** not water.
+4. **Mark your spot** with a large sign and arrows for searchers.
+5. **Keep a routine:** signal at set times, rest and stay alert.
+
+## If you go
+- Move in daylight only.
+- Leave a note at your starting point with direction and time.
+- Mark your route with tape, cairns or broken twigs.
+- Follow drainages and handrails such as roads, streams and ridges.
+- Never follow a stream into a canyon or off a waterfall, and avoid steep terrain.
+- Stop and rest before exhaustion.
+
+## Never
+Never split from your group, never travel at night without light and training, and never wander off a trail without telling anyone.
+
+## Prevent being lost
+Tell a trusted person your plan and return time. Carry the ten essentials. Check the map before you go. Stay on trails. Turn back early.
+
+- [ ] Leave a written trip plan with someone
+- [ ] Carry the ten essentials on every trip
+- [ ] Practice the stay-or-go test on a hike
+- [ ] Teach children to stay put and hug a tree
+- [ ] Pack a whistle for every person
 
 ## Check yourself
-? What is the most important habit before a trip?
-+ Telling someone your plan and return time
-- Packing extra snacks only
-- Leaving a phone off
-> If someone knows where you are, searchers know where to start.
-? If you are lost and others know your plan, what should you usually do?
-+ Stay where you are and make yourself visible
-- Walk until you find a road
-- Split up from your group
-> Staying put makes you easier to find and saves energy.
-? Which situation is a good reason to move?
-+ Your location is unsafe and no one knows where you are
-- You feel bored
-- It is almost lunch
-> Move only when staying is unsafe or no one is looking for you.
+? What should you do first when you realize you are lost?
+- Walk faster
++ Stop and calm down
+- Climb a tree
+- Run
+> Think before you move.
+
+? When is staying put usually best?
+- Never
++ When someone knows where you are and you are injured or it is getting dark
+- When no one knows where you are
+- When you have lots of daylight and know the way
+> Rescuers look where you were last seen.
+
+? What should children do if lost?
+- Run for help
+- Hide
+- Walk until dark
++ Hug a tree and stay put
+> They are easier to find.
+
+? What is a good handrail to follow?
+- A cliff edge
+- Your own shadow
++ A stream, road, ridge or trail
+- A random animal track
+> Linear features lead somewhere.

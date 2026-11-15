@@ -1,7 +1,7 @@
 ---
 title: Finding direction without a compass
 minutes: 10
-status: draft
+status: complete
 source: Army FM 21-76 Survival (US government, public domain); Army FM 3-25.26 Map Reading and Land Navigation (US government, public domain)
 ---
 If your compass is lost or broken, nature can give you a rough direction. These methods are not exact, but they are good enough to keep you walking in a straight line toward a known road or river.

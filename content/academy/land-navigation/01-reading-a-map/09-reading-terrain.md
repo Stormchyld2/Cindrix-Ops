@@ -1,7 +1,7 @@
 ---
 title: Reading the whole landscape
 minutes: 13
-status: draft
+status: complete
 source: Army FM 3-25.26 Map Reading and Land Navigation (US government, public domain)
 ---
 You can learn to see the shape of the land from the contour lines, the way you see a house from its plan.

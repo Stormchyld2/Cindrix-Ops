@@ -1,7 +1,7 @@
 ---
 title: Orienteering games
 minutes: 9
-status: draft
+status: complete
 source: Army FM 3-25.26 Map Reading and Land Navigation (US government, public domain)
 ---
 **Orienteering** is a sport of finding marked points with a map and compass, anywhere from a park to a forest. It is a very good way to practice for real and it is fun for all ages.

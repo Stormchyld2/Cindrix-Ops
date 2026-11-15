@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { inventoryList, inventorySave, inventoryDelete, scanInboxList, scanInboxPreview, scanInboxAccept, scanInboxDismiss, syncInboxList, syncMerge, stockNeeds, profileLoad, inventoryPlaces, inventoryWhere, shelfLifeSuggest, placeParts, insidePlace, type Item, type Need, type Place, type Found, type ShelfGuess, type ScanFile, type ScanLine } from '../lib/api';
+  import PageHeader from '../lib/PageHeader.svelte';
+  import Icon from '../lib/Icon.svelte';
+  import { inventoryCsv, inventoryImport, exportText, inventoryList, inventorySave, inventoryDelete, scanInboxList, scanInboxPreview, scanInboxAccept, scanInboxDismiss, syncInboxList, syncMerge, stockNeeds, profileLoad, inventoryPlaces, inventoryWhere, shelfLifeSuggest, placeParts, insidePlace, type Item, type Need, type Place, type Found, type ShelfGuess, type ScanFile, type ScanLine } from '../lib/api';
   import { onMount } from 'svelte';
   import { categories, categoryHint, categoryUnits, categoryAsk, forWhomChoices, conditionChoices } from '../lib/categories';
   import { learner, loadPeople } from '../lib/learner.svelte';
@@ -214,6 +216,99 @@
   );
   let allSelected = $derived(shown.length > 0 && shown.every((i) => selected.includes(i.id)));
 
+  // the list of categories: the built-in ones plus the person's own, minus any they hide (this only hides the name from the list; items stay)
+  type CatCfg = { extra: string[]; hidden: string[] };
+  function loadCats(): CatCfg {
+    try { const t = localStorage.getItem('cindrix.inventory.cats'); if (t) { const j = JSON.parse(t); return { extra: j.extra ?? [], hidden: j.hidden ?? [] }; } } catch { /* use the defaults */ }
+    return { extra: [], hidden: [] };
+  }
+  let catCfg: CatCfg = $state(loadCats());
+  function saveCats() { try { localStorage.setItem('cindrix.inventory.cats', JSON.stringify(catCfg)); } catch { /* not kept */ } }
+  const builtIn: string[] = [...categories];
+  const allCats = $derived([...builtIn, ...catCfg.extra.filter((c) => !builtIn.includes(c))]);
+  const cats = $derived(allCats.filter((c) => !catCfg.hidden.includes(c)));
+  const isOwn = (c: string) => catCfg.extra.includes(c) && !builtIn.includes(c);
+  const usedCategories = $derived(cats.length);
+  let catDlg: HTMLDialogElement;
+  let catNew = $state('');
+  let catNote = $state('');
+  let renaming = $state('');
+  let renameTo = $state('');
+  function addCat() {
+    const n = catNew.trim().replace(/[,\n\r]/g, ' ').replace(/\s+/g, ' ');
+    catNote = '';
+    if (!n) return;
+    if (allCats.some((c) => c.toLowerCase() === n.toLowerCase())) { catNote = 'You already have a category with that name.'; return; }
+    catCfg.extra = [...catCfg.extra, n];
+    saveCats();
+    catNew = '';
+    catNote = `Added "${n}".`;
+  }
+  function toggleHide(c: string) {
+    catCfg.hidden = catCfg.hidden.includes(c) ? catCfg.hidden.filter((x) => x !== c) : [...catCfg.hidden, c];
+    if (category === c) category = 'All';
+    saveCats();
+  }
+  async function doRename(c: string) {
+    const n = renameTo.trim().replace(/[,\n\r]/g, ' ').replace(/\s+/g, ' ');
+    catNote = '';
+    if (!n || n === c) { renaming = ''; return; }
+    if (allCats.some((x) => x.toLowerCase() === n.toLowerCase())) { catNote = 'You already have a category with that name.'; return; }
+    try {
+      for (const i of items.filter((x) => x.category === c)) await inventorySave({ ...i, category: n });
+      items = await inventoryList();
+    } catch (e) { catNote = String(e); return; }
+    catCfg.extra = catCfg.extra.map((x) => (x === c ? n : x));
+    catCfg.hidden = catCfg.hidden.map((x) => (x === c ? n : x));
+    if (category === c) category = n;
+    saveCats();
+    renaming = '';
+    catNote = `Renamed to "${n}". Its items moved with it.`;
+  }
+  function removeCat(c: string) {
+    if (count(c) > 0) { catNote = 'Move or delete the items in it first.'; return; }
+    catCfg.extra = catCfg.extra.filter((x) => x !== c);
+    catCfg.hidden = catCfg.hidden.filter((x) => x !== c);
+    if (category === c) category = 'All';
+    saveCats();
+    catNote = `Removed "${c}".`;
+  }
+  function showOnly(c: string) { category = c; catDlg.close(); }
+  const inStock = $derived(items.filter((i) => i.quantity > 0).length);
+  const nowMonth = new Date().toISOString().slice(0, 7);
+  const isExpired = (i: Item) => !!i.use_by && i.use_by < nowMonth;
+  const expiredCount = $derived(items.filter(isExpired).length);
+  const lowCount = $derived(items.filter((i) => !isExpired(i) && (i.status ?? 'ok') !== 'ok').length);
+  const healthPct = $derived(items.length ? Math.round((items.filter((i) => (i.status ?? 'ok') === 'ok' && !isExpired(i)).length / items.length) * 100) : 0);
+
+  // pictures for the category list
+  const CAT_ICON: Record<string, string> = {
+    'Water': 'drop', 'Food': 'fork', 'Medical and diabetes': 'medical', 'Power and light': 'bolt', 'Tools and repair': 'tools',
+    'Shelter and clothing': 'shield', 'Hygiene and sanitation': 'drop', 'Documents and cash': 'folder', 'Cooking and fuel': 'bolt',
+    'Communication and navigation': 'comms', 'Safety and protection': 'shield', 'Babies and children': 'users', 'Pets and animals': 'user',
+    'Vehicle and go-bag': 'run', 'Comfort and morale': 'heart', 'Fuel and heat': 'bolt', 'Cleaning and laundry': 'drop',
+    'Garden and long-term food': 'fork', 'Medical equipment and special needs': 'pulse', 'Fishing and outdoors': 'tag',
+  };
+  const catIcon = (c: string) => CAT_ICON[c] ?? 'tag';
+  // import and export
+  let ioDlg: HTMLDialogElement;
+  let ioNote = $state('');
+  async function exportAll() {
+    ioNote = '';
+    try { ioNote = 'Saved: ' + (await exportText('inventory.csv', await inventoryCsv())) + '. It opens in a spreadsheet.'; } catch (e) { ioNote = String(e); }
+  }
+  async function importFile(e: Event) {
+    ioNote = '';
+    const f = (e.currentTarget as HTMLInputElement).files?.[0];
+    if (!f) return;
+    try {
+      const r = await inventoryImport(await f.text());
+      items = await inventoryList();
+      ioNote = `Added ${r.added} item${r.added === 1 ? '' : 's'}.${r.skipped ? ` ${r.skipped} already there, so left alone.` : ''} Nothing you already had was changed.`;
+    } catch (err) { ioNote = String(err); }
+    (e.currentTarget as HTMLInputElement).value = '';
+  }
+
   function count(cat: string): number {
     return items.filter((i) => i.category === cat).length;
   }
@@ -267,14 +362,20 @@
   const statusText: Record<string, string> = { ok: 'OK', check: 'Check', act: 'Act now' };
 </script>
 
-<section class="head row">
-  <div class="grow">
-    <h1>Inventory</h1>
-    <p class="sub">Everything you have, where it is, how long it lasts and when it expires.</p>
-  </div>
-  <button class="btn" onclick={openPlan} title="Work out what to have on hand and how much, for your household">How much should I have?</button>
-  <button class="plus" aria-label="Create new item" title="Create new item" onclick={openNew}>+</button>
-</section>
+<PageHeader icon="cube" title="Inventory" tagline="Everything you have, where it is, how long it lasts and when it expires.">
+  <button class="btn ico" aria-label="Create new item" title="Create new item" onclick={openNew}><Icon name="plus" size={18} /> Add item</button>
+  <button class="btn ico" onclick={() => { catNote = ''; renaming = ''; catDlg.showModal(); }} title="Show only one kind of item, or add, rename and hide categories"><Icon name="layers" size={18} /> Categories</button>
+  <button class="btn ico" onclick={() => { ioNote = ''; ioDlg.showModal(); }} title="Save the Inventory as a spreadsheet file, or add items from one"><Icon name="swap" size={18} /> Import / Export</button>
+  <button class="btn ico" onclick={openPlan} title="Work out what to have on hand and how much, for your household"><Icon name="help" size={18} /> How much should I have?</button>
+</PageHeader>
+<div class="invtiles">
+  <div class="mt" style="--c: var(--glow-blue)"><span class="mico"><Icon name="cube" size={40} /></span><span><div class="mt-t">Total items</div><div class="mt-n">{items.length}</div></span></div>
+  <div class="mt" style="--c: var(--glow-blue)"><span class="mico"><Icon name="layers" size={40} /></span><span><div class="mt-t">Categories</div><div class="mt-n">{usedCategories}</div></span></div>
+  <div class="mt" style="--c: var(--glow-green)"><span class="mico"><Icon name="check" size={40} /></span><span><div class="mt-t">In stock</div><div class="mt-n">{inStock}</div></span></div>
+  <button class="mt" style="--c: var(--glow-amber)" onclick={() => (show = 'low')} title="Show what is low or to check"><span class="mico"><Icon name="warn" size={40} /></span><span><div class="mt-t">Low stock</div><div class="mt-n">{lowCount}</div></span></button>
+  <button class="mt" style="--c: var(--glow-red)" onclick={() => (show = 'low')} title="Show what is past its date"><span class="mico"><Icon name="calx" size={40} /></span><span><div class="mt-t">Expired</div><div class="mt-n">{expiredCount}</div></span></button>
+  <div class="mt health" style="--c: var(--glow-blue)"><span class="grow"><div class="mt-t">Inventory health</div><div class="hbar"><span style="width:{healthPct}%"></span></div></span><span class="mt-n">{healthPct}%</span></div>
+</div>
 
 {#if error}<div class="warn" role="alert">{error}</div>{/if}
 
@@ -319,21 +420,21 @@
 {/if}
 
 <div class="layout">
-  <aside class="panel">
-    <div class="label">CATEGORIES</div>
-    <button class="cat" class:on={category === 'All'} onclick={() => (category = 'All')}><span>All</span><span class="muted">{items.length}</span></button>
-    {#each categories as c}
-      <button class="cat" class:on={category === c} onclick={() => (category = c)}><span>{c}</span><span class="muted">{count(c)}</span></button>
+  <aside class="dbl" style="--c: var(--glow-blue)">
+    <div class="pnl-h nosl"><Icon name="users" size={22} /> Categories</div>
+    <button class="cat" class:on={category === 'All'} onclick={() => (category = 'All')}><span class="cn"><Icon name="grid" size={16} /> All items</span><span>{items.length}</span></button>
+    {#each cats as c}
+      <button class="cat" class:on={category === c} onclick={() => (category = c)}><span class="cn"><Icon name={catIcon(c)} size={16} /> {c}</span><span>{count(c)}</span></button>
     {/each}
   </aside>
 
-  <section class="panel main">
+  <section class="dbl main" style="--c: var(--glow-blue)">
     <select class="input catselect" aria-label="Category" bind:value={category}>
       <option value="All">All categories ({items.length})</option>
-      {#each categories as c}<option value={c}>{c} ({count(c)})</option>{/each}
+      {#each cats as c}<option value={c}>{c} ({count(c)})</option>{/each}
     </select>
     <div class="row">
-      <input class="input grow" type="search" placeholder="Search your inventory, or ask where something is" aria-label="Search" bind:value={search} />
+      <label class="srch grow"><Icon name="search" size={20} /><input type="search" placeholder="Search your inventory, or ask where something is…" aria-label="Search" bind:value={search} /></label>
       <select class="input" aria-label="Show" bind:value={show}>
         <option value="all">Show all</option>
         <option value="low">Low or expiring</option>
@@ -360,7 +461,7 @@
       </div>
     {/if}
 
-    <div class="bar row">
+    <div class="bar row selbar">
       <label class="row"><input type="checkbox" checked={allSelected} onchange={toggleAll} aria-label="Select all items" /> Select all</label>
       <span class="muted">{selected.length} selected</span>
       {#if confirming}
@@ -379,7 +480,7 @@
       <div class="item">
         <input type="checkbox" bind:group={selected} value={i.id} aria-label={'Select ' + i.name} />
         <button class="name" onclick={() => openEdit(i)}>
-          <strong>{i.name}</strong>
+          <strong><span class="ci"><Icon name={catIcon(i.category)} size={20} /></span>{i.name}</strong>
           <span class="muted small">{i.location || 'No place set'}{i.brand ? ' · ' + i.brand : ''}{i.size ? ' · ' + i.size : ''}{i.for_whom ? ' · for ' + i.for_whom : ''}{i.target ? ' · want ' + i.target : ''}{i.notes ? ' · ' + i.notes : ''}</span>
         </button>
         <div class="qty">
@@ -389,13 +490,55 @@
         </div>
         <div class="small cell lasts">{lasts(i)}</div>
         <div class="small cell useby">{i.use_by || '—'}</div>
-        <div class="small cell st {i.status}">● {statusText[i.status ?? 'ok']}</div>
+        <div class="small cell st {i.status}">● {statusText[i.status ?? 'ok']} <button class="kebab" aria-label={'Edit ' + i.name} title="Edit" onclick={() => openEdit(i)}>⋮</button></div>
       </div>
     {/each}
 
-    <div class="warn">Medicine is counted only. Doses and changes are never suggested here. Follow your doctor's written plan.</div>
+    <div class="medicine"><Icon name="info" size={22} /> Medicine is counted only. Doses and changes are never suggested here. Follow your doctor's written plan.</div>
   </section>
 </div>
+
+<dialog bind:this={catDlg} aria-label="Categories">
+  <div class="dform">
+    <h2>Categories</h2>
+    <p class="muted hint">Pick one to show only those items. You can also add your own category, rename one you added, or hide one you do not use. Hiding only takes the name off the list. Your items are never deleted.</p>
+    <div class="row"><button class="btn" onclick={() => showOnly('All')}>Show all items ({items.length})</button></div>
+    <ul class="catman">
+      {#each allCats as c (c)}
+        <li class:hid={catCfg.hidden.includes(c)}>
+          {#if renaming === c}
+            <input class="input grow" aria-label="New name" bind:value={renameTo} onkeydown={(e) => { if (e.key === 'Enter') doRename(c); }} />
+            <button class="btn primary" onclick={() => doRename(c)}>Save name</button>
+            <button class="btn" onclick={() => (renaming = '')}>Cancel</button>
+          {:else}
+            <span class="cn grow"><Icon name={catIcon(c)} size={16} /> {c} <span class="muted">({count(c)})</span>{#if catCfg.hidden.includes(c)} <em class="muted">hidden</em>{/if}</span>
+            {#if !catCfg.hidden.includes(c)}<button class="btn" onclick={() => showOnly(c)} title="Show only {c}">Show only</button>{/if}
+            {#if isOwn(c)}
+              <button class="btn" onclick={() => { renaming = c; renameTo = c; }}>Rename</button>
+              <button class="btn" onclick={() => removeCat(c)} title="Only possible when it has no items">Remove</button>
+            {/if}
+            {#if c !== 'Water' && c !== 'Food'}<button class="btn" onclick={() => toggleHide(c)}>{catCfg.hidden.includes(c) ? 'Show in list' : 'Hide'}</button>{/if}
+          {/if}
+        </li>
+      {/each}
+    </ul>
+    <div class="row"><input class="input grow" placeholder="Name of a new category" aria-label="New category" bind:value={catNew} onkeydown={(e) => { if (e.key === 'Enter') addCat(); }} /><button class="btn primary" onclick={addCat}>Add category</button></div>
+    <p class="muted hint">Water and Food stay on the list because the Dashboard counts your days from them. The built-in names cannot be renamed for the same reason.</p>
+    {#if catNote}<p role="status">{catNote}</p>{/if}
+    <div class="row end"><button class="btn" onclick={() => catDlg.close()}>Close</button></div>
+  </div>
+</dialog>
+
+<dialog bind:this={ioDlg} aria-label="Import or export">
+  <div class="dform">
+    <h2>Import / Export</h2>
+    <p class="muted hint">Export saves everything in your Inventory as one file that opens in a spreadsheet. Import adds the lines from a file like that. A line that is already in your Inventory is skipped, and nothing you already have is changed.</p>
+    <div class="row"><button class="btn primary" onclick={exportAll}>Save the Inventory as a file</button></div>
+    <label>Add items from a file<input class="input" type="file" accept=".csv,text/csv,text/plain" onchange={importFile} /></label>
+    {#if ioNote}<p role="status">{ioNote}</p>{/if}
+    <div class="row end"><button class="btn" onclick={() => ioDlg.close()}>Close</button></div>
+  </div>
+</dialog>
 
 <dialog bind:this={dlg} aria-labelledby="dt">
   <form class="dform" onsubmit={(e) => { e.preventDefault(); saveForm(); }}>
@@ -406,7 +549,7 @@
       <legend>1. What is it?</legend>
       <label>Item<input class="input" bind:value={form.name} required placeholder="Bottled water" /></label>
       <label>Category
-        <select class="input" bind:value={form.category}>{#each categories as c}<option>{c}</option>{/each}</select>
+        <select class="input" bind:value={form.category}>{#each (allCats.includes(form.category) ? allCats : [...allCats, form.category]) as c}<option>{c}</option>{/each}</select>
         {#if categoryHint[form.category]}<span class="muted hint">For example: {categoryHint[form.category]}</span>{/if}
       </label>
       <div class="row">
@@ -560,11 +703,35 @@
 </dialog>
 
 <style>
+  .invtiles { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
+  @media (max-width: 1200px) { .invtiles { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 600px) { .invtiles { grid-template-columns: repeat(2, 1fr); } }
+  .invtiles .mt-n { font-size: 32px; }
+  .mt.health { flex-direction: row; }
+  .hbar { height: 12px; border-radius: 7px; background: #1b2735; margin-top: 8px; overflow: hidden; }
+  .hbar span { display: block; height: 100%; background: linear-gradient(90deg, #2bbf55, #43e06b); box-shadow: 0 0 10px #43e06b; }
+  aside.dbl { padding: 14px; }
+  .catman { list-style: none; margin: 8px 0; padding: 0; display: grid; gap: 6px; max-height: 46vh; overflow: auto; }
+  .catman li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; }
+  .catman li.hid { opacity: .6; }
+  .catman .cn { display: inline-flex; align-items: center; gap: 8px; }
+  .cat .cn { display: inline-flex; align-items: center; gap: 10px; }
+  .cat { padding: 5px 10px; border-radius: 6px; color: #e6edf5; }
+  .cat.on { background: linear-gradient(90deg, rgba(61, 155, 255, .25), transparent); border-color: #4db0ff; color: #fff; }
+  .main.dbl { padding: 14px 16px; }
+  .srch { display: flex; align-items: center; gap: 10px; padding: 0 14px; height: 44px; border: 1px solid #2a4a70; border-radius: 10px; background: #0a121b; color: #9fb4c9; }
+  .srch input { flex: 1; background: transparent; border: 0; outline: 0; color: var(--text); font: inherit; }
+  .selbar { background: linear-gradient(90deg, #2a0f0c, #1a0d0b); border: 1.5px solid #8a2a20; }
+  .ci { display: inline-flex; vertical-align: middle; margin-right: 10px; color: var(--glow-blue); }
+  .kebab { background: none; border: 0; color: #e6edf5; font-size: 20px; margin-left: 14px; padding: 0 6px; cursor: pointer; }
+  .medicine { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 1.5px solid #8a7420; border-radius: 10px; background: linear-gradient(90deg, #2a2408, #1a1706); color: #f3e9b8; }
+  .medicine :global(svg) { color: var(--glow-amber); flex: none; }
+  .end { justify-content: flex-end; }
   .head { justify-content: space-between; flex-wrap: nowrap; }
   .grow { flex: 1 1 200px; }
   .plus { width: 48px; height: 48px; border-radius: 50%; border: 0; background: var(--blue); color: #07131d; font-size: 30px; font-weight: 700; line-height: 1; }
   .layout { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
-  aside { flex: 0 1 230px; min-width: 200px; display: flex; flex-direction: column; gap: 4px; }
+  aside { flex: 0 1 250px; min-width: 210px; display: flex; flex-direction: column; gap: 4px; }
   .cat { display: flex; justify-content: space-between; padding: 8px 10px; border-radius: 8px; border: 1px solid transparent; background: transparent; text-align: left; }
   .cat.on { background: var(--blue-soft); border-color: var(--blue-line); color: var(--blue); font-weight: 600; }
   .main { flex: 1 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }

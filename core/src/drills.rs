@@ -107,6 +107,43 @@ pub fn load_dirs(dirs: &[std::path::PathBuf]) -> Vec<Drill> {
     out
 }
 
+/// A file name made from a title: lower-case letters, numbers and dashes.
+pub fn slug(s: &str) -> String {
+    let mut out = String::new();
+    for c in s.chars() {
+        if c.is_ascii_alphanumeric() {
+            out.push(c.to_ascii_lowercase());
+        } else if !out.ends_with('-') && !out.is_empty() {
+            out.push('-');
+        }
+    }
+    let out = out.trim_end_matches('-').to_string();
+    if out.is_empty() { "drill".into() } else { out.chars().take(60).collect() }
+}
+
+fn one_line(s: &str) -> String {
+    s.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+/// The text of a drill file for a drill the person wrote in the program. It parses back with `parse`.
+pub fn render(title: &str, minutes: u32, place: &str, summary: &str, steps: &[String]) -> Result<String, String> {
+    let title = one_line(title);
+    if title.is_empty() {
+        return Err("Give the drill a name.".into());
+    }
+    let steps: Vec<String> = steps.iter().map(|s| one_line(s)).filter(|s| !s.is_empty()).collect();
+    if steps.is_empty() {
+        return Err("Add at least one step.".into());
+    }
+    let mut out = format!("---\ntitle: {}\nminutes: {}\nwhere: {}\nsummary: {}\nstatus: draft\n---\n", title, minutes, one_line(place), one_line(summary));
+    for s in steps {
+        out.push_str("- ");
+        out.push_str(&s);
+        out.push('\n');
+    }
+    Ok(out)
+}
+
 // ---------- results ----------
 
 pub const HEADER: &str = "date,drill,seconds,done,total,notes";
@@ -173,6 +210,21 @@ impl Log {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn a_drill_written_in_the_program_reads_back_the_same() {
+        let text = render("My  basement drill", 20, "in the basement", "Check the lamp.\nAnd the radio.", &["Find the lamp".into(), "  ".into(), "Test the radio".into()]).unwrap();
+        let d = parse("my-basement-drill", &text).unwrap();
+        assert_eq!(d.title, "My basement drill");
+        assert_eq!(d.minutes, 20);
+        assert_eq!(d.place, "in the basement");
+        assert_eq!(d.summary, "Check the lamp. And the radio.");
+        assert_eq!(d.steps, vec!["Find the lamp".to_string(), "Test the radio".to_string()]);
+        assert_eq!(slug("My basement drill!"), "my-basement-drill");
+        assert_eq!(slug("???"), "drill");
+        assert!(render("", 5, "", "", &["x".into()]).is_err());
+        assert!(render("A", 5, "", "", &[]).is_err());
+    }
+
     use super::*;
 
     const SAMPLE: &str = "---\ntitle: Test drill\nminutes: 15\nwhere: at home\nsummary: A test.\n---\nIntro line.\n- First step\n- Second, with a comma\n";

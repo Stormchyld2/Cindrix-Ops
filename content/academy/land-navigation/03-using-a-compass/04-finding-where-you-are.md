@@ -1,7 +1,7 @@
 ---
 title: Finding where you are
 minutes: 12
-status: draft
+status: complete
 source: Army FM 3-25.26 Map Reading and Land Navigation (US government, public domain)
 ---
 If you are lost but have a map and compass, you can find your position by two methods. Use the easier one first.
@@ -31,6 +31,27 @@ If you are on a road or a stream, one bearing to a known landmark plus the line 
 A position is only good if it makes sense. Are you really on the steep ground the map shows? If not, find the mistake before you move.
 
 > Note the time and the position in a notebook every hour. If you get lost, the last good fix is your starting point.
+
+## Going deeper: a confident position check
+Lost people often make errors by guessing. A methodical approach produces a position you can trust.
+
+## A checklist
+1. **Stop** and stay calm.
+2. **Orient** the map.
+3. **List what you know:** your last known position, the direction and time you walked, the pace.
+4. **Look around:** what do you see? Hills, streams, towers, roads, fences.
+5. **Match features:** look for ones that are unmistakable, and which are on the map.
+6. **Use bearings:** take two or three bearings to features, convert to map bearings and draw back-bearings on the map. Where the lines cross is you.
+7. **Check:** does the result make sense with other features?
+
+## The accuracy of a resection
+The best angle between two bearings is about 90 degrees. Narrow angles give a long thin triangle of uncertainty. Use three bearings if you can, and the triangle that results shows your error. Your position is its middle.
+
+## When you cannot find it
+Retrace your steps to your last certain point. Climb to a vantage point if it is safe, and look again. Follow a handrail such as a river or road. If you are still not sure, stop and apply the lost procedure.
+
+## Record
+Write down your position and time every hour. A written trail keeps small errors from growing.
 
 ## Check yourself
 ? Which method should you try first to find your position?

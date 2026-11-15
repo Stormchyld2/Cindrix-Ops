@@ -514,6 +514,16 @@ export async function familySave(family: Family, passphrase?: string): Promise<v
 }
 
 /** Save a readable copy as a plain text file in user/exports. Returns where it was saved. */
+/** The whole Inventory as spreadsheet text (for Export). */
+export async function inventoryCsv(): Promise<string> {
+  if (inTauri) return call<string>('inventory_csv');
+  return 'id,category,name,quantity,unit\n' + memItems.map((i) => [i.id, i.category, i.name, i.quantity, i.unit].join(',')).join('\n') + '\n';
+}
+/** Adds the lines of an exported file. Nothing already there is changed. */
+export async function inventoryImport(text: string): Promise<{ added: number; skipped: number }> {
+  if (inTauri) return call<{ added: number; skipped: number }>('inventory_import', { text });
+  return { added: 0, skipped: text.split('\n').length - 1 };
+}
 export async function exportText(name: string, text: string): Promise<string> {
   if (inTauri) return call<string>('export_text', { name, text });
   return 'user\\exports\\' + name;
@@ -780,6 +790,44 @@ export type MyDetails = {
 };
 export const emptyDetails = (): MyDetails => ({ home: { name: '', address: '', lat: null, lon: null }, bugout: [], adults: 0, children: 0, babies: 0, small_pets: 0, large_pets: 0, contacts: [], needs: '', skills: '', notes: '', last_frost: '', first_frost: '' });
 
+// ---------- the comms PACE plan (answers in Settings > PACE plan; the plan is built from them) ----------
+export type PaceQuestion = { key: string; tier: string; tier_name: string; tier_when: string; prompt: string; hint: string; example: string };
+export type PaceLevel = { code: string; name: string; when: string; items: { prompt: string; answer: string }[]; missing: string[] };
+export type PacePlan = { empty: boolean; answered: number; total: number; levels: PaceLevel[]; text: string };
+export type Pace = { questions: PaceQuestion[]; answers: [string, string][]; plan: PacePlan };
+
+const previewPaceQuestions: PaceQuestion[] = [
+  { key: 'specialist', tier: 'G', tier_name: 'The group', tier_when: 'Who is in the plan and who leads it.', prompt: 'Who is your Comms Specialist?', hint: 'The person who knows radios best.', example: 'Dana Reyes, callsign Hawk' },
+  { key: 'p_ways', tier: 'P', tier_name: 'Primary', tier_when: 'Cell phones, internet and power all work.', prompt: 'What will you use every day?', hint: 'Phone calls, texts, a messaging app.', example: 'Call first, then text' },
+  { key: 'a_ways', tier: 'A', tier_name: 'Alternate', tier_when: 'Cell phones are down, but the internet works.', prompt: 'What will you try when cell phones fail but the internet still works?', hint: 'Messaging over Wi-Fi, email.', example: 'Signal chat over Wi-Fi' },
+  { key: 'c_channels', tier: 'C', tier_name: 'Contingency', tier_when: 'Cell phones, internet and power are all down. Radio is your lifeline.', prompt: 'Which channels will you use first?', hint: 'The first place to call.', example: '146.520 MHz' },
+  { key: 'e_rally', tier: 'E', tier_name: 'Emergency', tier_when: 'Everything has failed, radios included.', prompt: 'Where are the meeting places?', hint: 'A first choice and a backup.', example: 'The library car park' },
+];
+let previewPace: Record<string, string> = {};
+function previewPaceBuild(): Pace {
+  const qs = previewPaceQuestions;
+  const levels: PaceLevel[] = ['G', 'P', 'A', 'C', 'E'].map((code) => {
+    const inTier = qs.filter((q) => q.tier === code);
+    return {
+      code, name: inTier[0].tier_name, when: inTier[0].tier_when,
+      items: inTier.filter((q) => (previewPace[q.key] ?? '').trim()).map((q) => ({ prompt: q.prompt, answer: previewPace[q.key].trim() })),
+      missing: inTier.filter((q) => !(previewPace[q.key] ?? '').trim()).map((q) => q.prompt),
+    };
+  });
+  const answered = levels.reduce((n, l) => n + l.items.length, 0);
+  const text = answered ? 'COMMS PLAN: PACE\n' + levels.map((l) => `\n${l.name.toUpperCase()}\n` + l.items.map((i) => `- ${i.prompt}\n  ${i.answer}`).join('\n')).join('\n') : '';
+  return { questions: qs, answers: qs.map((q) => [q.key, previewPace[q.key] ?? ''] as [string, string]), plan: { empty: answered === 0, answered, total: qs.length, levels, text } };
+}
+export async function paceLoad(): Promise<Pace> {
+  if (inTauri) return call<Pace>('pace_load');
+  return previewPaceBuild();
+}
+export async function paceSave(answers: [string, string][]): Promise<Pace> {
+  if (inTauri) return call<Pace>('pace_save', { answers });
+  previewPace = Object.fromEntries(answers);
+  return previewPaceBuild();
+}
+
 let previewDetails: MyDetails = emptyDetails();
 export async function profileLoad(): Promise<MyDetails> {
   if (inTauri) return call<MyDetails>('profile_load');
@@ -911,13 +959,15 @@ export type DrillResult = { date: string; seconds: number; done: number; total: 
 export type Drill = {
   id: string; title: string; minutes: number; place: string; summary: string; status: string; steps: string[];
   last: DrillResult | null; times_done: number;
+  /** Every time it was done, oldest first */
+  history: DrillResult[];
 };
 const memDrills: Drill[] = [
-  { id: '01-power-outage', title: '72-hour power outage', minutes: 25, place: 'at home', status: 'draft', times_done: 1,
+  { id: '01-power-outage', title: '72-hour power outage', minutes: 25, place: 'at home', status: 'draft', times_done: 1, history: [{ date: '2026-10-12', seconds: 754, done: 7, total: 8, notes: 'No spare batteries for the big lantern.' }],
     summary: 'Light, water, food, phones, medications and a plan for the first three days.',
     last: { date: '2026-10-12', seconds: 754, done: 7, total: 8, notes: 'No spare batteries for the big lantern.' },
     steps: ['Find flashlights, lanterns and spare batteries. Test each one.', 'Count drinking water for everyone, for three days', 'Charge phones and battery banks, then switch to low-power mode', 'Gather medications and glucose supplies in one place', 'Keep the refrigerator and freezer doors closed', 'Never run a generator, grill or camp stove indoors', 'Write down who to call and where to meet', 'Check food that needs no cooking'] },
-  { id: '04-boil-water', title: 'Boil-water advisory', minutes: 15, place: 'at home', status: 'draft', times_done: 0, last: null,
+  { id: '04-boil-water', title: 'Boil-water advisory', minutes: 15, place: 'at home', status: 'draft', times_done: 0, history: [], last: null,
     summary: 'Make water safe, store it, and set up a clean-water routine.',
     steps: ['Fill clean containers before the water is shut off', 'Bring water to a rolling boil for 1 minute', 'Store boiled water in clean, covered containers', 'Check you have a backup method and its label'] },
 ];
@@ -929,34 +979,54 @@ export async function drillsList(): Promise<Drill[]> {
 export async function drillSave(drill: string, seconds: number, done: number, total: number, notes: string): Promise<void> {
   if (inTauri) return call<void>('drill_save', { drill, seconds, done, total, notes });
   const d = memDrills.find((x) => x.id === drill);
-  if (d) { d.last = { date: new Date().toISOString().slice(0, 10), seconds, done, total, notes }; d.times_done++; }
+  if (d) { d.last = { date: new Date().toISOString().slice(0, 10), seconds, done, total, notes }; d.times_done++; d.history.push(d.last); }
+}
+/** Saves a drill the person wrote, as a plain file in their own drills folder. Returns its id. */
+export async function drillCreate(title: string, minutes: number, place: string, summary: string, steps: string[]): Promise<string> {
+  if (inTauri) return call<string>('drill_create', { title, minutes, place, summary, steps });
+  const id = 'my-' + title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  memDrills.push({ id, title, minutes, place, summary, status: 'draft', steps: steps.filter((x) => x.trim()), last: null, times_done: 0, history: [] });
+  return id;
+}
+export type NewPlanStep = { title: string; every_days: number | null; body: string[] };
+/** Saves a plan the person wrote, as a plain file in their own plans folder. Returns its id. */
+export async function planCreate(title: string, summary: string, kind: string, author: string, steps: NewPlanStep[]): Promise<string> {
+  if (inTauri) return call<string>('plan_create', { title, summary, kind, author, steps });
+  const id = 'my-' + title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  memPlans.push({ id, title, summary, kind: kind as PlanInfo['kind'], author, status: 'draft', followed: false, mine: true, steps: steps.map((s) => ({ id: s.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'), title: s.title, every_days: s.every_days, check: '', go: '', button: '', body: s.body, state: 'todo' as const, last_done: '', due_in: null })) });
+  return id;
 }
 
 
 // ---------- academy (the text course) ----------
-export type AcademyLessonMeta = { id: string; title: string; minutes: number; status: string; source: string; questions: number; tries: number; best_score: number; total: number; last_date: string };
-export type AcademyModule = { id: string; title: string; summary: string; course: string; course_title: string; course_summary: string; course_author: string; lessons: AcademyLessonMeta[] };
+export type AcademyLessonMeta = { id: string; title: string; minutes: number; status: string; source: string; questions: number; tries: number; best_score: number; total: number; last_date: string; readiness: number; checklist: number; checks_done: number; video: boolean };
+export type AcademyModule = { id: string; title: string; summary: string; course: string; course_title: string; course_summary: string; course_author: string; course_tier: number; lessons: AcademyLessonMeta[] };
 export type CourseProblem = { place: string; message: string };
-export type AcademyBlock = { kind: 'heading' | 'para' | 'note' | 'bullets' | 'steps' | 'image'; text: string; items: string[] };
+export type AcademyCheck = { text: string; detail: string; gear: boolean; n: number };
+export type AcademyBlock = { kind: 'heading' | 'para' | 'note' | 'bullets' | 'steps' | 'image' | 'video' | 'checklist'; text: string; items: string[]; checks?: AcademyCheck[] };
 export type AcademyQuestion = { text: string; options: string[]; correct: number; explain: string };
-export type AcademyLesson = { id: string; title: string; minutes: number; status: string; source: string; blocks: AcademyBlock[]; quiz: AcademyQuestion[] };
+export type AcademyLesson = { id: string; title: string; minutes: number; status: string; source: string; readiness: number; ticked: number[]; blocks: AcademyBlock[]; quiz: AcademyQuestion[] };
 
 const previewLesson: AcademyLesson = {
-  id: '01-first-72-hours/01-water-first', title: 'Water comes first', minutes: 6, status: 'draft', source: 'Preview sample',
+  id: '01-first-72-hours/01-water-first', title: 'Water comes first', minutes: 6, status: 'draft', source: 'Preview sample', readiness: 2, ticked: [],
   blocks: [
+    { kind: 'video', text: 'Water comes first', items: [] },
     { kind: 'para', text: 'A person can last about three days without water, but thinking and judgment fail much sooner.', items: [] },
     { kind: 'heading', text: 'What to do', items: [] },
     { kind: 'bullets', text: '', items: ['Fill clean containers before the supply stops', 'Know where your backup water is'] },
     { kind: 'note', text: 'Plan on about one gallon per person per day.', items: [] },
+    { kind: 'steps', text: '', items: ['**Fill first.** Fill containers the moment you hear the supply may stop.', '**Store smart.** Keep it cool, dark and closed.', '**Have a backup.** Know a second source and how to make it safe.'] },
+    { kind: 'checklist', text: '', items: [], checks: [{ text: 'Store water for every person', detail: 'About one gallon per person per day', gear: true, n: 0 }, { text: 'Write down your backup source', detail: 'A stream, a neighbor, a rain barrel', gear: false, n: 1 }] },
   ],
   quiz: [{ text: 'How long can a person last without water?', options: ['About three weeks', 'About three days'], correct: 1, explain: 'The rule of threes: 3 minutes without air, 3 hours without shelter in harsh weather, 3 days without water, 3 weeks without food.' }],
 };
 let memAcademy: Record<string, { tries: number; best: number; total: number }> = {};
+let memChecks: number[] = [];
 
 export async function academyList(person?: string): Promise<AcademyModule[]> {
   if (inTauri) return call<AcademyModule[]>('academy_list', { person: person ?? null });
   const r = memAcademy[previewLesson.id];
-  return [{ id: 'survival-basics:01-first-72-hours', title: 'The first 72 hours', summary: 'Water, shelter and a plan for the first three days.', course: 'survival-basics', course_title: 'Survival basics', course_summary: 'The core course.', course_author: '', lessons: [{ id: previewLesson.id, title: previewLesson.title, minutes: previewLesson.minutes, status: 'draft', source: previewLesson.source, questions: previewLesson.quiz.length, tries: r?.tries ?? 0, best_score: r?.best ?? 0, total: r?.total ?? 0, last_date: r ? 'today' : '' }] }];
+  return [{ id: 'survival-basics:01-first-72-hours', title: 'The first 72 hours', summary: 'Water, shelter and a plan for the first three days.', course: 'survival-basics', course_title: 'Survival basics', course_summary: 'The core course.', course_author: '', course_tier: 3, lessons: [{ id: previewLesson.id, title: previewLesson.title, minutes: previewLesson.minutes, status: 'draft', source: previewLesson.source, questions: previewLesson.quiz.length, tries: r?.tries ?? 0, best_score: r?.best ?? 0, total: r?.total ?? 0, last_date: r ? 'today' : '', readiness: 2, checklist: 2, checks_done: memChecks.length, video: true }] }];
 }
 export async function academyProblems(): Promise<CourseProblem[]> {
   if (inTauri) return call<CourseProblem[]>('academy_problems');
@@ -972,19 +1042,24 @@ export async function academyPackInstall(): Promise<string[]> {
   if (inTauri) return call<string[]>('academy_pack_install');
   return ['No course packs found (preview).'];
 }
-export async function academyLesson(id: string): Promise<AcademyLesson> {
-  if (inTauri) return call<AcademyLesson>('academy_lesson', { id });
-  return previewLesson;
+export async function academyLesson(id: string, person?: string): Promise<AcademyLesson> {
+  if (inTauri) return call<AcademyLesson>('academy_lesson', { id, person: person ?? null });
+  return { ...previewLesson, ticked: [...memChecks] };
+}
+/** Tick or untick one checklist item in a lesson, for one person (or the household when no name). */
+export async function academyCheckSet(lesson: string, item: number, on: boolean, person?: string): Promise<void> {
+  if (inTauri) return call<void>('academy_check_set', { lesson, item, on, person: person ?? null });
+  memChecks = on ? [...new Set([...memChecks, item])] : memChecks.filter((x) => x !== item);
 }
 // ---------- plans (what comes after the first walkthrough) ----------
 export type PlanStep = { id: string; title: string; every_days: number | null; check: string; go: string; button: string; body: string[]; state: 'todo' | 'done' | 'due'; last_done: string; due_in: number | null };
-export type PlanInfo = { id: string; title: string; summary: string; kind: 'checks' | 'learning' | 'scenario'; author: string; status: string; followed: boolean; steps: PlanStep[] };
+export type PlanInfo = { id: string; title: string; summary: string; kind: 'checks' | 'learning' | 'scenario'; author: string; status: string; followed: boolean; mine: boolean; steps: PlanStep[] };
 const memPlans: PlanInfo[] = [
-  { id: 'keep-it-fresh', title: 'Keep it fresh', summary: 'Short checks to repeat on a schedule, so your supplies and your plan stay true.', kind: 'checks', author: 'Cindrix', status: 'draft', followed: false, steps: [
+  { id: 'keep-it-fresh', title: 'Keep it fresh', summary: 'Short checks to repeat on a schedule, so your supplies and your plan stay true.', kind: 'checks', author: 'Cindrix', status: 'draft', followed: false, mine: false, steps: [
     { id: 'turn-over-your-stored-water', title: 'Turn over your stored water', every_days: 180, check: '', go: 'Inventory', button: 'Open Inventory', body: ['Water you filled yourself should be replaced about every six months.'], state: 'todo', last_done: '', due_in: null },
     { id: 'test-the-smoke-alarms', title: 'Test the smoke and carbon monoxide alarms', every_days: 30, check: '', go: '', button: '', body: ['Press the test button on every alarm.'], state: 'todo', last_done: '', due_in: null },
   ] },
-  { id: 'power-outage', title: 'Power outage plan', summary: 'What to have ready and what to do when the power is out for a day or a week.', kind: 'scenario', author: 'Cindrix', status: 'draft', followed: false, steps: [
+  { id: 'power-outage', title: 'Power outage plan', summary: 'What to have ready and what to do when the power is out for a day or a week.', kind: 'scenario', author: 'Cindrix', status: 'draft', followed: false, mine: false, steps: [
     { id: 'decide-how-you-will-get-light', title: 'Decide how you will get light', every_days: null, check: '', go: 'Inventory', button: 'Add these to Inventory', body: ['Flashlights or headlamps are safer than candles.'], state: 'todo', last_done: '', due_in: null },
     { id: 'keep-a-radio', title: 'Keep a radio that does not need the wall', every_days: null, check: '', go: '', button: '', body: ['Battery or hand-crank.'], state: 'todo', last_done: '', due_in: null },
   ] },
@@ -1085,9 +1160,10 @@ export async function stockNeeds(adults: number, children: number, babies: numbe
 
 // ---------- training sign-off ----------
 export type TrainLesson = { id: string; title: string; module: string; minutes: number; questions: number; state: 'passed' | 'tried' | 'new' | 'noquiz'; best_score: number; total: number; last_date: string };
-export type TrainCourse = { id: string; title: string; summary: string; chosen: boolean; signed_by: string; signed_date: string; passed: number; needed: number; minutes_left: number; complete: boolean; lessons: TrainLesson[] };
+export type TrainCourse = { id: string; title: string; summary: string; tier: number; chosen: boolean; signed_by: string; signed_date: string; passed: number; needed: number; minutes_left: number; complete: boolean; lessons: TrainLesson[] };
 export type TrainSuggestion = { course: string; title: string; reason: string };
-export type TrainReport = { person: string; passed: number; needed: number; signed: number; chosen: number; courses: TrainCourse[]; suggestions: TrainSuggestion[] };
+export type TrainTier = { tier: number; name: string; courses: number; done: number; reached: boolean };
+export type TrainReport = { person: string; passed: number; needed: number; signed: number; chosen: number; badge: number; badge_name: string; tiers: TrainTier[]; courses: TrainCourse[]; suggestions: TrainSuggestion[] };
 
 const memTrain: Record<string, { chosen: boolean; signed_by: string; signed_date: string }> = {};
 export async function trainingReports(people: string[]): Promise<TrainReport[]> {
@@ -1101,9 +1177,9 @@ export async function trainingReports(people: string[]): Promise<TrainReport[]> 
       { id: previewLesson.id, title: previewLesson.title, module: 'The first 72 hours', minutes: previewLesson.minutes, questions: 1, state: passed ? 'passed' : r ? 'tried' : 'new', best_score: r?.best ?? 0, total: r?.total ?? 0, last_date: r ? 'today' : '' },
       { id: 'preview/two', title: 'Staying warm and sheltered', module: 'The first 72 hours', minutes: 10, questions: 3, state: 'new', best_score: 0, total: 0, last_date: '' },
     ];
-    const course: TrainCourse = { id: 'survival-basics', title: 'Survival basics', summary: 'The core course.', chosen: !!m?.chosen || !!r, signed_by: m?.signed_by ?? '', signed_date: m?.signed_date ?? '', passed: lessons.filter((l) => l.state === 'passed').length, needed: 2, minutes_left: passed ? 10 : 18, complete: false, lessons };
-    const other: TrainCourse = { id: 'field-first-aid', title: 'Field first aid', summary: 'Bleeding, burns, breaks and shock.', chosen: false, signed_by: '', signed_date: '', passed: 0, needed: 4, minutes_left: 40, complete: false, lessons: [] };
-    return { person, passed: course.passed, needed: course.chosen ? course.needed : 0, signed: course.signed_date ? 1 : 0, chosen: course.chosen ? 1 : 0, courses: [course, other], suggestions: course.chosen ? [{ course: course.id, title: course.title, reason: 'Keep going: 1 lesson left, about 10 minutes.' }, { course: other.id, title: other.title, reason: 'Next in the usual order.' }] : [{ course: course.id, title: course.title, reason: 'A good place to start.' }] };
+    const course: TrainCourse = { id: 'survival-basics', title: 'Survival basics', summary: 'The core course.', tier: 3, chosen: !!m?.chosen || !!r, signed_by: m?.signed_by ?? '', signed_date: m?.signed_date ?? '', passed: lessons.filter((l) => l.state === 'passed').length, needed: 2, minutes_left: passed ? 10 : 18, complete: false, lessons };
+    const other: TrainCourse = { id: 'field-first-aid', title: 'Field first aid', summary: 'Bleeding, burns, breaks and shock.', tier: 3, chosen: false, signed_by: '', signed_date: '', passed: 0, needed: 4, minutes_left: 40, complete: false, lessons: [] };
+    return { person, passed: course.passed, needed: course.chosen ? course.needed : 0, signed: course.signed_date ? 1 : 0, chosen: course.chosen ? 1 : 0, badge: 0, badge_name: '', tiers: [{ tier: 3, name: 'Foundation', courses: 2, done: course.signed_date ? 1 : 0, reached: false }, { tier: 2, name: 'Practitioner', courses: 1, done: 0, reached: false }, { tier: 1, name: 'Operator', courses: 1, done: 0, reached: false }], courses: [course, other], suggestions: course.chosen ? [{ course: course.id, title: course.title, reason: 'Keep going: 1 lesson left, about 10 minutes.' }, { course: other.id, title: other.title, reason: 'Next in the usual order.' }] : [{ course: course.id, title: course.title, reason: 'A good place to start.' }] };
   });
 }
 export async function trainingEnrol(person: string, course: string, on: boolean): Promise<void> {

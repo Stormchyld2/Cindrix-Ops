@@ -1,7 +1,7 @@
 ---
 title: Running the scene
 minutes: 8
-status: draft
+status: complete
 source: FEMA Community Emergency Response Team (CERT) Basic Training Participant Manual (US government, public domain)
 ---
 Many injured, many bystanders, and everyone shouting. A calm leader changes everything.
@@ -28,6 +28,35 @@ When emergency crews arrive, give a short summary: how many people, who is red, 
 Rotate tasks so no one gets worn out. Make sure helpers drink, eat and rest.
 
 > Do not try to do everything yourself. Delegating is part of the job.
+
+## Going deeper: command and control
+A chaotic scene needs one calm leader and a few clear jobs. Emergency services use the Incident Command System (ICS). You can borrow its ideas.
+
+## Set up
+- **Command:** the leader. Stand back where you can see everything.
+- **Safety:** watches hazards.
+- **Triage and treatment:** sort people into colored areas: red, yellow, green.
+- **Transport:** plans moves, with vehicles and routes.
+- **Communications and records.**
+Assign people to jobs, and name a deputy.
+
+## Zones
+Set up a safe area upwind and uphill, away from hazards. Create a treatment area, a landing zone for helicopters or ambulances, and a route that stays open. Keep curious onlookers out.
+
+## Control the crowd
+Give bystanders jobs: carrying, fetching water, comforting, holding a light. People who are busy are calmer. Send away those who cannot help.
+
+## Communicate
+Use short, plain words, no codes. Report to dispatch: location, number of casualties by color, hazards and what you need. Update every so often.
+
+## Handover
+When professionals arrive, brief the incoming leader and hand over, then offer help.
+
+## Care for helpers
+Watch for exhaustion, stress and injury among helpers. Rotate jobs, give breaks, food, water and warmth. Keep track of who is on the scene.
+
+## Keep records
+Log names, injuries, treatment and destination.
 
 ## Check yourself
 ? Who makes decisions on a crowded scene?
