@@ -5,18 +5,32 @@ status: draft
 reviewer:
 reviewed:
 ---
-Viruses cause most sore throats. **Cough, runny nose, hoarseness and pink eye point to a virus.** Only about 1 in 10 adults and 3 in 10 children with a sore throat have strep, which is caused by bacteria.
-
-**Signs that may mean strep:** a sore throat that starts fast, pain when swallowing, fever, red swollen tonsils, white patches or pus on the tonsils, tiny red spots on the roof of the mouth, swollen glands at the front of the neck. Headache, stomach pain, vomiting and a rash can also happen, mostly in children.
+Most sore throats are viral. **Cough, runny nose, hoarseness and pink eye point to a virus.**
 
 1. Rest and drink plenty of fluids. Throat lozenges can help (not for children under 4).
-2. **If strep may be the cause, get a quick strep test** from a health care provider. Only a test can tell. Strep needs a prescription antibiotic, and it helps people feel better faster.
-3. Untreated strep can lead to serious problems such as an abscess in the throat, kidney disease, or rheumatic fever (harms the heart, joints and brain).
-4. Strep spreads easily at home. Wash hands often, do not share cups or forks, cover coughs, and clean what the sick person uses.
-5. Do not use leftover antibiotics. Antibiotics do nothing for a virus.
+2. **If strep may be the cause, get a strep test** from a provider. Only a test can tell.
+3. Strep spreads easily. Wash hands, do not share cups or forks, and cover coughs.
 
-**Call 911 for:** trouble breathing, drooling or not being able to swallow spit, or a child who is very sleepy, limp or hard to wake.
+**Call 911** for trouble breathing, drooling or not being able to swallow spit, or a child who is very sleepy, limp or hard to wake.
+
+## If no help is coming
+
+- **Strep signs:** sudden sore throat, pain on swallowing, fever, red tonsils with white patches or pus, swollen neck glands, no cough.
+- **Without a test or antibiotics,** treat the symptoms: warm salt water gargles, warm drinks, rest, and fever medicine as the label says.
+- **Why it matters:** untreated strep can lead to a throat abscess or rheumatic fever. Keep strep antibiotic and its course in the plan if a clinician can prescribe it.
+- **Watch for a throat abscess:** one side swollen, muffled voice, a stiff neck, and trouble opening the mouth. This is an emergency. Move toward care.
+- **Isolate** cups, towels and cutlery. See "Stop a contagious illness from spreading".
+
+## Know more
+
+### Virus or strep
+Cold signs mean a virus and antibiotics will not help. Only about 1 in 10 adults with a sore throat has strep.
+
+### Dry air and smoke
+Both irritate. Keep the shelter air moist and smoke-free.
+
+**Train:** Academy course "Family medical care without a clinic".
 
 Source: CDC, About Strep Throat and Sore Throat Basics, checked 2026-10-31. The 911 warning signs are standard emergency advice.
 
-Reference only, not medical advice. In an emergency, call 911.
+Reference only, not medical advice. Where help can be reached, call 911.
