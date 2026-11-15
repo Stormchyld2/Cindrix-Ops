@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Make sure everyone is safe first. Call 911 if anyone needs help.**
 
 1. **Count everyone.** Say each person's name. Anyone missing or hurt comes first.

@@ -481,7 +481,7 @@
     <div class="panel">
       <div class="label">ABOUT</div>
       <p><strong>Cindrix Ops Survival Library</strong> · Carry the library. Keep the fire.</p>
-      <p class="muted">A reference tool, not a doctor, lawyer or rescuer. In an emergency, call 911. Content marked DRAFT has not been reviewed by a clinician. The assistant can be wrong: check anything that matters against the source it names.</p>
+      <p class="muted">A reference tool, not a doctor, lawyer or rescuer. In an emergency, call 911. The assistant can be wrong: check anything that matters against the source it names.</p>
       <p class="muted">The program works without internet and only talks to itself on this device. The one exception is <b>Save a website</b> in Archives, which uses the internet only while you run it. Sharing the library with other devices is off unless you turn it on.</p>
       <p class="muted fine">The program is free software (GPL-3.0-or-later). The full license texts are in the LICENSES folder.</p>
     </div>

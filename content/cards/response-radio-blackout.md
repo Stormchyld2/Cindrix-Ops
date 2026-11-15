@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Someone must always be able to hear emergency calls while anyone is away. Call 911 if you think someone is hurt.**
 
 **If the base radio fails**

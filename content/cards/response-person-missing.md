@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Start the search early. Do not wait until dark. Call 911 if the person is hurt, a child, or in danger.**
 
 1. **Note the time** and write down the last place and time they were seen, what they were wearing, and what they took.

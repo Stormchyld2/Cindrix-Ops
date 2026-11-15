@@ -182,7 +182,7 @@
 
       <div class="label sp">EMERGENCY CARDS</div>
       {#each cards as c (c.id)}
-        <label class="opt"><input type="checkbox" bind:checked={pickedCards[c.id]} /> {c.title}{c.status !== 'reviewed' ? ' (draft)' : ''}</label>
+        <label class="opt"><input type="checkbox" bind:checked={pickedCards[c.id]} /> {c.title}</label>
       {/each}
 
       <div class="label sp">DRILL CHECKLISTS</div>

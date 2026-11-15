@@ -297,7 +297,6 @@
   .dbody { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; padding: 8px 12px 10px; }
   .meta { display: flex; justify-content: space-between; align-items: center; font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #dfe7f0; }
   .st .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 7px; background: var(--c); box-shadow: 0 0 6px var(--c); }
-  .draft { padding: 1px 10px; border-radius: 999px; border: 1px solid var(--glow-amber); color: var(--glow-amber); font-size: 10px; font-weight: 700; }
   .drill h2 { margin: 2px 0 0; font-size: 17px; letter-spacing: .04em; text-transform: uppercase; }
   .drill p { margin: 0; font-size: 13.5px; color: #e3eaf2; }
   .drill .foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; }

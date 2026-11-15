@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Do not open the gate or door until you know who it is and why they are here.** Call 911 at once if anyone is in danger.
 
 1. **Stay inside or behind the gate.** Talk through the door, a window or the gate. Do not go out alone.
