@@ -40,7 +40,8 @@ fn main() {
 
     // sample entries
     let n = ar.articles;
-    let step = (n / 20000).max(1);
+    let samples: u32 = std::env::var("DIAG_SAMPLES").ok().and_then(|v| v.parse().ok()).unwrap_or(20000);
+    let step = (n / samples).max(1);
     let mut ns_count: BTreeMap<char, u32> = BTreeMap::new();
     let (mut redirects, mut content, mut with_query, mut read_ok) = (0u32, 0u32, 0u32, 0u32);
     let mut errs: BTreeMap<String, u32> = BTreeMap::new();
@@ -111,7 +112,7 @@ fn main() {
         }
         // compare sampled entries
         let (mut same, mut diff, mut shown) = (0, 0, 0);
-        let step2 = (n / 400).max(1);
+        let step2 = (n / (samples / 50).max(40)).max(1);
         let mut j = 0;
         while j < n {
             if let Ok(e) = ar.entry(j) {

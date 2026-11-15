@@ -32,7 +32,7 @@ jobs:
             echo "################ $z"
             core/target/release/examples/diagnose_zim "$z" "$RUNNER_TEMP/kt/kiwix-serve" || true
           done
-      - name: The libretexts biology archive from the official catalog
+      - name: Download the libretexts biology archive from the official catalog
         shell: bash
         run: |
           cd "$RUNNER_TEMP"
@@ -45,6 +45,13 @@ jobs:
           size=$(curl -sI "https://download.kiwix.org/zim/libretexts/$f" | tr -d '\r' | awk 'tolower($1)=="content-length:"{print $2}' | tail -n1)
           echo "size: $size bytes"
           if [ -n "$size" ] && [ "$size" -gt 12000000000 ]; then echo "too large for this runner"; exit 0; fi
-          curl -fsSL --retry 5 --retry-delay 10 --retry-all-errors -o "$f" "https://download.kiwix.org/zim/libretexts/$f"
-          ls -l "$f"
-          "$GITHUB_WORKSPACE/core/target/release/examples/diagnose_zim" "$PWD/$f" "$RUNNER_TEMP/kt/kiwix-serve" || true
+          timeout 25m curl -fsSL --retry 5 --retry-delay 10 --retry-all-errors -o "$f" "https://download.kiwix.org/zim/libretexts/$f" || echo "download did not finish"
+          ls -l "$f" || true
+          echo "$f" > fname.txt
+      - name: Diagnose the libretexts archive
+        shell: bash
+        run: |
+          cd "$RUNNER_TEMP"
+          f=$(cat fname.txt 2>/dev/null) || exit 0
+          [ -s "$f" ] || { echo "no archive"; exit 0; }
+          DIAG_SAMPLES=1500 timeout 25m "$GITHUB_WORKSPACE/core/target/release/examples/diagnose_zim" "$PWD/$f" "$RUNNER_TEMP/kt/kiwix-serve" || echo "diagnosis stopped (exit $?)"
