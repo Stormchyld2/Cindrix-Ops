@@ -3,7 +3,7 @@
   import { podcastsList, type PodList, type PodShow, type PodEpisode } from '../lib/api';
   import { podPlayer, fmtLong, SPEEDS } from '../lib/podplayer.svelte';
 
-  let list: PodList | null = $state(null);
+  let list = $state<PodList | null>(null);
   let error = $state('');
   let busy = $state(false);
   let openShow: string | null = $state(null);
