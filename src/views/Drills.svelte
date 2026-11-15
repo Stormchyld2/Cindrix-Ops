@@ -210,6 +210,12 @@
           </li>
         {/each}
       </ul>
+      {#each active.sections as sec}
+        <details class="part" open={sec.title === 'Pass mark'}>
+          <summary>{sec.title}</summary>
+          <ul>{#each sec.lines as l}<li>{l}</li>{/each}</ul>
+        </details>
+      {/each}
       <label class="debrief">Debrief: what was missing?
         <textarea class="input" rows="3" bind:value={notes} placeholder="Batteries for the lantern, a can opener, more water…"></textarea>
       </label>
@@ -252,6 +258,9 @@
 </dialog>
 
 <style>
+  .part { margin: 10px 0; border-left: 3px solid var(--accent, #3b82f6); padding-left: 10px; }
+  .part summary { cursor: pointer; font-weight: 700; }
+  .part ul { margin: 6px 0 0 18px; padding: 0; }
   .mkform { display: flex; flex-direction: column; gap: 10px; padding: 18px; min-width: min(520px, 90vw); }
   .mkform label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
   .mkform h2 { margin: 0; }

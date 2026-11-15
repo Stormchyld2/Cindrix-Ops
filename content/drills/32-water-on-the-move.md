@@ -11,3 +11,14 @@ Do each step for real, do not just read it.
 - Choose two ways to treat water and pack them
 - Mark the refill points and a back-up in case one is dry
 - Pack and weigh the water to feel how heavy it is
+
+## Pass mark
+- Refill points and a backup are marked and the load is weighed
+## Common mistakes
+- Water on the map that is dry in summer
+- Too little carried
+- No treatment plan
+## Make it harder
+- Carry the full water load for a day's walk
+## With less gear
+- No bottles: any food-safe container and a cloth filter

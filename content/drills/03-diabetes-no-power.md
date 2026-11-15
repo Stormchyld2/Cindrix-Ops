@@ -14,3 +14,17 @@ It never gives doses: follow your doctor's written plan.
 - Write the phone numbers of your doctor, pharmacy and the nearest hospital
 - Agree who checks on whom, and what low and high blood sugar look like for each person
 - Note anything you are short of
+
+## Pass mark
+- Written plan is where everyone can find it and the family knows who checks whom
+- Supplies and expiry dates are counted and the cooling plan is written down
+## Common mistakes
+- A plan that lives only in one person's head
+- Medicine kept somewhere that heats up
+- No spare meter batteries or backup meter
+## Make it harder
+- Practise a day without the meter and write down what you would watch for instead
+- Ask your doctor what to do if the supply runs out and write the answer on the plan
+## With less gear
+- No fridge: ask the pharmacist how the label says to keep it cool, such as a clay pot or cooler with water
+- Keep fast sugar in every bag, car and room

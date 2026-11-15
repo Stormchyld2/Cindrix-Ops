@@ -991,16 +991,18 @@ export async function archiveRemove(name: string): Promise<void> {
 export type DrillResult = { date: string; seconds: number; done: number; total: number; notes: string };
 export type Drill = {
   id: string; title: string; minutes: number; place: string; summary: string; status: string; steps: string[];
+  /** Pass mark, common mistakes, make it harder, with less gear */
+  sections: { title: string; lines: string[] }[];
   last: DrillResult | null; times_done: number;
   /** Every time it was done, oldest first */
   history: DrillResult[];
 };
 const memDrills: Drill[] = [
-  { id: '01-power-outage', title: '72-hour power outage', minutes: 25, place: 'at home', status: 'draft', times_done: 1, history: [{ date: '2026-10-12', seconds: 754, done: 7, total: 8, notes: 'No spare batteries for the big lantern.' }],
+  { id: '01-power-outage', title: '72-hour power outage', minutes: 25, place: 'at home', status: 'draft', times_done: 1, history: [{ date: '2026-10-12', seconds: 754, done: 7, total: 8, notes: 'No spare batteries for the big lantern.' }], sections: [{ title: 'Pass mark', lines: ['Every light works and the water is counted.'] }],
     summary: 'Light, water, food, phones, medications and a plan for the first three days.',
     last: { date: '2026-10-12', seconds: 754, done: 7, total: 8, notes: 'No spare batteries for the big lantern.' },
     steps: ['Find flashlights, lanterns and spare batteries. Test each one.', 'Count drinking water for everyone, for three days', 'Charge phones and battery banks, then switch to low-power mode', 'Gather medications and glucose supplies in one place', 'Keep the refrigerator and freezer doors closed', 'Never run a generator, grill or camp stove indoors', 'Write down who to call and where to meet', 'Check food that needs no cooking'] },
-  { id: '04-boil-water', title: 'Boil-water advisory', minutes: 15, place: 'at home', status: 'draft', times_done: 0, history: [], last: null,
+  { id: '04-boil-water', title: 'Boil-water advisory', minutes: 15, place: 'at home', status: 'draft', times_done: 0, history: [], last: null, sections: [],
     summary: 'Make water safe, store it, and set up a clean-water routine.',
     steps: ['Fill clean containers before the water is shut off', 'Bring water to a rolling boil for 1 minute', 'Store boiled water in clean, covered containers', 'Check you have a backup method and its label'] },
 ];

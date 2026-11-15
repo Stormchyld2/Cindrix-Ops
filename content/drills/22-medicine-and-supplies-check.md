@@ -13,3 +13,15 @@ Walk through and actually look, do not just tick.
 - Keep an up-to-date list of conditions, doctors and pharmacies in the Family page
 - Check glasses, hearing-aid batteries and any other medical gear
 - Note what to buy and when refills are due
+
+## Pass mark
+- Every regular medicine has a count, date and storage note, without amounts written here
+- A refill plan is written and the family page is up to date
+## Common mistakes
+- Waiting for the last day to refill
+- No plan for medicine that must stay cool
+- No glasses or battery spares
+## Make it harder
+- Plan for 30 days and for 90 days with your doctor
+## With less gear
+- Ask your pharmacist about early refills and a travel supply

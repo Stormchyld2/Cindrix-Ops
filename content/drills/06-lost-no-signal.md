@@ -14,3 +14,17 @@ Practice somewhere safe with a map and compass.
 - Note landmarks, roads or streams that lead to people
 - Plan shelter and warmth before dark
 - Write down what you did and what was missing from your kit
+
+## Pass mark
+- You stopped, chose stay or go and gave a reason
+- Your shelter, signal and water plans were written before the light went
+## Common mistakes
+- Walking on out of panic
+- Using the phone until it dies
+- Going downhill into a gully with no way out
+## Make it harder
+- Do it in rain or at dusk
+- Do it with a child or an injured person in the group
+## With less gear
+- No map or compass: use the sun, roads, power lines and streams
+- No whistle: shout in threes or bang a log

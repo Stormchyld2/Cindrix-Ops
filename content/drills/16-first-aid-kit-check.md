@@ -13,3 +13,15 @@ Walk through and actually look, do not just tick.
 - Add a printed copy of emergency cards and phone numbers
 - Add spare glasses and any needed supplies for the family
 - Note what to buy
+
+## Pass mark
+- Every item is in date, and every person knows where the kit is
+- A short list of what to buy is written
+## Common mistakes
+- A kit that nobody has opened in years
+- Tourniquet bought but never practiced
+- No gloves or no scissors
+## Make it harder
+- Use the kit for a mock bleeding and a mock sprain
+## With less gear
+- No kit: a clean cloth, tape, a bag and soap are a start

@@ -3018,6 +3018,12 @@ struct DrillResultDto {
 }
 
 #[derive(Serialize)]
+struct DrillSectionDto {
+    title: String,
+    lines: Vec<String>,
+}
+
+#[derive(Serialize)]
 struct DrillDto {
     id: String,
     title: String,
@@ -3026,6 +3032,7 @@ struct DrillDto {
     summary: String,
     status: String,
     steps: Vec<String>,
+    sections: Vec<DrillSectionDto>,
     /// Most recent result, if the drill has been done
     last: Option<DrillResultDto>,
     times_done: usize,
@@ -3051,6 +3058,7 @@ fn drills_list() -> Result<Vec<DrillDto>, String> {
                 summary: d.summary,
                 status: d.status,
                 steps: d.steps,
+                sections: d.sections.into_iter().map(|x| DrillSectionDto { title: x.title, lines: x.lines }).collect(),
             }
         })
         .collect())

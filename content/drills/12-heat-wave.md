@@ -13,3 +13,15 @@ Walk through and actually look, do not just tick.
 - Check on older neighbours and anyone alone
 - Never leave children or pets in a parked car
 - Know which medicines or conditions need extra care in heat, and ask your doctor
+
+## Pass mark
+- The coolest room is picked and everyone knows the signs of heat stroke
+- Water is counted for people and pets, and neighbors are on the list
+## Common mistakes
+- Relying on a fan alone
+- Hard work in the middle of the day
+- Leaving children or pets in a car
+## Make it harder
+- Spend an afternoon with no air conditioning and note temperatures and who struggles
+## With less gear
+- No fan or air conditioning: wet sheets in the windows, block the sun, and sleep low

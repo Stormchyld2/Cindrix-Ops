@@ -13,3 +13,15 @@ Walk through and actually look, do not just tick.
 - Wash hands and dishes with safe water
 - Check you have matches or lighters kept dry, and a fire extinguisher or water nearby
 - Note what to buy
+
+## Pass mark
+- A full meal is cooked outdoors and eaten, and fuel use is written down
+- Nothing burned near the house and water for fires is at hand
+## Common mistakes
+- Cooking indoors or in a garage
+- No wind block
+- No count of fuel used
+## Make it harder
+- Cook three days in a row from stored food only
+## With less gear
+- No stove: a small fire with a grate of stones, a rocket stove from cans, or a fire pit

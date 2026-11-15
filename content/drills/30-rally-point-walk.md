@@ -11,3 +11,13 @@ Do each step for real, do not just read it.
 - Time each walk and note the hazards on the way
 - Agree how long to wait at each one and what note to leave
 - Write the plan on a card for every person and put one in each bag
+
+## Pass mark
+- All three are walked, timed and written on a card for every bag
+## Common mistakes
+- Picking places nobody can find in the dark
+- Only one route
+## Make it harder
+- Walk it at night, and with the children leading
+## With less gear
+- No map: describe each point with landmarks only

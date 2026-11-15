@@ -11,3 +11,15 @@ Do each step for real, do not just read it.
 - Walk the route with a compass, counting paces
 - Use a red light only, and shield it
 - Debrief: what was harder in the dark than you expected?
+
+## Pass mark
+- You reached the end without white light and without leaving the route
+- You wrote what was harder in the dark
+## Common mistakes
+- Turning on a white light
+- Rushing before eyes adjust
+- Walking past the catching feature
+## Make it harder
+- Do it with a pack and in rain
+## With less gear
+- No red light: red cloth over a flashlight

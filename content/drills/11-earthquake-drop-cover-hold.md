@@ -13,3 +13,15 @@ Walk through and actually look, do not just tick.
 - Learn where the gas shutoff is and keep the tool next to it, but only shut it off if you smell gas
 - Agree where to meet and how to check on each other afterward
 - Keep shoes and a flashlight beside each bed
+
+## Pass mark
+- Every person drops, covers and holds for a full minute in every room
+- Heavy items are down from high shelves and tall furniture is fixed to the wall
+## Common mistakes
+- Running outside
+- Standing in a doorway
+- Getting under nothing sturdy
+## Make it harder
+- Do it with eyes closed, or in bed
+## With less gear
+- No sturdy table: crouch by an inside wall and cover your head and neck

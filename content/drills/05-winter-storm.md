@@ -14,3 +14,17 @@ status: draft
 - Check on neighbors, especially anyone elderly or alone
 - Keep car fuel above half and a blanket and shovel in the car
 - Write down where you would go if the house becomes too cold
+
+## Pass mark
+- One room is chosen, insulated and warm enough to sleep in without the main heat
+- A working CO alarm is in the house and nothing burns indoors that should not
+## Common mistakes
+- Heating with an oven, grill or camp stove
+- Heating the whole house instead of one room
+- No plan for melting snow or for frozen pipes
+## Make it harder
+- Sleep one night with the heat set low and see which layers and blankets work
+- Practise a car breakdown in snow with the stay-in-the-car steps
+## With less gear
+- No sleeping bags: blankets over and under, and a hat
+- No heat source: share one room and one bed pile, and cover windows with blankets

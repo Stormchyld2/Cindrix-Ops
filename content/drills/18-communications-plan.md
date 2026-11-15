@@ -13,3 +13,15 @@ Walk through and actually look, do not just tick.
 - Test a battery radio and know which channel or frequency you use
 - Check that every phone has the emergency contacts saved and a charged power bank
 - Check that children know how to call 911 and say their address
+
+## Pass mark
+- Everyone has the out-of-area number on a card
+- Everyone has sent a test text and the radio works
+## Common mistakes
+- Expecting calls to work
+- Phones at low battery
+- No second meeting place
+## Make it harder
+- Run a drill with phones off and use only the paper plan
+## With less gear
+- No radio: a note at the first rally point and a set time at the second

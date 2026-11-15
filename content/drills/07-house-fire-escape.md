@@ -14,3 +14,17 @@ Practise at night too. Time yourselves.
 - Time the drill. Aim to be outside in about two minutes
 - Check windows open and any bars or screens can be released
 - Make sure everyone can say the emergency number and the address
+
+## Pass mark
+- Everyone is outside at the meeting place in about two minutes
+- Every bedroom has two ways out and the windows open
+## Common mistakes
+- Going back in for pets or things
+- A meeting place too close to the house
+- A bedroom door left open at night
+## Make it harder
+- Do it at night with a "smoke" room blocked and use the second way out
+- Have a child practise alone
+## With less gear
+- No ladder: a rope or knotted sheets anchored to something solid
+- No alarms: a wind-up or battery alarm is cheap, and a rolled towel under the door

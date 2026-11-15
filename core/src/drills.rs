@@ -10,7 +10,11 @@
 //! status: draft
 //! ---
 //! - Find flashlights and spare batteries
+//! ## Pass mark
+//! - what good looks like
 //! ```
+//! After the steps, "## " headings add parts that are shown but not ticked (Pass mark, Common mistakes,
+//! Make it harder, With less gear).
 //! Results go in `drills.csv` in the user's folder.
 
 use crate::fsio;
@@ -28,6 +32,14 @@ pub struct Drill {
     /// "draft" until someone has reviewed the steps
     pub status: String,
     pub steps: Vec<String>,
+    /// Extra parts under "## " headings after the steps: pass mark, common mistakes, make it harder, with less gear.
+    pub sections: Vec<Section>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Section {
+    pub title: String,
+    pub lines: Vec<String>,
 }
 
 pub fn parse(id: &str, text: &str) -> Result<Drill, String> {
@@ -42,6 +54,7 @@ pub fn parse(id: &str, text: &str) -> Result<Drill, String> {
         summary: String::new(),
         status: "draft".into(),
         steps: Vec::new(),
+        sections: Vec::new(),
     };
     for line in head.lines() {
         if let Some((k, v)) = line.split_once(':') {
@@ -57,7 +70,16 @@ pub fn parse(id: &str, text: &str) -> Result<Drill, String> {
         }
     }
     for line in body.lines() {
-        if let Some(s) = line.trim().strip_prefix("- ") {
+        let t = line.trim();
+        if let Some(h) = t.strip_prefix("## ") {
+            d.sections.push(Section { title: h.trim().to_string(), lines: Vec::new() });
+        } else if let Some(sec) = d.sections.last_mut() {
+            // Under a heading, every non-empty line is part of that section.
+            let l = t.strip_prefix("- ").unwrap_or(t).trim();
+            if !l.is_empty() {
+                sec.lines.push(l.to_string());
+            }
+        } else if let Some(s) = t.strip_prefix("- ") {
             if !s.trim().is_empty() {
                 d.steps.push(s.trim().to_string());
             }
@@ -237,6 +259,17 @@ mod tests {
     }
 
     #[test]
+    fn parts_after_the_steps_are_kept_apart_from_the_steps() {
+        let t = format!("{}## Pass mark\n- Done in ten minutes\n- No one hurt\n## Common mistakes\nRushing.\n", SAMPLE);
+        let d = parse("t", &t).unwrap();
+        assert_eq!(d.steps.len(), 2);
+        assert_eq!(d.sections.len(), 2);
+        assert_eq!(d.sections[0].title, "Pass mark");
+        assert_eq!(d.sections[0].lines, vec!["Done in ten minutes", "No one hurt"]);
+        assert_eq!(d.sections[1].lines, vec!["Rushing."]);
+    }
+
+    #[test]
     fn rejects_bad_files() {
         assert!(parse("x", "no header").is_err());
         assert!(parse("x", "---\ntitle: A\n---\nno steps\n").is_err());
@@ -251,8 +284,11 @@ mod tests {
         for d in &drills {
             assert!(d.minutes > 0 && !d.summary.is_empty(), "{}", d.id);
             assert!(d.status == "draft" || d.status == "reviewed");
-            for s in &d.steps {
-                assert!(!crate::safety::output_contains_dose(s), "step looks like a dosing instruction: {}", s);
+            for s in d.steps.iter().chain(d.sections.iter().flat_map(|x| x.lines.iter())) {
+                assert!(!crate::safety::output_contains_dose(s), "line looks like a dosing instruction: {}", s);
+            }
+            if d.steps.len() > 0 && d.id.chars().next().map_or(false, |c| c.is_ascii_digit()) {
+                assert!(d.sections.iter().any(|x| x.title == "Pass mark"), "{} has no pass mark", d.id);
             }
         }
     }

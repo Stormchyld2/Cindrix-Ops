@@ -13,3 +13,16 @@ Walk through and actually look, do not just tick.
 - Agree: never walk or drive through moving flood water
 - Check you have a way to hear alerts: a weather radio or phone alerts turned on
 - Check where the family meets and who calls whom
+
+## Pass mark
+- Two routes are driven or walked and neither floods first
+- Papers and the go-bag are upstairs or by the door
+## Common mistakes
+- Using only the usual road
+- Waiting for the water to reach the door
+- Driving through moving water
+## Make it harder
+- Do it in the rain or in the dark
+## With less gear
+- No vehicle: walk to higher ground with water, light and papers
+- No map: ask older neighbors where the flood line was in past floods

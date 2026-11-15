@@ -13,3 +13,15 @@ Walk through and actually look, do not just tick.
 - Check supplies for babies, children and pets
 - Check medicine and glasses are packed and not past their dates
 - Change what has gone stale, and write the date on the bag
+
+## Pass mark
+- The bag carries five minutes without pain and holds the ten essentials
+- The date on the bag is within six months
+## Common mistakes
+- A bag too heavy to carry
+- Food and batteries gone stale
+- No clothes for this season
+## Make it harder
+- Walk a mile with it, and then check it again
+## With less gear
+- No bag: a pillowcase or a backpack from school, with water, food, light and papers
