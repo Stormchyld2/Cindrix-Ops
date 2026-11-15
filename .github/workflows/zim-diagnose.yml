@@ -1,0 +1,50 @@
+name: zim-diagnose
+# Read-only investigation: our ZIM reader against the real kiwix-serve, on archives from the official Kiwix catalog.
+# Runs only on the zim-diagnose branch or by hand. Nothing is changed or uploaded.
+on:
+  push:
+    branches: [zim-diagnose]
+  workflow_dispatch:
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build the diagnosis program
+        working-directory: core
+        run: cargo build --release --example diagnose_zim
+      - name: Get kiwix-serve
+        shell: bash
+        run: |
+          cd "$RUNNER_TEMP"
+          curl -fsSL --retry 5 --retry-delay 10 --retry-all-errors https://download.kiwix.org/release/kiwix-tools/ -o kt.html
+          kt=$(grep -oE 'kiwix-tools_linux-x86_64-[0-9.]+\.tar\.gz' kt.html | sort -uV | tail -n1)
+          echo "kiwix-tools: $kt"
+          curl -fsSL --retry 5 --retry-delay 10 --retry-all-errors -o kt.tgz "https://download.kiwix.org/release/kiwix-tools/$kt"
+          mkdir -p kt && tar xzf kt.tgz -C kt --strip-components=1
+          ./kt/kiwix-serve --version || true
+      - name: Our own test archives against kiwix-serve (naming)
+        shell: bash
+        run: |
+          for z in core/tests/fixtures/zims/*.zim; do
+            echo "################ $z"
+            core/target/release/examples/diagnose_zim "$z" "$RUNNER_TEMP/kt/kiwix-serve" || true
+          done
+      - name: The libretexts biology archive from the official catalog
+        shell: bash
+        run: |
+          cd "$RUNNER_TEMP"
+          curl -fsSL --retry 5 --retry-delay 10 --retry-all-errors https://download.kiwix.org/zim/libretexts/ -o list.html || { echo "no listing"; exit 0; }
+          echo "libretexts files in the catalog:"; grep -oE 'libretexts[A-Za-z0-9._-]+\.zim' list.html | sort -u | head -40
+          f=$(grep -oE 'libretexts\.org_en_bio_[0-9-]+\.zim' list.html | sort -uV | grep -F "2025-01" | head -n1)
+          [ -n "$f" ] || f=$(grep -oE 'libretexts\.org_en_bio_[0-9-]+\.zim' list.html | sort -uV | tail -n1)
+          echo "using: $f"
+          [ -n "$f" ] || exit 0
+          size=$(curl -sI "https://download.kiwix.org/zim/libretexts/$f" | tr -d '\r' | awk 'tolower($1)=="content-length:"{print $2}' | tail -n1)
+          echo "size: $size bytes"
+          if [ -n "$size" ] && [ "$size" -gt 12000000000 ]; then echo "too large for this runner"; exit 0; fi
+          curl -fsSL --retry 5 --retry-delay 10 --retry-all-errors -o "$f" "https://download.kiwix.org/zim/libretexts/$f"
+          ls -l "$f"
+          "$GITHUB_WORKSPACE/core/target/release/examples/diagnose_zim" "$PWD/$f" "$RUNNER_TEMP/kt/kiwix-serve" || true
