@@ -21,7 +21,7 @@ def page(title, body):
 
 PNG = bytes.fromhex("89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d49444154789c6360f8cfc000000301010018dd8db00000000049454e44ae426082")
 
-def build(path, layout, comp, extended=False, big_clusters=False):
+def build(path, layout, comp, extended=False, big_clusters=False, no_title_list=False):
     new = layout == "new"
     C = b"C" if new else b"A"      # article namespace
     I = b"C" if new else b"I"      # image namespace
@@ -52,7 +52,16 @@ def build(path, layout, comp, extended=False, big_clusters=False):
     entries.append(dict(ns=b"M", url="Illustration_48x48@1", title="", mime="image/png", group=2, data=PNG))
     if new:
         entries.append(dict(ns=b"W", url="mainPage", title="", mime=None, redirect=(C, "Main_Page")))
+    if no_title_list:
+        # what current Kiwix archives do: the header says "no title list" (all bits set) and the order
+        # is kept in the entry X/listing/titleOrdered/v1 (entry numbers, title order, content only)
+        entries.append(dict(ns=b"X", url="listing/titleOrdered/v1", title="", mime="application/octet-stream", group=1, data=b""))
     entries.sort(key=lambda e: (e["ns"], e["url"].encode()))
+    if no_title_list:
+        cs = [i for i, e in enumerate(entries) if e["ns"] == C]
+        cs.sort(key=lambda i: (entries[i]["title"] or entries[i]["url"]).encode())
+        for e in entries:
+            if e["ns"] == b"X": e["data"] = b"".join(struct.pack("<I", i) for i in cs)
     index = {(e["ns"], e["url"]): i for i, e in enumerate(entries)}
     mimes = []
     for e in entries:
@@ -91,7 +100,8 @@ def build(path, layout, comp, extended=False, big_clusters=False):
     pos_mime = 80
     pos_url = pos_mime + len(mime_blob)
     pos_title = pos_url + 8 * n
-    pos_cluster = pos_title + 4 * n
+    tl = 0 if no_title_list else 4 * n   # size of the header's title list
+    pos_cluster = pos_title + tl
     pos_entries = pos_cluster + 8 * len(clusters)
     entry_offs, p = [], pos_entries
     for d in dir_blobs: entry_offs.append(p); p += len(d)
@@ -100,8 +110,8 @@ def build(path, layout, comp, extended=False, big_clusters=False):
     checksum_pos = p
     title_order = sorted(range(n), key=lambda i: (entries[i]["ns"], (entries[i]["title"] or entries[i]["url"]).encode()))
     main = index[(C, "Main_Page")]
-    hdr = struct.pack("<IHH16sIIQQQQIIQ", 0x44D495A, 6, 1 if new else 0, uuid.UUID(int=0x1234).bytes, n, len(clusters), pos_url, pos_title, pos_cluster, pos_mime, main, 0xFFFFFFFF, checksum_pos)
-    body = hdr + mime_blob + b"".join(struct.pack("<Q", o) for o in entry_offs) + b"".join(struct.pack("<I", i) for i in title_order) + b"".join(struct.pack("<Q", o) for o in cl_offs) + b"".join(dir_blobs) + b"".join(clusters)
+    hdr = struct.pack("<IHH16sIIQQQQIIQ", 0x44D495A, 6, 1 if new else 0, uuid.UUID(int=0x1234).bytes, n, len(clusters), pos_url, (0xFFFFFFFFFFFFFFFF if no_title_list else pos_title), pos_cluster, pos_mime, main, 0xFFFFFFFF, checksum_pos)
+    body = hdr + mime_blob + b"".join(struct.pack("<Q", o) for o in entry_offs) + (b"" if no_title_list else b"".join(struct.pack("<I", i) for i in title_order)) + b"".join(struct.pack("<Q", o) for o in cl_offs) + b"".join(dir_blobs) + b"".join(clusters)
     assert len(body) == checksum_pos
     with open(path, "wb") as f:
         f.write(body + hashlib.md5(body).digest())
@@ -110,4 +120,5 @@ build(os.path.join(out_dir, "new-zstd.zim"), "new", "zstd")
 build(os.path.join(out_dir, "new-xz.zim"), "new", "xz")
 build(os.path.join(out_dir, "new-ext-stored.zim"), "new", "stored", extended=True)
 build(os.path.join(out_dir, "old-zstd.zim"), "old", "zstd")
+build(os.path.join(out_dir, "new-nolist-zstd.zim"), "new", "zstd", no_title_list=True)
 print("ok", [(f, os.path.getsize(os.path.join(out_dir, f))) for f in sorted(os.listdir(out_dir))])

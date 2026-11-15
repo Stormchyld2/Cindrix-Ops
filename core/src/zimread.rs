@@ -75,6 +75,9 @@ pub struct Archive {
     len: u64,
     /// Lower-case titles read so far for title search: (how many title slots were read, [(lower-case title, address, title)]).
     titles: Mutex<(u32, Vec<(String, String, String)>)>,
+    /// Entry numbers in title order, read from `X/listing/titleOrdered/v1`. Only used when the header has
+    /// no title list of its own (current Kiwix archives write the header's title position as "none").
+    title_list: std::sync::OnceLock<Vec<u32>>,
 }
 
 fn u16_at(b: &[u8], i: usize) -> u16 {
@@ -110,6 +113,8 @@ impl Archive {
         if !ok(url_ptr, 8 * articles as u64) || !ok(cluster_ptr, 8 * clusters as u64) || !ok(mime_pos, 1) || checksum_pos > len || url_ptr < mime_pos {
             return bad("the ZIM header points outside the file");
         }
+        // "no title list here" is written as 0 or as all bits set; anything that points outside the file is the same
+        let title_ptr = if ok(title_ptr, 4 * articles as u64) { title_ptr } else { 0 };
         let mime_len = (url_ptr - mime_pos).min(64 * 1024) as usize;
         f.seek(SeekFrom::Start(mime_pos))?;
         let mut raw = vec![0u8; mime_len];
@@ -129,6 +134,7 @@ impl Archive {
             mimes,
             len,
             titles: Mutex::new((0, Vec::new())),
+            title_list: std::sync::OnceLock::new(),
         })
     }
 
@@ -357,7 +363,28 @@ impl Archive {
 
     // ----- titles -----
 
+    /// The entries in title order, from the header's list or, failing that, from the listing entry
+    /// current archives carry. Empty when the archive has neither (then there is no title search).
+    fn listing(&self) -> &[u32] {
+        self.title_list.get_or_init(|| {
+            let Ok(Some(i)) = self.find(b'X', "listing/titleOrdered/v1") else { return Vec::new() };
+            let Ok((_, e)) = self.follow(i) else { return Vec::new() };
+            let Kind::Content { cluster, blob, .. } = e.kind else { return Vec::new() };
+            let Ok(data) = self.blob(cluster, blob) else { return Vec::new() };
+            data.chunks_exact(4).map(|c| u32::from_le_bytes([c[0], c[1], c[2], c[3]])).filter(|i| *i < self.articles).collect()
+        })
+    }
+
+    /// How many entries the title order holds.
+    fn title_count(&self) -> u32 {
+        if self.title_ptr != 0 { self.articles } else { self.listing().len() as u32 }
+    }
+
     fn title_entry(&self, k: u32) -> io::Result<Entry> {
+        if self.title_ptr == 0 {
+            let Some(i) = self.listing().get(k as usize) else { return bad("title number out of range") };
+            return self.entry(*i);
+        }
         let mut b = [0u8; 4];
         self.read_at(self.title_ptr + 4 * k as u64, &mut b)?;
         self.entry(u32::from_le_bytes(b))
@@ -368,7 +395,7 @@ impl Archive {
     /// Returns (address, title), at most `limit`.
     pub fn suggest(&self, prefix: &str, limit: usize) -> io::Result<Vec<(String, String)>> {
         let mut out: Vec<(String, String)> = Vec::new();
-        if prefix.is_empty() || self.title_ptr == 0 {
+        if prefix.is_empty() || self.title_count() == 0 {
             return Ok(out);
         }
         let ns = if self.new_layout() { b'C' } else { b'A' };
@@ -386,7 +413,7 @@ impl Archive {
         }
         for t in tries {
             // first title in this namespace that is >= the prefix
-            let (mut lo, mut hi) = (0u32, self.articles);
+            let (mut lo, mut hi) = (0u32, self.title_count());
             while lo < hi {
                 let mid = lo + (hi - lo) / 2;
                 let e = self.title_entry(mid)?;
@@ -397,7 +424,7 @@ impl Archive {
                 }
             }
             let mut k = lo;
-            while k < self.articles && out.len() < limit {
+            while k < self.title_count() && out.len() < limit {
                 let e = self.title_entry(k)?;
                 if e.ns != ns || !e.display_title().starts_with(&t) {
                     break;
@@ -427,7 +454,7 @@ impl Archive {
         }
         // The titles are read from the file once (the first search pays for it) and kept in memory,
         // so every later keystroke searches memory, not the drive.
-        let want = self.articles.min(scan);
+        let want = self.title_count().min(scan);
         let mut g = self.titles.lock().unwrap_or_else(|e| e.into_inner());
         while g.0 < want {
             let k = g.0;

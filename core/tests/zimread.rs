@@ -142,3 +142,33 @@ fn the_archive_can_be_shared_between_threads() {
         h.join().unwrap();
     }
 }
+
+#[test]
+fn an_archive_without_a_header_title_list_still_suggests_titles() {
+    // current Kiwix archives write the header's title position as "none" (all bits set) and keep the
+    // title order in X/listing/titleOrdered/v1; adding to that position used to overflow
+    let a = Archive::open(&fixture("new-nolist-zstd.zim")).unwrap();
+    assert!(a.read("Water").unwrap().is_some());
+    let s = a.suggest("water p", 12).unwrap();
+    assert_eq!(s, vec![("Water_purification".to_string(), "Water purification".to_string())], "{:?}", s);
+    assert!(a.suggest("Topic 05", 12).unwrap().len() >= 10);
+    // the same answers as an archive that has the header list
+    let b = Archive::open(&fixture("new-zstd.zim")).unwrap();
+    for q in ["water", "Topic 0", "fire", "éc", "zzz"] {
+        assert_eq!(a.suggest(q, 8).unwrap(), b.suggest(q, 8).unwrap(), "{}", q);
+    }
+    let words = vec!["purification".to_string()];
+    assert_eq!(a.search_titles(&words, 5, 10_000).unwrap(), b.search_titles(&words, 5, 10_000).unwrap());
+}
+
+#[test]
+fn a_title_position_that_points_outside_the_file_does_not_crash_suggestions() {
+    let mut bytes = std::fs::read(fixture("new-zstd.zim")).unwrap();
+    bytes[40..48].copy_from_slice(&u64::MAX.to_le_bytes());
+    let p = std::env::temp_dir().join(format!("notitles-{}.zim", std::process::id()));
+    std::fs::write(&p, &bytes).unwrap();
+    let a = Archive::open(&p).unwrap();
+    assert!(a.read("Water").unwrap().is_some());
+    assert!(a.suggest("water", 5).unwrap().is_empty());
+    let _ = std::fs::remove_file(&p);
+}
