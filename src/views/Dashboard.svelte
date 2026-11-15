@@ -19,7 +19,7 @@
   let loaded = $state(false);
   let product: ProductInfo | null = $state(null);
   let sec: SecurityOverview | null = $state(null);
-  let ready: ReadinessRow | null = $state(null);
+  let readyRow: ReadinessRow | null = $state(null);
   let sharing: ShareInfo = $state({ on: false, auto: true, reason: '', pin: '', port: 8765, addresses: [], hotspot_up: false, signed_in: 0, trusted: 0 });
   // the Sharing panel follows the real state, so it changes by itself when a hotspot starts
   let shareBusy = $state(false);
@@ -74,7 +74,7 @@
     try { product = await productInfo(); } catch { /* every tile is shown */ }
     if (!learner.loaded) { try { await loadPeople(); } catch { /* names stay empty */ } }
     // Readiness row (supplies, skills, self-reliance): host-only, a failure just leaves it out.
-    if (!inShare) { try { ready = await readinessRow(learner.people); } catch { ready = null; } }
+    if (!inShare) { try { readyRow = await readinessRow(learner.people); } catch { readyRow = null; } }
     // Security Operations summary: host-only and only where this edition has it. Read from the same records as the Security screen.
     if (!inShare && product?.security) { try { sec = await securityOverview(); } catch { sec = null; } }
     // These never block the rest of the page: a failure just leaves that panel empty.
@@ -201,11 +201,11 @@
   </div>
 {/if}
 
-{#if ready}
+{#if readyRow}
   <div class="tiles rdy" aria-label="Readiness">
-    <button class="tile" style="--c: var(--glow-green)" onclick={() => go('What fails')} title="Open What fails next"><div class="label">SUPPLIES</div><div class="big">{ready.supplies_days == null ? 'Not set' : Math.round(ready.supplies_days) + ' days'}</div><div class="muted small">before the first thing runs out</div></button>
-    <button class="tile" style="--c: var(--glow-amber)" onclick={() => go('training')} title="Open the skills grid"><div class="label">SKILLS</div><div class="big">{ready.skills_covered} of {ready.skills_total}</div><div class="muted small">must-have skills covered</div></button>
-    <button class="tile" style="--c: var(--glow-green)" onclick={() => go('What fails')} title="Open What replaces it"><div class="label">SELF-RELIANCE</div><div class="big">{ready.self_in_place} of {ready.self_total}</div><div class="muted small">needs with a replacement in place</div></button>
+    <button class="tile" style="--c: var(--glow-green)" onclick={() => go('What fails')} title="Open What fails next"><div class="label">SUPPLIES</div><div class="big">{readyRow.supplies_days == null ? 'Not set' : Math.round(readyRow.supplies_days) + ' days'}</div><div class="muted small">before the first thing runs out</div></button>
+    <button class="tile" style="--c: var(--glow-amber)" onclick={() => go('training')} title="Open the skills grid"><div class="label">SKILLS</div><div class="big">{readyRow.skills_covered} of {readyRow.skills_total}</div><div class="muted small">must-have skills covered</div></button>
+    <button class="tile" style="--c: var(--glow-green)" onclick={() => go('What fails')} title="Open What replaces it"><div class="label">SELF-RELIANCE</div><div class="big">{readyRow.self_in_place} of {readyRow.self_total}</div><div class="muted small">needs with a replacement in place</div></button>
   </div>
 {/if}
 

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { skillsGrid, skillsSignoff, type SkillsGrid } from '../lib/api';
+  import { skillsGrid, skillsSignoff, type SkillsGrid, type SkillRow } from '../lib/api';
 
   let { people }: { people: string[] } = $props();
 
@@ -19,7 +19,11 @@
   }
   onMount(load);
 
-  const rows = $derived((grid?.rows ?? []).filter((r) => only === 'all' || (only === 'must' ? r.must_have : r.flags.length > 0)));
+  const rows = $derived.by(() => {
+    const g = grid as SkillsGrid | null;
+    const all: SkillRow[] = g ? g.rows : [];
+    return all.filter((r) => only === 'all' || (only === 'must' ? r.must_have : r.flags.length > 0));
+  });
   const areas = $derived([...new Set(rows.map((r) => r.area))]);
   const mark: Record<string, string> = { signed: '●', learning: '◐', none: '○' };
   const word: Record<string, string> = { signed: 'Can do this', learning: 'Learning', none: 'Not started' };

@@ -5,6 +5,7 @@ status: draft
 reviewer:
 reviewed:
 ---
+**Someone has a burn: cool it under cool running water for at least 10 minutes, and call 911 for a large, deep, face, hand or chemical burn.**
 1. Get away from the heat or fire. Put out burning clothing: **stop, drop and roll**.
 2. **Cool the burn** under cool (not ice-cold) running water for at least 10 minutes, up to 20. With little water, pour it slowly from a cup and catch it to reuse.
 3. Take off rings and tight things near the burn before it swells. Do not pull off cloth that is stuck to the skin.
