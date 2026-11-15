@@ -2,7 +2,7 @@
   import PageHeader from '../lib/PageHeader.svelte';
   import { onMount, onDestroy, untrack } from 'svelte';
   import {
-    zimBooks, zimFrame, zimOrigin, zimSearchAll, zimBookmarksLoad, zimBookmarksSave, libraryStatus,
+    zimBooks, zimUnreadable, zimFrame, zimOrigin, zimSearchAll, zimBookmarksLoad, zimBookmarksSave, libraryStatus,
     type ZimBook, type ZimBookmark, type ZimHit, type LibraryStatus,
   } from '../lib/api';
   import { settings } from '../lib/settings.svelte';
@@ -31,6 +31,7 @@
   let srcdoc: string | undefined = $state();
   let pending: string | null = null;
   let notice = $state('');
+  let unreadable = $state('');
   let zoom = $state(100);
   let bookmarks: ZimBookmark[] = $state([]);
   let showMarks = $state(false);
@@ -167,6 +168,10 @@
   // new archives copied onto the drive show up by themselves
   async function refreshBooks() {
     try { books = await zimBooks(); } catch { /* keep what we have */ }
+    try {
+      const bad = await zimUnreadable();
+      unreadable = bad.length ? `${bad.length === 1 ? 'One archive file' : bad.length + ' archive files'} could not be opened and ${bad.length === 1 ? 'is' : 'are'} not listed: ${bad.slice(0, 3).join('; ')}. The file may be damaged or only partly copied.` : '';
+    } catch { /* leave it as it was */ }
     // the library server may have started since this screen opened
     if (!st?.url) { try { st = await libraryStatus(); } catch { /* the link just stays hidden */ } }
   }
@@ -412,6 +417,7 @@
   </div>
 
   {#if notice}<div class="warn" role="status">{notice}</div>{/if}
+  {#if unreadable}<div class="warn" role="status">{unreadable}</div>{/if}
   {#if showMarks}
     <div class="marks">
       {#if !bookmarks.length}<span class="muted">No bookmarks yet. Press ☆ on a page to keep it here.</span>{/if}

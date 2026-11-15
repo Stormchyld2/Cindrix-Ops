@@ -45,6 +45,8 @@ jobs:
         with:
           node-version: 22
       - run: npm install
+      - name: Reader addresses have one slash
+        run: node scripts/check-zim-urls.mjs
       - name: Type check
         shell: bash
         run: |
@@ -292,6 +294,40 @@ jobs:
           path: |
             ${{ runner.temp }}/search-log.txt
             ${{ runner.temp }}/serve.log
+
+  official-catalog:
+    # Permanent rule (docs/53): archives from the official Kiwix catalog must read the same in our
+    # reader as in kiwix-serve (names, start page, pages byte for byte). A change that breaks this fails here.
+    name: Official Kiwix catalog archive reads the same as kiwix-serve
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Get kiwix-serve and a small official archive
+        shell: bash
+        run: |
+          set -e
+          cd "$RUNNER_TEMP"
+          curl -fsSL --retry 5 --retry-delay 10 --retry-all-errors https://download.kiwix.org/release/kiwix-tools/ -o kt.html
+          kt=$(grep -oE 'kiwix-tools_linux-x86_64-[0-9.]+\.tar\.gz' kt.html | sort -uV | tail -n1 || true)
+          [ -n "$kt" ] || { echo "::error::no kiwix-tools linux download found"; exit 1; }
+          curl -fsSL --retry 5 --retry-delay 10 --retry-all-errors -o kt.tgz "https://download.kiwix.org/release/kiwix-tools/$kt"
+          mkdir -p kt && tar xzf kt.tgz -C kt --strip-components=1
+          curl -fsSL --retry 5 --retry-delay 10 --retry-all-errors "https://download.kiwix.org/zim/zimit/" -o list.html
+          f=$(grep -oE "ready\.gov_en_all_[0-9-]+\.zim" list.html | sort -uV | tail -n1 || true)
+          [ -n "$f" ] || { echo "::error::no ready.gov archive in the official catalog"; exit 1; }
+          curl -fsSL --retry 5 --retry-delay 10 --retry-all-errors -o "$f" "https://download.kiwix.org/zim/zimit/$f"
+          ls -l *.zim
+      - name: Compare our reader with kiwix-serve
+        shell: bash
+        run: |
+          cd "$RUNNER_TEMP"
+          z=$(ls "$PWD"/ready.gov*.zim | head -n1)
+          ./kt/kiwix-serve --port 8096 --address 127.0.0.1 "$z" > serve.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8096/catalog/v2/entries > /dev/null && break; sleep 1; done
+          cd "$GITHUB_WORKSPACE/core"
+          cargo run -q --example cross_check -- 8096 "$z"
+          DIAG_SAMPLES=300 cargo run -q --release --example diagnose_zim -- "$z" "$RUNNER_TEMP/kt/kiwix-serve"
 
   drive-plan:
     name: Drive builder finds every download (dry run)

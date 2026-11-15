@@ -1,7 +1,7 @@
 //! The whole-drive library over the sample archives: pages for the reader, suggestions, and
 //! passages for the assistant from every archive.
 
-use cindrix_core::library::{book_name, decode_path, keywords, signature, Library};
+use cindrix_core::library::{book_from_referer, book_name, clean_request_path, decode_path, keywords, signature, Library};
 use std::path::PathBuf;
 
 fn zims() -> Vec<PathBuf> {
@@ -135,4 +135,48 @@ fn folders_below_the_library_give_categories_and_narrow_the_search() {
     assert!(all.len() > med.len());
     assert!(lib.suggest_in(Some("Nothing"), "water", 2, 10).is_empty());
     std::fs::remove_dir_all(&root).ok();
+}
+
+#[test]
+fn doubled_slashes_in_front_of_a_request_are_folded() {
+    // the shape the reader's frame address once had: "http://cindrix-zim.localhost//content/x"
+    assert_eq!(clean_request_path("//content/libretexts.org_en_bio_2025-01"), "/content/libretexts.org_en_bio_2025-01");
+    assert_eq!(clean_request_path("///suggest"), "/suggest");
+    assert_eq!(clean_request_path("/content/a//b"), "/content/a//b");
+    assert_eq!(clean_request_path("/content/x"), "/content/x");
+    assert_eq!(clean_request_path(""), "");
+}
+
+#[test]
+fn the_asking_page_tells_which_archive_a_stray_request_means() {
+    assert_eq!(book_from_referer("http://cindrix-zim.localhost/content/my-book/C/index.html").as_deref(), Some("my-book"));
+    assert_eq!(book_from_referer("http://cindrix-zim.localhost//content/my-book").as_deref(), Some("my-book"));
+    assert_eq!(book_from_referer("cindrix-zim://localhost/content/a%20b/x?y=1").as_deref(), Some("a b"));
+    assert_eq!(book_from_referer("http://127.0.0.1:8080/content/b?x=1").as_deref(), Some("b"));
+    assert_eq!(book_from_referer("http://cindrix-zim.localhost/search?content=b"), None);
+    assert_eq!(book_from_referer(""), None);
+}
+
+#[test]
+fn a_query_on_a_page_address_is_tried_as_part_of_the_address_then_dropped() {
+    let lib = Library::open(&zims());
+    // no entry is called "Water?x=1", so the page without the query is served
+    let p = lib.page_with_query("new-zstd", "Water", "x=1").unwrap().unwrap();
+    assert_eq!(p.data, lib.page("new-zstd", "Water").unwrap().unwrap().data);
+    assert!(lib.page_with_query("new-zstd", "Water", "").unwrap().is_some());
+    assert!(lib.page_with_query("new-zstd", "No_such_page", "x=1").unwrap().is_none());
+    // the start page ignores a query
+    assert!(lib.page_with_query("new-zstd", "", "x=1").unwrap().is_some());
+}
+
+#[test]
+fn an_archive_that_cannot_be_opened_is_reported_not_just_left_out() {
+    let junk = std::env::temp_dir().join(format!("junk-report-{}.zim", std::process::id()));
+    std::fs::write(&junk, b"nope").unwrap();
+    let lib = Library::open(&[junk.clone(), zims()[1].clone()]);
+    assert_eq!(lib.books.len(), 1);
+    assert_eq!(lib.failed.len(), 1);
+    assert_eq!(lib.failed[0].0, junk);
+    assert!(!lib.failed[0].1.is_empty());
+    assert!(Library::open(&zims()).failed.is_empty());
 }

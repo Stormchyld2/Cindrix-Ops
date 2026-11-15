@@ -23,6 +23,9 @@ pub struct Book {
 
 pub struct Library {
     pub books: Vec<Book>,
+    /// Archives that could not be opened, with a plain-words reason, so a broken file is told about
+    /// rather than quietly missing.
+    pub failed: Vec<(PathBuf, String)>,
 }
 
 /// The name used for an archive in addresses.
@@ -98,8 +101,15 @@ impl Library {
     /// Like `open`, and each archive's category comes from the folder it is in below one of `roots`.
     pub fn open_in(files: &[PathBuf], roots: &[PathBuf]) -> Library {
         let mut books: Vec<Book> = Vec::new();
+        let mut failed: Vec<(PathBuf, String)> = Vec::new();
         for f in files {
-            let Ok(archive) = Archive::open(f) else { continue };
+            let archive = match Archive::open(f) {
+                Ok(a) => a,
+                Err(e) => {
+                    failed.push((f.clone(), e.to_string()));
+                    continue;
+                }
+            };
             let mut name = book_name(f);
             while books.iter().any(|b| b.name == name) {
                 name.push('_');
@@ -108,7 +118,7 @@ impl Library {
             let category = category_for(f, roots);
             books.push(Book { name, title, file: f.clone(), archive, category });
         }
-        Library { books }
+        Library { books, failed }
     }
 
     pub fn book(&self, name: &str) -> Option<&Book> {
@@ -122,6 +132,18 @@ impl Library {
             return b.archive.main_page();
         }
         b.archive.read(address)
+    }
+
+    /// A page for a request that came with a query string. Kiwix treats `page?x=1` as one address
+    /// when the archive holds such an entry (crawled sites do), so that is tried first; if there is
+    /// none, the address without the query is used.
+    pub fn page_with_query(&self, book: &str, address: &str, query: &str) -> io::Result<Option<Page>> {
+        if !query.is_empty() && !address.is_empty() {
+            if let Some(p) = self.page(book, &format!("{}?{}", address, query))? {
+                return Ok(Some(p));
+            }
+        }
+        self.page(book, address)
     }
 
     /// Title suggestions for the search box, as JSON in the shape the reader expects.
@@ -335,6 +357,27 @@ fn json_str(s: &str) -> String {
     }
     o.push('"');
     o
+}
+
+/// The path of a request with doubled slashes at the front folded to one (`//content/x` is
+/// `/content/x`). A frame address built by joining "origin/" and "/path" has this shape.
+pub fn clean_request_path(path: &str) -> String {
+    if !path.starts_with("//") {
+        return path.to_string();
+    }
+    format!("/{}", path.trim_start_matches('/'))
+}
+
+/// The archive a page belongs to, from the address of the page that asked for something
+/// (`http://host/content/my-book/A/Page` gives "my-book"). Pages from single-page-app archives
+/// ask for files such as `/assets/app.js` without saying which archive they mean.
+pub fn book_from_referer(referer: &str) -> Option<String> {
+    let after_scheme = referer.split_once("://").map(|(_, r)| r).unwrap_or(referer);
+    let path = after_scheme.find('/').map(|i| &after_scheme[i..]).unwrap_or("");
+    let path = clean_request_path(path);
+    let rest = path.strip_prefix("/content/")?;
+    let book = rest.split(['/', '?', '#']).next()?;
+    if book.is_empty() { None } else { decode_path(book) }
 }
 
 /// Percent-encode each part of an address, keeping the slashes.

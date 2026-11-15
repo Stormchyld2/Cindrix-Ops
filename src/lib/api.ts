@@ -1516,6 +1516,11 @@ const previewPages: Record<string, { title: string; body: string }> = {
 const previewScript = `<script>document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;e.preventDefault();var h=a.getAttribute('href');if(h.indexOf('/content/')===0)parent.postMessage({cx:'nav',path:h},'*');else parent.postMessage({cx:'external',url:h},'*')},true);addEventListener('message',function(e){if(e.data&&e.data.cx==='zoom')document.documentElement.style.zoom=e.data.v});<\/script>`;
 let memZimBookmarks = '{}';
 
+/** Archive files that are on the drive but could not be opened ("name.zim: reason"). */
+export async function zimUnreadable(): Promise<string[]> {
+  if (inTauri) return call<string[]>('zim_unreadable');
+  return [];
+}
 export async function zimBooks(): Promise<ZimBook[]> {
   if (inTauri) return call<ZimBook[]>('zim_books');
   return [{ name: 'sample', title: 'Sample library (preview)', description: 'A made-up archive for the browser preview.', articles: 3, mb: 1, category: 'Sample' }];
@@ -1530,10 +1535,7 @@ export async function zimSearchAll(term: string, category = ''): Promise<ZimHit[
 export async function zimFrame(path: string): Promise<{ src?: string; srcdoc?: string; title: string }> {
   if (inShare) return { src: location.origin + path, title: '' };
   if (inTauri) {
-    const { convertFileSrc } = await import('@tauri-apps/api/core');
-    // convertFileSrc encodes the slashes, so take the address of the root and add the path to it
-    const origin = convertFileSrc('x', 'cindrix-zim').slice(0, -1);
-    return { src: origin + path, title: '' };
+    return { src: (await zimOrigin()) + path, title: '' };
   }
   const raw = path.split('?')[0];
   const key = raw === '/content/sample' || raw === '/content/sample/' ? '/content/sample/A/Main' : raw;
@@ -1545,7 +1547,9 @@ export async function zimOrigin(): Promise<string> {
   if (!inTauri) return '';
   if (inShare) return location.origin;
   const { convertFileSrc } = await import('@tauri-apps/api/core');
-  return convertFileSrc('x', 'cindrix-zim').slice(0, -1);
+  // convertFileSrc encodes the slashes, so take the address of a one-letter path and cut the
+  // letter and the slash before it; callers add "/content/..." themselves.
+  return convertFileSrc('x', 'cindrix-zim').replace(/\/?x$/, '');
 }
 export async function zimSuggest(book: string, term: string): Promise<ZimSuggestion[]> {
   if (!inTauri) {

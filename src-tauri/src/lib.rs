@@ -3330,6 +3330,7 @@ pub fn run() {
             place_search,
             directions,
             zimview::zim_books,
+            zimview::zim_unreadable,
             zimview::zim_bookmarks_load,
             zimview::zim_bookmarks_save,
             zimview::zim_search_all,

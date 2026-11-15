@@ -62,3 +62,4 @@ Mockups of every screen are in [`../mockups`](../mockups).
 - [56. Private team chat](56-private-team-chat.md)
 - [57. Status and open work](57-status-and-open-work.md): audit of 2026-11-07, what is built and what is left
 - [58. Podcasts](58-podcasts.md): saved episodes played from the drive, in Morale next to Music
+- [53. Archive reader and Kiwix](53-zim-reader-compatibility.md): how the reader and kiwix-serve split the work, the address fixes, the permanent compatibility rule

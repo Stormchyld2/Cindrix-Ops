@@ -96,7 +96,9 @@ pub fn serve(app: &tauri::AppHandle, req: &tauri::http::Request<Vec<u8>>) -> tau
     }
     let uri = req.uri();
     let origin = format!("{}://{}", uri.scheme_str().unwrap_or("http"), uri.authority().map(|a| a.as_str()).unwrap_or("localhost"));
-    let path = uri.path();
+    // "http://host//content/x" (a doubled slash) is the same request as "/content/x"
+    let clean = library::clean_request_path(uri.path());
+    let path = clean.as_str();
     let query = uri.query().unwrap_or("");
     let kport = *app.state::<AppState>().kiwix_port.lock().unwrap();
 
@@ -106,7 +108,7 @@ pub fn serve(app: &tauri::AppHandle, req: &tauri::http::Request<Vec<u8>>) -> tau
             return reply(400, "", None, Vec::new());
         };
         let lib = library();
-        return match lib.page(&book, &addr) {
+        return match lib.page_with_query(&book, &addr, query) {
             Ok(Some(p)) => {
                 let is_html = p.mime.to_ascii_lowercase().starts_with("text/html");
                 let ctype = if p.mime.starts_with("text/") && !p.mime.contains("charset") { format!("{}; charset=utf-8", p.mime) } else { p.mime.clone() };
@@ -159,6 +161,16 @@ pub fn serve(app: &tauri::AppHandle, req: &tauri::http::Request<Vec<u8>>) -> tau
             }
         }
     }
+    // A page inside an archive may ask for a file by its absolute address (`/assets/app.js`).
+    // Look in the archive the asking page came from.
+    if let Some(book) = req.headers().get("referer").and_then(|v| v.to_str().ok()).and_then(library::book_from_referer) {
+        if let Some(addr) = library::decode_path(path.trim_start_matches('/')) {
+            if let Ok(Some(p)) = library().page_with_query(&book, &addr, query) {
+                let ctype = if p.mime.starts_with("text/") && !p.mime.contains("charset") { format!("{}; charset=utf-8", p.mime) } else { p.mime.clone() };
+                return reply_cached(200, &ctype, None, p.data, true);
+            }
+        }
+    }
     reply(404, "", None, Vec::new())
 }
 
@@ -188,6 +200,17 @@ pub fn zim_books() -> Vec<BookDto> {
             mb: std::fs::metadata(&b.file).map(|m| m.len() / 1_048_576).unwrap_or(0),
             category: b.category.clone(),
         })
+        .collect()
+}
+
+/// Archive files on the drive that could not be opened, each as "file name: reason", so the
+/// reader can say so instead of the archive just being missing.
+#[tauri::command]
+pub fn zim_unreadable() -> Vec<String> {
+    library()
+        .failed
+        .iter()
+        .map(|(f, why)| format!("{}: {}", f.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default(), why))
         .collect()
 }
 
