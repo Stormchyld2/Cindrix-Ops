@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Goldenseal is marketed for the common cold and upper respiratory infections, diarrhea, constipation, and other digestive conditions. Historically, Native Americans used it for digestive disorders, wounds, and skin conditions.**
 
 **What the evidence says:** There is not enough evidence to determine whether goldenseal is useful for any health condition; no rigorous studies have been done in people. Very little of the active compound berberine is absorbed when goldenseal is taken orally, making findings from berberine studies potentially inapplicable.

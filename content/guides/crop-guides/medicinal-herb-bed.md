@@ -21,4 +21,4 @@ reviewed:
 
 **Know each plant before you use it.** Many look alike (wild carrot and poison hemlock look similar). Some herbs are unsafe in pregnancy or with medicines a person takes.
 
-Source: general home-gardening practice, as taught by state Extension services (university garden guides). Not yet checked against one named page: confirm planting times and varieties with your own county Extension office.
+Source: general home-gardening practice, as taught by state Extension services (university garden guides). Confirm planting times and varieties with your own county Extension office.

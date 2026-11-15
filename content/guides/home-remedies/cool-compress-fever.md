@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **A clean cloth soaked in cool (not ice-cold) water and placed on the forehead or bitten area can help reduce discomfort from fever, insect bites, and eye allergy symptoms. For insect stings, ice wrapped in a washcloth should be applied for 10 minutes on and 10 minutes off.**
 
 **What people do:** Soak a clean cloth in cool water, wring it out, and place it on the forehead or affected area. For insect stings, wrap ice in a cloth and apply for 10 minutes on, then 10 minutes off — never place ice directly on bare skin.

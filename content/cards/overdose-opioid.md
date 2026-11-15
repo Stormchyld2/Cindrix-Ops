@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 1. Try to wake the person: shake the shoulders and say their name loudly.
 2. **Call 911.** If you have naloxone (Narcan), use it first, then call, or have someone else call.
 3. Spray naloxone into one nostril. Follow the instructions on the package.

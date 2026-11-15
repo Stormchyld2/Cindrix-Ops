@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 1. Get out of the sun. Cool the skin with cool (not ice-cold) water, a cool bath or damp cloths.
 2. Drink extra water. Sunburn pulls water from the body.
 3. Use a plain moisturizer or aloe on the skin. Do not use petroleum jelly or numbing sprays on a fresh burn.

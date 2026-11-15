@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 1. Move away from the snake. Do not try to catch or kill it. Note its color and shape if you can do so safely.
 2. **Call 911.** Keep the person calm and still. Walking and panic spread venom faster.
 3. Keep the bitten limb still and, if possible, at about heart level. Take off rings, watches and tight clothing before swelling starts.

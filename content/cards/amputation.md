@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 1. **Call 911 right away.**
 2. Lay the person down and raise the injured area if you can.
 3. **Press firmly and steadily on the wound** with clean cloth for a full 15 minutes. If blood soaks through, add more cloth on top. Do not lift the first one. If bleeding is life-threatening and will not stop, use a tourniquet if you have been trained.

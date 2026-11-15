@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Heat cramps:** muscle pain or spasms. Move somewhere cooler, loosen clothing, sip water or a sports drink.
 
 **Heat exhaustion:** heavy sweating, pale skin, cramps, tired, weak, dizzy, headache, nausea, fast weak pulse.

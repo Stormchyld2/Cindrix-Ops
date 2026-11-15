@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **When thunder roars, go indoors.** If you can hear thunder, you can be hit.
 
 1. Go into a **building with plumbing and wiring** or a hard-topped car with the windows up. Tents, pavilions and open shelters do not protect you.

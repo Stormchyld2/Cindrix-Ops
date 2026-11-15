@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Written from general field guidance and not yet checked line by line against its source or by a qualified person.**
-
 1. **Hold the compass flat** and level, away from metal, phones and vehicles.
 2. **Magnetic north** is where the needle points. True north is slightly different. The difference is **declination**, shown on your map's margin. It can be a few degrees, or more in some places. Add or subtract it as the map says.
 3. **To follow a direction:** turn the dial until the direction you want is lined up with the direction-of-travel arrow. Turn your body until the red end of the needle sits inside the orienting arrow. Walk the way the travel arrow points.

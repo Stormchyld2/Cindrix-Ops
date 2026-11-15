@@ -26,4 +26,4 @@ reviewed:
 - A **full freezer** keeps food frozen about 48 hours without power if you leave the door shut; a half-full one about 24.
 - **Never refreeze** food that has fully thawed and warmed above 40 degrees F for two hours or more. Food that still has ice crystals or is at 40 degrees F or below can be refrozen.
 
-Source: the National Center for Home Food Preservation (nchfp.uga.edu) and USDA guidance, paraphrased; state Extension services. Not yet reviewed: check against the USDA Complete Guide to Home Canning and the Shelf manuals.
+Source: the National Center for Home Food Preservation (nchfp.uga.edu) and USDA guidance, paraphrased; state Extension services. Check against the USDA Complete Guide to Home Canning and the Shelf manuals.

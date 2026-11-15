@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Saline nasal rinses flush pollen, dust, and excess mucus from the nasal passages and add moisture. They can be performed with a neti pot, squeeze bottle, or bulb syringe using a prepared saline solution.**
 
 **What people do:** Use only distilled, sterile, or previously boiled-and-cooled water — never tap water. After each use, rinse the device with the same safe water, then air-dry it thoroughly or wipe dry before storing.

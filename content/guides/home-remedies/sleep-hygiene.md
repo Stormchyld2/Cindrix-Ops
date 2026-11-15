@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **A consistent set of behavioral practices — consistent bedtime and wake time, a cool and dark bedroom, avoiding screens and caffeine near bedtime, and regular exercise — helps adults achieve and maintain adequate sleep.**
 
 **What people do:** Go to bed and wake up at the same time every day. Keep the bedroom quiet, dark, and cool; turn off electronic devices at least 30 minutes before bedtime; and avoid caffeine in the afternoon and evening and large meals or alcohol before bed.

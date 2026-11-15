@@ -5,7 +5,7 @@ where: at home
 summary: Know your route and what to carry.
 status: draft
 ---
-Draft checklist. Walk through and actually look, do not just tick.
+Walk through and actually look, do not just tick.
 - Find out if your home is in a flood zone, and which roads flood first
 - Pick two routes to higher ground and drive or walk each one
 - Put important papers and the go-bag where you can grab them quickly, or upstairs

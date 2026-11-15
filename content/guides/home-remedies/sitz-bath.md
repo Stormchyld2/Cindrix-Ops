@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **A sitz bath — sitting in a few inches of warm water for 10–15 minutes, several times a day — relieves the pain and itching of hemorrhoids. A special sitz bath tub that fits over a toilet is available at pharmacies.**
 
 **What people do:** Fill a tub or sitz bath basin with a few inches of comfortably warm water and sit in it for 10 to 15 minutes. Repeat several times a day, keeping the area clean and dry between baths.

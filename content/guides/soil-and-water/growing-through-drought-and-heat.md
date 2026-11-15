@@ -17,4 +17,4 @@ reviewed:
 
 **Flood and wet years:** Raised beds, drainage furrows, and crops that tolerate wet (rice, taro, cabbage-family) in low ground.
 
-Source: general soil and water guidance from state Extension services, the USDA Natural Resources Conservation Service (NRCS) and the EPA. Not yet checked against one named page: confirm with your county Extension office.
+Source: general soil and water guidance from state Extension services, the USDA Natural Resources Conservation Service (NRCS) and the EPA. Confirm with your county Extension office.

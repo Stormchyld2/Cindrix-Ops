@@ -2,6 +2,7 @@
 
 pub mod academy;
 pub mod addresses;
+pub mod bible;
 pub mod calendar;
 pub mod cards;
 pub mod cascade;
@@ -19,6 +20,7 @@ pub mod fsio;
 pub mod hardware;
 pub mod inflate;
 pub mod inventory;
+pub mod json;
 pub mod kiwix;
 pub mod libraries;
 pub mod places;
@@ -60,6 +62,7 @@ pub mod share;
 pub mod sourcelink;
 pub mod prompt;
 pub mod retrieval;
+pub mod rotation;
 pub mod roadtiles;
 pub mod routing;
 pub mod shelf;

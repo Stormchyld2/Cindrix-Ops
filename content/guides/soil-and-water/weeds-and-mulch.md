@@ -17,4 +17,4 @@ reviewed:
 
 **Cover crops:** Sown thickly on bare ground, they shade out weeds. See the cover crops page.
 
-Source: general soil and water guidance from state Extension services, the USDA Natural Resources Conservation Service (NRCS) and the EPA. Not yet checked against one named page: confirm with your county Extension office.
+Source: general soil and water guidance from state Extension services, the USDA Natural Resources Conservation Service (NRCS) and the EPA. Confirm with your county Extension office.

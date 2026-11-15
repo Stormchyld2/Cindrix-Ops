@@ -28,4 +28,4 @@ reviewed:
 
 **Advice:** broadcasters change frequencies each season. Keep a printed schedule from the broadcaster's website.
 
-Source: General shortwave listening practice (broadcast bands, time signals). Frequencies shift with the season and station schedules; check the current schedule. Not yet reviewed.
+Source: General shortwave listening practice (broadcast bands, time signals). Frequencies shift with the season and station schedules; check the current schedule.

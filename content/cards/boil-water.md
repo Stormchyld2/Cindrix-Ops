@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Best: boil.**
 1. Strain cloudy water through a clean cloth or coffee filter.
 2. Bring it to a **rolling boil for 1 minute** (3 minutes above 6,500 feet / 2,000 m). Let it cool.

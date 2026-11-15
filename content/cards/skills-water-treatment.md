@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Written from general field guidance and not yet checked line by line against its source or by a qualified person.**
-
 **Strain first.** If the water is cloudy, pour it through a clean cloth, a coffee filter or layers of paper towel, and let it settle.
 
 **1. Boil (best method).** Bring to a **rolling boil for 1 minute.** Above about 6,500 feet (2,000 m), boil for **3 minutes.** Let it cool in the covered pot.

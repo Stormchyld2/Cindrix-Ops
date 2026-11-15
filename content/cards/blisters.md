@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 1. Stop and deal with a hot spot before it blisters: cover it with tape or a blister pad.
 2. **Do not pop a blister** unless it is large, in the way of walking, and likely to burst. Intact skin is the best cover.
 3. If you must drain it: wash hands and the blister, sterilize a needle in flame or alcohol, make a small hole at the edge, press the fluid out, and leave the skin on. Cover with a clean dressing.

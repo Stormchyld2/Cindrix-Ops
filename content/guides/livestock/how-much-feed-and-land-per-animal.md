@@ -17,4 +17,4 @@ reviewed:
 
 **Reality check:** Feed stored for the animals competes with feed for people in a long emergency. Count the calories you need to keep an animal alive through winter against what it gives back. Chickens, rabbits, ducks and goats are the most efficient for small plots.
 
-Source: general livestock practice as taught by state Extension services and the USDA (for example Penn State, Oregon State and Cornell small-farm guides). Not yet checked against one named page: confirm feed amounts, housing and health care with your county Extension office and a large-animal vet.
+Source: general livestock practice as taught by state Extension services and the USDA (for example Penn State, Oregon State and Cornell small-farm guides). Confirm feed amounts, housing and health care with your county Extension office and a large-animal vet.

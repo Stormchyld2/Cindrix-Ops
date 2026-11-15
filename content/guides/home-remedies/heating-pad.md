@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Applying a heating pad or hot water bottle to the lower abdomen eases menstrual cramps. A warm compress applied to the ear can relieve earache discomfort. Heat may also be used on strained muscles after the first 48–72 hours of an acute injury.**
 
 **What people do:** Place a heating pad or hot water bottle on the lower abdomen for menstrual cramps, or hold a warm cloth against the affected ear for earache. Use a low or medium heat setting and put a cloth between the pad and skin to prevent burns.

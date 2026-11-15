@@ -5,7 +5,7 @@ where: at home
 summary: Practise reaching each other when phones fail.
 status: draft
 ---
-Draft checklist. Walk through and actually look, do not just tick.
+Walk through and actually look, do not just tick.
 - Pick an out-of-area contact everyone calls or texts to check in
 - Write the number on a card for everyone to carry
 - Practise texting instead of calling, since texts often get through when calls do not

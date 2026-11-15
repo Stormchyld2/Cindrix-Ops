@@ -30,4 +30,4 @@ reviewed:
 
 **Disposal:** bury offal deep (several feet), away from wells, or compost it hot. Don't leave it for scavengers near your animals.
 
-Source: USDA FSIS guidance on safe handling and temperatures, paraphrased. Not yet reviewed: learn butchering in person from an experienced person if you can.
+Source: USDA FSIS guidance on safe handling and temperatures, paraphrased. Learn butchering in person from an experienced person if you can.

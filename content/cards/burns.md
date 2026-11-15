@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 1. Get away from the heat or fire. Put out burning clothing: **stop, drop and roll**.
 2. **Cool the burn** under cool (not ice-cold) running water for at least 10 minutes, up to 20.
 3. Take off rings and tight things near the burn before it swells. Do not pull off cloth that is stuck to the skin.

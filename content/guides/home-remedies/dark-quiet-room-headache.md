@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Resting with eyes closed in a dark, quiet room is a recommended non-medication self-care measure during a headache or migraine. Drinking water to prevent dehydration and placing a cool cloth on the forehead are often combined with this rest.**
 
 **What people do:** Go to a quiet, darkened room, close your eyes, and rest. Drink water and place a cool damp cloth on your forehead to help ease discomfort.

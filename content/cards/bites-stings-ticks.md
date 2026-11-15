@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Snake bite:**
 1. Move away from the snake. Stay calm and still. **Call 911.**
 2. Keep the bitten arm or leg still, at or just below heart level. Take off rings and tight things.

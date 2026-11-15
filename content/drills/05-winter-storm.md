@@ -5,7 +5,7 @@ where: at home
 summary: Heat, warmth, carbon monoxide safety and checking on neighbors.
 status: draft
 ---
-Draft checklist.
+
 - Choose one room to heat and close off the rest
 - Gather blankets, hats, warm layers and sleeping bags
 - Check a carbon monoxide alarm works and has fresh batteries

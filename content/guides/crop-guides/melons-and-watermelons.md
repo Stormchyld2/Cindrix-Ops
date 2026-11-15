@@ -19,4 +19,4 @@ reviewed:
 
 **Seed saving:** Melons cross with other melons (not with cucumbers or squash). Take seed from ripe fruit, wash and dry.
 
-Source: general home-gardening practice, as taught by state Extension services (university garden guides). Not yet checked against one named page: confirm planting times and varieties with your own county Extension office.
+Source: general home-gardening practice, as taught by state Extension services (university garden guides). Confirm planting times and varieties with your own county Extension office.

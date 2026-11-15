@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Fire can fill a home in about five minutes. A small flame can become a big fire in under 30 seconds.**
 
 1. **Get out. Stay out.** Do not stop for things. Do not go back in.

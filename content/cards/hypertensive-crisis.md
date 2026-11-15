@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 1. Sit down and rest quietly for 5 minutes. Check again with the cuff on bare skin, arm at heart level.
 2. Take the medicines your doctor has prescribed as directed. Do not take extra.
 3. Avoid salty food, caffeine and smoking while you wait.

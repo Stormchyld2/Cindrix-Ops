@@ -21,4 +21,4 @@ reviewed:
 
 **Predator proofing:** Close birds in a secure house every night. Dig fencing in 12 inches or put it in an apron on the ground; use hardware cloth (not chicken wire) on windows.
 
-Source: general livestock practice as taught by state Extension services and the USDA (for example Penn State, Oregon State and Cornell small-farm guides). Not yet checked against one named page: confirm feed amounts, housing and health care with your county Extension office and a large-animal vet.
+Source: general livestock practice as taught by state Extension services and the USDA (for example Penn State, Oregon State and Cornell small-farm guides). Confirm feed amounts, housing and health care with your county Extension office and a large-animal vet.

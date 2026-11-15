@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Elderberry has been used in folk medicine to treat colds and flu, and is promoted as a dietary supplement for colds, flu, and other upper respiratory infections.**
 
 **What people do:** Elderberry is used as a prepared dietary supplement (syrup, capsule, or lozenge) rather than raw fruit. Never eat raw or unripe elderberries — they contain cyanide-producing substances that cause nausea, vomiting, and severe diarrhea; cooking the berries eliminates this toxin.

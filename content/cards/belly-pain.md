@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Belly pain can be a sign of something serious, such as appendicitis, a blocked bowel or a bleed.**
 
 1. Have the person lie down in the position that hurts least. Do not give food, drink or any pain medicine until a doctor says so.

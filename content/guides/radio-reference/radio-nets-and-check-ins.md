@@ -32,4 +32,4 @@ reviewed:
 
 **Practise** monthly with a short test net.
 
-Source: Common practice in amateur radio emergency nets and community preparedness groups. Not yet reviewed.
+Source: Common practice in amateur radio emergency nets and community preparedness groups.

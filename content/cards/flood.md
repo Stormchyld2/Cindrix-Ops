@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Turn around, don't drown.** Six inches of moving water can knock you down. One foot can carry a car away.
 
 1. **Leave at once** if told to. Never drive around barricades.

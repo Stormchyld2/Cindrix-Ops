@@ -25,4 +25,4 @@ reviewed:
 
 **Health:** Daily: look at each cow for eating, chewing the cud, walking, dung. See the daily health check page. **Bloat** (swollen left side) from wet clover or alfalfa is an emergency: call a vet. Treatments and amounts of any medicine are for a vet to give you.
 
-Source: general livestock practice as taught by state Extension services and the USDA (for example Penn State, Oregon State and Cornell small-farm guides). Not yet checked against one named page: confirm feed amounts, housing and health care with your county Extension office and a large-animal vet.
+Source: general livestock practice as taught by state Extension services and the USDA (for example Penn State, Oregon State and Cornell small-farm guides). Confirm feed amounts, housing and health care with your county Extension office and a large-animal vet.

@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Soaking in a lukewarm oatmeal bath or taking a cool bath can relieve itching and skin irritation from rashes, poison ivy, eczema, and dry skin. Colloidal oatmeal bath products are available at drugstores.**
 
 **What people do:** Fill a tub with lukewarm (not hot) water and add a colloidal oatmeal bath product according to package directions, or use plain cool water. After soaking, pat skin dry gently and apply a fragrance-free moisturizer immediately to lock in moisture.

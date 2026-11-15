@@ -597,6 +597,20 @@ fn route(app: &tauri::AppHandle, req: &Request, who: &str, stream: &mut TcpStrea
         send(stream, &r);
         return;
     }
+    if req.path == "/api/shelf_download" {
+        // a plain file for the browser to save, so the book can be read later without this host (guests may, like reading)
+        let r = if !share::command_allowed(&role, "shelf_download") {
+            Response::text(403, "This can only be done on the host computer or phone.")
+        } else {
+            let id = req.query_value("id").unwrap_or("").to_string();
+            match crate::shelf_for(&id).download(&id) {
+                Ok(d) => share::download_reply(&d.name, d.mime, d.bytes, req.header("range")),
+                Err(e) => Response::text(404, &e),
+            }
+        };
+        send(stream, &r);
+        return;
+    }
     // maps, music and archive pages are answered by the same code the app's own windows use
     let media = if let Some(rest) = req.raw_path.strip_prefix("/tiles") {
         Some(("tiles", rest.to_string()))
@@ -680,6 +694,16 @@ fn dispatch(app: &tauri::AppHandle, cmd: &str, a: &Value, role: &Role) -> Result
         "plans_list" => tv(crate::plans_list(None)?),
         "drills_list" => tv(crate::drills_list()?),
         "shelf_list" => tv(crate::shelf_list()?),
+        "bible_status" => tv(crate::bible::bible_status(a.get("fresh").and_then(|v| v.as_bool()))),
+        "bible_books" => tv(crate::bible::bible_books(arg(a, "bible")?)?),
+        "bible_chapter" => tv(crate::bible::bible_chapter(arg(a, "bible")?, arg(a, "book")?, arg(a, "chapter")?)?),
+        "bible_notes" => tv(crate::bible::bible_notes(arg(a, "module")?, arg(a, "book")?, arg(a, "chapter")?, a.get("verse").and_then(|v| v.as_u64()).map(|v| v as u32))?),
+        "bible_crossrefs" => tv(crate::bible::bible_crossrefs(arg(a, "bible")?, arg(a, "book")?, arg(a, "chapter")?, arg(a, "verse")?)?),
+        "bible_search" => { let (b, q): (String, String) = (arg(a, "bible")?, arg(a, "query")?); tv(crate::bible::search_for(&b, &q)?) }
+        "bible_parse" => tv(crate::bible::bible_parse(arg(a, "text")?)),
+        "bible_define" => { let t: String = arg(a, "term")?; tv(crate::bible::define_for(&t)?) }
+        "bible_mentions" => { let v: Vec<String> = arg(a, "verses")?; tv(crate::bible::mentions_for(&v)?) }
+        "bible_strongs" => { let n: String = arg(a, "number")?; tv(crate::bible::strongs_for(&n)?) }
         "sources_list" => tv(crate::sources_list()),
         "settings_load" => tv(crate::settings::settings_load()),
         "dashboard_suggestions" => tv(crate::suggestions_for(

@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Written from general field guidance and not yet checked line by line against its source or by a qualified person.**
-
 1. **Fear is normal.** Name it. Slow your breath: in for 4, out for 6.
 2. **Do the next small job.** Water, shelter, warmth, signal. Lists keep your mind busy.
 3. **Stay in groups.** Share tasks. Do not leave anyone alone, especially children, older people or anyone hurt.

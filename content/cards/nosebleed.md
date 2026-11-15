@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 1. **Sit up and lean slightly forward.** Breathe through your mouth. Do not tip your head back.
 2. **Pinch the soft part of the nose,** just below the bony bridge, firmly for **10 minutes.** Do not let go to check.
 3. Catch the blood with a tissue or damp cloth. Do not stuff cotton or tissue up the nose.

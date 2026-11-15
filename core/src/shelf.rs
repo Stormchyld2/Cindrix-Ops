@@ -128,6 +128,39 @@ pub fn title_from_filename(name: &str) -> String {
         .join(" ")
 }
 
+/// The file name for a downloaded copy: the title plus the right ending, with the characters Windows,
+/// Android and browsers refuse taken out. "Where There Is No Doctor" and "pdf" give "Where There Is No Doctor.pdf".
+pub fn download_name(title: &str, kind: &str) -> String {
+    let cleaned: String = title
+        .chars()
+        .map(|c| if c.is_control() || matches!(c, '\\' | '/' | ':' | '*' | '?' | '"' | '<' | '>' | '|') { ' ' } else { c })
+        .collect();
+    let words = cleaned.split_whitespace().collect::<Vec<_>>().join(" ");
+    // no leading or trailing dots or spaces (Windows drops them), and not a very long name
+    let trimmed: String = words.trim_matches(|c: char| c == '.' || c == ' ').chars().take(120).collect();
+    let stem = if trimmed.trim().is_empty() { "Book".to_string() } else { trimmed.trim().to_string() };
+    let ext = match kind { "pdf" => "pdf", "md" => "md", "txt" => "txt", _ => "bin" };
+    format!("{}.{}", stem, ext)
+}
+
+/// What a browser should be told a book's file is.
+pub fn download_mime(kind: &str) -> &'static str {
+    match kind {
+        "pdf" => "application/pdf",
+        "md" => "text/markdown; charset=utf-8",
+        "txt" => "text/plain; charset=utf-8",
+        _ => "application/octet-stream",
+    }
+}
+
+/// A book ready to hand to a person as a plain file.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Download {
+    pub name: String,
+    pub mime: &'static str,
+    pub bytes: Vec<u8>,
+}
+
 /// Only these kinds can go on the shelf. Returns the lower-case extension.
 pub fn kind_of(name: &str, bytes: &[u8]) -> Result<&'static str, String> {
     let ext = name.rsplit_once('.').map(|x| x.1.to_lowercase()).unwrap_or_default();
@@ -365,6 +398,19 @@ impl Shelf {
         let books = self.list()?;
         let b = books.iter().find(|b| b.id == id).ok_or("No such book.")?;
         fs::read(self.books_dir().join(&b.file)).map_err(|e| e.to_string())
+    }
+
+    /// The book as a plain file to download: its own name, its type and its bytes. Works for every book
+    /// on the shelf, including ones added later, because it only looks the book up by its id.
+    pub fn download(&self, id: &str) -> Result<Download, String> {
+        let books = self.list()?;
+        let b = books.iter().find(|b| b.id == id).ok_or("No such book.")?;
+        // the list names the file inside `books/`; a name that points anywhere else is not trusted
+        if b.file.is_empty() || b.file.contains('/') || b.file.contains('\\') || b.file.contains("..") {
+            return Err("This book's file could not be found.".into());
+        }
+        let bytes = fs::read(self.books_dir().join(&b.file)).map_err(|_| "This book's file could not be found.".to_string())?;
+        Ok(Download { name: download_name(&b.title, &b.kind), mime: download_mime(&b.kind), bytes })
     }
 
     /// Save the text of each page (index 0 is page 1) so the assistant can search the book.
@@ -701,6 +747,47 @@ a story").unwrap();
         let b = s.add("../../evil.pdf", &pdf(), "", "d").unwrap();
         assert_eq!(b.file, "u1.pdf");
         assert!(s.dir.join("books/u1.pdf").exists());
+    }
+
+    #[test]
+    fn a_download_has_a_clean_name_the_right_type_and_the_bytes() {
+        let s = Shelf::new(&tmp("dl"), "u");
+        s.add("where_there_is_no_doctor.pdf", &pdf(), "", "d").unwrap();
+        let d = s.download("u1").unwrap();
+        assert_eq!(d.name, "Where There Is No Doctor.pdf");
+        assert_eq!(d.mime, "application/pdf");
+        assert_eq!(d.bytes, pdf());
+        // a book added later is downloadable the same way, and text books keep their own ending
+        let n = s.add("field notes.md", b"# Field notes\nwater", "", "d").unwrap();
+        let d2 = s.download(&n.id).unwrap();
+        assert_eq!((d2.name.as_str(), d2.mime), ("Field Notes.md", "text/markdown; charset=utf-8"));
+        assert!(s.download("nope").is_err());
+    }
+
+    #[test]
+    fn download_names_lose_what_a_computer_refuses() {
+        assert_eq!(download_name("FM 21-76: Survival?", "pdf"), "FM 21-76 Survival.pdf");
+        assert_eq!(download_name("a/b\\c|d*e\"f<g>h", "txt"), "a b c d e f g h.txt");
+        assert_eq!(download_name("  ..hidden..  ", "md"), "hidden.md");
+        assert_eq!(download_name("???", "pdf"), "Book.pdf");
+        assert_eq!(download_name("", "pdf"), "Book.pdf");
+        assert_eq!(download_name("tab\tand\nnewline", "pdf"), "tab and newline.pdf");
+        assert!(download_name(&"x".repeat(500), "pdf").len() <= 124);
+        assert_eq!(download_name("Café Guide", "pdf"), "Café Guide.pdf");
+    }
+
+    #[test]
+    fn a_book_whose_file_points_outside_its_folder_is_not_handed_out() {
+        let dir = tmp("dl-escape");
+        fs::write(dir.join("secret.txt"), b"private").unwrap();
+        let s = Shelf::new(&dir.join("shelf"), "u");
+        fs::create_dir_all(s.dir.join("books")).unwrap();
+        let mut csv = String::from(HEADER);
+        csv.push_str("\nu1,Bad,,Mine,../../secret.txt,txt,d,x,fp\nu2,Gone,,Mine,u2.pdf,pdf,d,x,fp2\n");
+        fs::write(s.dir.join("books.csv"), csv).unwrap();
+        assert!(s.download("u1").is_err());
+        // a listed book whose file is missing says so in plain words
+        assert_eq!(s.download("u2").unwrap_err(), "This book's file could not be found.");
     }
 
     #[test]

@@ -5,7 +5,7 @@ where: at home
 summary: Practise three ways to purify water.
 status: draft
 ---
-Draft checklist. Walk through and actually look, do not just tick.
+Walk through and actually look, do not just tick.
 - Filter cloudy water through a clean cloth first
 - Boil it at a rolling boil for 1 minute (3 minutes at high altitude) and let it cool
 - Practise with unscented household bleach or purification tablets, following the label exactly

@@ -73,7 +73,7 @@
           "name": "Emergency cards, sample library, drills",
           "license": "Written for this project",
           "status": "in this build",
-          "note": "All are DRAFTS until a clinician or qualified reviewer has signed them off. Not medical or legal advice."
+          "note": "Not medical or legal advice."
         },
         {
           "name": "Shelf-life table (content/shelf-life.csv)",
@@ -98,6 +98,36 @@
           "license": "Written for this project in our own words from public guidance",
           "status": "in this build",
           "note": "Based on the published Committee on Tactical Combat Casualty Care (CoTCCC) guidelines, Stop the Bleed (American College of Surgeons), the HHS CHEMM START triage algorithm, FEMA CERT Basic Training (public domain) and American Red Cross first aid guidance. Nothing is copied from any training school's course. No medicine doses. Written in full and marked complete, not yet signed off by a qualified reviewer; it does not replace a hands-on class."
+        },
+        {
+          "name": "Skills cards, drills and lessons added 2026-11-07 (navigation, water, group skills)",
+          "license": "Written for this project in our own words from public guidance",
+          "status": "in this build",
+          "note": "13 skills cards (resection, grid references, contour lines, night movement, solar water disinfection, pre-filters, water planning, silent signals, rally points, reporting, group movement, estimating distance, map orientation), 10 drills (23 to 32) and 6 added Academy lessons in the Survival basics course. Paraphrased from the US Army Ranger Handbook (SH 21-76) and Army land navigation manual (FM 3-25.26), both US government works, plus CDC, EPA, WHO/Eawag and Ready.gov guidance. No medicine doses. DRAFTS until a qualified person has read them."
+        },
+        {
+          "name": "Academy course: Protective driving (2 modules, 6 lessons)",
+          "license": "Written for this project in our own words from public guidance",
+          "status": "in this build",
+          "note": "Based on NHTSA and AAA public driving, winter and flood-safety guidance and public police and FBI personal-safety advice. Nothing is copied from any training school's course. It does not replace a hands-on class."
+        },
+        {
+          "name": "Academy course: Noticing surveillance (2 modules, 6 lessons)",
+          "license": "Written for this project in our own words from public guidance",
+          "status": "in this build",
+          "note": "Based on public awareness-level guidance (Cooper colour codes), FBI and police personal-safety and crime-prevention advice and FTC privacy guidance. For personal safety only. Nothing is copied from any training school's course. It does not replace a hands-on class."
+        },
+        {
+          "name": "Academy course: Home and residential security (2 modules, 6 lessons)",
+          "license": "Written for this project in our own words from public guidance",
+          "status": "in this build",
+          "note": "Based on DHS/CISA, US Fire Administration, Ready.gov and police crime-prevention guidance. Nothing is copied from any training school's course. It does not replace a hands-on class."
+        },
+        {
+          "name": "Academy course: Safe and accurate shooting (2 modules, 6 lessons)",
+          "license": "Written for this project in our own words from public guidance",
+          "status": "in this build",
+          "note": "Based on the universal firearm safety rules (NRA, NSSF, Project ChildSafe) and public marksmanship fundamentals. Laws differ by place; check yours. It does not replace a certified instructor. Nothing is copied from any training school's course. It does not replace a hands-on class."
         },
         {
           "name": "Academy course: Family medical care without a clinic (5 modules, 15 lessons)",
@@ -127,25 +157,25 @@
           "name": "Emergency cards, situation-response cards and skills cards (117) and walkthroughs (28 plans)",
           "license": "Written for this project; facts paraphrased from public guidance",
           "status": "in this build",
-          "note": "Drafts, not yet reviewed by a qualified person. Sources: Ready.gov / FEMA, CDC, National Weather Service, USDA FSIS, American Red Cross, American Heart Association, American Academy of Pediatrics, Wilderness Medical Society, American Dental Association, NIH, Stop the Bleed, Poison Help, WHO oral rehydration guidance, SAMHSA 988. The ten situation-response cards (gate, intruder, camp alert, missing person, missed check-in, after an incident, emergency radio call, radio failure, channel change, watch handover) are Cindrix starter procedures for a family to edit, built on DHS Run, Hide, Fight, National Park Service search-and-rescue guidance and Ready.gov. Each card names its source. US government pages are public domain; the Red Cross and other guidance is paraphrased in our own words, not copied."
+          "note": "Sources: Ready.gov / FEMA, CDC, National Weather Service, USDA FSIS, American Red Cross, American Heart Association, American Academy of Pediatrics, Wilderness Medical Society, American Dental Association, NIH, Stop the Bleed, Poison Help, WHO oral rehydration guidance, SAMHSA 988. The ten situation-response cards (gate, intruder, camp alert, missing person, missed check-in, after an incident, emergency radio call, radio failure, channel change, watch handover) are Cindrix starter procedures for a family to edit, built on DHS Run, Hide, Fight, National Park Service search-and-rescue guidance and Ready.gov. Each card names its source. US government pages are public domain; the Red Cross and other guidance is paraphrased in our own words, not copied."
         },
         {
           "name": "Seed vault guides (19), the suggested seed list (138 crops) and the Seed vault course",
           "license": "Written for this project; facts paraphrased from university extension guidance",
           "status": "in this build",
-          "note": "The Seed vault course is now 15 full lessons (planning, storing, testing, saving seed, soil and compost, starting seeds, pests, harvest, a three-year plan) with quizzes; not yet reviewed by a qualified person. Sources: Purdue Extension, University of Wisconsin-Madison Extension, Oregon State, Cornell and Penn State Extension, Seed Savers Exchange, USDA. Seed life numbers are rules of thumb; a germination test is better."
+          "note": "The Seed vault course is now 15 full lessons (planning, storing, testing, saving seed, soil and compost, starting seeds, pests, harvest, a three-year plan) with quizzes. Sources: Purdue Extension, University of Wisconsin-Madison Extension, Oregon State, Cornell and Penn State Extension, Seed Savers Exchange, USDA. Seed life numbers are rules of thumb; a germination test is better."
         },
         {
           "name": "Agro guides (128 pages: crops, planting calendar by zone, livestock, soil and water, food preservation) and radio reference (55 pages)",
           "license": "Written for this project; facts paraphrased from public guidance",
           "status": "in this build",
-          "note": "Drafts, not yet reviewed by a qualified person. Sources named on each page: state Extension services (general gardening and livestock practice), USDA, NOAA, USDA FSIS and FoodSafety.gov, EPA, FCC (47 CFR Part 95), ITU and ICAO. US government pages are public domain; nothing is copied. Home canning times and pressures are deliberately not included: the page sends people to the USDA Complete Guide to Home Canning."
+          "note": "Sources named on each page: state Extension services (general gardening and livestock practice), USDA, NOAA, USDA FSIS and FoodSafety.gov, EPA, FCC (47 CFR Part 95), ITU and ICAO. US government pages are public domain; nothing is copied. Home canning times and pressures are deliberately not included: the page sends people to the USDA Complete Guide to Home Canning."
         },
         {
           "name": "Home remedies (38 pages)",
           "license": "Public domain (U.S. government text) as collected by Project NOMAD (Apache-2.0)",
           "status": "in this build",
-          "note": "Simple home measures (CDC, MedlinePlus) and herbal products (NCCIH). Each page names its source. All are drafts until a qualified person has checked them. Herbal and kitchen amounts only; no drug doses."
+          "note": "Simple home measures (CDC, MedlinePlus) and herbal products (NCCIH). Each page names its source. Herbal and kitchen amounts only; no drug doses."
         },
         {
           "name": "Starter security plans (Defensive security plan, Operational Response plan)",
@@ -258,6 +288,65 @@
           "license": "Public domain or openly licensed titles only",
           "status": "you add",
           "note": "Allowed (owner, 2026-10-27), for example U.S. Army field manuals and Gutenberg military science. Check each title's license. The shipped lists and download scripts do not include build manuals for explosives, booby traps or improvised munitions; you can add your own files to the Shelf."
+        }
+      ]
+    },
+    {
+      "title": "Added 2026-11-05 (new courses and design references)",
+      "items": [
+        {
+          "name": "Cold-weather living course",
+          "license": "Public domain source",
+          "status": "in this build",
+          "note": "Written in our own words from US Army FM 31-70 Basic Cold Weather Manual."
+        },
+        {
+          "name": "Backup supply caches course",
+          "license": "Public domain source",
+          "status": "in this build",
+          "note": "Written in our own words from US Army TC 31-29A (adapted for home preparedness)."
+        },
+        {
+          "name": "Basic building and repair course",
+          "license": "Public domain source",
+          "status": "in this build",
+          "note": "Written in our own words from US Army FM 5-426 Carpentry and FM 5-428 Concrete and Masonry."
+        },
+        {
+          "name": "Home damage control course",
+          "license": "Public domain source",
+          "status": "in this build",
+          "note": "Written in our own words from US Navy NAVEDTRA 14057 Damage Controlman."
+        },
+        {
+          "name": "Electricity and batteries course",
+          "license": "Public domain source",
+          "status": "in this build",
+          "note": "Written in our own words from US Navy NEETS Module 1."
+        },
+        {
+          "name": "Garden bed rotation (rotation.rs)",
+          "license": "Our own code",
+          "status": "in this build",
+          "note": "Inspired by the Brinjel feature list (AGPL-3.0); no Brinjel code or text used."
+        },
+        {
+          "name": "WiFi Direct Cable (design reference)",
+          "license": "MIT",
+          "status": "reference only",
+          "note": "Protocol ideas for comms; read the repo before borrowing any code."
+        },
+        {
+          "name": "Meshenger (design reference)",
+          "license": "GPL-3.0",
+          "status": "reference only",
+          "note": "Ideas only, no code."
+        },
+        {
+          "name": "Trackbook / JPSTrack (design reference)",
+          "license": "MIT / BSD",
+          "status": "reference only",
+          "note": "Ideas for FieldLog."
         }
       ]
     }

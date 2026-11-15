@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 1. Rest and drink plenty of fluids. Wear light clothing and keep the room comfortable.
 2. A fever is a sign the body is fighting infection. You do not need to bring every fever down.
 3. For comfort, you may use a fever reducer as the label says, if it is safe for you. Do not give aspirin to anyone under 19.

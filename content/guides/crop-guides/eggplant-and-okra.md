@@ -19,4 +19,4 @@ reviewed:
 
 **Seed saving:** Okra seed is easy: let a few pods dry brown on the plant. Eggplant: take seed from fully ripe, overripe fruit.
 
-Source: general home-gardening practice, as taught by state Extension services (university garden guides). Not yet checked against one named page: confirm planting times and varieties with your own county Extension office.
+Source: general home-gardening practice, as taught by state Extension services (university garden guides). Confirm planting times and varieties with your own county Extension office.

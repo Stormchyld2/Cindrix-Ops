@@ -32,4 +32,4 @@ reviewed:
 
 **Practise** changing channels with your eyes closed.
 
-Source: Typical handheld radio manuals and the free CHIRP programming software documentation. Menus differ between models; use your radio's manual. Not yet reviewed.
+Source: Typical handheld radio manuals and the free CHIRP programming software documentation. Menus differ between models; use your radio's manual.

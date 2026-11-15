@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Written from general field guidance and not yet checked line by line against its source or by a qualified person.**
-
 **Rule of three:** three of anything is a call for help. Three whistle blasts, three fires in a triangle, three flashes of light, three shots.
 
 1. **Whistle:** three sharp blasts, a pause, and repeat. It carries farther than your voice and costs no energy.

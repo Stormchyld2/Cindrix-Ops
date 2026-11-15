@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 A **tornado watch** means conditions could make one. A **warning** means one is happening or coming: take shelter now.
 
 1. Go **right away** to a safe room, basement, storm cellar, or a small interior room on the lowest floor of a sturdy building. Stay away from windows, doors and outside walls.

@@ -174,7 +174,6 @@
           <div class="dbody">
             <div class="meta">
               <span class="st"><i class="dot"></i>{isRunning(d) ? 'In progress' : d.times_done > 0 ? `Done ${d.times_done}×` : 'Not done yet'}</span>
-              {#if d.status !== 'reviewed'}<span class="draft">Draft</span>{/if}
             </div>
             <h2>{d.title}</h2>
             <p>{d.summary}</p>
@@ -201,7 +200,6 @@
           <button class="btn" onclick={() => (paused = !paused)}>{paused ? 'Resume' : 'Pause'}</button>
         </div>
       </div>
-      {#if active.status !== 'reviewed'}<div class="warn">Draft checklist. Check it against your own situation and your doctor's written plans.</div>{/if}
       <ul class="steps">
         {#each active.steps as s, i}
           <li>

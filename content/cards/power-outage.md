@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 1. Use **flashlights, not candles.** Keep the **fridge and freezer closed.**
 2. **Food safety (USDA):** a closed fridge keeps food cold for about **4 hours**. A full freezer keeps for about **48 hours** (24 hours if half full). Use the fridge food first, then the freezer.
 3. **Throw out** perishable food (meat, poultry, fish, eggs, milk, cut fruit, leftovers) that has been above **40°F for more than 2 hours** (1 hour if it is above 90°F). When in doubt, throw it out. Never taste to test.

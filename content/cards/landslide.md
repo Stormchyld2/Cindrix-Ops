@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 Warning signs: new cracks in the ground or walls, doors that stick, tilting trees or poles, a new spring or muddy water, a rumble that grows after heavy rain.
 
 1. **Leave at once** and go to higher ground away from the slope, not along the valley.

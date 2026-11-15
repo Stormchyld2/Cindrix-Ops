@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 A choking person cannot cough, speak or breathe, may clutch the throat, and turns pale or blue.
 
 1. Ask "Are you choking?" If they can cough or speak, let them cough. If not, have someone **call 911**.

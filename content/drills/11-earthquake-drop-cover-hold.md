@@ -5,7 +5,7 @@ where: at home
 summary: Practise the three moves in every room.
 status: draft
 ---
-Draft checklist. Walk through and actually look, do not just tick.
+Walk through and actually look, do not just tick.
 - Walk through each room and find a sturdy table or a safe corner away from windows and tall furniture
 - Practise: drop to hands and knees, cover your head and neck, hold on to the table leg
 - Hold for a full minute so it becomes automatic

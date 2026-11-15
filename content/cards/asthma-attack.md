@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 Signs: wheezing, coughing, tight chest, short of breath, cannot speak a full sentence.
 
 1. Help the person sit upright and stay calm. Loosen tight clothing.

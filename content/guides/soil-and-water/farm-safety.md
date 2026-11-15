@@ -33,4 +33,4 @@ reviewed:
 
 **Never work alone far from help without telling someone** where you are and when you'll be back.
 
-Source: OSHA, NIOSH and state Extension farm-safety guidance, paraphrased. Not yet reviewed. See the first aid cards for treatment.
+Source: OSHA, NIOSH and state Extension farm-safety guidance, paraphrased. See the first aid cards for treatment.

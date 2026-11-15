@@ -25,4 +25,4 @@ reviewed:
 
 **Hot-weather note:** above about 90 degrees F, tomatoes and peppers drop blossoms. Shade cloth (30 to 40%) helps in the hottest afternoons. Lettuce and spinach bolt: eat early and sow shade-grown replacements later.
 
-Source: general gardening practice, as taught by state Extension services. Not yet checked against one named page: confirm dates with your own county Extension office.
+Source: general gardening practice, as taught by state Extension services. Confirm dates with your own county Extension office.

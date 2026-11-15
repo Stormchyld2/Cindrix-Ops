@@ -36,4 +36,4 @@ reviewed:
 3. **Do not transmit** on frequencies where you have no licence unless you must save life and have no other way.
 4. **Write the local numbers** (sheriff dispatch, county emergency office, hospital) on this sheet.
 
-Source: FCC allocations, NOAA, amateur radio calling frequencies and CB channel use. Frequencies and local practice can change: confirm for your area. Not yet reviewed.
+Source: FCC allocations, NOAA, amateur radio calling frequencies and CB channel use. Frequencies and local practice can change: confirm for your area.

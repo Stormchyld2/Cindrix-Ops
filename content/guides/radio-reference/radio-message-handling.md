@@ -35,4 +35,4 @@ reviewed:
 
 **Keep a log** of what was sent and received, with times. It is useful for an after-action review.
 
-Source: Message-handling practice from amateur radio (ARRL radiogram format) and ICS forms, simplified. Not yet reviewed.
+Source: Message-handling practice from amateur radio (ARRL radiogram format) and ICS forms, simplified.

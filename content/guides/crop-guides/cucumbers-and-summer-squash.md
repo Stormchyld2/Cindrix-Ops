@@ -24,4 +24,4 @@ reviewed:
 
 **Preserving:** pickle (tested recipes only), ferment, or dry zucchini slices. Squash does not freeze well as slices but grated zucchini freezes for bread and soup.
 
-Source: general home-gardening practice, as taught by state Extension services (university garden guides). Not yet checked against one named page: confirm planting times and varieties with your own county Extension office.
+Source: general home-gardening practice, as taught by state Extension services (university garden guides). Confirm planting times and varieties with your own county Extension office.

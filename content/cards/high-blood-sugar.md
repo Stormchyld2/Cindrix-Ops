@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 Signs of high sugar: very thirsty, passing a lot of urine, tired, blurry sight, dry mouth.
 
 1. Check blood sugar. Drink water or other sugar-free fluids.

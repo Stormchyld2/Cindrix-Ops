@@ -33,4 +33,4 @@ reviewed:
 
 **Be careful** that your signal does not set a fire. Clear the ground, have water to put it out, and check the wind.
 
-Source: International ground-to-air emergency code, as taught by wilderness rescue organisations and the US military and Coast Guard. Not yet reviewed.
+Source: International ground-to-air emergency code, as taught by wilderness rescue organisations and the US military and Coast Guard.

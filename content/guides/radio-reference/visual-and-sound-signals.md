@@ -31,4 +31,4 @@ reviewed:
 
 See also the ground-to-air signals page.
 
-Source: US Coast Guard, National Park Service and wilderness survival guidance on distress signalling; the rule of three is widely taught. Not yet reviewed.
+Source: US Coast Guard, National Park Service and wilderness survival guidance on distress signalling; the rule of three is widely taught.

@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Written from general field guidance and not yet checked line by line against its source or by a qualified person.**
-
 **Priority:** keep out of the wind and wet, and **off the cold ground.** Heat leaves your body faster into the ground than into the air.
 
 1. **Choose the site:** dry, flat, near water but not in a gully or floodplain, away from dead branches and rock slides, in shelter from wind.

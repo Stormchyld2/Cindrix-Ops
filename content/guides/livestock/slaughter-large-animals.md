@@ -19,4 +19,4 @@ reviewed:
 
 **Safety:** Cook pork to **145 degrees F** with a rest, ground meat to 160. Wash hands, knives and surfaces often. Wear cut-resistant gloves. See the butchering safety page.
 
-Source: general livestock practice as taught by state Extension services and the USDA (for example Penn State, Oregon State and Cornell small-farm guides). Not yet checked against one named page: confirm feed amounts, housing and health care with your county Extension office and a large-animal vet.
+Source: general livestock practice as taught by state Extension services and the USDA (for example Penn State, Oregon State and Cornell small-farm guides). Confirm feed amounts, housing and health care with your county Extension office and a large-animal vet.

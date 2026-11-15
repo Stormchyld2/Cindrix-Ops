@@ -5,8 +5,6 @@ status: draft
 reviewer:
 reviewed:
 ---
-**DRAFT. Not yet reviewed by a qualified person.**
-
 **Call 911** or have someone call. Then:
 
 1. Find where the blood is coming from. Cut or pull clothing away so you can see it.

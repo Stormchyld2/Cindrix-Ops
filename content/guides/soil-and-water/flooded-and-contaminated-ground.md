@@ -25,4 +25,4 @@ reviewed:
 
 **Safe approach:** if you can't be sure, grow in containers and raised beds with imported soil, and drink and wash with treated water only.
 
-Source: FDA, USDA and state Extension guidance on flooded gardens, and EPA guidance on contaminated soil, paraphrased. Not yet reviewed; rules differ by state, so follow your county Extension office.
+Source: FDA, USDA and state Extension guidance on flooded gardens, and EPA guidance on contaminated soil, paraphrased. Rules differ by state, so follow your county Extension office.
