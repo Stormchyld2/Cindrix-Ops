@@ -61,7 +61,7 @@ pub struct Waiting {
     pub person: String,
     pub created: String,
     pub entries: usize,
-    /// "report", "count-sheet", "checkin-sheet" or "track-sheet".
+    /// "report", "count-sheet", "checkin-sheet", "progress-sheet" or "track-sheet".
     pub kind: String,
     /// For a count sheet: how many numbers in the Inventory moved since the phone looked (0 for a report).
     pub changed: usize,
@@ -187,6 +187,12 @@ pub fn waiting(user_root: &Path) -> Vec<Waiting> {
                     Err(problem) => Waiting { name, size, device: String::new(), person: String::new(), created: String::new(), entries: 0, kind: "checkin-sheet".into(), changed: 0, problem },
                 };
             }
+            if is_progress_file(&path) {
+                return match crate::progresssheet::read(&path) {
+                    Ok(sh) => Waiting { name, size, device: sh.device, person: sh.person, created: sh.created, entries: sh.ticks.len(), kind: "progress-sheet".into(), changed: 0, problem: String::new() },
+                    Err(problem) => Waiting { name, size, device: String::new(), person: String::new(), created: String::new(), entries: 0, kind: "progress-sheet".into(), changed: 0, problem },
+                };
+            }
             if is_track_file(&path) {
                 return match crate::tracksheet::read(&path) {
                     Ok(sh) => Waiting { name, size, device: sh.device, person: sh.person, created: sh.created, entries: sh.points.len(), kind: "track-sheet".into(), changed: 0, problem: String::new() },
@@ -275,6 +281,13 @@ fn is_checkin_file(path: &Path) -> bool {
     crate::checkinsheet::is_sheet(&String::from_utf8_lossy(&buf[..n]))
 }
 
+fn is_progress_file(path: &Path) -> bool {
+    use std::io::Read;
+    let mut buf = [0u8; 256];
+    let n = fs::File::open(path).and_then(|mut f| f.read(&mut buf)).unwrap_or(0);
+    crate::progresssheet::is_sheet(&String::from_utf8_lossy(&buf[..n]))
+}
+
 fn is_track_file(path: &Path) -> bool {
     use std::io::Read;
     let mut buf = [0u8; 256];
@@ -289,6 +302,8 @@ pub fn accept_any(user_root: &Path, name: &str, allow_moved: bool) -> Result<usi
         crate::countsheet::accept(user_root, name, allow_moved)
     } else if safe_name(name) && is_checkin_file(&inbox_dir(user_root).join(name)) {
         crate::checkinsheet::accept(user_root, name)
+    } else if safe_name(name) && is_progress_file(&inbox_dir(user_root).join(name)) {
+        crate::progresssheet::accept(user_root, name)
     } else if safe_name(name) && is_track_file(&inbox_dir(user_root).join(name)) {
         crate::tracksheet::accept(user_root, name)
     } else {
@@ -371,6 +386,19 @@ pub fn upload(user_root: &Path, device: &str, name: &str, text: &str) -> Result<
             Ok(_) => {
                 let _ = fs::remove_file(&target);
                 Err("The check-in sheet names a different phone than the one that sent it.".to_string())
+            }
+            Err(e) => {
+                let _ = fs::remove_file(&target);
+                Err(e)
+            }
+        };
+    }
+    if is_progress_file(&target) {
+        return match crate::progresssheet::read(&target) {
+            Ok(sh) if sh.device == device => Ok(()),
+            Ok(_) => {
+                let _ = fs::remove_file(&target);
+                Err("The progress sheet names a different phone than the one that sent it.".to_string())
             }
             Err(e) => {
                 let _ = fs::remove_file(&target);

@@ -12,6 +12,7 @@ pub mod crawl;
 pub mod drills;
 pub mod checkinsheet;
 pub mod countsheet;
+pub mod progresssheet;
 pub mod devices;
 pub mod drive;
 pub mod drivecheck;

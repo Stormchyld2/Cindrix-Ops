@@ -221,3 +221,17 @@ Pocket now carries the emergency cards and the whole Academy inside the app (cop
 ## Pocket 0.2.0, second part (2026-11-11)
 
 Built in Pocket, compiled and unit-tested by its CI (37 tests), not run on a phone: **count sheets** and **check-in sheets** from the phone (the stock list now carries each line's `uid`, so older lists cannot be counted); files made before joining get the Hub's code swapped in when sent; a **book reader** (PDF through the system renderer, Markdown, text) with books kept on the phone, picked from the Hub's shelf over the joined Wi-Fi; and an **emergency contact card** that is typed on the phone and kept only in the app's private storage (erased with everything else). The Hub does not push the Family page to the phone: that file can be passphrase-locked and is host-only, so sending it needs the owner's decision first. Still not built: Pocket maps (the small saved areas, full-screen navigation and tracks on a map) and hiding or showing Ask by connection (Pocket has no Ask yet).
+
+## Skill and plan ticks (progress sheets, added 2026-11-15)
+
+Pocket's Skills screen (I can do this) and Plans screen (steps ticked) keep their ticks on the phone. **Send my ticks to the Hub** writes one **progress sheet** into the outbox (`<device>-progress-<time>.txt`, `core/src/progresssheet.rs`):
+
+```text
+# format: progress-sheet 1
+# device / person / created
+skill TAB <skill name> TAB <day>
+plan  TAB <plan file name>/<step number> TAB <day>
+```
+
+It lands in `user/inbox/pocket/` with the other files and waits for the host (kind `progress-sheet`). Accepting replaces that person's earlier phone ticks from that phone with the sheet (it is their whole current state), and keeps them in `user/pocket-progress.txt` (host-only). They are only what the person says: a phone tick **never signs a skill off**, never counts in the skills grid, and never changes a plan or the Inventory. All lines or none; the same file twice changes nothing; a damaged ticks file is left alone. Showing the kept ticks on the Family and Academy screens is not built yet.
+
