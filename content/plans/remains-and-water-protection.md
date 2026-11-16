@@ -12,6 +12,13 @@ This procedure keeps the dead from harming the living, mainly through drinking w
 - When in doubt, hold the remains cold and wait. A short delay costs little. A poisoned well can end a stay.
 - Treat all drinking water anyway, always (filter, then boil or disinfect), whatever you buried.
 
+## Three stages: do the hard part now
+This procedure is written to work in three stages, because the help you can call on will shrink.
+- **Now (services work):** do all the checking you can that needs outside help or the internet: print soil, geology and karst maps, ask the county and neighbours, choose and record sites, learn the law, buy the kit, get vaccinations such as tetanus up to date. This is the cheapest time to get it right.
+- **When services thin out (weeks to months):** no renderer or landfill pick-up, slow or no officials. Use the methods you can run yourselves, and your own records.
+- **When they are gone (a year or more):** you are the cemetery, the vet and the health department. Everything below that says "ask" or "call" has a version that works without anyone to ask. The rules then are the ones you keep yourselves: protect the water, keep records, keep the dignity of the dead, and hold the group to it.
+Nothing here assumes the law will be enforced or that anyone will check your work. That makes the checking more important, not less.
+
 ## Decide who decides
 Name one person to lead this work and a second to check it, before it is needed. For a death in the family or group, the family decides the arrangements, and the leader makes sure the site and the safety steps are done. Write the names down.
 go: Family
@@ -29,6 +36,13 @@ Keep a small kit, together and labelled.
 - Printed maps of your land: the soil map (Web Soil Survey), the geology or karst map, and your own site sketch. Print them while the internet works.
 check: inventory
 
+## Choose your sites now, before you need them
+Pick, check and record, in advance, a **family or group burial ground**, a **compost pad for animals**, and a **game-scraps pit**. Choosing in calm weather, with the maps, is far safer than choosing at a graveside.
+- Put them on your sketch, down-slope and away from your water, and keep them out of the way of your gardens and where you will build or dig a well.
+- Use one burial ground for the group, not scattered graves: it is easier to protect, map and keep respectful.
+- Use the site checks below on each one, and write the Site Check sheet now. If a site fails, choose another now.
+- Record the sites in the group's book and in two places, and tell everyone who might have to use them.
+
 ## Site assessment, step 1: paper first
 go: Maps
 button: Open Maps
@@ -43,8 +57,18 @@ Karst is limestone ground with sinkholes, caves, springs and underground streams
 - **Warning signs:** sinkholes or closed dips with no outlet, streams that disappear, springs or caves, bare limestone, very thin soil, cedar-and-rock "glades", and a history of sinkholes in the area.
 - **Never** bury anything in, beside or upslope of a sinkhole, cave opening, losing stream or spring. Never dump into, or fill in, a sinkhole.
 - **In karst:** do not assume a burial site is safe because it is far from your well. A neighbour's well or a spring far away may be fed from the same underground water.
-- **Ask:** the county Extension office, your NRCS field office (conservation), and the state geology and water agency know where the karst is. Ask before you dig.
-- If you cannot show deep, tight soil over solid ground, **do not bury**. Use cold storage, composting above ground (animals), a crematory or landfill if working, or another method (see the alternatives).
+- **Ask now, while you can:** the county Extension office, your NRCS field office and the state geology and water agency know where the karst is. Get their maps and answers on paper. **Ask the oldest local people too**: where the ground has opened, where creeks vanish, where springs run, where a pond drained overnight. In a long grid-down this local knowledge, plus your own eyes, is all you will have.
+- If you cannot show deep, tight soil over solid ground, **do not bury there**. Find a better site (see "Doing the checks yourself") or use another method (see the alternatives).
+
+## Doing the checks yourself (no experts, no maps)
+You can still tell a lot with a shovel, a rod, time and rain.
+- **Walk the whole property after a heavy rain** and watch where water goes: into the ground at a low spot, into a hole, along a ditch. Water that vanishes into a dip or crack is a warning. Flag it and stay away.
+- **Look for the signs:** closed dips with no outlet, bare limestone, cedar-and-rock ground, springs, caves, creeks that disappear, ground that has sunk.
+- **Prefer high, flat or gently sloping ground with deep soil:** dig a test hole to 6 ft (about 2 m) at several spots. Deep, even clay-loam with no rock, gravel, cracks, roots-only-in-a-seam or water is the best you will find. Rock, gravel or water in the hole means move.
+- **Dig the test hole in the wet season** (or after long rain) and look again a day later: does water seep in? Then it is too wet. Do not trust a dry-season hole.
+- **Mark every spring, seep and well** and bury only down-slope of them, and as far from all of them as you can, much further than the minimum.
+- **Treat the doubt as a no.** If you cannot show a site is safe, it is not. Pick the other method instead of a risky burial.
+- **Your water treatment is your last line of defence.** Whatever you do, filter and boil or disinfect every drop you drink, from every source, every time, for as long as the group lives there.
 
 ## Site assessment, step 3: field check
 Walk the site and probe it. Record each answer on the Site Check sheet (see Records).
@@ -93,7 +117,7 @@ Treat the dead with dignity and care. The family's wishes, faith and customs mat
 - **2. Record and identify first.** Photograph the face, note marks, take ID and personal items. Do this early: it matters most in the first day or two.
 - **3. Cover and keep cool.** Wrap in a clean sheet or bag, label it, and keep it somewhere as cold as you can make it, shaded and apart from food and water. The manual's best storage is refrigeration at 2 to 4 °C (35.6 to 39.2 °F); failing that, a cold protected place out of direct sun, or temporary burial. In heat, bodies change fast; in winter, an unheated shed works.
 - **4. Tell the family and your group.** Allow a farewell and the customs the person would have wanted. Keep gatherings small if the death may have been infectious.
-- **5. Choose the arrangement.** Burial at a verified site, a crematory if one is working, or a funeral home or the county, if services still run. Check the law and record who decided.
+- **5. Choose the arrangement.** Burial at your recorded group burial ground, a crematory if one is working, or a funeral home or the county, while services still run. Check the law while there is a law to check, and record who decided and why. Without outside authority, the family and the group leader decide together, and write it down.
 - **6. If you bury:** use the site only after the paper, karst and field checks pass. Dig 1.5 to 3 m (5 to 10 ft) deep, with 0.9 to 1.2 m (3 to 4 ft) of soil on top, and keep the bottom well above the highest groundwater. That is a lot of digging by hand: share the work and rest. If you cannot dig that deep above the water, that is a reason not to bury here, not a reason to dig shallower. Use a shroud or a plain wood coffin that breaks down quickly, and avoid biodegradable body bags and chemicals (the manual advises against them). Mark the grave. Draw the map and record it.
 - **7. Afterwards:** wash up, record, treat water as usual, and check on the people who did the work.
 - **Tennessee notes (check current law):** no state law forbids burying on your own land, but your county or town may have zoning and health rules, and a death certificate or medical examiner report may be needed. A family burial ground recorded with the deed is protected under state law. All human remains are protected: digging up a grave without authority is a serious crime. Cremation needs a permit.
@@ -129,12 +153,14 @@ Wild animals found dead, and the leavings from hunting, are different from your 
 
 ## If you cannot bury: alternatives
 Burial is not always possible or wise: karst ground, a high water table, frozen or rocky ground, flooding, or no safe site.
-- **Cold storage:** keep remains wrapped and cold, apart from food and water, until a safe method is possible. This works for humans, pets, and small animals for a limited time. In hot weather it does not last.
+- **Cold storage:** keep remains wrapped and cold, apart from food and water, until a safe method is possible. This works for humans, pets, and small animals for a limited time. In hot weather it does not last. In winter, a cold outbuilding, or a cold cellar that is not part of your water system, can hold remains for days.
 - **Composting above ground (animals, not humans):** a covered pile with carbon material is the safest answer for livestock where soil or water is a worry.
-- **Rendering, landfill, crematory, or the county,** if they are working: they are built for this. Call first.
+- **Rendering, landfill, crematory, or the county,** while they are working: they are built for this. Call first. Do not count on them: after a few months they may be gone, so choose your own site and method early.
+- **Compost animals above ground,** on a pad you built, with carbon material you stored (sawdust, wood chips, straw, leaves). This needs no machinery and no outside help.
+- **A group burial ground** on the best site you have found and recorded. Use it for all human remains, in order, and keep the map.
 - **Burning (animals):** a last resort. It is smoky, hard to finish, can start fires, and may need a permit or be against the law where you live. Dispose of the ash like other waste.
 - **Move it and bury it elsewhere:** a better site on higher, deeper ground, further from water. Do not move human remains far or in the open; wrap and keep them cold while you arrange it.
-- **Ask:** the county health department, the vet, Extension, or a funeral director, if any can be reached.
+- **Ask** the county health department, the vet, Extension or a funeral director, while any can be reached. When none can, rely on the checks above and the group's records.
 
 ## Check the work: every season
 every: 90

@@ -22,7 +22,8 @@ reviewed:
 
 - **Any doubt:** pick another site or method. Cold storage for a short time, composting above ground (animals), crematory, landfill or renderer if working.
 - **In limestone country,** assume water moves fast and far underground. Treat all water, always.
-- **Ask:** county Extension, NRCS field office, county health department.
+- **Ask now, while you can:** county Extension, NRCS field office, county health department, and the oldest local people (where the ground has opened, where creeks vanish, where springs run). **Do this before you need it.**
+- **When no one can be asked:** walk the land after heavy rain and watch where water goes; test-hole to 6 feet in the wet season; pick high, deep, even soil; treat any doubt as a no; and treat all your water.
 
 ## Know more
 
