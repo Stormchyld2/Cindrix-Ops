@@ -13,7 +13,7 @@ reviewed:
 4. **Flow check:** rain must run away from the site, never into it. No floodplains, no ponding, no spots upslope of a well or spring.
 5. **Utilities check:** pipes, drain tiles, septic fields, old graves.
 6. **Rules check:** county zoning and health department, and state rules. Write down who you asked.
-7. **Minimums as a floor, not a clearance:** people, grave bottom at least 5 feet above groundwater with 3 feet of cover and 100 feet or more from drinking water sources (a trench: 650 feet and 6.5 feet above the water); livestock, more than 300 feet from a well, 165 feet from property lines, 100 feet from water, 2 feet above rock and the water table.
+7. **Minimums as a floor, not a clearance:** people (WHO field manual), 5 to 10 feet deep with 3 to 4 feet of soil on top, 100 feet from springs and streams and 650 feet from any well or drinking water, and at least 4 feet (5 in sand) between the bottom and the highest the water rises; livestock, more than 300 feet from a well, 165 feet from property lines, 100 feet from water, 2 feet above rock and the water table.
 8. **Record it** on the site sheet: date, who checked, soil, depths, slope, karst signs, distances, rules.
 
 **Do not** bury in, beside or above a sinkhole, cave, spring or losing stream, and **do not** fill sinkholes.
@@ -37,6 +37,6 @@ Probe rod, shovel, tape, notebook, printed maps, a camera.
 
 **Train:** the plan "Remains management and water protection (SOP)".
 
-Source: WHO technical note "Disposal of dead bodies in emergency conditions"; Sphere humanitarian standards; Tennessee Department of Agriculture policy and USDA-NRCS Tennessee guide sheet TN316; USGS karst and ground-water publications for Tennessee.
+Source: WHO, PAHO, ICRC and IFRC, Management of Dead Bodies after Disasters (2nd edition, 2016), which also says to seek a geological and hydrological opinion before opening a burial ground; Tennessee Department of Agriculture policy and USDA-NRCS Tennessee guide sheet TN316; USGS karst and ground-water publications for Tennessee.
 
 Reference only, not engineering or legal advice. Where help can be reached, call 911.

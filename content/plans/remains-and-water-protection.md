@@ -57,8 +57,8 @@ Walk the site and probe it. Record each answer on the Site Check sheet (see Reco
 
 ## Groundwater protection: what the numbers are, and what they are not
 Guidance from emergency-health and farm agencies sets minimums. They assume ordinary ground and do not make karst safe.
-- **People (WHO and Sphere humanitarian guidance):** a grave bottom at least 1.5 m (5 ft) above the groundwater table with at least 1 m (3 ft) of soil cover, and a graveyard at least 30 m (100 ft) from water sources used for drinking. For temporary trench burial, the WHO technical note gives a trench 1.5 m deep, at least 200 m (650 ft) from any water source and at least 2 m above the water table.
-- **Livestock (Tennessee Department of Agriculture and USDA-NRCS guide sheet 316):** more than 300 ft from a wellhead (up-slope), more than 165 ft from property lines and public areas, more than 100 ft from streams, ditches and water bodies, and at least 2 ft above bedrock and the seasonal high water table, in soil that water moves through slowly. Large animals get at least 2 ft of soil cover. The guide sheet tells you to look at fractured or cavernous bedrock, but it does not mention sinkholes or limestone by name. Treat that as your warning, not your clearance.
+- **People (WHO, PAHO, ICRC and IFRC field manual, 2nd edition, 2016):** individual graves 1.5 to 3 m (5 to 10 ft) deep; at least 30 m (100 ft) from springs and streams and 200 m (650 ft) from any well or other source of drinking water (its planning annex says 250 m for wells and 10 m from field drains); at least 0.9 to 1.2 m (3 to 4 ft) of soil over the body; and for fewer than five graves at least 1.2 m (4 ft) between the bottom of the grave and the highest the water table rises (1.5 m, 5 ft, in sand). For many graves together the water table should be at least 2.5 m (8 ft) down. The manual says these distances may need to be increased by soil conditions, and that a geological and hydrological opinion should be sought before any new burial ground is opened. A belt of deep-rooted plants, at least 10 m wide, around a burial ground helps.
+- **Livestock (Tennessee Department of Agriculture and USDA-NRCS guide sheet 316):** more than 300 ft from a wellhead (up-slope), more than 165 ft from property lines and public areas, more than 100 ft from streams, ditches and water bodies, and at least 2 ft above bedrock and the seasonal high water table, in soil that water moves through slowly. Large animals get at least 2 ft of soil cover. The guide sheet tells you to look at fractured or cavernous bedrock, but it does not mention sinkholes or limestone by name. Treat that as your warning, not your clearance. The human-remains manual also says its distances change with the local geology and water.
 - Those figures are floors. In karst, in a high water table, in coarse soil, upslope of a well or in a floodplain, they are not enough. If your site meets the number and fails the soil, water or karst checks, it fails.
 - Keep every grave and burial pit **down-slope** of wells and springs where possible, and shape the ground so surface water runs around it. Mound the soil, and plant grass at once.
 - Never bury where you may need to dig a well, a cistern or a garden.
@@ -66,22 +66,24 @@ Guidance from emergency-health and farm agencies sets minimums. They assume ordi
 
 ## Protective equipment and hygiene
 Handle remains as you would handle blood and body fluids: assume they may be infectious.
-- Wear gloves once only, and throw them away safely. Wear heavy gloves over them if there are sharp edges or bone. Wear an apron or coveralls, boots and eye or face protection against splashes. Cover your own cuts with waterproof dressings.
-- Keep your hands off your face. Wash hands with soap and treated water after handling and before eating or drinking.
+- The manual's minimum is waterproof gloves, an apron and boots. Wear gloves once only, and throw them away safely. Wear heavy gloves over them if there are sharp edges or bone, and eye or face protection against splashes. Cover your own cuts with waterproof dressings. Face masks are not essential for health; wear one if it helps you cope.
+- Never wipe your face or mouth with your hands. Wash hands with soap and treated water after handling and before eating or drinking.
 - Faecal leakage from a body is common. Keep the body bagged or wrapped, and clean any spill with soap and water. Wash tools, boards, wheelbarrows and clothes afterwards.
-- Do not use lime or chemicals "to make it safe". They do not make remains safer and may cause harm. Soap and water on hands and gear is what works.
-- **Worked on a body that may have died of something catching** (cholera, a fever with bleeding, a fast spreading illness)? Use more protection (double gloves, gown, apron, boots, face shield), keep the number of helpers to the fewest, keep children and visitors away, and limit any gathering. Hand this work to trained people if any exist.
+- Do not use lime or chemicals "to make it safe". The manual says lime does not hasten decomposition and disinfectant is not needed, and it advises against lime and other chemicals in graves. Soap and water on hands, clothes and gear is what works.
+- After some days, closed and unventilated spaces (a cellar, a shed, a vehicle) can hold harmful gases from decomposition. Open them and let fresh air in before you go in.
+- Do not take on remains where there is a chemical or radiation risk, or where people died of a highly infectious illness, unless you are trained.
+- **A body that may have died of something highly infectious** (cholera, a fever with bleeding such as Ebola, a fast-spreading illness)? The manual says untrained people should not manage these deaths. If you have no choice, use much more protection (double gloves, gown, apron, boots, face shield), keep the number of helpers to the fewest, keep children and visitors away, limit any gathering, and wash all clothes and gear. Hand this work to trained people if any exist.
 - Look after the people doing the work. Take breaks. Talk afterwards. This is hard and it stays with people.
 
 ## Records: write it down every time
 A written record protects your water, the family's wishes, the law and the future owners of the land. For each death or burial, write:
 - Date, time and place of death or finding; who found it; who identified the person.
-- Name, age, description; a reference number if there is more than one. Photos of the face (if present) and any ID or marks.
+- Name, age, description; a unique code for each person if there is more than one, on a waterproof label tied to the body or bag (writing on the bag alone can rub off). Photos of the face (if present) and any ID or marks.
 - What was done: how it was kept, what it was wrapped in, where it was buried, how deep, and how it was marked.
 - The site: a sketch with measurements to two fixed landmarks, the compass bearing, GPS if you have it, and the **Site Check sheet** (soil, depth to water and rock, slope, karst signs, distance to wells, springs and water, rules checked).
 - Who was told (family, authorities), and the person's belongings.
 - For animals: species, number, cause if known, date, method and place.
-Keep the records dry, in two places. File a map of any family burial ground with the property deed, so it is protected and findable later.
+Keep the records dry, in at least two places. Mark each grave with a lasting marker (stone or concrete, not wood or anything that rots or can be moved), write the code on it, and record GPS or measured positions. File a map of any family burial ground with the property deed, so it is protected and findable later.
 go: Binder
 button: Open the Binder
 
@@ -89,16 +91,17 @@ button: Open the Binder
 Treat the dead with dignity and care. The family's wishes, faith and customs matter, and so does the law.
 - **1. Make sure of the death.** If phones work and the death was sudden, unexpected, violent or unattended, call 911. If someone may only be unconscious, treat them as alive (see the CPR card).
 - **2. Record and identify first.** Photograph the face, note marks, take ID and personal items. Do this early: it matters most in the first day or two.
-- **3. Cover and keep cool.** Wrap in a clean sheet or bag, label it, and keep it somewhere cold, shaded and apart from food and water. In heat, bodies change fast; in winter, an unheated shed or outbuilding works.
+- **3. Cover and keep cool.** Wrap in a clean sheet or bag, label it, and keep it somewhere as cold as you can make it, shaded and apart from food and water. The manual's best storage is refrigeration at 2 to 4 °C (35.6 to 39.2 °F); failing that, a cold protected place out of direct sun, or temporary burial. In heat, bodies change fast; in winter, an unheated shed works.
 - **4. Tell the family and your group.** Allow a farewell and the customs the person would have wanted. Keep gatherings small if the death may have been infectious.
 - **5. Choose the arrangement.** Burial at a verified site, a crematory if one is working, or a funeral home or the county, if services still run. Check the law and record who decided.
-- **6. If you bury:** use the site only after the paper, karst and field checks pass. Dig deep enough for at least 3 ft (1 m) of soil cover and well above groundwater. Wrap the body in a shroud or use a plain wood coffin; with neither, plastic sheeting around the body keeps it apart from the soil (WHO). Mark the grave. Draw the map and record it.
+- **6. If you bury:** use the site only after the paper, karst and field checks pass. Dig 1.5 to 3 m (5 to 10 ft) deep, with 0.9 to 1.2 m (3 to 4 ft) of soil on top, and keep the bottom well above the highest groundwater. That is a lot of digging by hand: share the work and rest. If you cannot dig that deep above the water, that is a reason not to bury here, not a reason to dig shallower. Use a shroud or a plain wood coffin that breaks down quickly, and avoid biodegradable body bags and chemicals (the manual advises against them). Mark the grave. Draw the map and record it.
 - **7. Afterwards:** wash up, record, treat water as usual, and check on the people who did the work.
 - **Tennessee notes (check current law):** no state law forbids burying on your own land, but your county or town may have zoning and health rules, and a death certificate or medical examiner report may be needed. A family burial ground recorded with the deed is protected under state law. All human remains are protected: digging up a grave without authority is a serious crime. Cremation needs a permit.
 
 ## Livestock: the steps
 Dispose of dead farm animals fast, within 48 hours. The Tennessee Department of Agriculture recommends it, whatever the weather.
-- **1. Find out why it died.** If several animals die together, or it looks like a disease, keep people and other animals away, wear protection, and call the vet or the State Veterinarian if you can. Do not butcher or eat a sick animal.
+- **1. Assess.** Count how many animals, what kind, about what weight each, and why they died. Note what you have: a landfill or renderer within reach, and clear, well-drained space for composting or burial. USDA's emergency guidance says the goal is to dispose of carcasses as soon as possible while containing disease, protecting the environment, and doing it at a cost you can bear, and that there is rarely one simple answer: you may need more than one method.
+- **1b. Find out why it died.** If several animals die together, or it looks like a disease, keep people and other animals away, wear protection, and call the vet or the State Veterinarian if you can. Do not butcher or eat a sick animal.
 - **2. Pick the method** in this order if you can: rendering or pick-up, a permitted landfill, **composting**, then burial. Composting above ground is often the safest choice where the soil or the water is a worry.
 - **3. Compost (USDA-NRCS standard 317 and the Tennessee guide sheet):** build on a firm, flat, well-drained pad, away from wells and water, under a roof or a sheet of 6-mil plastic. Start with a foot of carbon (sawdust, wood chips, straw or similar), put the animal on it, cover all sides with at least a foot of the same, keep it damp like a wrung-out sponge, and watch the temperature: it should reach 130 to 150 °F. Turn it when it peaks. Cover bones and parts that stick out.
 - **4. Bury only if the site passes every check**, and only large animals one layer thick. Cover with at least 2 ft of soil, more or add a fence if coyotes, dogs and others dig. Mound it to shed water and plant it.
@@ -145,7 +148,7 @@ check: lesson:water-and-sanitation/03-store-and-sanitation/02-emergency-toilets-
 
 ## References for your library
 - WHO, PAHO, ICRC and IFRC, "Management of Dead Bodies after Disasters: A Field Manual for First Responders" (2nd edition, 2016), and the WHO technical note "Disposal of dead bodies in emergency conditions".
-- USDA APHIS, "Emergency Carcass Management Desk Reference Guide" (FAD PReP, 2024), and the "Livestock Mortality Composting Protocol".
+- USDA APHIS, "Emergency Carcass Management Desk Reference Guide" (FAD PReP, 2024), the APHIS "Carcass Management" page and its onsite-burial, composting and open-burning guides, and the "Livestock Mortality Composting Protocol".
 - Tennessee Department of Agriculture, "Disposal of Dead Farm Animals" policy, and USDA-NRCS Tennessee guide sheet TN316 and Conservation Practice Standards 316 and 317.
 - USGS, karst and ground-water notes for Tennessee (Water-Resources Investigations Report 92-4178, and the brochure on ground water in carbonate rocks).
 - Copy them to the drive while the internet works. They are listed in the sources file as things you add.
