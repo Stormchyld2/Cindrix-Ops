@@ -2,7 +2,7 @@
 //! readiness row and "in season now". The logic and its tests are in `core/` (skills, replace, readiness, seasons).
 //! The people's grid and sign-offs are the family's own, so none of these commands is in the share allowlist.
 
-use cindrix_core::{academy, calendar, cascade, drills, readiness, replace, seasons, skills, training};
+use cindrix_core::{academy, calendar, cascade, drills, progresssheet, readiness, replace, seasons, skills, training};
 use serde::Serialize;
 use std::path::PathBuf;
 
@@ -92,6 +92,19 @@ pub fn skills_grid(people: Vec<String>) -> Result<SkillsGridDto, String> {
         must_covered: g.must_covered,
         rows: g.rows.into_iter().map(|r| SkillRowDto { skill: r.skill, area: r.area, must_have: r.must_have, proof: r.proof, cells: r.cells, signed: r.signed, flags: r.flags }).collect(),
     })
+}
+
+#[derive(Serialize)]
+pub struct PhoneTicksDto {
+    person: String,
+    skills: Vec<String>,
+    plan_steps: usize,
+}
+
+/// What phones say their people can do (accepted progress sheets). Only what they say: never a sign-off.
+#[tauri::command]
+pub fn phone_ticks() -> Result<Vec<PhoneTicksDto>, String> {
+    Ok(progresssheet::summary(&crate::root().join("user"))?.into_iter().map(|p| PhoneTicksDto { person: p.person, skills: p.skills, plan_steps: p.plan_steps }).collect())
 }
 
 /// Sign a skill off for a person by hand, or take it back.

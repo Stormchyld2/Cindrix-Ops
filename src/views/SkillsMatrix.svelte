@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { skillsGrid, skillsSignoff, type SkillsGrid, type SkillRow } from '../lib/api';
+  import { skillsGrid, skillsSignoff, phoneTicks, type SkillsGrid, type SkillRow, type PhoneTicks } from '../lib/api';
 
   let { people }: { people: string[] } = $props();
 
@@ -8,11 +8,13 @@
   let error = $state('');
   let signer = $state('');
   let only = $state<'all' | 'must' | 'weak'>('must');
+  let phones: PhoneTicks[] = $state([]);
 
   async function load() {
     try {
       grid = await skillsGrid(people);
       error = '';
+      try { phones = await phoneTicks(); } catch { phones = []; }
     } catch (e) {
       error = 'The skills could not be read: ' + String(e);
     }
@@ -27,6 +29,13 @@
   const areas = $derived([...new Set(rows.map((r) => r.area))]);
   const mark: Record<string, string> = { signed: '●', learning: '◐', none: '○' };
   const word: Record<string, string> = { signed: 'Can do this', learning: 'Learning', none: 'Not started' };
+
+  // A phone's words only: a person who ticked a skill on their phone gets a small phone mark in the box. It is never a sign-off.
+  function phoneSays(person: string, skill: string): boolean {
+    const p = person.trim().toLowerCase();
+    return phones.some((t) => t.person.trim().toLowerCase() === p && t.skills.includes(skill));
+  }
+  const unmatched = $derived(phones.filter((t) => !people.some((p) => p.trim().toLowerCase() === t.person.trim().toLowerCase())));
 
   async function toggle(person: string, skill: string, state: string) {
     try {
@@ -63,7 +72,7 @@
               <tr>
                 <td title={r.proof}>{r.skill}{r.must_have ? '' : ' (extra)'}</td>
                 {#each r.cells as c, i}
-                  <td class="pc"><button class="cell {c}" onclick={() => toggle(grid!.people[i], r.skill, c)} title={`${grid!.people[i]}: ${word[c]}. Click to ${c === 'signed' ? 'take the sign-off back' : 'sign off'}.`} aria-label={`${grid!.people[i]}, ${r.skill}: ${word[c]}`}>{mark[c]}</button></td>
+                  <td class="pc"><button class="cell {c}" onclick={() => toggle(grid!.people[i], r.skill, c)} title={`${grid!.people[i]}: ${word[c]}. Click to ${c === 'signed' ? 'take the sign-off back' : 'sign off'}.`} aria-label={`${grid!.people[i]}, ${r.skill}: ${word[c]}`}>{mark[c]}</button>{#if c !== 'signed' && phoneSays(grid!.people[i], r.skill)}<span class="ph" title="Says they can do this on their phone. Not signed off yet.">&#9742;</span>{/if}</td>
                 {/each}
                 <td class="flags">{#each r.flags as f}<span class="flag">{f}</span>{/each}</td>
               </tr>
@@ -73,7 +82,8 @@
       </table>
     </div>
     {#if rows.length === 0}<p class="muted">Nothing to show here.</p>{/if}
-    <p class="muted small">● can do this &nbsp; ◐ learning &nbsp; ○ not started. Add your own skills in your user folder (skills.csv).</p>
+    {#if unmatched.length}<p class="muted small">Phones also sent ticks for {unmatched.map((t) => `${t.person} (${t.skills.length} skill${t.skills.length === 1 ? '' : 's'}, ${t.plan_steps} plan step${t.plan_steps === 1 ? '' : 's'})`).join(', ')}. Their names are not on the Family page, so they are not in the grid.</p>{/if}
+    <p class="muted small">● can do this &nbsp; ◐ learning &nbsp; ○ not started &nbsp; &#9742; says so on their phone (not signed off). Add your own skills in your user folder (skills.csv).</p>
   {:else if error}
     <div class="warn" role="alert">{error}</div>
   {:else}
@@ -92,5 +102,6 @@
   .cell { background: none; border: 0; font-size: 20px; cursor: pointer; color: var(--muted); }
   .cell.signed { color: #4ade80; }
   .cell.learning { color: #fbbf24; }
+  .ph { font-size: 12px; color: var(--muted); margin-left: 2px; }
   .flag { display: inline-block; margin: 2px 4px 2px 0; padding: 1px 8px; border-radius: 999px; border: 1px solid #b45309; color: #fbbf24; font-size: 12px; }
 </style>

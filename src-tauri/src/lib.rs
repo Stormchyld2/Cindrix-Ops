@@ -3391,6 +3391,7 @@ pub fn run() {
             training_signoff,
             hybrid::skills_grid,
             hybrid::skills_signoff,
+            hybrid::phone_ticks,
             hybrid::replacements_list,
             hybrid::replacement_set,
             hybrid::readiness_row,

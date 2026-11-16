@@ -1261,6 +1261,12 @@ export type Replacement = { need: string; replaced_by: string; skill: string; le
 export type ReadinessRow = { supplies_days: number | null; skills_covered: number; skills_total: number; self_in_place: number; self_total: number };
 export type InSeason = { item: string; region: string; from_month: number; to_month: number };
 
+export type PhoneTicks = { person: string; skills: string[]; plan_steps: number };
+export async function phoneTicks(): Promise<PhoneTicks[]> {
+  if (inTauri) return call<PhoneTicks[]>('phone_ticks');
+  return [{ person: 'Sam', skills: ['Light a fire in the rain'], plan_steps: 3 }];
+}
+
 const memSign: Record<string, boolean> = {};
 export async function skillsGrid(people: string[]): Promise<SkillsGrid> {
   if (inTauri) return call<SkillsGrid>('skills_grid', { people });

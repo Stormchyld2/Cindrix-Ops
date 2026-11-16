@@ -145,6 +145,27 @@ pub fn accept(user_root: &Path, name: &str) -> Result<usize, String> {
     Ok(sheet.ticks.len())
 }
 
+/// What one person's phone says, for the host's screens.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PersonTicks {
+    pub person: String,
+    pub skills: Vec<String>,
+    pub plan_steps: usize,
+}
+
+/// The kept phone ticks, one row per person (several phones of one person are put together), in the order first seen.
+pub fn summary(user_root: &Path) -> Result<Vec<PersonTicks>, String> {
+    let mut out: Vec<PersonTicks> = Vec::new();
+    for (person, _device, t) in load(user_root)? {
+        let at = match out.iter().position(|p| p.person == person) {
+            Some(i) => i,
+            None => { out.push(PersonTicks { person, skills: Vec::new(), plan_steps: 0 }); out.len() - 1 }
+        };
+        if t.kind == "skill" { if !out[at].skills.contains(&t.key) { out[at].skills.push(t.key); } } else { out[at].plan_steps += 1; }
+    }
+    Ok(out)
+}
+
 pub fn render(device: &str, person: &str, created: &str, ticks: &[Tick]) -> String {
     let mut o = format!("# format: progress-sheet 1\n# device: {}\n# person: {}\n# created: {}\n", device, person, created);
     for t in ticks { o.push_str(&format!("{}\t{}\t{}\n", t.kind, t.key, t.day)); }
@@ -183,6 +204,18 @@ mod tests {
         assert_eq!(all.len(), 2);
         assert!(all.iter().any(|(p, _, t)| p == "Dana" && t.key == "Purify water"));
         assert!(all.iter().any(|(p, _, t)| p == "Sam" && t.key == "Start a fire"));
+        let _ = fs::remove_dir_all(&r);
+    }
+
+    #[test]
+    fn the_summary_puts_a_persons_phones_together_and_counts_plan_steps() {
+        let r = root("sum");
+        pocket::drop_file(&r, "n10-progress-1.txt", &render("n10", "Sam", &created(), &[tk("skill", "Start a fire", 1), tk("plan", "long-emergency/3", 2), tk("plan", "flood/1", 2)])).unwrap();
+        pocket::drop_file(&r, "n12-progress-1.txt", &render("n12", "Sam", &created(), &[tk("skill", "Start a fire", 1), tk("skill", "Purify water", 1)])).unwrap();
+        pocket::accept_any(&r, "n10-progress-1.txt", false).unwrap();
+        pocket::accept_any(&r, "n12-progress-1.txt", false).unwrap();
+        assert_eq!(summary(&r).unwrap(), vec![PersonTicks { person: "Sam".into(), skills: vec!["Start a fire".into(), "Purify water".into()], plan_steps: 2 }]);
+        assert!(summary(&root("none")).unwrap().is_empty());
         let _ = fs::remove_dir_all(&r);
     }
 
