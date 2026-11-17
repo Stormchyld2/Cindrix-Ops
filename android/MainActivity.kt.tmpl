@@ -1,0 +1,12 @@
+package PACKAGE_NAME
+
+import android.os.Bundle
+import android.view.WindowManager
+
+// The Hub phone serves other devices, so the screen stays on while the app is open.
+class MainActivity : TauriActivity() {
+  override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+  }
+}

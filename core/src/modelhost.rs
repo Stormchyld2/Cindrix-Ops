@@ -69,6 +69,11 @@ impl ModelHost {
         }
     }
 
+    /// The engine's process number (to read its memory use).
+    pub fn pid(&self) -> u32 {
+        self.child.id()
+    }
+
     pub fn is_running(&mut self) -> bool {
         matches!(self.child.try_wait(), Ok(None))
     }

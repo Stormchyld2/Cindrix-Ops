@@ -124,7 +124,29 @@ fn engine_file(file: &str) -> PathBuf {
 fn content_dir() -> PathBuf {
     let r = root();
     let here = r.join("content");
-    if here.exists() { here } else { r.join("../../content") }
+    if here.exists() {
+        return here;
+    }
+    let beside = program_dir().join("content");
+    if beside.exists() { beside } else { r.join("../../content") }
+}
+
+/// Android only: the app carries its shipped cards, plans, courses and guides as one pack beside its libraries.
+/// Unpack it into the app's own folder the first time, and again after the app is updated, so the screens that read
+/// `content_sub(...)` find them just as the Windows copy finds the `content` folder next to the program.
+#[cfg(target_os = "android")]
+fn android_prepare() {
+    let dir = std::fs::read_to_string("/proc/self/maps").ok().and_then(|m| cindrix_core::engine::native_dir_from_maps(&m, "cindrix_ops_lib"));
+    let Some(dir) = dir else { return };
+    let pack = dir.join("libcontent_pack.so");
+    let Ok(meta) = std::fs::metadata(&pack) else { return };
+    let when = meta.modified().ok().and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok()).map(|d| d.as_secs()).unwrap_or(0);
+    let id = format!("{}-{}", meta.len(), when);
+    match cindrix_core::tarpack::ensure_unpacked(&pack, &program_dir().join("content"), &id) {
+        Ok(true) => eprintln!("unpacked the content pack ({})", id),
+        Ok(false) => {}
+        Err(e) => eprintln!("could not unpack the content pack: {}", e),
+    }
 }
 
 /// A folder of shipped content (cards, drills, Academy, the sample library). The drive's own `content` folder
@@ -314,6 +336,14 @@ impl AppState {
 }
 
 fn engine_path() -> PathBuf {
+    // On Android the engine is built into the app and installed beside the app's own libraries
+    #[cfg(target_os = "android")]
+    {
+        let dir = std::fs::read_to_string("/proc/self/maps").ok().and_then(|m| cindrix_core::engine::native_dir_from_maps(&m, "cindrix_ops_lib"));
+        if let Some(d) = dir {
+            return d.join(cindrix_core::engine::ANDROID_ENGINE_FILE);
+        }
+    }
     let name = if cfg!(windows) { "llama-server.exe" } else { "llama-server" };
     engine_file(name)
 }
@@ -1066,7 +1096,7 @@ fn start_model(state: &AppState, file: Option<String>) {
         }
     };
     if !engine_path().exists() {
-        state.set("error", &name, size.label(), "The model engine (llama-server) was not found in the engines folder.");
+        state.set("error", &name, size.label(), if cfg!(target_os = "android") { "This copy of the app does not carry the assistant engine. Install the newest Hub app." } else { "The model engine (llama-server) was not found in the engines folder." });
         return;
     }
     state.set("loading", &name, size.label(), "Loading the model. The first start can take a minute.");
@@ -1090,6 +1120,115 @@ fn start_model(state: &AppState, file: Option<String>) {
 #[tauri::command]
 fn model_status(state: tauri::State<'_, AppState>) -> ModelStatus {
     state.status.lock().unwrap().clone()
+}
+
+// ---------- "Check the assistant": one button that says whether the assistant works on this device ----------
+
+#[derive(Serialize)]
+struct CheckStep {
+    name: String,
+    ok: bool,
+    detail: String,
+}
+
+#[derive(Serialize)]
+struct AssistantCheck {
+    ok: bool,
+    steps: Vec<CheckStep>,
+    load_seconds: f64,
+    answer_seconds: f64,
+    words_per_second: f64,
+    answer: String,
+    ram_total_gb: f64,
+    ram_free_gb: f64,
+    engine_mb: f64,
+}
+
+fn run_assistant_check(app: &tauri::AppHandle) -> AssistantCheck {
+    let st = app.state::<AppState>();
+    let mut steps: Vec<CheckStep> = Vec::new();
+    let mut step = |name: &str, ok: bool, detail: String| steps.push(CheckStep { name: name.into(), ok, detail });
+    let mut out = AssistantCheck { ok: false, steps: Vec::new(), load_seconds: 0.0, answer_seconds: 0.0, words_per_second: 0.0, answer: String::new(), ram_total_gb: 0.0, ram_free_gb: 0.0, engine_mb: 0.0 };
+
+    let engine = engine_path();
+    let engine_ok = engine.exists();
+    step("The assistant program", engine_ok, if engine_ok { "Found.".into() } else { "Not found in this copy of the app. Install the newest app.".into() });
+
+    let files = model_files();
+    let model_ok = !files.is_empty();
+    step("The model file", model_ok, if model_ok { format!("Found: {}.", files.join(", ")) } else { format!("No model file yet. Put a .gguf model file in the models folder on the drive ({}).", models_dir().display()) });
+
+    out.ram_total_gb = hardware::total_ram_gb().unwrap_or(0.0);
+    out.ram_free_gb = hardware::available_ram_gb().unwrap_or(0.0);
+    step("Memory", out.ram_total_gb > 0.0, if out.ram_total_gb > 0.0 { format!("{:.1} GB in all, {:.1} GB free now.", out.ram_total_gb, out.ram_free_gb) } else { "This device did not say how much memory it has.".into() });
+
+    if !(engine_ok && model_ok) {
+        out.steps = steps;
+        return out;
+    }
+
+    // start it if it is not already running, and time how long that takes
+    let ready_now = st.status.lock().unwrap().state == "ready" && st.port.lock().unwrap().is_some();
+    if ready_now {
+        step("Starting the assistant", true, "It was already running.".into());
+    } else {
+        let t0 = std::time::Instant::now();
+        start_model(&st, None);
+        out.load_seconds = t0.elapsed().as_secs_f64();
+        let s = st.status.lock().unwrap().clone();
+        let ok = s.state == "ready";
+        step("Starting the assistant", ok, if ok { format!("Ready after {:.0} seconds with {}.", out.load_seconds, s.model) } else { s.message });
+        if !ok {
+            out.steps = steps;
+            return out;
+        }
+    }
+
+    // memory the engine is using now
+    #[cfg(any(target_os = "linux", target_os = "android"))]
+    {
+        let pid = st.host.lock().unwrap().as_ref().map(|h| h.pid());
+        if let Some(pid) = pid {
+            if let Ok(t) = std::fs::read_to_string(format!("/proc/{}/status", pid)) {
+                out.engine_mb = cindrix_core::engine::kb_field(&t, "VmRSS").map(|k| k as f64 / 1024.0).unwrap_or(0.0);
+            }
+        }
+    }
+
+    // ask one small question
+    let port = *st.port.lock().unwrap();
+    match port {
+        None => step("Asking a question", false, "The assistant stopped before it could answer.".into()),
+        Some(p) => {
+            let req = cindrix_core::llama::ChatRequest {
+                system: "You are testing that the assistant works. Answer in one short sentence.".into(),
+                user: "Say that the assistant is working.".into(),
+                max_tokens: 30,
+                sampler: cindrix_core::llama::Sampler::named("exact"),
+            };
+            let t0 = std::time::Instant::now();
+            match cindrix_core::llama::chat_stream(p, &req, |_| {}, || true) {
+                Ok(text) if !text.trim().is_empty() => {
+                    out.answer_seconds = t0.elapsed().as_secs_f64();
+                    out.words_per_second = cindrix_core::engine::per_second(cindrix_core::engine::word_count(&text), out.answer_seconds);
+                    out.answer = text.trim().to_string();
+                    step("Asking a question", true, format!("It answered in {:.1} seconds, about {:.1} words a second.", out.answer_seconds, out.words_per_second));
+                }
+                Ok(_) => step("Asking a question", false, "It started but gave an empty answer.".into()),
+                Err(e) => step("Asking a question", false, format!("It did not answer: {}", e)),
+            }
+        }
+    }
+    out.ok = steps.iter().all(|s| s.ok);
+    out.steps = steps;
+    out
+}
+
+/// Runs the whole check (finds the engine and the model, starts it if needed, asks one small question, reads memory use).
+/// Host only: it starts programs and reads the device's memory, so it is not on the guest list.
+#[tauri::command]
+async fn assistant_check(app: tauri::AppHandle) -> Result<AssistantCheck, String> {
+    tauri::async_runtime::spawn_blocking(move || run_assistant_check(&app)).await.map_err(|e| e.to_string())
 }
 
 #[derive(Serialize)]
@@ -3144,6 +3283,8 @@ pub fn run() {
         })
         .manage(AppState::default())
         .setup(|app| {
+            #[cfg(target_os = "android")]
+            android_prepare();
             seclock::install();
             let handle = app.handle().clone();
             // sharing switches itself on when a hotspot starts (after the drive has been found, below)
@@ -3312,6 +3453,7 @@ pub fn run() {
             open_own_folder,
             ask_stream,
             model_status,
+            assistant_check,
             library_status,
             libs::libraries_list,
             libs::library_answer,

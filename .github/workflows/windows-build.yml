@@ -50,7 +50,7 @@ jobs:
           # The program carries its own cards, medical cards, plans, drills, seed guides, courses and guides, so it works with nothing
           # else beside it. Books, manuals, maps, music and .zim files stay on the drive. A drive that has its own content\<name>
           # folder with files in it is read instead of the copy here (content_sub in src-tauri/src/lib.rs).
-          mkdir -p out/Cindrix/content && cp content/sources.json out/Cindrix/content/ && cp -r content/library-sample out/Cindrix/content/
+          mkdir -p out/Cindrix/content && cp content/sources.json content/library-catalog.json out/Cindrix/content/ && cp content/*.csv out/Cindrix/content/ && cp -r content/library-sample out/Cindrix/content/
           cp -r content/cards content/plans content/seed-guides content/drills content/academy content/guides out/Cindrix/content/
           mkdir -p out/Cindrix/models out/Cindrix/engines
           # dl <file> <url>: a cut-off download is carried on from where it stopped, up to 40 times, so a bad connection does not fail the build

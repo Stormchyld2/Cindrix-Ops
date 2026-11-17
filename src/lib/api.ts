@@ -341,6 +341,17 @@ export async function listModels(): Promise<ModelChoice[]> {
   return [];
 }
 
+export type AssistantCheck = {
+  ok: boolean; steps: { name: string; ok: boolean; detail: string }[];
+  load_seconds: number; answer_seconds: number; words_per_second: number; answer: string;
+  ram_total_gb: number; ram_free_gb: number; engine_mb: number;
+};
+/** Runs the "Check the assistant" test on this device (host only). */
+export async function assistantCheck(): Promise<AssistantCheck> {
+  if (tauriHost) return call<AssistantCheck>('assistant_check');
+  return { ok: false, steps: [{ name: 'The assistant program', ok: false, detail: 'The check only works in the program.' }], load_seconds: 0, answer_seconds: 0, words_per_second: 0, answer: '', ram_total_gb: 0, ram_free_gb: 0, engine_mb: 0 };
+}
+
 export async function selectModel(file: string): Promise<void> {
   if (inTauri) await call<void>('select_model', { file });
 }

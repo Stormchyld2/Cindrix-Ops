@@ -2,7 +2,7 @@
   import PageHeader from '../lib/PageHeader.svelte';
   import { onMount, onDestroy } from 'svelte';
   import {
-    modelStatus, listModels, selectModel, libraryStatus, sourcesList, pickFolder,
+    modelStatus, listModels, selectModel, assistantCheck, type AssistantCheck, libraryStatus, sourcesList, pickFolder,
     librariesList, libraryAnswer, libraryForget, ownContent, openOwnFolder, type OwnFolder,
     type ModelStatus, type ModelChoice, type LibraryStatus, type Sources, type LibraryEntry,
   } from '../lib/api';
@@ -53,6 +53,14 @@
   type ChoiceKey = 'startScreen' | 'answerLength' | 'answerStyle' | 'searchSpeed' | 'intelStart' | 'intelReader' | 'mapUnits' | 'weekStart' | 'timeFormat' | 'calendarView';
 
   let ms = $state<ModelStatus | null>(null);
+  let check = $state<AssistantCheck | null>(null);
+  let checking = $state(false);
+  async function runCheck() {
+    checking = true; check = null;
+    try { check = await assistantCheck(); } catch (e) { check = { ok: false, steps: [{ name: 'The check', ok: false, detail: String(e) }], load_seconds: 0, answer_seconds: 0, words_per_second: 0, answer: '', ram_total_gb: 0, ram_free_gb: 0, engine_mb: 0 }; }
+    checking = false;
+    await refresh();
+  }
   let models: ModelChoice[] = $state([]);
   let lib = $state<LibraryStatus | null>(null);
   let libs: LibraryEntry[] = $state([]);
@@ -228,6 +236,21 @@
           {:else}<b>No model running.</b> {ms.message}{/if}
         </p>
         <p class="muted fine">This computer has about {ms.ram_gb.toFixed(1)} GB of memory. Without a model the assistant still finds the right pages and cards; it just cannot write a summary.</p>
+      {/if}
+    </div>
+    <div class="panel">
+      <div class="label">CHECK THE ASSISTANT</div>
+      <p class="muted fine">Tests that the assistant program and a model file are here, starts it if needed, asks one small question and shows how long it took and how much memory it uses. The first start can take a minute or two.</p>
+      <div class="row"><button class="btn" disabled={checking} onclick={runCheck} title="Test the assistant on this device">{checking ? 'Checking… please wait' : 'Check the assistant'}</button></div>
+      {#if check}
+        <ul class="list">
+          {#each check.steps as st (st.name)}
+            <li><span>{st.ok ? '✔' : '✖'}</span> <div class="grow"><strong>{st.name}</strong> <span class="muted">· {st.detail}</span></div></li>
+          {/each}
+        </ul>
+        {#if check.engine_mb > 0}<p class="muted fine">The assistant program is using about {(check.engine_mb / 1024).toFixed(1)} GB of memory.</p>{/if}
+        {#if check.answer}<p class="muted fine">It said: “{check.answer}”</p>{/if}
+        <p><b>{check.ok ? 'The assistant works on this device.' : 'The assistant is not working yet. Read the lines marked ✖.'}</b></p>
       {/if}
     </div>
     <div class="panel">

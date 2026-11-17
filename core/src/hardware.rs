@@ -76,6 +76,12 @@ pub fn threads() -> usize {
     (n / 2).clamp(2, 8)
 }
 
+/// Memory free for new work in GB (Linux and Android `MemAvailable`), if it can be read.
+pub fn available_ram_gb() -> Option<f64> {
+    let t = std::fs::read_to_string("/proc/meminfo").ok()?;
+    crate::engine::kb_field(&t, "MemAvailable").map(crate::engine::kb_to_gb)
+}
+
 /// Total physical memory in GB, if it can be read.
 pub fn total_ram_gb() -> Option<f64> {
     total_ram_bytes().map(|b| b as f64 / 1_073_741_824.0)
@@ -108,7 +114,7 @@ fn total_ram_bytes() -> Option<u64> {
     if ok != 0 { Some(m.total_phys) } else { None }
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "android"))]
 fn total_ram_bytes() -> Option<u64> {
     let t = std::fs::read_to_string("/proc/meminfo").ok()?;
     let line = t.lines().find(|l| l.starts_with("MemTotal:"))?;
@@ -116,7 +122,7 @@ fn total_ram_bytes() -> Option<u64> {
     Some(kb * 1024)
 }
 
-#[cfg(not(any(windows, target_os = "linux")))]
+#[cfg(not(any(windows, target_os = "linux", target_os = "android")))]
 fn total_ram_bytes() -> Option<u64> {
     None
 }
