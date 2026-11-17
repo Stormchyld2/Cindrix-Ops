@@ -83,7 +83,7 @@ fn detect_drive(state: &AppState) -> bool {
     let (enabled, main) = {
         let mut g = state.libs.lock().unwrap();
         let enabled = g.refresh(&prog);
-        (enabled, g.reg.main_id().map(|s| s.to_string()))
+        (enabled, g.main_id())
     };
     let (r, info) = cindrix_core::libraries::primary_with_main(&prog, &enabled, main.as_deref());
     *ROOT_OVERRIDE.lock().unwrap() = if r != prog { Some(r) } else { None };

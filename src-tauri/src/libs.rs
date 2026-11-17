@@ -27,6 +27,11 @@ pub struct LibState {
 }
 
 impl LibState {
+    /// The id of the drive the person chose as their main one, if any.
+    pub fn main_id(&self) -> Option<String> {
+        self.reg.main_id().map(|s| s.to_string())
+    }
+
     fn ensure(&mut self) {
         if !self.loaded {
             self.reg = Registry::load(&libraries::registry_path());
