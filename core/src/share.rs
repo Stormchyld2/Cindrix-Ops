@@ -442,7 +442,7 @@ pub fn trusted_from_text(text: &str) -> Vec<Trusted> {
 }
 
 /// What a trusted person may do on top of what a guest may.
-pub const PERSON_COMMANDS: &[&str] = &["whoami", "photo_add", "photo_delete", "device_check_in", "device_erased", "pocket_upload"];
+pub const PERSON_COMMANDS: &[&str] = &["whoami", "photo_add", "photo_delete", "device_check_in", "device_erased", "pocket_upload", "phone_maps_list", "phone_map_read"];
 
 pub fn command_allowed(role: &Role, cmd: &str) -> bool {
     match role {

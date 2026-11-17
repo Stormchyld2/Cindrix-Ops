@@ -10,7 +10,7 @@ use cindrix_core::hotspot;
 use cindrix_core::share::{self, Auth, Gate, Request, Response, Role, SignIn};
 use serde::Serialize;
 use serde_json::{json, Value};
-use std::io::{BufReader, Write};
+use std::io::{BufReader, Read, Seek, SeekFrom, Write};
 use std::net::{SocketAddr, TcpListener, TcpStream};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -597,6 +597,10 @@ fn route(app: &tauri::AppHandle, req: &Request, who: &str, stream: &mut TcpStrea
         send(stream, &r);
         return;
     }
+    if req.path == "/api/phone_map_read" {
+        phone_map_stream(stream, req, &role);
+        return;
+    }
     if req.path == "/api/shelf_download" {
         // a plain file for the browser to save, so the book can be read later without this host (guests may, like reading)
         let r = if !share::command_allowed(&role, "shelf_download") {
@@ -681,6 +685,7 @@ fn dispatch(app: &tauri::AppHandle, cmd: &str, a: &Value, role: &Role) -> Result
         }
         "product_info" => tv(crate::product_info(st)),
         "map_packs" => tv(crate::map_packs()),
+        "phone_maps_list" => tv(crate::phone_maps_list()),
         "place_search" => tv(tauri::async_runtime::block_on(crate::place_search(arg(a, "query")?, arg(a, "nearLat")?, arg(a, "nearLon")?))),
         "directions" => tv(tauri::async_runtime::block_on(crate::directions(arg(a, "from")?, arg(a, "to")?, arg(a, "avoid")?))?),
         "route_stats" => tv(crate::route_stats(arg(a, "points")?)),
@@ -763,6 +768,60 @@ fn ask_sse(app: &tauri::AppHandle, req: &Request, stream: &mut TcpStream) {
         Ok(dto) => event(json!({ "done": dto })),
         Err(e) => event(json!({ "error": e })),
     }
+}
+
+/// A phone map for a trusted phone (Cindrix Pocket). The file can be hundreds of megabytes, so it is copied to the
+/// connection piece by piece instead of being read into memory, and a `Range` header lets a phone carry on a
+/// download that broke (docs/32, docs/45).
+fn phone_map_stream(stream: &mut TcpStream, req: &Request, role: &Role) {
+    if !share::command_allowed(role, "phone_map_read") {
+        send(stream, &json_err(403, "Only a phone that joined with an invite can copy maps."));
+        return;
+    }
+    let dir = crate::root().join("user").join("exports");
+    let path = match cindrix_core::phonemaps::resolve(&dir, req.query_value("name").unwrap_or("")) {
+        Ok(p) => p,
+        Err(e) => {
+            send(stream, &json_err(404, &e));
+            return;
+        }
+    };
+    let Ok(mut file) = std::fs::File::open(&path) else {
+        send(stream, &json_err(404, "That map could not be opened."));
+        return;
+    };
+    let len = file.metadata().map(|m| m.len()).unwrap_or(0);
+    let plan = cindrix_core::phonemaps::plan(len, req.header("range"));
+    if plan.status == 416 {
+        send(stream, &Response::text(416, "That part of the file is not there.").with("Content-Range", plan.content_range.as_deref().unwrap_or("")));
+        return;
+    }
+    let mut head = format!("HTTP/1.1 {} {}\r\nContent-Type: application/octet-stream\r\nAccept-Ranges: bytes\r\nContent-Length: {}\r\n", plan.status, share::status_text(plan.status), plan.length());
+    if let Some(cr) = &plan.content_range {
+        head.push_str(&format!("Content-Range: {}\r\n", cr));
+    }
+    head.push_str("Connection: close\r\nCache-Control: no-store\r\n\r\n");
+    if stream.write_all(head.as_bytes()).is_err() || req.method == "HEAD" {
+        return;
+    }
+    if file.seek(SeekFrom::Start(plan.start)).is_err() {
+        return;
+    }
+    let mut left = plan.length();
+    let mut buf = vec![0u8; 64 * 1024];
+    while left > 0 {
+        let want = buf.len().min(left as usize);
+        match file.read(&mut buf[..want]) {
+            Ok(0) | Err(_) => break,
+            Ok(n) => {
+                if stream.write_all(&buf[..n]).is_err() {
+                    break;
+                }
+                left -= n as u64;
+            }
+        }
+    }
+    let _ = stream.flush();
 }
 
 fn media_reply(app: &tauri::AppHandle, req: &Request, kind: &str, path: &str) -> Response {

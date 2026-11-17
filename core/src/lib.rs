@@ -35,6 +35,7 @@ pub mod maps;
 pub mod md5;
 pub mod media;
 pub mod modelhost;
+pub mod phonemaps;
 pub mod phonepack;
 pub mod pipeline;
 pub mod png;

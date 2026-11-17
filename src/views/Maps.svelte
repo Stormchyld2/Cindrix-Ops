@@ -1568,6 +1568,7 @@
     <div class="dialog" role="dialog" aria-modal="true" aria-label="Send to a device" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => { if (e.key === 'Escape') sendOpen = false; }}>
       <div class="label">Send to a device</div>
       <p class="muted small">Pick where to copy the phone map. A phone shows here when it is plugged in and set to transfer files as a drive or card.</p>
+      <p class="muted small">A phone with Cindrix Pocket that joined this Hub can also copy the map over Wi-Fi from its own Maps screen. No cable needed.</p>
       <div class="list">
         {#each sendDevices as d}
           {#if d.here}<p class="muted small">{d.label}</p>{:else}<button class="item" disabled={sendBusy} title="Copy the phone map to this device" onclick={() => void sendTo(d.path)}>{d.label}</button>{/if}

@@ -74,14 +74,14 @@ fn security_files_stay_inside_the_security_folder() {
 #[test]
 fn guests_cannot_reach_the_device_list_erase_orders_or_the_phone_mailbox() {
     use cindrix_core::share::{command_allowed, Role, PERSON_COMMANDS};
-    for c in ["device_check_in", "device_erased", "pocket_upload", "devices_list", "devices_action", "security_pocket_accept"] {
+    for c in ["device_check_in", "device_erased", "pocket_upload", "phone_maps_list", "phone_map_read", "devices_list", "devices_action", "security_pocket_accept"] {
         assert!(!guest_allowed(c), "{} must not be open to guests", c);
         assert!(!command_allowed(&Role::Guest, c), "{} must not be open to a guest's browser", c);
         assert!(!command_allowed(&Role::Nobody, c));
     }
     // a trusted phone may say hello, say it has erased itself and hand in a report; it may not run the host's screens
     let phone = Role::Person("Dana".into());
-    for c in ["device_check_in", "device_erased", "pocket_upload"] {
+    for c in ["device_check_in", "device_erased", "pocket_upload", "phone_maps_list", "phone_map_read"] {
         assert!(command_allowed(&phone, c) && PERSON_COMMANDS.contains(&c));
     }
     for c in ["devices_list", "devices_action", "security_pocket_accept", "security_pocket_list", "security_overview", "security_posture_set"] {

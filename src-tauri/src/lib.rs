@@ -641,6 +641,22 @@ async fn phone_export(name: String, west: f64, south: f64, east: f64, north: f64
 }
 
 #[derive(Serialize)]
+struct PhoneMapDto {
+    name: String,
+    bytes: u64,
+    made: u64,
+}
+
+/// The finished phone maps in `user/exports/`, newest first. A trusted phone lists them to copy one over Wi-Fi (docs/32).
+#[tauri::command]
+fn phone_maps_list() -> Vec<PhoneMapDto> {
+    cindrix_core::phonemaps::list(&root().join("user").join("exports"))
+        .into_iter()
+        .map(|m| PhoneMapDto { name: m.name, bytes: m.bytes, made: m.made })
+        .collect()
+}
+
+#[derive(Serialize)]
 struct DeviceDto {
     path: String,
     label: String,
@@ -3448,6 +3464,7 @@ pub fn run() {
             phone_devices,
             phone_send,
             phone_export,
+            phone_maps_list,
             list_cards,
             own_content,
             open_own_folder,
