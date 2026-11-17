@@ -29,6 +29,7 @@ mod hybrid;
 mod libs;
 mod music;
 mod podcasts;
+mod videos;
 mod privacy;
 mod ops;
 mod security;
@@ -3294,6 +3295,9 @@ pub fn run() {
         .register_asynchronous_uri_scheme_protocol("cindrix-music", |_ctx, request, responder| {
             std::thread::spawn(move || responder.respond(music::serve_music(&request)));
         })
+        .register_asynchronous_uri_scheme_protocol("cindrix-vid", |_ctx, request, responder| {
+            std::thread::spawn(move || responder.respond(videos::serve_video(&request)));
+        })
         .register_asynchronous_uri_scheme_protocol("cindrix-pod", |_ctx, request, responder| {
             std::thread::spawn(move || responder.respond(podcasts::serve_podcast(&request)));
         })
@@ -3517,6 +3521,9 @@ pub fn run() {
             podcasts::podcasts_list,
             podcasts::podcasts_progress_load,
             podcasts::podcasts_progress_save,
+            videos::videos_list,
+            videos::videos_progress_load,
+            videos::videos_progress_save,
             library_share,
             drive_rescan,
             academy_list,

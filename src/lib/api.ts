@@ -1480,6 +1480,51 @@ export async function podcastSource(rel: string): Promise<string> {
   return convertFileSrc('e/' + rel, 'cindrix-pod');
 }
 
+// ---------- videos ----------
+export type VideoItem = { rel: string; title: string; group: string; size: number; ext: string; playable: boolean; thumb: string | null };
+export type VideoTopic = { folder: string; name: string; videos: VideoItem[] };
+export type VideoList = { folder_found: boolean; topics: VideoTopic[] };
+export type VideoProgress = { rel: string; seconds: number; done: boolean };
+
+const sampleVideos: VideoList = {
+  folder_found: true,
+  topics: [
+    { folder: 'Bushcraft', name: 'Bushcraft', videos: [
+      { rel: 'Bushcraft/Friction fire.mp4', title: 'Friction fire', group: '', size: 85_000_000, ext: 'mp4', playable: true, thumb: null },
+      { rel: 'Bushcraft/Fire/Bow drill tips.mp4', title: 'Bow drill tips', group: 'Fire', size: 40_000_000, ext: 'mp4', playable: true, thumb: null },
+    ] },
+  ],
+};
+let memVideoProgress: VideoProgress[] = [];
+
+/** Every topic and video under the drives' videos folders, narrowed by the words in `query`. */
+export async function videosList(query = ''): Promise<VideoList> {
+  if (inTauri) return call<VideoList>('videos_list', { query });
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  if (!words.length) return sampleVideos;
+  return { folder_found: true, topics: sampleVideos.topics
+    .map((t) => ({ ...t, videos: t.videos.filter((v) => words.every((w) => (v.title + ' ' + v.group + ' ' + t.name).toLowerCase().includes(w))) }))
+    .filter((t) => t.videos.length) };
+}
+/** Where each video was left off. Guests on the share server have no saved places (host-only). */
+export async function videosProgressLoad(): Promise<VideoProgress[]> {
+  if (inShare) return [];
+  if (inTauri) return call<VideoProgress[]>('videos_progress_load');
+  return memVideoProgress;
+}
+export async function videosProgressSave(rel: string, seconds: number, done: boolean): Promise<void> {
+  if (inShare) return;
+  if (inTauri) return call<void>('videos_progress_save', { rel, seconds, done });
+  memVideoProgress = [...memVideoProgress.filter((p) => p.rel !== rel), { rel, seconds, done }];
+}
+/** An address a video element (or a thumbnail picture) can use for a file under the videos folders. */
+export async function videoSource(rel: string): Promise<string> {
+  if (!inTauri) return '';
+  if (inShare) return hostUrl('/vid/', 'e/' + rel);
+  const { convertFileSrc } = await import('@tauri-apps/api/core');
+  return convertFileSrc('e/' + rel, 'cindrix-vid');
+}
+
 /** The cover picture for a track (embedded or in its folder), or null in the browser preview. */
 export async function musicArtUrl(rel: string): Promise<string | null> {
   if (!inTauri) return null;

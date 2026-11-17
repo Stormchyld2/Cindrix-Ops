@@ -60,6 +60,12 @@ pub fn mime_of_ext(ext: &str) -> &'static str {
         "m4a" | "m4b" => "audio/mp4",
         "aac" => "audio/aac",
         "weba" => "audio/webm",
+        "mp4" | "m4v" => "video/mp4",
+        "webm" => "video/webm",
+        "ogv" => "video/ogg",
+        "jpg" | "jpeg" => "image/jpeg",
+        "png" => "image/png",
+        "webp" => "image/webp",
         _ => "application/octet-stream",
     }
 }

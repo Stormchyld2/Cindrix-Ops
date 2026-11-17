@@ -34,6 +34,7 @@ pub const GUEST_COMMANDS: &[&str] = &[
     "music_resolve",
     "music_prepare",
     "podcasts_list",
+    "videos_list",
     "academy_list",
     "academy_lesson",
     "plans_list",

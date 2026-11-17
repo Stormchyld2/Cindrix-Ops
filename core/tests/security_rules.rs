@@ -136,3 +136,20 @@ fn the_lock_commands_are_host_only_and_the_hub_stops_when_locked() {
     let gate = share.split("fn device_gate").nth(1).unwrap().split("\n}\n").next().unwrap().to_string();
     assert!(!gate.contains(".ok()?"), "device_gate must fail closed");
 }
+
+#[test]
+fn guests_may_list_and_watch_videos_but_cannot_save_places_or_write() {
+    use cindrix_core::share::{command_allowed, Role};
+    assert!(guest_allowed("videos_list"));
+    assert!(command_allowed(&Role::Guest, "videos_list"));
+    assert!(!command_allowed(&Role::Nobody, "videos_list"));
+    // where each video was left off belongs to the host
+    for c in ["videos_progress_load", "videos_progress_save"] {
+        assert!(!guest_allowed(c), "{} is for the host only", c);
+        assert!(!command_allowed(&Role::Guest, c));
+    }
+    // the video address hands out files only through the safe path check
+    let s = fs::read_to_string(repo("src-tauri/src/videos.rs")).unwrap();
+    assert!(s.contains("videos::resolve("), "videos must be served through the checked path");
+    assert!(!s.contains("std::fs::File::open"), "no unchecked file opens in the video server");
+}

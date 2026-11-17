@@ -26,6 +26,7 @@
   import GardenBeds from './views/GardenBeds.svelte';
   import Music from './views/Music.svelte';
   import Podcasts from './views/Podcasts.svelte';
+  import Videos from './views/Videos.svelte';
   import PodMiniPlayer from './lib/PodMiniPlayer.svelte';
   import Guides from './views/Guides.svelte';
   import Bible from './views/Bible.svelte';
@@ -92,8 +93,8 @@
   $effect(() => { if (settings.loaded) void privacySetIdle(settings.values.privateLockMinutes); });
 
   // Intel is the offline internet: the archives read like web pages. It goes with the library.
-  type Group = 'Dashboard' | 'Ask' | 'Library' | 'Intel' | 'Academy' | 'Maps' | 'Music' | 'Podcasts' | 'Plan' | 'Inventory' | 'Settings' | 'Corner' | 'Guides' | 'Journal' | 'Photos' | 'CommsPlan' | 'Todo' | 'Calendar' | 'Projects' | 'DrugLabels' | 'Security' | 'Bible' | 'Soon';
-  const allGroups: Group[] = ['Dashboard', 'Ask', 'Library', 'Intel', 'Academy', 'Maps', 'Music', 'Podcasts', 'Plan', 'Inventory', 'Settings', 'Corner', 'Journal', 'Photos', 'CommsPlan', 'Todo', 'Calendar', 'Projects', 'DrugLabels', 'Security', 'Bible'];
+  type Group = 'Dashboard' | 'Ask' | 'Library' | 'Intel' | 'Academy' | 'Maps' | 'Music' | 'Podcasts' | 'Videos' | 'Plan' | 'Inventory' | 'Settings' | 'Corner' | 'Guides' | 'Journal' | 'Photos' | 'CommsPlan' | 'Todo' | 'Calendar' | 'Projects' | 'DrugLabels' | 'Security' | 'Bible' | 'Soon';
+  const allGroups: Group[] = ['Dashboard', 'Ask', 'Library', 'Intel', 'Academy', 'Maps', 'Music', 'Podcasts', 'Videos', 'Plan', 'Inventory', 'Settings', 'Corner', 'Journal', 'Photos', 'CommsPlan', 'Todo', 'Calendar', 'Projects', 'DrugLabels', 'Security', 'Bible'];
   // Each product switches parts of the program on or off (core/src/product.rs).
   const groups = $derived(
     allGroups.filter((g) => {
@@ -102,7 +103,7 @@
       if (g === 'Library' || g === 'Intel' || g === 'Corner' || g === 'Bible') return product.library;
       if (g === 'DrugLabels') return product.library && !inShare;
       if (g === 'Maps') return product.maps;
-      if (g === 'Music' || g === 'Podcasts') return product.music;
+      if (g === 'Music' || g === 'Podcasts' || g === 'Videos') return product.music;
       if (g === 'Security') return product.security && !inShare;
       if (g === 'Plan' || g === 'Inventory') return product.plan;
       if (g === 'Todo' || g === 'Calendar' || g === 'Projects') return !inShare;
@@ -243,7 +244,7 @@
       { id: 'Security', cat: 'security', tab: 'Security', show: !inShare && (p ? p.security : true) },
       { id: 'Morale', cat: 'morale', show: true, entries: [
         { label: 'Reading Corner', tab: 'Corner', note: 'enjoyment books', show: p ? p.library : true },
-        { label: 'Music', tab: 'Music', show: p ? p.music : true }, { label: 'Podcasts', tab: 'Podcasts', note: 'saved episodes', show: p ? p.music : true }, { label: '', tab: '', rule: true },
+        { label: 'Music', tab: 'Music', show: p ? p.music : true }, { label: 'Podcasts', tab: 'Podcasts', note: 'saved episodes', show: p ? p.music : true }, { label: 'Videos', tab: 'Videos', note: 'how-to videos', show: p ? p.music : true }, { label: '', tab: '', rule: true },
         { label: 'Journal', tab: 'Journal', note: 'private', show: !inShare }, { label: 'Photos', tab: 'Photos' } ] },
       { id: 'Comms', cat: 'comms', show: true, entries: [
         { label: 'Comms plan', tab: 'CommsPlan', note: 'private', show: !inShare }, { label: 'Radio reference', tab: 'guide:radio-reference' },
@@ -257,7 +258,7 @@
   const activeTop = $derived.by(() => {
     switch (group) {
       case 'Library': case 'Intel': case 'DrugLabels': case 'Bible': return 'Intel';
-      case 'Music': case 'Podcasts': case 'Corner': case 'Journal': case 'Photos': return 'Morale';
+      case 'Music': case 'Podcasts': case 'Videos': case 'Corner': case 'Journal': case 'Photos': return 'Morale';
       case 'CommsPlan': return 'Comms';
       case 'Plan': return plan === 'Seed vault' || plan === 'Garden beds' ? 'Agro' : 'Operations';
       case 'Inventory': case 'Todo': case 'Calendar': case 'Projects': return 'Operations';
@@ -366,6 +367,8 @@
       <Music />
     {:else if group === 'Podcasts'}
       <Podcasts />
+    {:else if group === 'Videos'}
+      <Videos />
     {:else if group === 'Guides'}
       <Guides section={guideSection} title={guideInfo[guideSection]?.title ?? 'Guides'} intro={guideInfo[guideSection]?.intro ?? ''} />
     {:else if group === 'Bible'}
