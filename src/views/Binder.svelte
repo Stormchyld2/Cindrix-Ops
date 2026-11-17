@@ -1,4 +1,5 @@
 <script lang="ts">
+  import CardPhoto from '../lib/CardPhoto.svelte';
   import PageHeader from '../lib/PageHeader.svelte';
   import { onMount } from 'svelte';
   import { familyStatus, familyLoad, inventoryList, listCards, drillsList, plansList, guidesList, mapsList, mapPicture, type MapMeta, opsLoad, agendaGet, type Family, type Item, type Card, type Drill, type PlanInfo, type OpsData, type AgendaItem } from '../lib/api';
@@ -332,6 +333,7 @@
       {#each chosenCards as c (c.id)}
         <section class="card">
           <h2>{c.title}</h2>
+          <CardPhoto file={c.image ?? ''} title={c.title} />
           {#each lines(c.body) as l}<p class:li={l.list} class:sub={l.head}>{l.text}</p>{/each}
         </section>
       {/each}
@@ -354,6 +356,7 @@
       {#each chosenGuides as g (g.k)}
         <section class="card">
           <h2>{g.c.title}</h2>
+          <CardPhoto file={g.c.image ?? ''} title={g.c.title} />
           {#each lines(g.c.body) as l}<p class:li={l.list} class:sub={l.head}>{l.text}</p>{/each}
         </section>
       {/each}

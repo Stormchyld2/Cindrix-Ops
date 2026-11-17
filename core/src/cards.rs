@@ -8,12 +8,17 @@
 //! status: draft
 //! reviewer:
 //! reviewed:
+//! image: morel.jpg
 //! ---
 //! Body in Markdown.
 //! ```
+//!
+//! `image:` is optional. It names a picture file (just the file name) that is looked for in the `images`
+//! folders (`content/images`, the drive's `images`, the person's `user/images`). The card shows the picture
+//! only when the line is there and the file is found; otherwise it looks exactly as it did before.
 
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Card {
@@ -24,6 +29,8 @@ pub struct Card {
     pub status: String,
     pub reviewer: String,
     pub reviewed: String,
+    /// File name of the card's picture, or empty. Never a path.
+    pub image: String,
     pub body: String,
 }
 
@@ -39,7 +46,7 @@ pub fn parse(id: &str, text: &str) -> Result<Card, String> {
     let (head, body) = rest.split_once("\n---\n").ok_or("card header is not closed with ---")?;
     let mut card = Card {
         id: id.to_string(), title: String::new(), kind: String::new(), status: "draft".into(),
-        reviewer: String::new(), reviewed: String::new(), body: body.trim().to_string(),
+        reviewer: String::new(), reviewed: String::new(), image: String::new(), body: body.trim().to_string(),
     };
     for line in head.lines() {
         if let Some((k, v)) = line.split_once(':') {
@@ -50,6 +57,11 @@ pub fn parse(id: &str, text: &str) -> Result<Card, String> {
                 "status" => card.status = v,
                 "reviewer" => card.reviewer = v,
                 "reviewed" => card.reviewed = v,
+                "image" => {
+                    if image_name_ok(&v) {
+                        card.image = v;
+                    }
+                }
                 _ => {}
             }
         }
@@ -82,6 +94,39 @@ pub fn load_dir(dir: &Path) -> Vec<Card> {
     }
     cards.sort_by(|a, b| a.title.cmp(&b.title));
     cards
+}
+
+/// Picture types a card may name. SVG is left out on purpose: photos only.
+const IMAGE_EXT: &[&str] = &["jpg", "jpeg", "png", "webp", "gif"];
+
+/// A picture name is a plain file name with a known picture ending: no folders, no `..`, nothing hidden.
+pub fn image_name_ok(name: &str) -> bool {
+    if name.is_empty() || name.len() > 120 || name.starts_with('.') {
+        return false;
+    }
+    if name.contains('/') || name.contains('\\') || name.contains("..") || name.contains(':') || name.contains('\0') {
+        return false;
+    }
+    match name.rsplit_once('.') {
+        Some((stem, ext)) => !stem.is_empty() && IMAGE_EXT.iter().any(|e| e.eq_ignore_ascii_case(ext)),
+        None => false,
+    }
+}
+
+/// The picture file for a card: the named file in the first folder that has it, looking in the person's
+/// own folder first (the last in the list), so a person can replace a shipped picture with their own.
+/// None when the name is not a plain picture name or no folder has the file.
+pub fn image_file(dirs: &[PathBuf], name: &str) -> Option<PathBuf> {
+    if !image_name_ok(name) {
+        return None;
+    }
+    dirs.iter().rev().map(|d| d.join(name)).find(|p| p.is_file())
+}
+
+/// The picture as a `data:` address the screen can show without a server. None when it is missing, too big
+/// or not a known picture type, so the card is simply shown without it.
+pub fn image_data(dirs: &[PathBuf], name: &str) -> Option<String> {
+    crate::academy::image_data_url(&image_file(dirs, name)?)
 }
 
 /// A card file that was left out, and why.
@@ -174,6 +219,49 @@ mod tests {
         assert_eq!(l.problems.len(), 2);
         assert!(l.problems.iter().any(|p| p.place == "one/broken.md"));
         assert!(l.problems.iter().any(|p| p.place == "one/dose.md" && p.message.contains("medicine amount")));
+    }
+
+    #[test]
+    fn a_card_names_its_picture_only_with_a_plain_file_name() {
+        let c = parse("x", "---\ntitle: T\nimage: morel.jpg\n---\nB").unwrap();
+        assert_eq!(c.image, "morel.jpg");
+        let none = parse("x", "---\ntitle: T\n---\nB").unwrap();
+        assert_eq!(none.image, "");
+        for bad in ["../secret.jpg", "a/b.jpg", "a\\b.jpg", ".hidden.jpg", "morel", "morel.exe", "morel.svg", "C:morel.jpg", ".jpg", ""] {
+            assert!(!image_name_ok(bad), "{}", bad);
+            let t = format!("---\ntitle: T\nimage: {}\n---\nB", bad);
+            assert_eq!(parse("x", &t).unwrap().image, "", "{}", bad);
+        }
+        assert!(image_name_ok("Morel-2.JPG") && image_name_ok("a.png") && image_name_ok("b.webp"));
+    }
+
+    #[test]
+    fn the_picture_is_found_only_when_its_file_is_there_and_the_last_folder_wins() {
+        let d = std::env::temp_dir().join(format!("cindrix-cardimg-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&d);
+        let (a, b) = (d.join("shipped"), d.join("user"));
+        fs::create_dir_all(&a).unwrap();
+        fs::create_dir_all(&b).unwrap();
+        fs::write(a.join("morel.jpg"), [1u8, 2, 3]).unwrap();
+        fs::write(a.join("notes.txt"), "x").unwrap();
+        let dirs = vec![a.clone(), b.clone(), d.join("missing")];
+        // there: found, and shown as a data address
+        assert_eq!(image_file(&dirs, "morel.jpg"), Some(a.join("morel.jpg")));
+        assert!(image_data(&dirs, "morel.jpg").unwrap().starts_with("data:image/jpeg;base64,"));
+        // no such file, wrong type, or a sneaky name: nothing, so the card shows no picture
+        assert_eq!(image_file(&dirs, "ramps.jpg"), None);
+        assert_eq!(image_data(&dirs, "ramps.jpg"), None);
+        assert_eq!(image_file(&dirs, "notes.txt"), None);
+        assert_eq!(image_file(&dirs, "../shipped/morel.jpg"), None);
+        assert_eq!(image_file(&[], "morel.jpg"), None);
+        // the person's own copy replaces the shipped one
+        fs::write(b.join("morel.jpg"), [9u8]).unwrap();
+        assert_eq!(image_file(&dirs, "morel.jpg"), Some(b.join("morel.jpg")));
+        // a file that is too big is left out rather than loaded
+        fs::write(b.join("huge.png"), vec![0u8; 1_600_000]).unwrap();
+        assert!(image_file(&dirs, "huge.png").is_some());
+        assert_eq!(image_data(&dirs, "huge.png"), None);
+        let _ = fs::remove_dir_all(&d);
     }
 
     #[test]

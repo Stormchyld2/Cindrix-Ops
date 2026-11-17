@@ -4,6 +4,7 @@ kind: medical
 status: draft
 reviewer:
 reviewed:
+image:
 ---
 **The most important thing, in bold, on the first line.** If phones work, call 911.
 

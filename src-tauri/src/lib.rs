@@ -144,6 +144,8 @@ struct CardDto {
     status: String,
     reviewer: String,
     reviewed: String,
+    /// Picture file name from the card's header, or empty.
+    image: String,
     body: String,
 }
 
@@ -183,8 +185,29 @@ fn list_cards() -> Vec<CardDto> {
     cards::load_dirs(&card_dirs())
         .cards
         .into_iter()
-        .map(|c| CardDto { id: c.id, title: c.title, kind: c.kind, status: c.status, reviewer: c.reviewer, reviewed: c.reviewed, body: c.body })
+        .map(|c| CardDto { id: c.id, title: c.title, kind: c.kind, status: c.status, reviewer: c.reviewer, reviewed: c.reviewed, image: c.image, body: c.body })
         .collect()
+}
+
+/// The folders a card's picture is looked for in: the program's own `images`, the drive's, other libraries'
+/// and the person's `user/images` (last, so their own copy wins).
+fn card_image_dirs() -> Vec<PathBuf> {
+    let r = root();
+    let mut v = vec![content_sub("images"), r.join("images")];
+    for o in libs::other_roots(&r) {
+        v.push(o.join("images"));
+        v.push(o.join("content").join("images"));
+    }
+    v.push(r.join("user").join("images"));
+    v.retain(|d| d.is_dir());
+    v
+}
+
+/// A card's picture as a `data:` address, or None when the card has none or the file is not there. The
+/// screen then shows the card without a picture. Only a plain file name is accepted.
+#[tauri::command]
+fn card_image(file: String) -> Option<String> {
+    cards::image_data(&card_image_dirs(), &file)
 }
 
 #[derive(Serialize)]
@@ -2601,7 +2624,7 @@ fn seed_guides() -> Vec<CardDto> {
     cards::load_dirs(&dirs)
         .cards
         .into_iter()
-        .map(|c| CardDto { id: c.id, title: c.title, kind: c.kind, status: c.status, reviewer: c.reviewer, reviewed: c.reviewed, body: c.body })
+        .map(|c| CardDto { id: c.id, title: c.title, kind: c.kind, status: c.status, reviewer: c.reviewer, reviewed: c.reviewed, image: c.image, body: c.body })
         .collect()
 }
 
@@ -2619,7 +2642,7 @@ pub fn guides_for(section: &str, include_user: bool) -> Result<Vec<CardDto>, Str
     Ok(cards::load_dirs(&dirs)
         .cards
         .into_iter()
-        .map(|c| CardDto { id: c.id, title: c.title, kind: c.kind, status: c.status, reviewer: c.reviewer, reviewed: c.reviewed, body: c.body })
+        .map(|c| CardDto { id: c.id, title: c.title, kind: c.kind, status: c.status, reviewer: c.reviewer, reviewed: c.reviewed, image: c.image, body: c.body })
         .collect())
 }
 
@@ -3308,6 +3331,7 @@ pub fn run() {
             phone_send,
             phone_export,
             list_cards,
+            card_image,
             own_content,
             open_own_folder,
             ask_stream,

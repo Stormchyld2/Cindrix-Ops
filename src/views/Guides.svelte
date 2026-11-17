@@ -1,4 +1,5 @@
 <script lang="ts">
+  import CardPhoto from '../lib/CardPhoto.svelte';
   import PageHeader from '../lib/PageHeader.svelte';
   // Plain pages in a themed folder: Agro (crops, planting, food, livestock, soil and water) and the radio reference.
   // They are read like emergency cards; the person can add their own in user/guides/<section>.
@@ -52,6 +53,7 @@
     <div class="row"><button class="btn" onclick={() => (open = null)}>← All of {title}</button></div>
     <article class="panel">
       <h2>{open.title}</h2>
+      <CardPhoto file={open.image ?? ''} title={open.title} />
       {#each blocks(open.body) as b}
         {#if b.kind === 'p'}<p>{#each parts(b.lines[0]) as x}{#if x.b}<b>{x.t}</b>{:else}{x.t}{/if}{/each}</p>
         {:else if b.kind === 'ol'}<ol>{#each b.lines as l}<li>{#each parts(l) as x}{#if x.b}<b>{x.t}</b>{:else}{x.t}{/if}{/each}</li>{/each}</ol>

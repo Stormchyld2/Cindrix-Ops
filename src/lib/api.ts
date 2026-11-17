@@ -1,7 +1,7 @@
 // Talks to the Rust core. In a plain browser (no Tauri) it falls back to in-memory samples,
 // so the screens can be previewed and screenshotted.
 
-export type Card = { id: string; title: string; kind: string; status: string; reviewer: string; reviewed: string; body: string };
+export type Card = { id: string; title: string; kind: string; status: string; reviewer: string; reviewed: string; body: string; /** Picture file name from the card's header; empty when it has none. */ image?: string };
 export type Reply = { kind: 'Refused' | 'NotFound' | 'Answered' | 'Replaced'; text: string; sources: string[]; links?: string[]; excerpts?: string[]; card: string | null };
 export type Item = {
   id: string; category: string; name: string; location: string; quantity: number; unit: string;
@@ -270,6 +270,11 @@ export async function openOwnFolder(key: string): Promise<string> {
 }
 
 // ---------- calls ----------
+/** A card's picture as a data address, or null when the card has none or the file is not there. */
+export async function cardImage(file: string): Promise<string | null> {
+  if (!file || !inTauri) return null;
+  try { return await call<string | null>('card_image', { file }); } catch { return null; }
+}
 export async function listCards(): Promise<Card[]> {
   if (inTauri) return call<Card[]>('list_cards');
   return [

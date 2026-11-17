@@ -1,5 +1,6 @@
 <script lang="ts">
   import PageHeader from '../lib/PageHeader.svelte';
+  import CardPhoto from '../lib/CardPhoto.svelte';
   import { listCards, type Card } from '../lib/api';
   import { onMount } from 'svelte';
   import { parts, sections, type TextBlock } from '../lib/cardtext';
@@ -60,6 +61,7 @@
     <div class="row"><button class="btn" onclick={() => (open = null)}>← All cards</button></div>
     <article class="panel">
       <h2>{open.title}</h2>
+      <CardPhoto file={open.image ?? ''} title={open.title} />
       {#each sections(open.body) as s}
         {#if s.fold}
           <details class="more">

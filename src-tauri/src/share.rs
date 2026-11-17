@@ -654,6 +654,7 @@ fn dispatch(app: &tauri::AppHandle, cmd: &str, a: &Value, role: &Role) -> Result
     let st = app.state::<AppState>();
     match cmd {
         "list_cards" => tv(crate::list_cards()),
+        "card_image" => tv(crate::card_image(arg(a, "file")?)),
         "whoami" => Ok(json!({ "person": match role { Role::Person(p) => Some(p.clone()), _ => None } })),
         "photos_list" => {
             let scope: String = a.get("scope").and_then(|v| v.as_str()).unwrap_or("shared").to_string();

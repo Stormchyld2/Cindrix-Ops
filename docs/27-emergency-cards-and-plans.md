@@ -88,3 +88,12 @@ from the drive's own folder when the shipped content is not there.
 ## The portable build carries these folders (2026-11-10)
 
 The Windows portable build now has `cards`, `plans`, `seed-guides`, `drills`, `academy` and `guides` inside its own `content` folder, so cards, medical cards, plans, drills and courses work with nothing else beside it (the owner moved the pack onto the drive and the program did not read it, so the build now carries them). Books, manuals, maps, music and `.zim` files stay on the drive. `content_sub` (`src-tauri/src/lib.rs`) reads the drive's own `content\<name>` folder when it has files in it, and the copy beside the program otherwise; the folders `cards`, `academy` and so on at the top of the drive, other libraries and `user\...` are still added on top. The content pack artifact stays for drives that run the program from somewhere else.
+
+## Photos on cards (2026-11-17)
+A card (and a guide page or seed guide, which share the same format) can show one photo. Put the file in `content/images/`
+(or the drive's `images` folder, or `user/images`, where your own copy wins) and add `image: file.jpg` to the card's header.
+Only a plain file name with a `jpg`, `jpeg`, `png`, `webp` or `gif` ending is accepted; a name with a folder, `..` or another
+ending is ignored. Files over 1.5 MB are left out. When the line is missing, or the file is not found, the card is shown
+exactly as before: no gap, no broken-picture box, no error. The picture is read through the `card_image` command (also allowed for
+guests on the hotspot, since it only reads library content) and shown by `src/lib/CardPhoto.svelte` on the Library card page,
+in Binder and in Guides. Logic and tests: `core/src/cards.rs`. Licence note for the pictures: `licenses/README.md`.
