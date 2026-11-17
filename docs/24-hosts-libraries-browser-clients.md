@@ -111,7 +111,8 @@ steps 3 onward wait for the real Windows test (doc 22).
    labeled by library on the Archives screen; Ask also searches loose files in every allowed library. The
    primary library still holds your files, settings, models and engines: an allowed Vault drive first,
    then an allowed Hub drive, then the program's own drive, then the first allowed one. (The downloadable
-   build is a folder with a Go marker, so without the Vault-first rule it would have stayed the main drive.) **Not yet:** Shelf books, music and maps from the other libraries,
+   build is a folder with a Go marker, so without the Vault-first rule it would have stayed the main drive.) **Main drive by id** (built 2026-11-17): with two Hub sticks (for example the thumb-drive setup, `fieldhub1` with the maps and the small model, `fieldhub2` with the rest) the person picks one in Settings > Libraries ("Use as main drive"). It is remembered by drive id in `libraries.txt` (a `main` line; older versions skip it), so port and plug-in order do not matter. The order is: an allowed Vault drive, then the Hub drive (id `hub`), then the chosen drive, then any other Hub drive, then the usual fallback. The other stick is still a library and is read. If the chosen drive is not plugged in the order above is used and Settings says so. The assistant model is looked for on the main drive only, so keep it on the chosen stick.
+   **Not yet:** Shelf books, music and maps from the other libraries,
    labels on Intel results, and removing an archive that lives in a non-primary library.
 2. **One transport seam.** Move command logic that is still in `lib.rs` into `core/`, and put the Tauri
    calls behind an interface in `api.ts` so a second transport can be added without touching screens.

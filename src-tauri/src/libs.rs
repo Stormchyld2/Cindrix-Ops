@@ -7,7 +7,7 @@
 //! folders Ask searches for loose files. Shelf books, music and maps still come from the primary
 //! library only.
 
-use super::{library_dir, rescan_now, AppState};
+use super::{library_dir, rescan_now, root, AppState};
 use cindrix_core::drive::DriveInfo;
 use cindrix_core::kiwix;
 use cindrix_core::libraries::{self, Answer, Library, Registry, State};
@@ -93,6 +93,10 @@ pub struct LibraryDto {
     present: bool,
     /// The question should suggest "Always" (the main drives).
     suggest_always: bool,
+    /// The person chose this drive as the main one (their own files live on it when it is plugged in).
+    main: bool,
+    /// This drive is the main one right now.
+    in_use_as_main: bool,
 }
 
 /// Every drive plugged in, and every answer remembered about drives that are not.
@@ -112,6 +116,8 @@ pub fn libraries_list(state: tauri::State<'_, AppState>) -> Vec<LibraryDto> {
             enabled: l.state.enabled(),
             present: true,
             suggest_always: l.suggest_always,
+            main: g.reg.main_id() == Some(l.info.id.as_str()),
+            in_use_as_main: l.info.root == root(),
         })
         .collect();
     for (id, r) in g.reg.items() {
@@ -125,6 +131,25 @@ pub fn libraries_list(state: tauri::State<'_, AppState>) -> Vec<LibraryDto> {
                 enabled: false,
                 present: false,
                 suggest_always: false,
+                main: g.reg.main_id() == Some(id.as_str()),
+                in_use_as_main: false,
+            });
+        }
+    }
+    // a chosen main drive that has no answer line is still shown, so it can be un-chosen
+    if let Some(id) = g.reg.main_id() {
+        if !out.iter().any(|l| l.id == id) {
+            out.push(LibraryDto {
+                id: id.to_string(),
+                name: g.reg.main_name().unwrap_or(id).to_string(),
+                edition: String::new(),
+                path: String::new(),
+                state: State::Never.word(),
+                enabled: false,
+                present: false,
+                suggest_always: false,
+                main: true,
+                in_use_as_main: false,
             });
         }
     }
@@ -179,4 +204,27 @@ pub fn library_forget(id: String, app: tauri::AppHandle) -> Result<(), String> {
     };
     std::thread::spawn(move || rescan_now(&app));
     saved.map_err(|_| "That could not be saved. It will be asked again the next time the program starts.".to_string())
+}
+
+/// Choose (`on` true) or stop choosing a drive as the main one. A drive can only be chosen once it is allowed,
+/// because the person's own files will live on it. When it is not plugged in, the usual order is used and the
+/// screen says so.
+#[tauri::command]
+pub fn library_set_main(id: String, on: bool, app: tauri::AppHandle) -> Result<(), String> {
+    let st = app.state::<AppState>();
+    let saved = {
+        let mut g = st.libs.lock().unwrap();
+        g.ensure();
+        if on {
+            let lib = g.list.iter().find(|l| l.info.id == id).cloned().ok_or("That drive is not plugged in, so it cannot be chosen now.")?;
+            if !lib.state.enabled() {
+                return Err("Say \"Always\" for this drive first, then choose it as the main drive.".into());
+            }
+            g.reg.set_main(&lib.info.id, &lib.info.name)
+        } else {
+            g.reg.clear_main()
+        }
+    };
+    std::thread::spawn(move || rescan_now(&app));
+    saved.map_err(|_| "Your choice is used for now, but it could not be saved, so it will be forgotten when the program closes.".to_string())
 }

@@ -80,8 +80,12 @@ fn detect_drive(state: &AppState) -> bool {
     let before = root();
     let prog = program_dir();
     // only the drives the person has said may be read count; a new one waits for an answer
-    let enabled = state.libs.lock().unwrap().refresh(&prog);
-    let (r, info) = cindrix_core::libraries::primary(&prog, &enabled);
+    let (enabled, main) = {
+        let mut g = state.libs.lock().unwrap();
+        let enabled = g.refresh(&prog);
+        (enabled, g.reg.main_id().map(|s| s.to_string()))
+    };
+    let (r, info) = cindrix_core::libraries::primary_with_main(&prog, &enabled, main.as_deref());
     *ROOT_OVERRIDE.lock().unwrap() = if r != prog { Some(r) } else { None };
     *state.drive.lock().unwrap() = info;
     // a different drive may have its own lock
@@ -3475,6 +3479,7 @@ pub fn run() {
             libs::libraries_list,
             libs::library_answer,
             libs::library_forget,
+            libs::library_set_main,
             product_info,
             maps_list,
             map_load,

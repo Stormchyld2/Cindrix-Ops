@@ -934,6 +934,8 @@ export type LibraryState = 'own' | 'always' | 'once' | 'never' | 'ask';
 export type LibraryEntry = {
   id: string; name: string; edition: string; path: string;
   state: LibraryState; enabled: boolean; present: boolean; suggest_always: boolean;
+  /** chosen by the person as the main drive */ main: boolean;
+  /** the drive their own files are on right now */ in_use_as_main: boolean;
 };
 
 export async function librariesList(): Promise<LibraryEntry[]> {
@@ -950,6 +952,11 @@ export async function libraryAnswer(path: string, answer: 'always' | 'once' | 'n
 /** Forget what was said about a drive, so it is asked about again. */
 export async function libraryForget(id: string): Promise<void> {
   if (inTauri) await call<void>('library_forget', { id });
+}
+
+/** Choose (or stop choosing) a drive as the main one, by its id. */
+export async function librarySetMain(id: string, on: boolean): Promise<void> {
+  if (inTauri) await call<void>('library_set_main', { id, on });
 }
 
 export type CrawlStatus = {

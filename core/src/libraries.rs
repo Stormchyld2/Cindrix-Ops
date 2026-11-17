@@ -23,12 +23,15 @@ pub struct Remembered {
     pub name: String,
 }
 
-/// The remembered answers, one line each: `always<TAB>id<TAB>name` or `never<TAB>id<TAB>name`.
+/// The remembered answers, one line each: `always<TAB>id<TAB>name` or `never<TAB>id<TAB>name`, and at most one
+/// `main<TAB>id<TAB>name` line: the drive the person chose to keep their own files on (by id, so it still works
+/// whichever port or order the drives are plugged in; older versions of the program skip that line).
 /// A missing, damaged or oversized file reads as no answers (so the person is simply asked again).
 #[derive(Debug, Default, Clone)]
 pub struct Registry {
     path: PathBuf,
     items: BTreeMap<String, Remembered>,
+    main: Option<(String, String)>,
 }
 
 const MAX_BYTES: u64 = 100_000;
@@ -40,14 +43,17 @@ fn one_line(s: &str) -> String {
 impl Registry {
     pub fn load(path: &Path) -> Registry {
         let mut items = BTreeMap::new();
+        let mut main = None;
         let ok = std::fs::metadata(path).map(|m| m.len() <= MAX_BYTES).unwrap_or(false);
         if ok {
             if let Ok(text) = std::fs::read_to_string(path) {
                 for line in text.lines() {
                     let mut parts = line.splitn(3, '\t');
-                    let answer = match parts.next() {
+                    let word = parts.next();
+                    let answer = match word {
                         Some("always") => Answer::Always,
                         Some("never") => Answer::Never,
+                        Some("main") => Answer::Always, // not an answer: handled just below
                         _ => continue,
                     };
                     let raw = parts.next().unwrap_or("");
@@ -56,11 +62,15 @@ impl Registry {
                         continue; // an empty or unusable id
                     }
                     let name = one_line(parts.next().unwrap_or(""));
-                    items.insert(id, Remembered { answer, name });
+                    if word == Some("main") {
+                        main = Some((id, name));
+                    } else {
+                        items.insert(id, Remembered { answer, name });
+                    }
                 }
             }
         }
-        Registry { path: path.to_path_buf(), items }
+        Registry { path: path.to_path_buf(), items, main }
     }
 
     pub fn answer(&self, id: &str) -> Option<Answer> {
@@ -71,8 +81,32 @@ impl Registry {
         self.items.iter()
     }
 
+    /// The id of the drive the person chose to keep their own files on, if they chose one.
+    pub fn main_id(&self) -> Option<&str> {
+        self.main.as_ref().map(|(id, _)| id.as_str())
+    }
+
+    /// The name that drive had when it was chosen (so a message can name it while it is unplugged).
+    pub fn main_name(&self) -> Option<&str> {
+        self.main.as_ref().map(|(_, n)| n.as_str())
+    }
+
+    /// Choose the main drive. Kept for this run even when the file cannot be written.
+    pub fn set_main(&mut self, id: &str, name: &str) -> std::io::Result<()> {
+        self.main = Some((drive::clean_id(id, ""), one_line(name)));
+        self.save()
+    }
+
+    /// Go back to the usual rule (Vault, then Hub, then the first drive found).
+    pub fn clear_main(&mut self) -> std::io::Result<()> {
+        if self.main.take().is_some() { self.save() } else { Ok(()) }
+    }
+
     fn save(&self) -> std::io::Result<()> {
         let mut out = String::new();
+        if let Some((id, name)) = &self.main {
+            out.push_str(&format!("main\t{}\t{}\n", id, one_line(name)));
+        }
         for (id, r) in &self.items {
             let word = if r.answer == Answer::Always { "always" } else { "never" };
             out.push_str(&format!("{}\t{}\t{}\n", word, id, one_line(&r.name)));
@@ -187,12 +221,35 @@ pub fn enabled(libs: &[Library]) -> Vec<DriveInfo> {
 /// Otherwise the usual rule applies (`drive::choose`): the program's own drive, else the first
 /// allowed one, else the folder the program is in.
 pub fn primary(program_dir: &Path, enabled: &[DriveInfo]) -> (PathBuf, Option<DriveInfo>) {
-    for edition in ["vault", "hub"] {
-        if let Some(d) = enabled.iter().find(|d| d.edition == edition) {
-            return (d.root.clone(), Some(d.clone()));
+    primary_with_main(program_dir, enabled, None)
+}
+
+/// Like `primary`, but the drive the person chose as their main one (by id) comes first, when it is plugged in and
+/// allowed. When it is not, the usual rule applies; `main_is_missing` tells the screens to say so.
+pub fn primary_with_main(program_dir: &Path, enabled: &[DriveInfo], main: Option<&str>) -> (PathBuf, Option<DriveInfo>) {
+    let pick = |d: &DriveInfo| (d.root.clone(), Some(d.clone()));
+    // 1. a Vault drive, 2. the Hub drive itself (id "hub"), 3. the drive the person chose (Field Hub 1 on thumb drives),
+    // 4. any other Hub drive, 5. the usual last choice. A second stick (Field Hub 2) is still a library, just never main.
+    if let Some(d) = enabled.iter().find(|d| d.edition == "vault") {
+        return pick(d);
+    }
+    if let Some(d) = enabled.iter().find(|d| d.edition == "hub" && d.id == "hub") {
+        return pick(d);
+    }
+    if let Some(id) = main {
+        if let Some(d) = enabled.iter().find(|d| d.id == id) {
+            return pick(d);
         }
     }
+    if let Some(d) = enabled.iter().find(|d| d.edition == "hub") {
+        return pick(d);
+    }
     drive::choose(program_dir, enabled)
+}
+
+/// True when a main drive was chosen but it is not plugged in (or not allowed), so another one is being used.
+pub fn main_is_missing(enabled: &[DriveInfo], main: Option<&str>) -> bool {
+    main.map(|id| !enabled.iter().any(|d| d.id == id)).unwrap_or(false)
 }
 
 /// Find the drives on this computer and work out where each stands.
@@ -405,6 +462,60 @@ mod tests {
         let (root, info) = primary(&plain, &[]);
         assert_eq!(root, plain);
         assert!(info.is_none());
+    }
+
+    #[test]
+    fn the_chosen_main_drive_wins_whatever_the_order_and_a_missing_one_falls_back() {
+        // two Field Hub sticks, both of the Hub edition, listed in either order
+        let (prog, _own) = drive_with("fh-prog", "go", "go");
+        let (_a, one) = drive_with("fh-1", "hub", "fieldhub1");
+        let (_b, two) = drive_with("fh-2", "hub", "fieldhub2");
+        // no choice: whichever is listed first is main, so the order decides
+        assert_eq!(primary(&prog, &[two.clone(), one.clone()]).0, two.root);
+        assert_eq!(primary(&prog, &[one.clone(), two.clone()]).0, one.root);
+        // chosen: Field Hub 1 is main in both orders
+        assert_eq!(primary_with_main(&prog, &[two.clone(), one.clone()], Some("fieldhub1")).0, one.root);
+        assert_eq!(primary_with_main(&prog, &[one.clone(), two.clone()], Some("fieldhub1")).0, one.root);
+        // Vault and the Hub hard drive still come first; the chosen stick is main when they are not plugged in
+        let (_v, vault) = drive_with("fh-vault", "vault", "vault");
+        assert_eq!(primary_with_main(&prog, &[one.clone(), vault.clone()], Some("fieldhub1")).0, vault.root);
+        let (_h, hub) = drive_with("fh-hub", "hub", "hub");
+        assert_eq!(primary_with_main(&prog, &[one.clone(), two.clone(), hub.clone()], Some("fieldhub1")).0, hub.root);
+        // chosen but not plugged in: the usual rule, and the screens are told
+        assert_eq!(primary_with_main(&prog, &[two.clone()], Some("fieldhub1")).0, two.root);
+        assert!(main_is_missing(&[two.clone()], Some("fieldhub1")));
+        assert!(!main_is_missing(&[one, two], Some("fieldhub1")));
+        assert!(!main_is_missing(&[], None));
+    }
+
+    #[test]
+    fn the_main_choice_is_remembered_and_older_programs_can_still_read_the_file() {
+        let dir = tmp("main-choice");
+        let file = dir.join("libraries.txt");
+        let mut reg = Registry::load(&file);
+        assert_eq!(reg.main_id(), None);
+        reg.set("fieldhub1", "Field Hub 1", Answer::Always).unwrap();
+        reg.set_main("FieldHub1", "Field Hub 1").unwrap();
+        let again = Registry::load(&file);
+        assert_eq!(again.main_id(), Some("fieldhub1"));
+        assert_eq!(again.main_name(), Some("Field Hub 1"));
+        assert_eq!(again.answer("fieldhub1"), Some(Answer::Always));
+        // the main line is not an answer: it adds no library to the list
+        assert_eq!(again.items().count(), 1);
+        // forgetting the answer keeps the choice; clearing the choice keeps the answer
+        let mut r = again;
+        r.forget("fieldhub1").unwrap();
+        assert_eq!(Registry::load(&file).main_id(), Some("fieldhub1"));
+        r.set("fieldhub1", "Field Hub 1", Answer::Always).unwrap();
+        r.clear_main().unwrap();
+        let cleared = Registry::load(&file);
+        assert_eq!(cleared.main_id(), None);
+        assert_eq!(cleared.answer("fieldhub1"), Some(Answer::Always));
+        // a damaged main line is ignored
+        fs::write(&file, "main\t\t\nalways\tvault\tVault\n").unwrap();
+        let bad = Registry::load(&file);
+        assert_eq!(bad.main_id(), None);
+        assert_eq!(bad.answer("vault"), Some(Answer::Always));
     }
 
     #[test]

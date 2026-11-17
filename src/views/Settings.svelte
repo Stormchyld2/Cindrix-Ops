@@ -3,7 +3,7 @@
   import { onMount, onDestroy } from 'svelte';
   import {
     modelStatus, listModels, selectModel, assistantCheck, type AssistantCheck, libraryStatus, sourcesList, pickFolder,
-    librariesList, libraryAnswer, libraryForget, ownContent, openOwnFolder, type OwnFolder,
+    librariesList, libraryAnswer, libraryForget, librarySetMain, ownContent, openOwnFolder, type OwnFolder,
     type ModelStatus, type ModelChoice, type LibraryStatus, type Sources, type LibraryEntry,
   } from '../lib/api';
   import MyDetails from './MyDetails.svelte';
@@ -87,6 +87,11 @@
   async function libForget(id: string) {
     libMsg = '';
     try { await libraryForget(id); } catch (e) { libMsg = String(e); }
+    await refresh();
+  }
+  async function libMain(id: string, on: boolean) {
+    libMsg = '';
+    try { await librarySetMain(id, on); } catch (e) { libMsg = String(e); }
     await refresh();
   }
   const libText: Record<string, string> = {
@@ -448,6 +453,9 @@
       <div class="label">LIBRARIES</div>
       <p class="muted fine">A library is a Cindrix drive. The program asks before it reads one, and remembers your answer for that drive whatever drive letter it gets. Archives and loose files from every library you allow are searched together. Your own files and settings are kept on the main one.</p>
       {#if libMsg}<p class="warn">{libMsg}</p>{/if}
+      {#each libs.filter((x) => x.main && !x.present) as m (m.id)}
+        <p class="warn">{m.name} is chosen as the main drive but is not plugged in, so another drive is being used for your own files. Plug it in to switch back.</p>
+      {/each}
       {#if libs.length === 0}
         <p class="muted">No Cindrix drives found yet. Plug one in; this list updates by itself.</p>
       {:else}
@@ -458,12 +466,15 @@
                 <strong>{l.name}</strong>{l.edition ? ' · ' + l.edition + ' edition' : ''}
                 <div class="muted fine path">{l.present ? l.path : 'Not plugged in now'}</div>
                 <div class="fine">{libText[l.state]}</div>
+                {#if l.main}<div class="fine"><strong>{l.in_use_as_main ? 'Your main drive. Your own files are kept here.' : 'Chosen as your main drive.'}</strong></div>{/if}
               </div>
               <span class="row">
                 {#if l.present && l.state !== 'own'}
                   {#if l.state !== 'always'}<button class="btn" onclick={() => libAnswer(l.path, 'always')}>Always use it</button>{/if}
                   {#if l.state !== 'never'}<button class="btn" onclick={() => libAnswer(l.path, 'never')}>Never use it</button>{/if}
                 {/if}
+                {#if l.present && l.enabled && !l.main}<button class="btn" onclick={() => libMain(l.id, true)}>Use as main drive</button>{/if}
+                {#if l.main}<button class="btn" onclick={() => libMain(l.id, false)}>Stop using as main drive</button>{/if}
                 {#if l.state === 'always' || l.state === 'never' || l.state === 'once'}
                   <button class="btn" onclick={() => libForget(l.id)}>Ask me again</button>
                 {/if}
