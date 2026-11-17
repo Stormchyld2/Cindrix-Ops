@@ -110,3 +110,6 @@ The courses Fieldcraft essentials, Living off the land, The long stay, Trades an
 
 ## Remains management and water protection (added 2026-11-15)
 The plan "Remains management and water protection (SOP)" and the cards "Dealing with a death when no help comes", "Dead livestock: what to do", "A pet has died", "Dead wildlife and game scraps" and "Choose a burial or compost site" are ours, written in our own words from WHO, PAHO, ICRC and IFRC guidance, Sphere standards, Tennessee Department of Agriculture and USDA-NRCS guidance, USDA APHIS carcass guidance and USGS karst notes. Nothing is copied. They are drafts, not reviewed by a qualified person, and laws differ by state and county. The WHO/PAHO/ICRC/IFRC field manual and the USDA APHIS desk reference are listed in `content/sources.json` as things you add yourself; check the publisher's terms before bundling the first.
+
+## Photos in content/images/ (added 2026-11-15)
+Supplied by the owner for personal use. Licences are not tracked per picture. Do not redistribute them, and take them off any drive that is sold or given out; many need credit to the photographer. A card or lesson shows a photo only when its file is there.

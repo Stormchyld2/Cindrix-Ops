@@ -382,6 +382,12 @@
           "license": "Ours",
           "status": "in this build",
           "note": "Shaped by the five emergency-management ideas (prevention, preparedness, response, recovery, mitigation) from FEMA public guidance."
+        },
+        {
+          "name": "Photos in content/images/ (plants, mushrooms, game, fish, methods)",
+          "license": "Supplied by the owner; licences not tracked",
+          "status": "you add",
+          "note": "Personal collection. Do not redistribute, and take them off any drive that is sold or given out. Many need credit to the photographer."
         }
       ]
     },
