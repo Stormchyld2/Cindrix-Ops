@@ -158,6 +158,7 @@ pub fn scan(root: &Path) -> Vec<Topic> {
             topics.push(Topic { folder: name, name: shown, videos });
         }
     }
+    topics.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()).then(a.folder.cmp(&b.folder)));
     let mut loose = Vec::new();
     read_dir_videos(root, "", "", &mut loose);
     if !loose.is_empty() {
