@@ -6,7 +6,7 @@
 //! first drive's copy wins. This module lists them, finds one safely and remembers where each was left off.
 //! It never uses the internet and never changes a video file.
 
-use crate::media::{self, valid_part, valid_rel};
+use crate::media::{valid_part, valid_rel};
 use crate::podcasts::Progress;
 use std::collections::BTreeMap;
 use std::fs;
@@ -18,7 +18,7 @@ pub const LOOSE_TOPIC: &str = "Other";
 /// What the built-in player can play (the browser inside the program, on a phone or a laptop).
 pub const PLAYABLE: &[&str] = &["mp4", "m4v", "webm", "ogv"];
 /// Common video files that need turning into MP4 first. They are listed so nothing seems to be missing.
-pub const NEEDS_CONVERTING: &[&str] = &["mkv", "avi", "mov", "wmv", "flv", "mpg", "mpeg", "ts", "3gp"];
+pub const NEEDS_CONVERTING: &[&str] = &["mkv", "avi", "mov", "wmv", "flv", "mpg", "mpeg", "ts", "m2ts", "mts", "vob", "divx", "asf", "rm", "rmvb", "f4v", "ogm", "3gp"];
 const PICTURES: &[&str] = &["jpg", "jpeg", "png", "webp"];
 const MAX_DEPTH: usize = 2; // topic, then one group folder
 

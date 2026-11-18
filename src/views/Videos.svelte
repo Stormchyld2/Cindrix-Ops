@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { videosList, videosProgressLoad, videosProgressSave, videoSource, type VideoList, type VideoTopic, type VideoItem, type VideoProgress } from '../lib/api';
+  import { inShare, videosList, videosProgressLoad, videosProgressSave, videoSource, videoConvertStart, videoConvertStatus, videoConvertStop, videosConvertedClear, type ConvertStatus, type VideoList, type VideoTopic, type VideoItem, type VideoProgress } from '../lib/api';
 
   let list = $state<VideoList | null>(null);
   let error = $state('');
@@ -16,6 +16,9 @@
   let playError = $state('');
   let lastSaved = 0;
   let searchTimer: ReturnType<typeof setTimeout> | undefined;
+  let job = $state<ConvertStatus | null>(null);
+  let jobTimer: ReturnType<typeof setInterval> | undefined;
+  let note = $state('');
 
   async function load() {
     busy = true;
@@ -25,6 +28,7 @@
       const saved = await videosProgressLoad();
       progress = Object.fromEntries(saved.map((p) => [p.rel, p]));
       void loadThumbs();
+      if (!inShare) void watchJob();
     } catch (e) {
       error = String(e);
     }
@@ -41,7 +45,37 @@
     }
   }
   onMount(() => { void load(); });
-  onDestroy(() => { saveNow(false); clearTimeout(searchTimer); });
+  onDestroy(() => { saveNow(false); clearTimeout(searchTimer); clearInterval(jobTimer); });
+
+  // making a playable copy can take a while: ask how it is going until it is over
+  let sawRunning = false;
+  async function watchJob() {
+    clearInterval(jobTimer);
+    const check = async () => {
+      try { job = await videoConvertStatus(); } catch { return; }
+      if (job?.state === 'running') { sawRunning = true; return; }
+      clearInterval(jobTimer);
+      // reload the list once, when a job we watched has just finished (not again for the same one)
+      if (sawRunning && job?.state === 'done') { sawRunning = false; await load(); }
+      sawRunning = false;
+    };
+    await check();
+    if (job?.state === 'running') jobTimer = setInterval(check, 2000);
+  }
+  async function convert(v: VideoItem) {
+    note = '';
+    try { await videoConvertStart(v.rel); await watchJob(); } catch (e) { note = String(e); }
+  }
+  async function stopJob() { try { await videoConvertStop(); } catch { /* it ends by itself */ } }
+  async function clearConverted() {
+    note = '';
+    try {
+      const freed = await videosConvertedClear();
+      note = freed > 0 ? `Deleted the converted copies and freed ${size(freed)}. Your original videos were not touched.` : 'There were no converted copies to delete.';
+      await load();
+    } catch (e) { note = String(e); }
+  }
+  function mins(s: number): string { return s < 90 ? `${s} seconds` : `${Math.round(s / 60)} minutes`; }
 
   function typed() {
     clearTimeout(searchTimer);
@@ -65,12 +99,14 @@
     return out;
   }
 
+  const canPlay = (v: VideoItem) => v.playable || !!v.converted;
+
   async function play(v: VideoItem) {
-    if (!v.playable) return;
+    if (!canPlay(v)) return;
     saveNow(false);
     playError = '';
     current = v;
-    src = await videoSource(v.rel);
+    src = v.converted ? await videoSource(v.converted, true) : await videoSource(v.rel);
   }
   function loaded() {
     // pick up where it was left off, unless it was finished (then start again)
@@ -117,6 +153,16 @@
   <h1>Videos</h1>
   {#if error}<p class="err" role="alert">{error}</p>{/if}
 
+  {#if note}<p class="muted small" role="status">{note}</p>{/if}
+  {#if job && job.state === 'running'}
+    <div class="job" role="status">
+      <span>Making <strong>{job.rel.split('/').pop()}</strong> playable… {mins(job.seconds)} so far. This can take a while for a long video. You can keep using the program.</span>
+      <button class="btn" onclick={stopJob}>Stop</button>
+    </div>
+  {:else if job && job.state === 'failed'}
+    <p class="err" role="alert">Could not make {job.rel.split('/').pop()} playable: {job.message}</p>
+  {/if}
+
   {#if current}
     <div class="player">
       <div class="meta">
@@ -141,6 +187,13 @@
       <input class="search" type="search" placeholder="Search videos, for example deer or fire" aria-label="Search videos" bind:value={query} oninput={typed} />
       <button class="btn" onclick={load} disabled={busy}>Look again</button>
     </div>
+
+    {#if !inShare && list.topics.some((t) => t.videos.some((v) => !v.playable)) && !list.converter_ready}
+      <p class="muted small">Some videos are not MP4 files. To make them playable, put the small helper <code>ffmpeg.exe</code> in the <code>engines</code> folder on the drive, then look again.</p>
+    {/if}
+    {#if !inShare && list.converted_bytes > 0}
+      <p class="muted small">Converted copies take {size(list.converted_bytes)}. <button class="link" onclick={clearConverted} disabled={job?.state === 'running'}>Delete the converted copies</button> (your own videos are not touched).</p>
+    {/if}
 
     {#if list.topics.length === 0}
       <div class="empty">
@@ -171,14 +224,17 @@
           <ul class="vids">
             {#each g.videos as v (v.rel)}
               <li class:now={current?.rel === v.rel} class:off={!v.playable}>
-                <button class="main" onclick={() => play(v)} disabled={!v.playable} aria-label={`Play ${v.title}`}>
+                <button class="main" onclick={() => play(v)} disabled={!canPlay(v)} aria-label={`Play ${v.title}`}>
                   {#if v.thumb && thumbs[v.thumb]}<img src={thumbs[v.thumb]} alt="" loading="lazy" />{:else}<span class="ph" aria-hidden="true">▶</span>{/if}
                   <span class="txt">
                     <span class="t">{v.title}</span>
-                    <span class="muted small">{size(v.size)}{stoppedAt(v) ? ` · ${stoppedAt(v)}` : ''}{v.playable ? '' : ` · ${v.ext.toUpperCase()} file: save it as an MP4 to watch it here`}</span>
+                    <span class="muted small">{size(v.size)}{stoppedAt(v) ? ` · ${stoppedAt(v)}` : ''}{canPlay(v) ? (v.converted ? ` · ${v.ext.toUpperCase()} file, converted copy ready` : '') : inShare ? ` · ${v.ext.toUpperCase()} file: it has to be converted on the main computer first` : ` · ${v.ext.toUpperCase()} file: it has to be converted before it can play`}</span>
                   </span>
                 </button>
-                {#if v.playable}
+                {#if !canPlay(v) && !inShare}
+                  <button class="btn" title="Make a copy of this video that the player can play. Your original is not changed." disabled={job?.state === 'running'} onclick={() => convert(v)}>Make playable</button>
+                {/if}
+                {#if canPlay(v)}
                   <button class="icon" title={progress[v.rel]?.done ? 'Mark as not watched' : 'Mark as watched'} aria-label={progress[v.rel]?.done ? 'Mark as not watched' : 'Mark as watched'} onclick={() => markDone(v)}>{progress[v.rel]?.done ? '✔' : '○'}</button>
                 {/if}
               </li>
@@ -198,6 +254,8 @@
   h2 { margin: 0; font-size: 18px; }
   h3 { margin: 6px 0 0; font-size: 15px; color: var(--muted); }
   .err { color: var(--bad, #e66); }
+  .job { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; justify-content: space-between; padding: 10px 12px; background: var(--blue-soft); border: 1px solid var(--blue-line); border-radius: 8px; }
+  .link { background: none; border: 0; padding: 0; color: var(--blue); text-decoration: underline; font: inherit; cursor: pointer; }
   .small { font-size: 13px; }
   code { font-family: var(--mono); font-size: 12px; background: var(--panel2); padding: 1px 5px; border-radius: 4px; }
   ul { list-style: none; margin: 0; padding: 0; }

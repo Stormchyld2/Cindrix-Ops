@@ -40,6 +40,7 @@ pub mod phonepack;
 pub mod pipeline;
 pub mod png;
 pub mod podcasts;
+pub mod videoconv;
 pub mod videos;
 pub mod product;
 pub mod guides;

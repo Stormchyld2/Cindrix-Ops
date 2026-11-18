@@ -1481,17 +1481,18 @@ export async function podcastSource(rel: string): Promise<string> {
 }
 
 // ---------- videos ----------
-export type VideoItem = { rel: string; title: string; group: string; size: number; ext: string; playable: boolean; thumb: string | null };
+export type VideoItem = { rel: string; title: string; group: string; size: number; ext: string; playable: boolean; thumb: string | null; converted: string | null };
 export type VideoTopic = { folder: string; name: string; videos: VideoItem[] };
-export type VideoList = { folder_found: boolean; topics: VideoTopic[] };
+export type VideoList = { folder_found: boolean; converter_ready: boolean; converted_bytes: number; topics: VideoTopic[] };
+export type ConvertStatus = { rel: string; state: 'running' | 'done' | 'failed' | 'stopped'; message: string; seconds: number };
 export type VideoProgress = { rel: string; seconds: number; done: boolean };
 
 const sampleVideos: VideoList = {
-  folder_found: true,
+  folder_found: true, converter_ready: false, converted_bytes: 0,
   topics: [
     { folder: 'Bushcraft', name: 'Bushcraft', videos: [
-      { rel: 'Bushcraft/Friction fire.mp4', title: 'Friction fire', group: '', size: 85_000_000, ext: 'mp4', playable: true, thumb: null },
-      { rel: 'Bushcraft/Fire/Bow drill tips.mp4', title: 'Bow drill tips', group: 'Fire', size: 40_000_000, ext: 'mp4', playable: true, thumb: null },
+      { rel: 'Bushcraft/Friction fire.mp4', title: 'Friction fire', group: '', size: 85_000_000, ext: 'mp4', playable: true, thumb: null, converted: null },
+      { rel: 'Bushcraft/Fire/Bow drill tips.mp4', title: 'Bow drill tips', group: 'Fire', size: 40_000_000, ext: 'mp4', playable: true, thumb: null, converted: null },
     ] },
   ],
 };
@@ -1502,7 +1503,7 @@ export async function videosList(query = ''): Promise<VideoList> {
   if (inTauri) return call<VideoList>('videos_list', { query });
   const words = query.toLowerCase().split(/\s+/).filter(Boolean);
   if (!words.length) return sampleVideos;
-  return { folder_found: true, topics: sampleVideos.topics
+  return { ...sampleVideos, topics: sampleVideos.topics
     .map((t) => ({ ...t, videos: t.videos.filter((v) => words.every((w) => (v.title + ' ' + v.group + ' ' + t.name).toLowerCase().includes(w))) }))
     .filter((t) => t.videos.length) };
 }
@@ -1518,11 +1519,27 @@ export async function videosProgressSave(rel: string, seconds: number, done: boo
   memVideoProgress = [...memVideoProgress.filter((p) => p.rel !== rel), { rel, seconds, done }];
 }
 /** An address a video element (or a thumbnail picture) can use for a file under the videos folders. */
-export async function videoSource(rel: string): Promise<string> {
+export async function videoSource(rel: string, converted = false): Promise<string> {
   if (!inTauri) return '';
-  if (inShare) return hostUrl('/vid/', 'e/' + rel);
+  const path = (converted ? 'c/' : 'e/') + rel;
+  if (inShare) return hostUrl('/vid/', path);
   const { convertFileSrc } = await import('@tauri-apps/api/core');
-  return convertFileSrc('e/' + rel, 'cindrix-vid');
+  return convertFileSrc(path, 'cindrix-vid');
+}
+/** Start making a playable copy of a video in a format the player cannot play (host only; one at a time). */
+export async function videoConvertStart(rel: string): Promise<void> {
+  if (inTauri && !inShare) await call<void>('video_convert_start', { rel });
+}
+export async function videoConvertStatus(): Promise<ConvertStatus | null> {
+  if (inTauri && !inShare) return call<ConvertStatus | null>('video_convert_status');
+  return null;
+}
+export async function videoConvertStop(): Promise<void> {
+  if (inTauri && !inShare) await call<void>('video_convert_stop');
+}
+/** Delete the converted copies (never the originals). Returns the bytes freed. */
+export async function videosConvertedClear(): Promise<number> {
+  return inTauri && !inShare ? call<number>('videos_converted_clear') : 0;
 }
 
 /** The cover picture for a track (embedded or in its folder), or null in the browser preview. */

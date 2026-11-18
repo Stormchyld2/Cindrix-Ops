@@ -144,7 +144,7 @@ fn guests_may_list_and_watch_videos_but_cannot_save_places_or_write() {
     assert!(command_allowed(&Role::Guest, "videos_list"));
     assert!(!command_allowed(&Role::Nobody, "videos_list"));
     // where each video was left off belongs to the host
-    for c in ["videos_progress_load", "videos_progress_save"] {
+    for c in ["videos_progress_load", "videos_progress_save", "video_convert_start", "video_convert_status", "video_convert_stop", "videos_converted_clear"] {
         assert!(!guest_allowed(c), "{} is for the host only", c);
         assert!(!command_allowed(&Role::Guest, c));
     }
@@ -152,4 +152,5 @@ fn guests_may_list_and_watch_videos_but_cannot_save_places_or_write() {
     let s = fs::read_to_string(repo("src-tauri/src/videos.rs")).unwrap();
     assert!(s.contains("videos::resolve("), "videos must be served through the checked path");
     assert!(!s.contains("std::fs::File::open"), "no unchecked file opens in the video server");
+    assert!(s.contains("videoconv::resolve_cache("), "converted copies must be served through the checked name");
 }

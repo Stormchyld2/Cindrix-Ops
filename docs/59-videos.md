@@ -27,9 +27,17 @@ library/videos/
 - Videos dropped straight into `videos/` are listed under "Other".
 - The same topic folder on two drives is one topic. If two drives hold the same path, the first drive's copy is used.
 
-## What plays
+## What plays, and the other formats
 
-MP4 / M4V (H.264 video with AAC audio plays everywhere), WebM and OGV. MKV, AVI, MOV, WMV and similar are listed, marked "save it as an MP4 to watch it here", and are never sent to the player.
+MP4 / M4V (H.264 video with AAC audio plays everywhere), WebM and OGV play as they are.
+
+MKV, AVI, MOV, WMV, FLV, MPG, TS, M2TS, VOB, DivX, ASF, RM and 3GP are listed with a **Make playable** button (host only). It uses `ffmpeg.exe` from the drive's `engines/` folder, the same helper the music player uses for WMA. The original is never changed; the copy goes into a hidden `.converted` folder inside the `videos` folder the original is in, so it travels with that drive and any host (also the phone) finds it again. "Delete the converted copies" on the page removes them.
+
+- Quick way (seconds, no quality loss): if the picture is already H.264 (MKV and MOV usually are) it is copied as it is into an MP4; VP8, VP9 and AV1 are copied into WebM. Only a sound the player cannot use (AC3, DTS and so on) is re-made, into AAC or Opus.
+- Slow way (minutes, depends on the video): other pictures (old DivX, WMV, MPEG-2) are re-made with the best encoder that ffmpeg has: libx264, then Windows' own (`h264_mf`), then a graphics card's, then VP9. An ffmpeg with none of these says so in plain words.
+- One conversion at a time, stoppable, with a time limit of three hours. The page shows how long it has run and carries on if you leave the screen.
+- Guests and phones cannot start a conversion; they play the copies that already exist. A phone host cannot run ffmpeg, so convert on the Windows computer and the copies are on the drive.
+- Conversion needs room on the drive: a converted MKV that is copied is about the size of the original; a re-made video is often smaller.
 
 ## What it does
 
@@ -39,8 +47,8 @@ MP4 / M4V (H.264 video with AAC audio plays everywhere), WebM and OGV. MKV, AVI,
 
 ## Code
 
-`core/src/videos.rs` (scan, search, safe `resolve`, tests), `src-tauri/src/videos.rs` (the `cindrix-vid` address and commands), share-server route `/vid/` in `src-tauri/src/share.rs`, `src/views/Videos.svelte`, `api.ts` (`videosList`, `videoSource`, progress). `core/tests/security_rules.rs` guards the guest rules.
+`core/src/videos.rs` (scan, search, safe `resolve`, tests), `core/src/videoconv.rs` (what to copy and what to re-make, ffmpeg arguments, converted copies; `core/tests/video_ffmpeg.rs` runs it with a real ffmpeg), `src-tauri/src/videos.rs` (the `cindrix-vid` address and commands), share-server route `/vid/` in `src-tauri/src/share.rs`, `src/views/Videos.svelte`, `api.ts` (`videosList`, `videoSource`, progress). `core/tests/security_rules.rs` guards the guest rules.
 
 ## Not yet
 
-Converting MKV/AVI to MP4 inside the program, a "continue watching" tile on the Dashboard, linking an Academy lesson's `[video]` line to a file here, and a mini player that keeps playing while you move between screens.
+Hardware-accelerated converting and a percentage bar for it, a "continue watching" tile on the Dashboard, linking an Academy lesson's `[video]` line to a file here, and a mini player that keeps playing while you move between screens.
