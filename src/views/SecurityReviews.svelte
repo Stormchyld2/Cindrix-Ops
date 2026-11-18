@@ -61,7 +61,7 @@
   {#each data?.exercises ?? [] as e (e.id)}
     <div class="item"><b>{e.title}</b> <span class="muted">{e.date}</span>{#if e.note}<div class="small">{e.note}</div>{/if}
       <div class="small">Took part: {e.attendees.length ? e.attendees.join(', ') : 'no one written down'}</div>
-      <div class="row ch"><input class="input" placeholder="Add a person" bind:value={d(e.id).owner} aria-label="Person" /><button class="btn" disabled={!who || !d(e.id).owner.trim()} onclick={() => addPerson(e.id)}>Add</button></div>
+      <div class="row ch"><input class="input" placeholder="Add a person" bind:value={draft[e.id].owner} aria-label="Person" /><button class="btn" disabled={!who || !d(e.id).owner.trim()} onclick={() => addPerson(e.id)}>Add</button></div>
     </div>
   {:else}<p class="muted">No exercises yet.</p>{/each}
   <div class="row ch">
@@ -83,7 +83,7 @@
       {#each r.actions as a (a.id)}
         <div class="small" class:weak={a.late}>{a.text} — {a.owner}, due {a.due}{a.late ? ' (overdue)' : ''} · {SAY[a.state]}{a.note ? `: ${a.note}` : ''}
           {#if !r.closed && (a.state === 'open' || a.state === 'done')}
-            <input class="input" placeholder="Note (needed to drop)" bind:value={d(a.id).why} aria-label="Note" />
+            <input class="input" placeholder="Note (needed to drop)" bind:value={draft[a.id].why} aria-label="Note" />
             {#if a.state === 'open'}<button class="btn" disabled={!who} onclick={() => move(r, a.id, 'done')}>Done</button>{/if}
             <button class="btn" disabled={!who} onclick={() => move(r, a.id, 'verified')}>Checked</button>
             <button class="btn" disabled={!who || !d(a.id).why.trim()} onclick={() => move(r, a.id, 'dropped')}>Drop</button>
@@ -92,14 +92,14 @@
       {/each}
       {#if !r.closed}
         <div class="row ch">
-          <select class="input" bind:value={d(r.id).kind} aria-label="Kind"><option value="good">Went well</option><option value="fix">Needs fixing</option></select>
-          <input class="input grow" placeholder="What you saw" bind:value={d(r.id).text} aria-label="Finding" />
+          <select class="input" bind:value={draft[r.id].kind} aria-label="Kind"><option value="good">Went well</option><option value="fix">Needs fixing</option></select>
+          <input class="input grow" placeholder="What you saw" bind:value={draft[r.id].text} aria-label="Finding" />
           <button class="btn" disabled={!who || !d(r.id).text.trim()} onclick={() => finding(r)}>Add</button>
         </div>
         <div class="row ch">
-          <input class="input grow" placeholder="What is to be done" bind:value={d(r.id).what} aria-label="Action" />
-          <input class="input" placeholder="Who" bind:value={d(r.id).owner} aria-label="Owner" />
-          <input class="input" type="date" bind:value={d(r.id).due} aria-label="Due date" />
+          <input class="input grow" placeholder="What is to be done" bind:value={draft[r.id].what} aria-label="Action" />
+          <input class="input" placeholder="Who" bind:value={draft[r.id].owner} aria-label="Owner" />
+          <input class="input" type="date" bind:value={draft[r.id].due} aria-label="Due date" />
           <button class="btn" disabled={!who || !d(r.id).what.trim() || !d(r.id).owner.trim() || !d(r.id).due} onclick={() => action(r)}>Add action</button>
           <button class="btn primary" disabled={!who} onclick={() => close(r)}>Close review</button>
         </div>

@@ -239,7 +239,7 @@
         {#each lesson.blocks as b, bi}
           {#if b.kind === 'video'}
             {#if b.items?.[0]}
-              <button class="video watch" title="Play this video in a window that stays open while you read" onclick={() => vp.play({ rel: b.items[0], title: b.text || lesson.title })}><div class="play">▶</div></button>
+              <button class="video watch" title="Play this video in a window that stays open while you read" onclick={() => vp.play({ rel: b.items[0], title: b.text || lesson?.title || "" })}><div class="play">▶</div></button>
             {:else}
               <div class="video" role="img" aria-label="Video placeholder"><div class="play">▶</div></div>
             {/if}
