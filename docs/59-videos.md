@@ -47,7 +47,7 @@ MKV, AVI, MOV, WMV, FLV, MPG, TS, M2TS, VOB, DivX, ASF, RM and 3GP are listed wi
 
 ## The floating player and lessons (2026-11-18)
 
-There is one player for the whole program (`src/lib/videoplayer.svelte.ts`, window `src/lib/VideoPlayer.svelte`). Playing a video from the Videos screen or from an Academy lesson opens it in a window at the bottom right, which keeps playing when you move to another screen ("Smaller" / "Bigger" / "Close"). Starting a video pauses the music and podcast players. Saved places work as before. An Academy lesson names a video with `[video] caption | Topic/File.mp4` (doc 21).
+There is one player for the whole program (`src/lib/videostate.svelte.ts`, window `src/lib/VideoPlayer.svelte`). Playing a video from the Videos screen or from an Academy lesson opens it in a window at the bottom right, which keeps playing when you move to another screen ("Smaller" / "Bigger" / "Close"). Starting a video pauses the music and podcast players. Saved places work as before. An Academy lesson names a video with `[video] caption | Topic/File.mp4` (doc 21).
 
 Converting shows a percent bar: ffmpeg's `-progress` output against the length read from the file (`videoconv::Progress`); until the length is known the bar is a plain "getting ready".
 

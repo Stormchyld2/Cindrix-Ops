@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { inShare, videosList, videoSource, videoConvertStart, videoConvertStatus, videoConvertStop, videosConvertedClear, type ConvertStatus, type VideoList, type VideoTopic, type VideoItem } from '../lib/api';
-  import { videoPlayer as vp } from '../lib/videoplayer.svelte';
+  import { videoPlayer as vp } from '../lib/videostate.svelte';
 
   let list = $state<VideoList | null>(null);
   let error = $state('');

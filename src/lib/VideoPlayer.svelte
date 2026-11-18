@@ -1,6 +1,6 @@
 <script lang="ts">
   // The floating video window: stays on screen (and keeps playing) while you move between screens.
-  import { videoPlayer as vp } from './videoplayer.svelte';
+  import { videoPlayer as vp } from './videostate.svelte';
   let el: HTMLVideoElement | undefined = $state();
   $effect(() => { vp.attach(el ?? null); return () => vp.attach(null); });
 </script>

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { videoPlayer as vp } from '../lib/videoplayer.svelte';
+  import { videoPlayer as vp } from '../lib/videostate.svelte';
   import { onMount } from 'svelte';
   import { sourceRequest, viewRequest } from '../lib/chat.svelte';
   import { academyList, academyLesson, academySave, academyCheckSet, academyProblems, academyPackInstall, academyPackExport, inShare, type AcademyModule, type AcademyLesson, type AcademyLessonMeta, type CourseProblem } from '../lib/api';
