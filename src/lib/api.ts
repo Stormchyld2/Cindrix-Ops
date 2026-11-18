@@ -1489,7 +1489,7 @@ export async function podcastSource(rel: string): Promise<string> {
 export type VideoItem = { rel: string; title: string; group: string; size: number; ext: string; playable: boolean; thumb: string | null; converted: string | null };
 export type VideoTopic = { folder: string; name: string; videos: VideoItem[] };
 export type VideoList = { folder_found: boolean; converter_ready: boolean; converted_bytes: number; topics: VideoTopic[] };
-export type ConvertStatus = { rel: string; state: 'running' | 'done' | 'failed' | 'stopped'; message: string; seconds: number };
+export type ConvertStatus = { rel: string; state: 'running' | 'done' | 'failed' | 'stopped'; message: string; seconds: number; percent: number | null };
 export type VideoProgress = { rel: string; seconds: number; done: boolean };
 
 const sampleVideos: VideoList = {

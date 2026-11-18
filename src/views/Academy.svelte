@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { videoPlayer as vp } from '../lib/videoplayer.svelte';
   import { onMount } from 'svelte';
   import { sourceRequest, viewRequest } from '../lib/chat.svelte';
   import { academyList, academyLesson, academySave, academyCheckSet, academyProblems, academyPackInstall, academyPackExport, inShare, type AcademyModule, type AcademyLesson, type AcademyLessonMeta, type CourseProblem } from '../lib/api';
@@ -237,7 +238,11 @@
         {/if}
         {#each lesson.blocks as b, bi}
           {#if b.kind === 'video'}
-            <div class="video" role="img" aria-label="Video placeholder"><div class="play">▶</div></div>
+            {#if b.items?.[0]}
+              <button class="video watch" title="Play this video in a window that stays open while you read" onclick={() => vp.play({ rel: b.items[0], title: b.text || lesson.title })}><div class="play">▶</div></button>
+            {:else}
+              <div class="video" role="img" aria-label="Video placeholder"><div class="play">▶</div></div>
+            {/if}
             <h1 class="ltitle">{b.text || lesson.title}</h1>
           {:else if b.kind === 'heading'}
             <h2>{b.text}</h2>
@@ -603,6 +608,7 @@
   @media (max-width: 900px) { .ac .hero > :not(.back) { max-width: 100%; } }
   .ac .lbody p, .ac .lbody li { line-height: 1.65; }
   .ac .ltitle { font-size: 24px; margin: 20px 0 8px; }
+  .ac button.video.watch { display: block; width: 100%; padding: 0; cursor: pointer; }
   .ac .video { aspect-ratio: 16 / 9; border-radius: 12px; background: #000 url('/cindrix-banner.png') center / cover; position: relative; border: 1px solid var(--a-line); }
   .ac .play { position: absolute; inset: 0; margin: auto; width: 64px; height: 64px; border-radius: 50%; background: #000a; border: 2px solid #fff6; display: grid; place-items: center; font-size: 24px; }
   .ac .side { border-left: 1px solid var(--a-line); background: var(--a-side); padding: 22px 18px; }

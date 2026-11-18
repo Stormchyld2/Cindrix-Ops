@@ -2495,7 +2495,10 @@ fn academy_lesson(id: String, person: Option<String>) -> Result<LessonBodyDto, S
             academy::Block::Note(t) => BlockDto { kind: "note", text: t, items: vec![], checks: vec![] },
             academy::Block::Bullets(v) => BlockDto { kind: "bullets", text: String::new(), items: v, checks: vec![] },
             academy::Block::Steps(v) => BlockDto { kind: "steps", text: String::new(), items: v, checks: vec![] },
-            academy::Block::Video(c) => BlockDto { kind: "video", text: c, items: vec![], checks: vec![] },
+            academy::Block::Video(c) => {
+                let (caption, file) = academy::video_parts(&c);
+                BlockDto { kind: "video", text: caption, items: file.into_iter().collect(), checks: vec![] }
+            }
             academy::Block::Checklist(v) => {
                 let checks = v
                     .into_iter()

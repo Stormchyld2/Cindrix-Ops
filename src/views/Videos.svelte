@@ -1,20 +1,15 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { inShare, videosList, videosProgressLoad, videosProgressSave, videoSource, videoConvertStart, videoConvertStatus, videoConvertStop, videosConvertedClear, type ConvertStatus, type VideoList, type VideoTopic, type VideoItem, type VideoProgress } from '../lib/api';
+  import { inShare, videosList, videoSource, videoConvertStart, videoConvertStatus, videoConvertStop, videosConvertedClear, type ConvertStatus, type VideoList, type VideoTopic, type VideoItem } from '../lib/api';
+  import { videoPlayer as vp } from '../lib/videoplayer.svelte';
 
   let list = $state<VideoList | null>(null);
   let error = $state('');
   let busy = $state(false);
   let query = $state('');
   let openTopic: string | null = $state(null);
-  let progress = $state<Record<string, VideoProgress>>({});
   let thumbs = $state<Record<string, string>>({});
 
-  let current = $state<VideoItem | null>(null);
-  let src = $state('');
-  let el: HTMLVideoElement | undefined = $state();
-  let playError = $state('');
-  let lastSaved = 0;
   let searchTimer: ReturnType<typeof setTimeout> | undefined;
   let job = $state<ConvertStatus | null>(null);
   let jobTimer: ReturnType<typeof setInterval> | undefined;
@@ -25,8 +20,7 @@
     error = '';
     try {
       list = await videosList(query);
-      const saved = await videosProgressLoad();
-      progress = Object.fromEntries(saved.map((p) => [p.rel, p]));
+      void vp.init();
       void loadThumbs();
       if (!inShare) void watchJob();
     } catch (e) {
@@ -45,7 +39,7 @@
     }
   }
   onMount(() => { void load(); });
-  onDestroy(() => { saveNow(false); clearTimeout(searchTimer); clearInterval(jobTimer); });
+  onDestroy(() => { clearTimeout(searchTimer); clearInterval(jobTimer); });
 
   // making a playable copy can take a while: ask how it is going until it is over
   let sawRunning = false;
@@ -101,38 +95,12 @@
 
   const canPlay = (v: VideoItem) => v.playable || !!v.converted;
 
-  async function play(v: VideoItem) {
-    if (!canPlay(v)) return;
-    saveNow(false);
-    playError = '';
-    current = v;
-    src = v.converted ? await videoSource(v.converted, true) : await videoSource(v.rel);
+  function play(v: VideoItem) {
+    if (canPlay(v)) void vp.play({ rel: v.rel, title: v.title, converted: v.converted });
   }
-  function loaded() {
-    // pick up where it was left off, unless it was finished (then start again)
-    const p = current ? progress[current.rel] : undefined;
-    if (el && p && !p.done && p.seconds > 5 && p.seconds < (el.duration || 0) - 10) el.currentTime = p.seconds;
-    void el?.play().catch(() => {});
-  }
-  function saveNow(finished: boolean) {
-    if (!el || !current) return;
-    const secs = Math.max(0, Math.floor(el.currentTime));
-    const len = Math.floor(el.duration || 0);
-    const done = finished || (len > 0 && secs + 30 >= len);
-    progress[current.rel] = { rel: current.rel, seconds: done ? 0 : secs, done };
-    lastSaved = Date.now();
-    void videosProgressSave(current.rel, done ? 0 : secs, done).catch(() => {});
-  }
-  function tick() {
-    if (Date.now() - lastSaved > 5000) saveNow(false);
-  }
-  function markDone(v: VideoItem) {
-    const done = !progress[v.rel]?.done;
-    progress[v.rel] = { rel: v.rel, seconds: 0, done };
-    void videosProgressSave(v.rel, 0, done).catch(() => {});
-  }
+  function markDone(v: VideoItem) { vp.markDone(v.rel, !vp.progress[v.rel]?.done); }
   function stoppedAt(v: VideoItem): string {
-    const p = progress[v.rel];
+    const p = vp.progress[v.rel];
     if (!p) return '';
     if (p.done) return 'Watched';
     return p.seconds > 5 ? `Stopped at ${clock(p.seconds)}` : '';
@@ -145,7 +113,7 @@
     return n >= 1_000_000_000 ? `${(n / 1_000_000_000).toFixed(1)} GB` : n >= 1_000_000 ? `${Math.round(n / 1_000_000)} MB` : `${Math.max(1, Math.round(n / 1000))} KB`;
   }
   function unwatched(t: VideoTopic): number {
-    return t.videos.filter((v) => !progress[v.rel]?.done).length;
+    return t.videos.filter((v) => !vp.progress[v.rel]?.done).length;
   }
 </script>
 
@@ -156,24 +124,12 @@
   {#if note}<p class="muted small" role="status">{note}</p>{/if}
   {#if job && job.state === 'running'}
     <div class="job" role="status">
-      <span>Making <strong>{job.rel.split('/').pop()}</strong> playable… {mins(job.seconds)} so far. This can take a while for a long video. You can keep using the program.</span>
+      <span>Making <strong>{job.rel.split('/').pop()}</strong> playable… {job.percent === null ? 'getting ready' : `${job.percent}% done`}, {mins(job.seconds)} so far. You can keep using the program.</span>
       <button class="btn" onclick={stopJob}>Stop</button>
+      <div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={job.percent ?? undefined} aria-label="How far the converting has got"><div class="fill" class:wait={job.percent === null} style={`width:${job.percent ?? 100}%`}></div></div>
     </div>
   {:else if job && job.state === 'failed'}
     <p class="err" role="alert">Could not make {job.rel.split('/').pop()} playable: {job.message}</p>
-  {/if}
-
-  {#if current}
-    <div class="player">
-      <div class="meta">
-        <div class="t">{current.title}</div>
-        <div class="muted small">{current.group ? current.group + ' · ' : ''}{playError}</div>
-      </div>
-      <!-- svelte-ignore a11y_media_has_caption -->
-      <video bind:this={el} {src} controls preload="metadata" onloadedmetadata={loaded} ontimeupdate={tick} onpause={() => saveNow(false)} onended={() => saveNow(true)}
-        onerror={() => (playError = 'This video could not be played. It may be damaged or not an MP4 file.')}></video>
-      <div><button class="btn" onclick={() => { saveNow(false); current = null; src = ''; }}>Close the video</button></div>
-    </div>
   {/if}
 
   {#if list && !list.folder_found}
@@ -223,7 +179,7 @@
           {#if g.name}<h3>{g.name}</h3>{/if}
           <ul class="vids">
             {#each g.videos as v (v.rel)}
-              <li class:now={current?.rel === v.rel} class:off={!v.playable}>
+              <li class:now={vp.current?.rel === v.rel} class:off={!v.playable}>
                 <button class="main" onclick={() => play(v)} disabled={!canPlay(v)} aria-label={`Play ${v.title}`}>
                   {#if v.thumb && thumbs[v.thumb]}<img src={thumbs[v.thumb]} alt="" loading="lazy" />{:else}<span class="ph" aria-hidden="true">▶</span>{/if}
                   <span class="txt">
@@ -235,7 +191,7 @@
                   <button class="btn" title="Make a copy of this video that the player can play. Your original is not changed." disabled={job?.state === 'running'} onclick={() => convert(v)}>Make playable</button>
                 {/if}
                 {#if canPlay(v)}
-                  <button class="icon" title={progress[v.rel]?.done ? 'Mark as not watched' : 'Mark as watched'} aria-label={progress[v.rel]?.done ? 'Mark as not watched' : 'Mark as watched'} onclick={() => markDone(v)}>{progress[v.rel]?.done ? '✔' : '○'}</button>
+                  <button class="icon" title={vp.progress[v.rel]?.done ? 'Mark as not watched' : 'Mark as watched'} aria-label={vp.progress[v.rel]?.done ? 'Mark as not watched' : 'Mark as watched'} onclick={() => markDone(v)}>{vp.progress[v.rel]?.done ? '✔' : '○'}</button>
                 {/if}
               </li>
             {/each}
@@ -255,15 +211,15 @@
   h3 { margin: 6px 0 0; font-size: 15px; color: var(--muted); }
   .err { color: var(--bad, #e66); }
   .job { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; justify-content: space-between; padding: 10px 12px; background: var(--blue-soft); border: 1px solid var(--blue-line); border-radius: 8px; }
+  .meter { flex-basis: 100%; height: 8px; background: var(--panel2); border-radius: 4px; overflow: hidden; }
+  .fill { height: 100%; background: var(--blue); transition: width 0.4s; }
+  .fill.wait { opacity: 0.35; }
   .link { background: none; border: 0; padding: 0; color: var(--blue); text-decoration: underline; font: inherit; cursor: pointer; }
   .small { font-size: 13px; }
   code { font-family: var(--mono); font-size: 12px; background: var(--panel2); padding: 1px 5px; border-radius: 4px; }
   ul { list-style: none; margin: 0; padding: 0; }
   .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
   .search { flex: 1; min-width: 200px; padding: 9px 12px; background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; color: var(--text); font: inherit; }
-  .player { display: flex; flex-direction: column; gap: 8px; padding: 12px; background: var(--panel2); border: 1px solid var(--blue-line); border-radius: 10px; }
-  .player .t { font-weight: 600; }
-  video { width: 100%; max-height: 70vh; background: #000; border-radius: 8px; }
   .topics { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
   .topic { width: 100%; display: flex; flex-direction: column; gap: 2px; text-align: left; padding: 12px; background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; color: var(--text); font: inherit; cursor: pointer; }
   .topic:hover { border-color: var(--blue-line); }

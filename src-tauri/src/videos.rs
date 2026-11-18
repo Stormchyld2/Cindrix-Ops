@@ -22,6 +22,7 @@ struct Job {
     started: Instant,
     finished_secs: Option<u64>,
     stop: Arc<AtomicBool>,
+    progress: Arc<videoconv::Progress>,
 }
 static JOB: Mutex<Option<Job>> = Mutex::new(None);
 
@@ -172,6 +173,8 @@ pub struct ConvertStatus {
     state: String,
     message: String,
     seconds: u64,
+    /// How far along it is, in whole percent, once the length of the video is known.
+    percent: Option<u8>,
 }
 
 /// Start making a playable copy of a video the player cannot play. Host only. One at a time.
@@ -188,10 +191,11 @@ pub fn video_convert_start(rel: String) -> Result<(), String> {
         }
     }
     let stop = Arc::new(AtomicBool::new(false));
-    *job = Some(Job { rel: rel.clone(), state: "running", message: String::new(), started: Instant::now(), finished_secs: None, stop: stop.clone() });
+    let progress = Arc::new(videoconv::Progress::default());
+    *job = Some(Job { rel: rel.clone(), state: "running", message: String::new(), started: Instant::now(), finished_secs: None, stop: stop.clone(), progress: progress.clone() });
     drop(job);
     std::thread::spawn(move || {
-        let r = videoconv::convert(&ff, &video_roots(), &rel, &stop);
+        let r = videoconv::convert(&ff, &video_roots(), &rel, &stop, &progress);
         let mut g = JOB.lock().unwrap();
         if let Some(j) = g.as_mut() {
             if j.rel == rel {
@@ -220,6 +224,7 @@ pub fn video_convert_status() -> Option<ConvertStatus> {
         state: j.state.to_string(),
         message: j.message.clone(),
         seconds: j.finished_secs.unwrap_or_else(|| j.started.elapsed().as_secs()),
+        percent: j.progress.percent(),
     })
 }
 

@@ -17,7 +17,7 @@ use std::fs;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -203,7 +203,7 @@ pub fn plan(vcodec: Option<&str>, acodec: Option<&str>, encoders: &[String]) -> 
 pub fn args(input: &Path, output: &Path, p: &Plan, has_audio: bool) -> Vec<OsString> {
     let mut a: Vec<OsString> = Vec::new();
     let mut push = |s: &str| a.push(OsString::from(s));
-    for s in ["-hide_banner", "-loglevel", "error", "-nostdin", "-y", "-protocol_whitelist", "file", "-i"] {
+    for s in ["-hide_banner", "-loglevel", "error", "-nostats", "-progress", "pipe:1", "-nostdin", "-y", "-protocol_whitelist", "file", "-i"] {
         push(s);
     }
     a.push(input.as_os_str().to_os_string());
@@ -272,11 +272,51 @@ pub fn args(input: &Path, output: &Path, p: &Plan, has_audio: bool) -> Vec<OsStr
     a
 }
 
+// ---------- how far it has got ----------
+
+/// How far a conversion has got, shared with the screen: milliseconds of the video done and its whole length.
+#[derive(Debug, Default)]
+pub struct Progress {
+    pub done_ms: AtomicU64,
+    pub total_ms: AtomicU64,
+}
+
+impl Progress {
+    /// Whole percent (0 to 100), or None while the length is not known yet.
+    pub fn percent(&self) -> Option<u8> {
+        let total = self.total_ms.load(Ordering::Relaxed);
+        if total == 0 {
+            return None;
+        }
+        let done = self.done_ms.load(Ordering::Relaxed).min(total);
+        Some((done * 100 / total) as u8)
+    }
+}
+
+/// The video's length in milliseconds, from the `Duration: 00:12:34.56` line `ffmpeg -i` prints.
+pub fn parse_duration_ms(text: &str) -> Option<u64> {
+    let i = text.find("Duration: ")?;
+    let rest = &text[i + 10..];
+    let stamp: String = rest.chars().take_while(|c| c.is_ascii_digit() || *c == ':' || *c == '.').collect();
+    let mut parts = stamp.split(':');
+    let (h, m, s) = (parts.next()?.parse::<f64>().ok()?, parts.next()?.parse::<f64>().ok()?, parts.next()?.parse::<f64>().ok()?);
+    let ms = ((h * 3600.0 + m * 60.0 + s) * 1000.0).round();
+    (ms.is_finite() && ms > 0.0).then_some(ms as u64)
+}
+
+/// How far ffmpeg says it has got, in milliseconds, from one line of its `-progress` output
+/// (`out_time_us=12345000`; older builds also print `out_time_ms`, which is the same number of microseconds).
+pub fn parse_progress_ms(line: &str) -> Option<u64> {
+    let v = line.trim().strip_prefix("out_time_us=").or_else(|| line.trim().strip_prefix("out_time_ms="))?;
+    let us: i64 = v.trim().parse().ok()?;
+    (us >= 0).then(|| us as u64 / 1000)
+}
+
 // ---------- running ffmpeg ----------
 
 fn command(ffmpeg: &Path) -> Command {
     let mut c = Command::new(ffmpeg);
-    c.stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::piped());
+    c.stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped());
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
@@ -286,8 +326,20 @@ fn command(ffmpeg: &Path) -> Command {
 }
 
 /// Run to the end, a timeout or a stop. Returns the exit success and up to 16 KB of what was printed.
-fn run(mut cmd: Command, timeout: Duration, cancel: &AtomicBool) -> Result<(bool, String), String> {
+fn run(mut cmd: Command, timeout: Duration, cancel: &AtomicBool, progress: Option<Arc<Progress>>) -> Result<(bool, String), String> {
     let mut child = cmd.spawn().map_err(|e| format!("the converter could not start ({})", e))?;
+    // what ffmpeg prints on its normal output is read (and thrown away) so it can never fill up and stall;
+    // the lines about how far it has got update the progress
+    let out_reader = child.stdout.take().map(|out| {
+        std::thread::spawn(move || {
+            use std::io::BufRead;
+            for line in std::io::BufReader::new(out).lines().map_while(Result::ok) {
+                if let (Some(p), Some(ms)) = (progress.as_ref(), parse_progress_ms(&line)) {
+                    p.done_ms.store(ms, Ordering::Relaxed);
+                }
+            }
+        })
+    });
     let text = Arc::new(Mutex::new(String::new()));
     let reader = child.stderr.take().map(|mut err| {
         let text = text.clone();
@@ -326,6 +378,9 @@ fn run(mut cmd: Command, timeout: Duration, cancel: &AtomicBool) -> Result<(bool
     if let Some(r) = reader {
         let _ = r.join();
     }
+    if let Some(r) = out_reader {
+        let _ = r.join();
+    }
     let out = text.lock().unwrap().clone();
     Ok((status, out))
 }
@@ -337,7 +392,7 @@ fn last_lines(text: &str) -> String {
 
 /// Make a playable copy of the video `rel` (found in one of `roots`) and return the copy's file name.
 /// A copy that is already there is returned at once. `cancel` stops it part way.
-pub fn convert(ffmpeg: &Path, roots: &[PathBuf], rel: &str, cancel: &AtomicBool) -> Result<String, String> {
+pub fn convert(ffmpeg: &Path, roots: &[PathBuf], rel: &str, cancel: &AtomicBool, progress: &Arc<Progress>) -> Result<String, String> {
     let (root, input) = find_original(roots, rel).ok_or("That video is no longer in the videos folder.")?;
     let meta = fs::metadata(&input).map_err(|e| e.to_string())?;
     let mtime = meta.modified().ok().and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok()).map(|d| d.as_secs()).unwrap_or(0);
@@ -349,13 +404,15 @@ pub fn convert(ffmpeg: &Path, roots: &[PathBuf], rel: &str, cancel: &AtomicBool)
         let mut c = command(ffmpeg);
         c.args(["-hide_banner", "-protocol_whitelist", "file", "-i"]).arg(&input);
         c
-    }, Duration::from_secs(120), cancel)?;
+    }, Duration::from_secs(120), cancel, None)?;
     let (vc, ac) = parse_streams(&probe);
+    progress.done_ms.store(0, Ordering::Relaxed);
+    progress.total_ms.store(parse_duration_ms(&probe).unwrap_or(0), Ordering::Relaxed);
     let (_, enc_text) = run({
         let mut c = command(ffmpeg);
         c.args(["-hide_banner", "-encoders"]);
         c
-    }, Duration::from_secs(60), &never)?;
+    }, Duration::from_secs(60), &never, None)?;
     let p = plan(vc.as_deref(), ac.as_deref(), &parse_encoders(&enc_text))?;
     let dir = root.join(CACHE_DIR);
     fs::create_dir_all(&dir).map_err(|e| format!("could not make the folder for converted videos ({})", e))?;
@@ -364,7 +421,7 @@ pub fn convert(ffmpeg: &Path, roots: &[PathBuf], rel: &str, cancel: &AtomicBool)
     let _ = fs::remove_file(&tmp);
     let mut cmd = command(ffmpeg);
     cmd.args(args(&input, &tmp, &p, ac.is_some()));
-    match run(cmd, TIMEOUT, cancel) {
+    match run(cmd, TIMEOUT, cancel, Some(progress.clone())) {
         Ok((true, _)) => {}
         Ok((false, out)) => {
             let _ = fs::remove_file(&tmp);
@@ -380,6 +437,7 @@ pub fn convert(ffmpeg: &Path, roots: &[PathBuf], rel: &str, cancel: &AtomicBool)
         return Err("the converter made an empty file".into());
     }
     fs::rename(&tmp, dir.join(&name)).map_err(|e| e.to_string())?;
+    progress.done_ms.store(progress.total_ms.load(Ordering::Relaxed), Ordering::Relaxed);
     Ok(name)
 }
 
@@ -442,6 +500,25 @@ mod tests {
         let c = "Stream #0:0: Video: mjpeg, yuvj420p (attached pic)\nStream #0:1: Video: vp9, yuv420p\nStream #0:2: Audio: opus, 48000 Hz";
         assert_eq!(parse_streams(c), (Some("vp9".into()), Some("opus".into())));
         assert_eq!(parse_streams("nothing useful here"), (None, None));
+    }
+
+    #[test]
+    fn length_and_progress_are_read_from_ffmpeg_text() {
+        assert_eq!(parse_duration_ms("  Duration: 00:12:34.56, start: 0.000000, bitrate: 900 kb/s"), Some(754_560));
+        assert_eq!(parse_duration_ms("Duration: 01:00:00.00, start"), Some(3_600_000));
+        assert_eq!(parse_duration_ms("Duration: N/A, bitrate: N/A"), None);
+        assert_eq!(parse_duration_ms("no length here"), None);
+        assert_eq!(parse_progress_ms("out_time_us=12345000"), Some(12_345));
+        assert_eq!(parse_progress_ms("out_time_ms=2000000"), Some(2_000));
+        assert_eq!(parse_progress_ms("out_time_us=N/A"), None);
+        assert_eq!(parse_progress_ms("frame=120"), None);
+        let p = Progress::default();
+        assert_eq!(p.percent(), None, "unknown until the length is known");
+        p.total_ms.store(200_000, Ordering::Relaxed);
+        p.done_ms.store(50_000, Ordering::Relaxed);
+        assert_eq!(p.percent(), Some(25));
+        p.done_ms.store(999_999, Ordering::Relaxed);
+        assert_eq!(p.percent(), Some(100), "never past the end");
     }
 
     #[test]
@@ -567,9 +644,10 @@ mod tests {
         fs::create_dir_all(d.join("Bush")).unwrap();
         fs::write(d.join("Bush/a.mkv"), b"not really a video").unwrap();
         let stop = AtomicBool::new(false);
-        let e = convert(&d.join("no-such-ffmpeg"), &[d.clone()], "Bush/a.mkv", &stop).unwrap_err();
+        let pr = Arc::new(Progress::default());
+        let e = convert(&d.join("no-such-ffmpeg"), &[d.clone()], "Bush/a.mkv", &stop, &pr).unwrap_err();
         assert!(e.contains("could not start"), "{}", e);
-        let e = convert(&d.join("no-such-ffmpeg"), &[d.clone()], "Bush/none.mkv", &stop).unwrap_err();
+        let e = convert(&d.join("no-such-ffmpeg"), &[d.clone()], "Bush/none.mkv", &stop, &pr).unwrap_err();
         assert!(e.contains("no longer"), "{}", e);
         assert!(!d.join("Bush/a.mkv.tmp").exists());
         let _ = fs::remove_dir_all(&d);

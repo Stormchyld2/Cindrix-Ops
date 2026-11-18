@@ -101,6 +101,7 @@ New lines a lesson may use, all optional, so older lessons still load:
 
 - `- [ ] Backpack | 40 to 65 litres | gear` is a checklist item. The part after the first `|` is a line of detail; a last part of `gear` adds a "Find in Inventory" button. Items in a row make one checklist. A lesson header may add `readiness: 2`, the points ticking the whole checklist is worth.
 - `[video] caption` on a line of its own shows the Cindrix banner as a video placeholder.
+- `[video] caption | Bushcraft/Friction fire.mp4` plays that file from `library/videos/` (any readable drive) in the floating video window, which stays open while the person reads or moves to another screen. Only a plain path to an MP4, M4V, WebM or OGV file is accepted (`academy::video_parts`); the file name is not part of the lesson's searchable text. `docs/59-videos.md`.
 - A numbered list whose items all start with `**Title.**` shows as step cards.
 
 Ticks are kept for each person in `user/academy-checks.csv` (`person,lesson,item`), written with `write_atomic`; a damaged file is an error and is never overwritten. `academy::check_counts` gives (ticked, total). The readiness score is the points of each lesson, scaled by how much of its checklist is ticked.

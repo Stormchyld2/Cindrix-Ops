@@ -1,8 +1,9 @@
 //! Converting real videos with a real ffmpeg (skipped when there is none on this computer).
-use cindrix_core::videoconv::{self, parse_streams};
+use cindrix_core::videoconv::{self, parse_streams, Progress};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::atomic::AtomicBool;
+use std::sync::Arc;
 
 fn ffmpeg() -> Option<PathBuf> {
     let p = PathBuf::from("ffmpeg");
@@ -32,12 +33,13 @@ fn real_videos_become_playable_copies_and_the_original_is_untouched() {
     std::fs::create_dir_all(d.join("Bush")).unwrap();
     let roots = [d.clone()];
     let stop = AtomicBool::new(false);
+    let pr = Arc::new(Progress::default());
 
     // 1. MKV with H.264 picture and AC3 sound: the picture is copied, the sound made into AAC (when this ffmpeg can)
     let mkv = d.join("Bush/fire.mkv");
     if make(&ff, &mkv, &["-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "ac3", "-shortest"]) {
         let before = std::fs::read(&mkv).unwrap();
-        let name = videoconv::convert(&ff, &roots, "Bush/fire.mkv", &stop).expect("mkv converts");
+        let name = videoconv::convert(&ff, &roots, "Bush/fire.mkv", &stop, &pr).expect("mkv converts");
         assert!(name.ends_with(".mp4"), "{}", name);
         let out = videoconv::resolve_cache(&roots, &name).expect("the copy is found");
         let (v, a) = streams_of(&ff, &out);
@@ -45,8 +47,9 @@ fn real_videos_become_playable_copies_and_the_original_is_untouched() {
         assert!(matches!(a.as_deref(), Some("aac") | Some("mp3")), "{:?}", a);
         assert_eq!(std::fs::read(&mkv).unwrap(), before, "original untouched");
         // asking again finds the copy and makes nothing new
-        assert_eq!(videoconv::convert(&ff, &roots, "Bush/fire.mkv", &stop).unwrap(), name);
+        assert_eq!(videoconv::convert(&ff, &roots, "Bush/fire.mkv", &stop, &pr).unwrap(), name);
         assert!(videoconv::cache_size(&roots) > 0);
+        assert_eq!(pr.percent(), Some(100), "a finished conversion reads 100%");
     } else {
         eprintln!("this ffmpeg has no libx264: the H.264 case is skipped");
     }
@@ -54,7 +57,7 @@ fn real_videos_become_playable_copies_and_the_original_is_untouched() {
     // 2. AVI with an old MPEG-4 picture and MP3 sound: the picture must be re-made
     let avi = d.join("Bush/old.avi");
     if make(&ff, &avi, &["-c:v", "mpeg4", "-c:a", "libmp3lame", "-shortest"]) {
-        match videoconv::convert(&ff, &roots, "Bush/old.avi", &stop) {
+        match videoconv::convert(&ff, &roots, "Bush/old.avi", &stop, &pr) {
             Ok(name) => {
                 let out = videoconv::resolve_cache(&roots, &name).unwrap();
                 let (v, _) = streams_of(&ff, &out);
@@ -67,7 +70,7 @@ fn real_videos_become_playable_copies_and_the_original_is_untouched() {
 
     // 3. a file that is not a video gives an error and leaves nothing behind
     std::fs::write(d.join("Bush/broken.mkv"), b"this is not a video").unwrap();
-    let e = videoconv::convert(&ff, &roots, "Bush/broken.mkv", &stop).unwrap_err();
+    let e = videoconv::convert(&ff, &roots, "Bush/broken.mkv", &stop, &pr).unwrap_err();
     assert!(!e.is_empty());
     let left: Vec<_> = std::fs::read_dir(d.join(videoconv::CACHE_DIR)).map(|r| r.flatten().map(|e| e.file_name().to_string_lossy().to_string()).collect()).unwrap_or_default();
     assert!(left.iter().all(|n| !n.ends_with(".tmp")), "{:?}", left);
@@ -75,7 +78,7 @@ fn real_videos_become_playable_copies_and_the_original_is_untouched() {
     // 4. stopping part way
     let flag = AtomicBool::new(true);
     if make(&ff, &d.join("Bush/stop.mkv"), &["-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "ac3", "-shortest"]) {
-        assert!(videoconv::convert(&ff, &roots, "Bush/stop.mkv", &flag).is_err());
+        assert!(videoconv::convert(&ff, &roots, "Bush/stop.mkv", &flag, &pr).is_err());
     }
     let _ = std::fs::remove_dir_all(&d);
 }

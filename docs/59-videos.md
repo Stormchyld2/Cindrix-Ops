@@ -45,10 +45,16 @@ MKV, AVI, MOV, WMV, FLV, MPG, TS, M2TS, VOB, DivX, ASF, RM and 3GP are listed wi
 - Plays in the page with skipping (the server answers range requests in pieces of up to 32 MB), remembers where each video was left off (`user/video-progress.txt`, host-only, same file format as podcasts) and lets you mark videos watched.
 - Guests and trusted phones on the hotspot may list and watch (`videos_list` is a guest command; the files come from the `/vid/` address). They do not get saved places.
 
+## The floating player and lessons (2026-11-18)
+
+There is one player for the whole program (`src/lib/videoplayer.svelte.ts`, window `src/lib/VideoPlayer.svelte`). Playing a video from the Videos screen or from an Academy lesson opens it in a window at the bottom right, which keeps playing when you move to another screen ("Smaller" / "Bigger" / "Close"). Starting a video pauses the music and podcast players. Saved places work as before. An Academy lesson names a video with `[video] caption | Topic/File.mp4` (doc 21).
+
+Converting shows a percent bar: ffmpeg's `-progress` output against the length read from the file (`videoconv::Progress`); until the length is known the bar is a plain "getting ready".
+
 ## Code
 
 `core/src/videos.rs` (scan, search, safe `resolve`, tests), `core/src/videoconv.rs` (what to copy and what to re-make, ffmpeg arguments, converted copies; `core/tests/video_ffmpeg.rs` runs it with a real ffmpeg), `src-tauri/src/videos.rs` (the `cindrix-vid` address and commands), share-server route `/vid/` in `src-tauri/src/share.rs`, `src/views/Videos.svelte`, `api.ts` (`videosList`, `videoSource`, progress). `core/tests/security_rules.rs` guards the guest rules.
 
 ## Not yet
 
-Hardware-accelerated converting and a percentage bar for it, a "continue watching" tile on the Dashboard, linking an Academy lesson's `[video]` line to a file here, and a mini player that keeps playing while you move between screens.
+Hardware-accelerated converting and a "continue watching" tile on the Dashboard.

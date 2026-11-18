@@ -43,7 +43,8 @@ pub enum Block {
     /// `- [ ] Backpack | 40 to 65 litres | gear`: things to tick off. The part after the first `|` is a
     /// line of detail; a last part of `gear` adds a "Find in Gear" button.
     Checklist(Vec<CheckItem>),
-    /// `[video] caption` on a line of its own: the Cindrix banner stands in until a video is added.
+    /// `[video] caption` or `[video] caption | Topic/File.mp4` on a line of its own. With a file name it plays that
+    /// file from `library/videos/`; without one the Cindrix banner stands in until a video is added.
     Video(String),
 }
 
@@ -267,6 +268,23 @@ pub fn parse_quiz(text: &str) -> Result<Vec<Question>, String> {
     Ok(qs)
 }
 
+/// The caption and the video file of a `[video]` line: `Pack the bag | Bushcraft/Friction fire.mp4`.
+/// The file is only kept when it is a plain path of the kind `library/videos/` holds; anything else is ignored,
+/// so a lesson can never point the player at some other file.
+pub fn video_parts(text: &str) -> (String, Option<String>) {
+    match text.rsplit_once('|') {
+        Some((caption, file)) => {
+            let file = file.trim();
+            let ok = crate::media::valid_rel(file)
+                && file.split('/').count() <= 3
+                && !file.split('/').any(|p| p.starts_with('.'))
+                && crate::videos::PLAYABLE.contains(&file.rsplit('.').next().unwrap_or("").to_ascii_lowercase().as_str());
+            if ok { (caption.trim().to_string(), Some(file.to_string())) } else { (text.trim().to_string(), None) }
+        }
+        None => (text.trim().to_string(), None),
+    }
+}
+
 pub fn parse_lesson(id: &str, text: &str) -> Result<Lesson, String> {
     let (pairs, body) = header(text)?;
     let title = get(&pairs, "title");
@@ -324,7 +342,7 @@ fn lesson_text(l: &Lesson) -> String {
             Block::Heading(x) | Block::Para(x) | Block::Note(x) => t.push_str(x),
             Block::Bullets(v) | Block::Steps(v) => t.push_str(&v.join(". ")),
             Block::Image { alt, .. } => t.push_str(alt),
-            Block::Video(x) => t.push_str(x),
+            Block::Video(x) => t.push_str(&video_parts(x).0),
             Block::Checklist(v) => t.push_str(&v.iter().map(|i| format!("{} {}", i.text, i.detail)).collect::<Vec<_>>().join(". ")),
         }
         t.push_str(". ");
@@ -694,6 +712,22 @@ mod tests {
     }
 
     #[test]
+    fn a_video_line_can_name_a_file_but_only_a_safe_one() {
+        assert_eq!(video_parts("Pack the bag"), ("Pack the bag".into(), None));
+        assert_eq!(video_parts("Fire | Bushcraft/Friction fire.mp4"), ("Fire".into(), Some("Bushcraft/Friction fire.mp4".into())));
+        assert_eq!(video_parts("Fire | Bushcraft/Fire/Bow drill.webm"), ("Fire".into(), Some("Bushcraft/Fire/Bow drill.webm".into())));
+        // not a file the player plays, a path out of the folder, or a hidden one: the whole text stays the caption
+        for bad in ["Fire | notes.txt", "Fire | ../secret.mp4", "Fire | /etc/passwd", "Fire | a/b/c/d.mp4", "Fire | Bush/.hidden.mp4", "Fire | C:\\x.mp4", "Fire | old.mkv"] {
+            assert_eq!(video_parts(bad).1, None, "{}", bad);
+        }
+        // the file name is not part of what a lesson says (search, reading time)
+        let l = parse_lesson("m/l", "---\ntitle: Fire\nreadiness: 2\n---\n[video] Make fire | Bushcraft/Friction fire.mp4\n\nText.\n").unwrap();
+        assert_eq!(l.body[0], Block::Video("Make fire | Bushcraft/Friction fire.mp4".into()));
+        assert!(!lesson_text(&l).contains("Friction"), "the file name is not searchable text");
+        assert!(lesson_text(&l).contains("Make fire"));
+    }
+
+    #[test]
     fn checklists_and_video_lines_become_blocks() {
         let l = parse_lesson("m/l", "---\ntitle: Bag\nreadiness: 2\n---\n[video] Pack the bag\n\nIntro text.\n\n- [ ] Backpack | 40 to 65 litres | gear\n- [ ] Cash\n- A plain bullet\n").unwrap();
         assert_eq!(l.readiness, 2);
@@ -828,7 +862,7 @@ mod tests {
                         Block::Heading(t) | Block::Para(t) | Block::Note(t) => all.push_str(&format!("{}\n", t)),
                         Block::Bullets(v) | Block::Steps(v) => v.iter().for_each(|t| all.push_str(&format!("{}\n", t))),
                         Block::Image { alt, .. } => all.push_str(&format!("{}\n", alt)),
-                        Block::Video(t) => all.push_str(&format!("{}\n", t)),
+                        Block::Video(t) => all.push_str(&format!("{}\n", video_parts(t).0)),
                         Block::Checklist(v) => v.iter().for_each(|i| all.push_str(&format!("{} {}\n", i.text, i.detail))),
                     }
                 }
@@ -957,9 +991,9 @@ mod tests {
                             Block::Heading(t) | Block::Para(t) | Block::Note(t) => all.push_str(&format!("{}\n", t)),
                             Block::Bullets(v) | Block::Steps(v) => v.iter().for_each(|t| all.push_str(&format!("{}\n", t))),
                             Block::Image { alt, .. } => all.push_str(&format!("{}\n", alt)),
-                            Block::Video(t) => all.push_str(&format!("{}\n", t)),
+                            Block::Video(t) => all.push_str(&format!("{}\n", video_parts(t).0)),
                             Block::Checklist(v) => v.iter().for_each(|i| all.push_str(&format!("{} {}\n", i.text, i.detail))),
-                        Block::Video(t) => all.push_str(&format!("{}\n", t)),
+                        Block::Video(t) => all.push_str(&format!("{}\n", video_parts(t).0)),
                         Block::Checklist(v) => v.iter().for_each(|i| all.push_str(&format!("{} {}\n", i.text, i.detail))),
                         }
                     }

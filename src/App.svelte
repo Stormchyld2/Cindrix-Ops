@@ -28,6 +28,7 @@
   import Podcasts from './views/Podcasts.svelte';
   import Videos from './views/Videos.svelte';
   import PodMiniPlayer from './lib/PodMiniPlayer.svelte';
+  import VideoPlayer from './lib/VideoPlayer.svelte';
   import Guides from './views/Guides.svelte';
   import Bible from './views/Bible.svelte';
   import DrugLabels from './views/DrugLabels.svelte';
@@ -435,6 +436,7 @@
     </dialog>
   {/if}
 
+  {#if product?.music !== false}<VideoPlayer />{/if}
   {#if product?.music !== false && settings.values.showMiniPlayer}<MiniPlayer open={() => (group = 'Music')} /><PodMiniPlayer open={() => (group = 'Podcasts')} />{/if}
 
   {#if settings.values.showStatusBar}
