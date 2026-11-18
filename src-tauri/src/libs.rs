@@ -45,12 +45,20 @@ impl LibState {
         self.list = libraries::scan(prog, &self.reg, &self.once);
         let enabled = libraries::enabled(&self.list);
         *ENABLED.lock().unwrap_or_else(|e| e.into_inner()) = enabled.iter().map(|d| (d.root.clone(), d.name.clone())).collect();
+        *DRIVES.lock().unwrap_or_else(|e| e.into_inner()) = enabled.iter().map(|d| (d.id.clone(), d.root.clone(), d.name.clone())).collect();
         enabled
     }
 }
 
 /// The folder and name of every library that may be read, set by each scan.
 static ENABLED: Mutex<Vec<(PathBuf, String)>> = Mutex::new(Vec::new());
+
+/// The id, folder and name of every drive that may be read, set by each scan.
+static DRIVES: Mutex<Vec<(String, PathBuf, String)>> = Mutex::new(Vec::new());
+
+pub fn drives() -> Vec<(String, PathBuf, String)> {
+    DRIVES.lock().unwrap_or_else(|e| e.into_inner()).clone()
+}
 
 fn enabled_roots() -> Vec<(PathBuf, String)> {
     ENABLED.lock().unwrap_or_else(|e| e.into_inner()).clone()

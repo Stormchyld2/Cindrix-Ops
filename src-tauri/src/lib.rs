@@ -118,12 +118,7 @@ fn drive_or_program(name: &str) -> PathBuf {
 /// A helper program (the assistant engine, the library server, the music converter): the one on
 /// the main drive, else the one next to the program.
 fn engine_file(file: &str) -> PathBuf {
-    let a = root().join("engines").join(file);
-    if a.exists() {
-        return a;
-    }
-    let b = program_dir().join("engines").join(file);
-    if b.exists() { b } else { a }
+    cindrix_core::libraries::find_file(&places("engines"), file).unwrap_or_else(|| root().join("engines").join(file))
 }
 
 fn content_dir() -> PathBuf {
@@ -1075,25 +1070,26 @@ fn library_share(enable: bool, app: tauri::AppHandle) {
     });
 }
 
-/// The models folder: the main drive's when it holds a model, else the one next to the program.
-fn models_dir() -> PathBuf {
-    let has_model = |p: &std::path::Path| {
-        std::fs::read_dir(p)
-            .map(|rd| rd.flatten().any(|e| e.file_name().to_str().map(|n| hardware::size_of(n).is_some()).unwrap_or(false)))
-            .unwrap_or(false)
-    };
-    let a = root().join("models");
-    if has_model(&a) {
-        return a;
-    }
-    let b = program_dir().join("models");
-    if has_model(&b) || !a.exists() { b } else { a }
+/// Where to look for a folder such as `models` or `engines`: the main drive, then every other drive that may be
+/// read (in the order they were found), then the folder next to the program.
+fn places(sub: &str) -> Vec<PathBuf> {
+    let main = root();
+    cindrix_core::libraries::places_in_order(&main, &libs::other_roots(&main), &program_dir(), sub)
 }
 
+/// The folder to tell people about when there is no model: the main drive's `models` folder.
+fn models_dir() -> PathBuf {
+    root().join("models")
+}
+
+/// Every model file on any drive, each name once, from the first drive that has it.
 fn model_files() -> Vec<String> {
-    std::fs::read_dir(models_dir())
-        .map(|rd| rd.flatten().filter_map(|e| e.file_name().into_string().ok()).filter(|n| hardware::size_of(n).is_some()).collect())
-        .unwrap_or_default()
+    cindrix_core::libraries::files_in_order(&places("models"), |n| hardware::size_of(n).is_some()).into_iter().map(|(n, _)| n).collect()
+}
+
+/// The place of a model file by name, on whichever drive holds it.
+fn model_path(name: &str) -> PathBuf {
+    cindrix_core::libraries::find_file(&places("models"), name).unwrap_or_else(|| models_dir().join(name))
 }
 
 /// Start the model engine with `file`, or the best file for this computer's memory.
@@ -1121,7 +1117,7 @@ fn start_model(state: &AppState, file: Option<String>) {
         return;
     }
     state.set("loading", &name, size.label(), "Loading the model. The first start can take a minute.");
-    let started = ModelHost::start(&engine_path(), &models_dir().join(&name), hardware::threads(), hardware::context_for(ram));
+    let started = ModelHost::start(&engine_path(), &model_path(&name), hardware::threads(), hardware::context_for(ram));
     match started {
         Ok(mut host) => match host.wait_ready(Duration::from_secs(300)) {
             Ok(()) => {
@@ -3362,6 +3358,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             userbackup::backup_status,
             userbackup::backup_set_destination,
+            userbackup::backup_use_drive,
             userbackup::backup_now,
             userbackup::backup_check,
             userbackup::backup_bring_back,

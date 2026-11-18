@@ -2,7 +2,7 @@
   // Settings > Backups (core/src/userbackup.rs). A copy of your own files (Family page, inventory, security records,
   // plans, tasks) in another place. Every file is read back and checked. Nothing is overwritten or deleted.
   import { onMount } from 'svelte';
-  import { backupStatus, backupSetDestination, backupNow, backupCheck, backupBringBack, pickFolder, type BackupStatus } from '../lib/api';
+  import { backupStatus, backupSetDestination, backupUseDrive, backupNow, backupCheck, backupBringBack, pickFolder, type BackupStatus } from '../lib/api';
 
   let st = $state<BackupStatus | null>(null);
   let note = $state('');
@@ -19,6 +19,7 @@
     await load();
   }
   const choose = () => run(async () => { const p = await pickFolder(); if (p) { await backupSetDestination(p); return 'Saved. Copies will go there.'; } });
+  const useDrive = (id: string, name: string) => run(async () => { await backupUseDrive(id); return `Saved. Copies will go to ${name}, whichever letter Windows gives it.`; });
   const when = (stamp: string) => `${stamp.slice(0, 10)} ${stamp.slice(11, 13)}:${stamp.slice(13, 15)}`;
 </script>
 
@@ -28,6 +29,20 @@
   {#if error}<p class="warn" role="alert">{error}</p>{/if}
   {#if note}<p class="note" role="status">{note}</p>{/if}
 
+  {#if st && st.same_drive}
+    <p class="warn" role="alert">The copies are on the same drive as your files. If that drive fails or is lost, both are gone. Keep them on another drive.</p>
+  {/if}
+  {#if st && st.missing_drive}
+    <p class="warn" role="alert">Your copies are kept on the drive named “{st.missing_drive}”, and it is not plugged in. Plug it in to make or check a copy.</p>
+  {/if}
+  {#if st && st.other_drives.length}
+    <div class="row">
+      <div class="grow"><b>Keep the copies on another drive:</b></div>
+      {#each st.other_drives as d (d.id)}
+        <button class="btn" class:primary={!d.chosen && !st.destination} onclick={() => useDrive(d.id, d.name)} disabled={busy || d.chosen} title="Copies go to a folder named backups on this drive">{d.chosen ? `✔ ${d.name}` : d.name}</button>
+      {/each}
+    </div>
+  {/if}
   <div class="row">
     <div class="grow"><b>Where copies go:</b> {st?.destination || 'not chosen yet'}{#if st && st.destination && !st.reachable} <span class="warn">(cannot be reached right now: is the drive plugged in?)</span>{/if}</div>
     <button class="btn" onclick={choose} disabled={busy}>Choose a folder</button>

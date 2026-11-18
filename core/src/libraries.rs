@@ -247,6 +247,47 @@ pub fn primary_with_main(program_dir: &Path, enabled: &[DriveInfo], main: Option
     drive::choose(program_dir, enabled)
 }
 
+
+/// The places to look for a named folder (`models`, `engines`), in order: the main drive's first, then each other
+/// readable library's, then the folder next to the program. Each place appears once.
+pub fn places_in_order(main_root: &Path, others: &[PathBuf], program_dir: &Path, sub: &str) -> Vec<PathBuf> {
+    let mut v: Vec<PathBuf> = Vec::new();
+    for r in std::iter::once(main_root).chain(others.iter().map(|p| p.as_path())).chain(std::iter::once(program_dir)) {
+        let p = r.join(sub);
+        if !v.contains(&p) {
+            v.push(p);
+        }
+    }
+    v
+}
+
+/// The first of `places` that holds a file with this exact name.
+pub fn find_file(places: &[PathBuf], name: &str) -> Option<PathBuf> {
+    if name.is_empty() || name.contains(['/', '\\']) || name == ".." || name == "." {
+        return None;
+    }
+    places.iter().map(|p| p.join(name)).find(|f| f.is_file())
+}
+
+/// Every file name in `places` that `accept` likes, each once, from the first place that has it, in the order
+/// of the places (names sorted within a place).
+pub fn files_in_order(places: &[PathBuf], accept: impl Fn(&str) -> bool) -> Vec<(String, PathBuf)> {
+    let mut out: Vec<(String, PathBuf)> = Vec::new();
+    for p in places {
+        let mut names: Vec<String> = std::fs::read_dir(p)
+            .map(|rd| rd.flatten().filter(|e| e.file_type().map(|t| t.is_file()).unwrap_or(false)).filter_map(|e| e.file_name().into_string().ok()).collect())
+            .unwrap_or_default();
+        names.sort();
+        for n in names {
+            if accept(&n) && !out.iter().any(|(m, _)| m.eq_ignore_ascii_case(&n)) {
+                let f = p.join(&n);
+                out.push((n, f));
+            }
+        }
+    }
+    out
+}
+
 /// True when a main drive was chosen but it is not plugged in (or not allowed), so another one is being used.
 pub fn main_is_missing(enabled: &[DriveInfo], main: Option<&str>) -> bool {
     main.map(|id| !enabled.iter().any(|d| d.id == id)).unwrap_or(false)
@@ -486,6 +527,36 @@ mod tests {
         assert!(main_is_missing(&[two.clone()], Some("fieldhub1")));
         assert!(!main_is_missing(&[one, two], Some("fieldhub1")));
         assert!(!main_is_missing(&[], None));
+    }
+
+    #[test]
+    fn model_and_engine_files_are_found_on_any_drive_in_order() {
+        let main = tmp("any-main");
+        let other = tmp("any-other");
+        let prog = tmp("any-prog");
+        for (d, f) in [(&main, "models/small-2b.gguf"), (&other, "models/big-9b.gguf"), (&other, "models/small-2b.gguf"), (&other, "engines/ffmpeg.exe"), (&prog, "models/old-4b.gguf")] {
+            fs::create_dir_all(d.join(f).parent().unwrap()).unwrap();
+            fs::write(d.join(f), f.as_bytes()).unwrap();
+        }
+        let models = places_in_order(&main, &[other.clone(), main.clone()], &prog, "models");
+        assert_eq!(models, vec![main.join("models"), other.join("models"), prog.join("models")], "main first, no repeats");
+        let list = files_in_order(&models, |n| n.ends_with(".gguf"));
+        let names: Vec<&str> = list.iter().map(|(n, _)| n.as_str()).collect();
+        assert_eq!(names, vec!["small-2b.gguf", "big-9b.gguf", "old-4b.gguf"]);
+        // the same name on two drives comes from the first
+        assert_eq!(list[0].1, main.join("models/small-2b.gguf"));
+        assert_eq!(find_file(&models, "big-9b.gguf"), Some(other.join("models/big-9b.gguf")));
+        // an engine only on a second drive is still found
+        let engines = places_in_order(&main, &[other.clone()], &prog, "engines");
+        assert_eq!(find_file(&engines, "ffmpeg.exe"), Some(other.join("engines/ffmpeg.exe")));
+        assert_eq!(find_file(&engines, "llama-server.exe"), None);
+        // never a path out of the folder
+        assert_eq!(find_file(&models, "../x"), None);
+        assert_eq!(find_file(&models, "a/b.gguf"), None);
+        assert_eq!(find_file(&models, ""), None);
+        for d in [main, other, prog] {
+            let _ = fs::remove_dir_all(d);
+        }
     }
 
     #[test]

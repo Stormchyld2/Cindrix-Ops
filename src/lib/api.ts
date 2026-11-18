@@ -26,13 +26,18 @@ export function localStamp(d = new Date()): string {
   const p = (n: number, w = 2) => String(n).padStart(w, '0');
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`;
 }
-export type BackupStatus = { destination: string; reachable: boolean; backups: { name: string; stamp: string; files: number }[]; days_since: number | null };
+export type BackupStatus = { destination: string; reachable: boolean; backups: { name: string; stamp: string; files: number }[]; days_since: number | null; missing_drive: string | null; same_drive: boolean; other_drives: { id: string; name: string; chosen: boolean }[] };
 export async function backupStatus(): Promise<BackupStatus> {
   if (inTauri) return call<BackupStatus>('backup_status', { today: localStamp() });
-  return { destination: '', reachable: false, backups: [], days_since: null };
+  return { destination: '', reachable: false, backups: [], days_since: null, missing_drive: null, same_drive: false, other_drives: [] };
 }
 export async function backupSetDestination(path: string): Promise<void> {
   if (inTauri) return call<void>('backup_set_destination', { path });
+  throw new Error('Backups are made in the program, not in the browser preview.');
+}
+/** Keep the copies on another drive by its id, so a new drive letter does not matter. */
+export async function backupUseDrive(id: string): Promise<void> {
+  if (inTauri) return call<void>('backup_use_drive', { id });
   throw new Error('Backups are made in the program, not in the browser preview.');
 }
 export async function backupNow(): Promise<string> {

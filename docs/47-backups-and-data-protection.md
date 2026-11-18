@@ -41,3 +41,11 @@ plain text for anyone who found it.
 - Reports from phones wait in `user/inbox/pocket/` as plain files until accepted.
 - No timed re-lock yet (the per-person lock has one); the records stay open until Lock now or closing the program.
 - Not tested on real hardware (see the hardware test plan).
+
+## Keeping the copies on another drive (2026-11-18)
+
+Settings > Backups shows the other drives that may be read, one button each ("Keep the copies on another drive"). The choice is saved by the drive's id (`backup-destination.txt` holds `drive:fieldhub2/backups`), so a new drive letter does not break it. If that drive is not plugged in the page says so and "Back up now" waits. If the copies sit on the same drive as the files they protect, a warning says that one failure would take both. The folder picker still works for any ordinary folder. Core: `Destination`, `resolve_destination`, `on_same_drive` in `core/src/userbackup.rs`.
+
+## Model and helper files on any drive (2026-11-18)
+
+The assistant model (`models/`) and the helpers (`engines/`: llama-server, kiwix, ffmpeg) are looked for on the main drive first, then on every other drive that may be read, then next to the program (`libraries::places_in_order`, `find_file`, `files_in_order`). The same name on two drives comes from the first. This is also why the model no longer has to sit on the main drive.

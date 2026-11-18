@@ -11,8 +11,16 @@ fn user_root() -> PathBuf {
 fn dest_file() -> PathBuf {
     user_root().join("backup-destination.txt")
 }
+/// What was chosen: a folder, or a place on a drive remembered by its id.
+fn chosen() -> Option<ub::Destination> {
+    std::fs::read_to_string(dest_file()).ok().and_then(|t| ub::parse_destination(&t))
+}
+fn drive_folders() -> Vec<(String, PathBuf)> {
+    crate::libs::drives().into_iter().map(|(id, root, _)| (id, root)).collect()
+}
+/// The folder to use now, when it can be worked out (a drive place needs its drive plugged in).
 fn dest() -> Option<PathBuf> {
-    std::fs::read_to_string(dest_file()).ok().map(|t| PathBuf::from(t.trim())).filter(|p| !p.as_os_str().is_empty())
+    ub::resolve_destination(&chosen()?, &drive_folders()).ok()
 }
 
 #[derive(Serialize)]
@@ -28,6 +36,32 @@ pub struct BackupStatus {
     backups: Vec<BackupFound>,
     /// Whole days since the newest copy, or null when there is none.
     days_since: Option<i64>,
+    /// The name of the drive the copies are kept on, when they are kept by drive and it is not plugged in.
+    missing_drive: Option<String>,
+    /// The copies are on the same drive as the files they protect.
+    same_drive: bool,
+    /// Other drives that may be read: places copies could go.
+    other_drives: Vec<DriveChoice>,
+}
+#[derive(Serialize)]
+pub struct DriveChoice {
+    id: String,
+    name: String,
+    /// The copies are kept on this one now.
+    chosen: bool,
+}
+
+fn other_drives() -> Vec<DriveChoice> {
+    let main = crate::root();
+    let here = chosen();
+    crate::libs::drives()
+        .into_iter()
+        .filter(|(_, root, _)| *root != main)
+        .map(|(id, _, name)| {
+            let chosen = matches!(&here, Some(ub::Destination::Drive { id: i, .. }) if *i == id);
+            DriveChoice { id, name, chosen }
+        })
+        .collect()
 }
 
 pub fn days_since_last(today: &str) -> Option<Option<i64>> {
@@ -37,14 +71,37 @@ pub fn days_since_last(today: &str) -> Option<Option<i64>> {
 
 #[tauri::command]
 pub fn backup_status(today: String) -> BackupStatus {
+    let others = other_drives();
+    let missing = match chosen() {
+        Some(ub::Destination::Drive { id, .. }) if dest().is_none() => {
+            // the drive's name was not seen this time, so say its id in words
+            Some(id)
+        }
+        _ => None,
+    };
     match dest() {
-        None => BackupStatus { destination: String::new(), reachable: false, backups: vec![], days_since: None },
+        None => BackupStatus { destination: String::new(), reachable: false, backups: vec![], days_since: None, missing_drive: missing, same_drive: false, other_drives: others },
         Some(d) => {
             let backups: Vec<BackupFound> = ub::list(&d).into_iter().map(|f| BackupFound { name: f.name, stamp: f.stamp, files: f.files }).collect();
             let days_since = backups.first().and_then(|f| ub::days_between(&f.stamp, &today));
-            BackupStatus { destination: d.to_string_lossy().to_string(), reachable: d.is_dir(), backups, days_since }
+            let same_drive = ub::on_same_drive(&crate::root(), &d);
+            BackupStatus { destination: d.to_string_lossy().to_string(), reachable: d.is_dir(), backups, days_since, missing_drive: None, same_drive, other_drives: others }
         }
     }
+}
+
+/// Keep the copies on another drive, by its id (so a new drive letter does not matter). Makes the folder.
+#[tauri::command]
+pub fn backup_use_drive(id: String) -> Result<(), String> {
+    let drive = crate::libs::drives().into_iter().find(|(i, _, _)| *i == id).ok_or("That drive is not plugged in right now.")?;
+    if drive.1 == crate::root() {
+        return Err("That is the drive your files are on. Pick another drive so one failure cannot take both.".into());
+    }
+    let d = ub::Destination::Drive { id: drive.0.clone(), sub: ub::DEFAULT_SUB.to_string() };
+    let folder = ub::resolve_destination(&d, &drive_folders())?;
+    std::fs::create_dir_all(&folder).map_err(|_| "The folder for the copies could not be made on that drive.".to_string())?;
+    std::fs::create_dir_all(user_root()).map_err(|_| "Your files folder could not be made.".to_string())?;
+    cindrix_core::fsio::write_atomic(&dest_file(), ub::destination_text(&d).as_bytes()).map_err(|_| "The choice could not be saved.".to_string())
 }
 
 #[tauri::command]

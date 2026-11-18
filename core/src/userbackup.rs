@@ -48,6 +48,78 @@ fn walk(root: &Path, dir: &Path, out: &mut Vec<PathBuf>, skipped: &mut Vec<Strin
     Ok(())
 }
 
+/// Where the copies go. A folder is a path as typed or picked. A drive place is kept by the drive's id, so it still
+/// works when Windows gives the drive another letter: `drive:fieldhub2/backups`.
+#[derive(Debug, Clone, PartialEq)]
+pub enum Destination {
+    Folder(PathBuf),
+    Drive { id: String, sub: String },
+}
+
+/// The folder inside a drive that copies go to unless another is given.
+pub const DEFAULT_SUB: &str = "backups";
+
+fn clean_sub(sub: &str) -> Option<String> {
+    let parts: Vec<&str> = sub.split('/').filter(|p| !p.is_empty()).collect();
+    if parts.is_empty() {
+        return Some(DEFAULT_SUB.to_string());
+    }
+    if parts.len() > 4 || parts.iter().any(|p| *p == "." || *p == ".." || p.contains(['\\', ':', '\0']) || p.len() > 80) {
+        return None;
+    }
+    Some(parts.join("/"))
+}
+
+pub fn parse_destination(text: &str) -> Option<Destination> {
+    let t = text.trim();
+    if t.is_empty() {
+        return None;
+    }
+    if let Some(rest) = t.strip_prefix("drive:") {
+        let (id, sub) = rest.split_once('/').unwrap_or((rest, ""));
+        let id = crate::drive::clean_id(id, "");
+        if id.is_empty() || (id == "cindrix" && !rest.starts_with("cindrix")) {
+            return None;
+        }
+        return Some(Destination::Drive { id, sub: clean_sub(sub)? });
+    }
+    Some(Destination::Folder(PathBuf::from(t)))
+}
+
+pub fn destination_text(d: &Destination) -> String {
+    match d {
+        Destination::Folder(p) => p.to_string_lossy().to_string(),
+        Destination::Drive { id, sub } => format!("drive:{}/{}", id, sub),
+    }
+}
+
+/// The folder to use now. A drive place needs its drive plugged in and allowed (`drives` is every readable drive's
+/// id and folder); when it is not, `Err` holds the id so the screen can say which drive is missing.
+pub fn resolve_destination(d: &Destination, drives: &[(String, PathBuf)]) -> Result<PathBuf, String> {
+    match d {
+        Destination::Folder(p) => Ok(p.clone()),
+        Destination::Drive { id, sub } => match drives.iter().find(|(i, _)| i == id) {
+            Some((_, root)) => {
+                let mut p = root.clone();
+                for part in sub.split('/') {
+                    p.push(part);
+                }
+                Ok(p)
+            }
+            None => Err(id.clone()),
+        },
+    }
+}
+
+/// True when the copies would sit on the same drive as the files they protect (so one failure takes both).
+/// `main_root` is the drive's folder that holds `user/`.
+pub fn on_same_drive(main_root: &Path, dest: &Path) -> bool {
+    match (main_root.canonicalize(), dest.canonicalize().or_else(|_| dest.parent().map(|p| p.canonicalize()).unwrap_or(Err(std::io::ErrorKind::NotFound.into())))) {
+        (Ok(m), Ok(d)) => d.starts_with(&m),
+        _ => false,
+    }
+}
+
 /// `stamp` is "YYYY-MM-DD-HHMM". The destination must be outside the user folder.
 pub fn backup(user_root: &Path, dest_parent: &Path, stamp: &str) -> Result<Report, String> {
     if !user_root.is_dir() { return Err("There is no folder of your own files to copy yet.".to_string()); }
@@ -220,5 +292,54 @@ mod tests {
         assert_eq!(days_between("2026-02-27-0000", "2026-03-02-0000"), Some(3));
         assert_eq!(days_between("2025-12-31-0000", "2026-01-01-0000"), Some(1));
         assert_eq!(days_between("bad", "2026-01-01"), None);
+    }
+}
+
+#[cfg(test)]
+mod destination_tests {
+    use super::*;
+
+    #[test]
+    fn a_drive_place_is_kept_by_id_and_resolved_when_plugged_in() {
+        let d = parse_destination("drive:FieldHub2/Family Backups").unwrap();
+        assert_eq!(d, Destination::Drive { id: "fieldhub2".into(), sub: "Family Backups".into() });
+        assert_eq!(destination_text(&d), "drive:fieldhub2/Family Backups");
+        assert_eq!(parse_destination(&destination_text(&d)), Some(d.clone()));
+        // no folder given: the usual one
+        assert_eq!(parse_destination("drive:fieldhub2").unwrap(), Destination::Drive { id: "fieldhub2".into(), sub: "backups".into() });
+        let drives = vec![("fieldhub1".to_string(), PathBuf::from("/mnt/e")), ("fieldhub2".to_string(), PathBuf::from("/mnt/f"))];
+        assert_eq!(resolve_destination(&d, &drives), Ok(PathBuf::from("/mnt/f/Family Backups")));
+        // another letter after re-plugging: still found
+        let moved = vec![("fieldhub2".to_string(), PathBuf::from("/mnt/g"))];
+        assert_eq!(resolve_destination(&d, &moved), Ok(PathBuf::from("/mnt/g/Family Backups")));
+        // not plugged in: says which drive
+        assert_eq!(resolve_destination(&d, &[]), Err("fieldhub2".to_string()));
+    }
+
+    #[test]
+    fn plain_folders_and_bad_drive_places() {
+        assert_eq!(parse_destination("  E:\\Backups "), Some(Destination::Folder(PathBuf::from("E:\\Backups"))));
+        assert_eq!(parse_destination(""), None);
+        assert_eq!(parse_destination("drive:"), None);
+        assert_eq!(parse_destination("drive:/x"), None);
+        for bad in ["drive:fh/../x", "drive:fh/a/../b", "drive:fh/a\\b", "drive:fh/c:d", "drive:fh/a/b/c/d/e"] {
+            assert_eq!(parse_destination(bad), None, "{}", bad);
+        }
+    }
+
+    #[test]
+    fn copies_on_the_same_drive_as_the_files_are_noticed() {
+        let base = std::env::temp_dir().join(format!("cindrix-bk-same-{}", std::process::id()));
+        let other = std::env::temp_dir().join(format!("cindrix-bk-other-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&base);
+        let _ = fs::remove_dir_all(&other);
+        fs::create_dir_all(base.join("user")).unwrap();
+        fs::create_dir_all(base.join("backups")).unwrap();
+        fs::create_dir_all(&other).unwrap();
+        assert!(on_same_drive(&base, &base.join("backups")));
+        assert!(on_same_drive(&base, &base.join("not-made-yet")), "a folder that does not exist yet is judged by where it would be");
+        assert!(!on_same_drive(&base, &other));
+        let _ = fs::remove_dir_all(&base);
+        let _ = fs::remove_dir_all(&other);
     }
 }
