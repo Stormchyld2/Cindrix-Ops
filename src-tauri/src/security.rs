@@ -342,3 +342,15 @@ pub fn security_equipment_add(uid: String, ev: String, kind: String, site: Strin
     crate::seclock::require_open()?;
     api::equipment_add(&user_root(), &uid, &ev, &kind, &site, test_days, &by, &note, offset_minutes)
 }
+
+#[tauri::command]
+pub fn security_review_list(offset_minutes: i64) -> Result<Value, String> {
+    crate::seclock::require_open()?;
+    json(api::review_list(&user_root(), offset_minutes))
+}
+
+#[tauri::command]
+pub fn security_review_add(ev: String, rec: String, ref_id: String, a1: String, a2: String, note: String, by: String, offset_minutes: i64) -> Result<String, String> {
+    crate::seclock::require_open()?;
+    api::review_add(&user_root(), &ev, &rec, &ref_id, &a1, &a2, &note, &by, offset_minutes)
+}

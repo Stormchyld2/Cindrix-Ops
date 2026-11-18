@@ -19,6 +19,7 @@ use crate::security_comms as comms;
 use crate::security_outing as outing;
 use crate::security_site as siterec;
 use crate::security_equipment as equip;
+use crate::security_review as review;
 use crate::security_plans as plans;
 
 pub const SECURITY_COMMANDS: &[&str] = &[
@@ -54,6 +55,8 @@ pub const SECURITY_COMMANDS: &[&str] = &[
     "security_schedule_save",
     "security_equipment_list",
     "security_equipment_add",
+    "security_review_list",
+    "security_review_add",
     "security_routes_get",
     "security_routes_save",
     "security_availability_list",
@@ -108,11 +111,12 @@ pub fn overview_at(user_root: &Path, off: i64, now: i64) -> Result<String, Strin
     let insp_log = siterec::load_inspections(user_root)?;
     let avail_log = siterec::load_availability(user_root)?;
     let equip_log = equip::load(user_root)?;
+    let review_log = review::load(user_root)?;
+    let built = incident::build(&incidents.items);
     let inventory = crate::userdata::UserDir::new(user_root).load_inventory().unwrap_or_default();
     let gear = equip::gear(&equip_log.items, &inventory);
     let rules_file = siterec::load_schedule(user_root)?;
-    let recs = Recs { gear, rules: rules_file.items.clone(), outings: outings.clone(), comms: comms_log.items.clone(), coverage: cov_log.items.clone(), training: train_log.items.clone(), assets: asset_file.items.clone(), inspections: insp_log.items.clone(), avail: avail_log.items.clone() };
-    let built = incident::build(&incidents.items);
+    let recs = Recs { gear, rules: rules_file.items.clone(), outings: outings.clone(), comms: comms_log.items.clone(), coverage: cov_log.items.clone(), training: train_log.items.clone(), assets: asset_file.items.clone(), inspections: insp_log.items.clone(), avail: avail_log.items.clone(), review: review_log.items.clone(), built: built.clone() };
     let ov = security::overview(&sites.items, &log.items, now);
     let mut rows = Vec::new();
     let mut look_total = 0usize;
@@ -142,7 +146,7 @@ pub fn overview_at(user_root: &Path, off: i64, now: i64) -> Result<String, Strin
         ));
     }
     let sites_on_watch = sites.items.iter().filter(|s| !sched::on_watch_now(&watches.items, &s.id, now).is_empty()).count();
-    let rejected = sites.rejected.len() + log.rejected.len() + watches.rejected.len() + incidents.rejected.len() + outing_log.rejected.len() + comms_log.rejected.len() + cov_log.rejected.len() + train_log.rejected.len() + channel_file.rejected.len() + asset_file.rejected.len() + insp_log.rejected.len() + avail_log.rejected.len() + rules_file.rejected.len() + equip_log.rejected.len();
+    let rejected = sites.rejected.len() + log.rejected.len() + watches.rejected.len() + incidents.rejected.len() + outing_log.rejected.len() + comms_log.rejected.len() + cov_log.rejected.len() + train_log.rejected.len() + channel_file.rejected.len() + asset_file.rejected.len() + insp_log.rejected.len() + avail_log.rejected.len() + rules_file.rejected.len() + equip_log.rejected.len() + review_log.rejected.len();
     if rejected > 0 {
         look_total += 1;
         alerts.push(alert(format!("unreadable|{}", rejected), format!("{} line{} in the security records could not be read. Nothing was changed.", rejected, if rejected == 1 { "" } else { "s" }), false));
@@ -169,6 +173,8 @@ struct Recs {
     assets: Vec<siterec::Asset>,
     inspections: Vec<siterec::Inspection>,
     avail: Vec<siterec::Availability>,
+    review: Vec<review::Line>,
+    built: Vec<incident::Incident>,
 }
 
 /// The plain-words "needs a look" lines for one site. One place makes them, so the Dashboard count and the
@@ -197,6 +203,7 @@ fn site_looks(site: &str, st: &security::SiteStatus, cur: Option<&PostureEntry>,
     out.extend(comms::training_looks(site, watches, &recs.training));
     let patrols: Vec<(String, i64)> = recs.outings.iter().filter(|o| o.patrol && o.site == site && matches!(o.state, outing::State::Out | outing::State::Back)).map(|o| (o.task.clone(), o.ended.unwrap_or(o.left))).collect();
     out.extend(equip::looks(site, &recs.gear, now));
+    out.extend(review::looks(site, &recs.review, &recs.built, review::today_days(now, off)));
     out.extend(siterec::schedule_looks(site, &recs.rules, &patrols, off, now));
     out.extend(siterec::asset_looks(site, &recs.assets, &recs.inspections, now));
     out.extend(siterec::availability_looks(site, watches, &recs.avail, now));
@@ -780,6 +787,35 @@ pub fn equipment_add(user_root: &Path, uid: &str, ev: &str, kind: &str, site: &s
     let off = offset_ok(offset_minutes)?;
     let inv = crate::userdata::UserDir::new(user_root).load_inventory()?;
     equip::add(user_root, &inv, uid, ev, kind, site, test_days, by, note, off, now_minutes())
+}
+/// Exercises, after-action reviews and who has taken part lately.
+pub fn review_list(user_root: &Path, offset_minutes: i64) -> Result<String, String> {
+    let off = offset_ok(offset_minutes)?;
+    let log = review::load(user_root)?;
+    let today = review::today_days(now_minutes(), off);
+    let ex = review::exercises(&log.items);
+    let mut people: Vec<String> = store::load_watches(user_root)?.items.iter().map(|w| w.person.clone()).collect();
+    people.extend(comms::load_training(user_root)?.items.iter().map(|t| t.person.clone()));
+    let ready = review::readiness(&people, &ex, today);
+    let ex_rows: Vec<String> = ex.iter().map(|e| format!("{{\"id\":{},\"title\":{},\"date\":{},\"site\":{},\"note\":{},\"attendees\":[{}]}}", q(&e.id), q(&e.title), q(&e.date), q(&e.site), q(&e.note), e.attendees.iter().map(|a| q(a)).collect::<Vec<_>>().join(","))).collect();
+    let aar_rows: Vec<String> = review::aars(&log.items).iter().map(|a| {
+        let f: Vec<String> = a.findings.iter().map(|(k, t)| format!("{{\"kind\":{},\"text\":{}}}", q(k), q(t))).collect();
+        let acts: Vec<String> = a.actions.iter().map(|x| {
+            let late = x.state.pending() && review::date_days(&x.due).map(|d| d < today).unwrap_or(false);
+            format!("{{\"id\":{},\"text\":{},\"owner\":{},\"due\":{},\"state\":{},\"late\":{},\"by\":{},\"note\":{}}}", q(&x.id), q(&x.text), q(&x.owner), q(&x.due), q(x.state.word()), late, q(&x.state_by), q(&x.state_note))
+        }).collect();
+        format!("{{\"id\":{},\"ref\":{},\"title\":{},\"opened_at\":{},\"opened_by\":{},\"closed\":{},\"findings\":[{}],\"actions\":[{}]}}", q(&a.id), q(&a.ref_id), q(&a.title), q(&a.opened_at), q(&a.opened_by), a.closed, f.join(","), acts.join(","))
+    }).collect();
+    let ready_rows: Vec<String> = ready.iter().map(|r| format!("{{\"person\":{},\"last\":{},\"days_ago\":{},\"recent\":{}}}", q(&r.person), q(r.last.as_deref().unwrap_or("")), r.days_ago.map(|d| d.to_string()).unwrap_or_else(|| "null".into()), r.recent)).collect();
+    let incidents = incident::build(&store::load_incident_log(user_root)?.items);
+    let inc_rows: Vec<String> = incidents.iter().map(|i| format!("{{\"id\":{},\"title\":{},\"site\":{},\"exercise\":{},\"closed\":{}}}", q(&i.id), q(&i.title), q(&i.site), i.exercise, i.status == incident::Status::Closed)).collect();
+    Ok(format!("{{\"exercises\":[{}],\"reviews\":[{}],\"readiness\":[{}],\"incidents\":[{}],\"every_days\":{},\"unreadable_lines\":{}}}", ex_rows.join(","), aar_rows.join(","), ready_rows.join(","), inc_rows.join(","), review::EXERCISE_EVERY_DAYS, log.rejected.len()))
+}
+#[allow(clippy::too_many_arguments)]
+pub fn review_add(user_root: &Path, ev: &str, rec: &str, ref_id: &str, a1: &str, a2: &str, note: &str, by: &str, offset_minutes: i64) -> Result<String, String> {
+    let off = offset_ok(offset_minutes)?;
+    let incidents = incident::build(&store::load_incident_log(user_root)?.items);
+    review::add(user_root, &incidents, ev, rec, ref_id, a1, a2, note, by, off, now_minutes())
 }
 pub fn routes_save(user_root: &Path, site: &str, list: &[siterec::Route]) -> Result<(), String> {
     let fixed: Vec<siterec::Route> = list.iter().map(|r| siterec::Route { site: site.to_string(), ..r.clone() }).collect();

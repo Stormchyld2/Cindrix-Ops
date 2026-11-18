@@ -2091,6 +2091,18 @@ export async function securityEquipmentAdd(uid: string, ev: 'listed' | 'test' | 
   if (tauriHost) return call<string>('security_equipment_add', { uid, ev, kind, site, testDays, by, note, offsetMinutes: clockOffset() });
   throw new Error('Gear records are saved in the program, not in the browser preview.');
 }
+export type ReviewAction = { id: string; text: string; owner: string; due: string; state: 'open' | 'done' | 'verified' | 'dropped'; late: boolean; by: string; note: string };
+export type ReviewRow = { id: string; ref: string; title: string; opened_at: string; opened_by: string; closed: boolean; findings: { kind: 'good' | 'fix'; text: string }[]; actions: ReviewAction[] };
+export type ExerciseRow = { id: string; title: string; date: string; site: string; note: string; attendees: string[] };
+export type ReviewList = { exercises: ExerciseRow[]; reviews: ReviewRow[]; readiness: { person: string; last: string; days_ago: number | null; recent: number }[]; incidents: { id: string; title: string; site: string; exercise: boolean; closed: boolean }[]; every_days: number; unreadable_lines: number };
+export async function securityReviewList(): Promise<ReviewList> {
+  if (tauriHost) return call<ReviewList>('security_review_list', { offsetMinutes: clockOffset() });
+  return { exercises: [], reviews: [], readiness: [], incidents: [], every_days: 90, unreadable_lines: 0 };
+}
+export async function securityReviewAdd(ev: 'exercise' | 'attended' | 'aar' | 'finding' | 'action' | 'done' | 'verified' | 'dropped' | 'closed', f: { rec?: string; ref?: string; a1?: string; a2?: string; note?: string; by: string }): Promise<string> {
+  if (tauriHost) return call<string>('security_review_add', { ev, rec: f.rec ?? '', refId: f.ref ?? '', a1: f.a1 ?? '', a2: f.a2 ?? '', note: f.note ?? '', by: f.by, offsetMinutes: clockOffset() });
+  throw new Error('Exercises and reviews are saved in the program, not in the browser preview.');
+}
 export type RuleRow = { route: string; every_hours: number; from: string; to: string };
 export async function securityScheduleGet(site: string): Promise<{ rules: RuleRow[]; unreadable_lines: number }> {
   if (tauriHost) return call('security_schedule_get', { site });

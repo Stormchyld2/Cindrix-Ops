@@ -8,6 +8,7 @@
   import SecurityPlans from './SecurityPlans.svelte';
   import SecurityGear from './SecurityGear.svelte';
   import SecurityAvailability from './SecurityAvailability.svelte';
+  import SecurityReviews from './SecurityReviews.svelte';
   import SecLock from './SecLock.svelte';
   import { onMount } from 'svelte';
   import { secLockStatus } from '../lib/api';
@@ -65,8 +66,10 @@
 {:else if tab === 'Personnel'}
   <SecurityAvailability {me} />
   <SecurityComms part="personnel" bind:site {me} />
+  <SecurityReviews part="personnel" {site} {me} />
 {:else if tab === 'Records'}
   <SecurityComms part="records" bind:site {me} />
+  <SecurityReviews part="records" {site} {me} />
 {:else}
   <div class="panel soon">
     <h2>{current.id}</h2>

@@ -3400,6 +3400,8 @@ pub fn run() {
             security::security_schedule_save,
             security::security_equipment_list,
             security::security_equipment_add,
+            security::security_review_list,
+            security::security_review_add,
             security::security_routes_get,
             security::security_routes_save,
             security::security_availability_list,
