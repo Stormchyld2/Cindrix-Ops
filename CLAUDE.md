@@ -9,7 +9,7 @@ Windows comes first; Android and iPhone wrap it later.
 - `core/`: Rust library, **standard library only** (no outside crates; zstd and xz decoders are
   our own so it also builds for Android). All logic that can be tested lives here.
   `drive.rs` (finding drives by marker) and `libraries.rs` (which drives may be read, remembered answers, the main drive chosen by id: Vault, then Hub, then the chosen one),
-  `retrieval.rs` (keyword passages for the assistant), `shelf.rs` (books), `library.rs` and
+  `retrieval.rs` (keyword passages for the assistant), `ftindex.rs` (the program's own full-text index of archives, made from Archives; `docs/60-search-inside-articles.md`), `shelf.rs` (books), `library.rs` and
   `zimread.rs` (ZIM archives read directly), `kiwix.rs` (kiwix-serve helpers), `pipeline.rs` (ask).
 - `src-tauri/src/lib.rs`: Tauri commands and app state. `zimview.rs` serves the `cindrix-zim`
   address for the archive reader. `music.rs` is the music player's side. `libs.rs` is the drive

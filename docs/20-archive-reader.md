@@ -73,7 +73,7 @@ app. Test archives were made by our own script, so the check against Kiwix's too
 
 ## Not built
 
-- Full-text search without Kiwix (reading Xapian indexes). Possible later, and a big job.
+- Full-text search without Kiwix: built as the program's own word index (see `docs/60-search-inside-articles.md`). Reading Kiwix's Xapian indexes is still not done.
 - Archives compressed with zlib or bzip2 (old and rare; the reader says so).
 - Find-in-page and printing an article. Big videos inside an archive. (Tabs are built: see doc 23.)
 - Sharing the archives over the hotspot **without** `kiwix-serve` (a small web server of our own). That
