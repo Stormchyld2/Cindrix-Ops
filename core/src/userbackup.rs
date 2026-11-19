@@ -215,7 +215,8 @@ pub fn bring_back_missing(backup_folder: &Path, user_root: &Path) -> Result<(usi
             Ok(now) => { if now != data { differ += 1 } }
             Err(_) => {
                 fs::create_dir_all(to.parent().unwrap()).map_err(|_| "A folder could not be made.".to_string())?;
-                fsio::write_atomic(&to, &data).map_err(|_| "A file could not be put back.".to_string())?;
+                // exactly the bytes that were saved: a sealed security file must stay sealed once, not be sealed again
+                fsio::write_atomic_raw(&to, &data).map_err(|_| "A file could not be put back.".to_string())?;
                 added += 1;
             }
         }
@@ -282,6 +283,69 @@ mod tests {
             let r = backup(&u, &d, "2026-11-08-2100").unwrap();
             assert_eq!((r.files, r.skipped.len()), (2, 1));
         }
+        let _ = fs::remove_dir_all(u.parent().unwrap());
+    }
+
+    struct Xor;
+    impl fsio::AtRest for Xor {
+        fn seal(&self, plain: &[u8]) -> Result<Vec<u8>, String> {
+            let mut v = b"CXL1".to_vec();
+            v.extend(plain.iter().map(|b| b ^ 0x5a));
+            Ok(v)
+        }
+        fn open(&self, sealed: &[u8]) -> Result<Vec<u8>, String> {
+            Ok(sealed[4..].iter().map(|b| b ^ 0x5a).collect())
+        }
+    }
+
+    /// The drill: a whole user folder (plain and sealed files), backed up, then damaged the way a bad day does it
+    /// (files lost, one cut short, a leftover temporary file, newer work added), then brought back.
+    #[test]
+    fn restore_drill_after_losing_files_with_the_lock_on() {
+        let (u, d) = setup("drill");
+        fs::create_dir_all(u.join("security/tracks")).unwrap();
+        fs::create_dir_all(u.join("photos")).unwrap();
+        fs::write(u.join("gear.txt"), "# format: gear 1
+g1	tent
+").unwrap();
+        fs::write(u.join("photos/a.jpg"), vec![7u8; 5000]).unwrap();
+        let key: std::sync::Arc<dyn fsio::AtRest> = std::sync::Arc::new(Xor);
+        let uc = u.canonicalize().unwrap();
+        fsio::set_guard(&uc, true, Some(key));
+        fsio::write_atomic(&uc.join("security/incident-log.txt"), b"# format: incident-log 1
+real
+").unwrap();
+        fsio::write_atomic(&uc.join("security/tracks/t1.txt"), b"track\n").unwrap();
+        let r = backup(&u, &d, "2026-11-19-1400").unwrap();
+        assert_eq!(r.files, 5);
+        assert!(verify(&r.folder).unwrap().is_empty());
+
+        // the bad day
+        fs::remove_file(uc.join("security/incident-log.txt")).unwrap();
+        fs::remove_file(uc.join("gear.txt")).unwrap();
+        fs::remove_dir_all(uc.join("photos")).unwrap();
+        fs::write(uc.join("tasks.txt"), "buy").unwrap(); // cut short
+        fs::write(uc.join("tasks.txt.tmp"), "half").unwrap(); // crash leftover
+        fs::write(uc.join("events.txt"), "made after the backup\n").unwrap();
+
+        // locked: the restore still works (it never needs the key) and does not damage anything
+        fsio::set_guard(&uc, true, None);
+        let (added, differ) = bring_back_missing(&r.folder, &uc).unwrap();
+        assert_eq!((added, differ), (3, 1), "3 lost files come back; the cut-short one is reported, not overwritten");
+        assert_eq!(fs::read_to_string(uc.join("tasks.txt")).unwrap(), "buy");
+        assert!(fsio::read(&uc.join("security/incident-log.txt")).is_err(), "still locked");
+
+        // unlocked: the sealed file opens, once-sealed, with its old words
+        fsio::set_guard(&uc, true, Some(std::sync::Arc::new(Xor)));
+        assert_eq!(fsio::read_to_string(&uc.join("security/incident-log.txt")).unwrap(), "# format: incident-log 1\nreal\n");
+        assert_eq!(fsio::read_to_string(&uc.join("security/tracks/t1.txt")).unwrap(), "track\n");
+        assert_eq!(fs::read_to_string(uc.join("gear.txt")).unwrap(), "# format: gear 1\ng1\ttent\n");
+        assert_eq!(fs::read(uc.join("photos/a.jpg")).unwrap().len(), 5000);
+        assert_eq!(fs::read_to_string(uc.join("events.txt")).unwrap(), "made after the backup\n");
+
+        // a second restore changes nothing
+        assert_eq!(bring_back_missing(&r.folder, &uc).unwrap().0, 0);
+        fsio::set_guard(&uc, false, None);
         let _ = fs::remove_dir_all(u.parent().unwrap());
     }
 

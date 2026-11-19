@@ -18,12 +18,11 @@ Doc 57 is the short status page; this is the working list. Update both when some
   tracks). Not built: the two-way copy between a Vault laptop and a Hub phone (inventory, gear, security logs),
   conflict rules, and the answer to "may a phone host write records" (doc 44 section 15). Needs the owner's
   decision first; doc 44 section 11 lists what must exist before it is called secure.
-- [~] **Backups and interrupted writes.** Done and checked (2026-11-19): a crash leftover `.tmp` never replaces the
+- [x] **Backups and interrupted writes.** Done and checked (2026-11-19): a crash leftover `.tmp` never replaces the
   real file; two saves in the same second no longer overwrite each other's backup (a real bug, fixed in
   `fsio::backup_then_write`); a cut-off last line in a log no longer swallows the next good line (fixed in
   `fsio::append`); a backup that stops half way is removed, so it is never mistaken for a good one; links are left out
-  of copies. Index builds already stop, resume and refuse damaged files (doc 60 tests). Still to do: a restore drill
-  of the whole `user/` folder after a simulated crash, and the sealed (passcode) files under the same cuts.
+  of copies. Index builds already stop, resume and refuse damaged files (doc 60 tests). Restore drill done: a whole `user/` folder with passcode-sealed files is backed up, damaged (files lost, one cut short, crash leftovers), and brought back while locked and unlocked; restoring now writes the saved bytes exactly (it would have sealed an already-sealed file a second time). Still to do: the same drill on a real Windows drive.
 - [ ] **Large libraries and many devices.** Not tested with multi-gigabyte archives or several guests at
   once. The full-text index builds in pieces and can be stopped and resumed (doc 60), but its time and size on
   a real 50 GB archive are unknown.
