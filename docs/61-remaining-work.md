@@ -11,9 +11,19 @@ Doc 57 is the short status page; this is the working list. Update both when some
   `core/tests/access_classes.rs` now fails when a registered command is answered for a guest or phone without
   being on a list, when a list names a command nobody serves, when a guest command looks like a write or a
   private file, and when the phone list changes without the test being changed on purpose.
-- [ ] **People inside the host (doc 44 section 11 roles).** There is still only the host, a guest and a trusted
-  phone, no named people with roles (planner, watch supervisor, member, observer). Open decision, doc 44
-  section 15: needs an identity per person before roles can be enforced. Not built.
+- [~] **People inside the host (owner decision 2026-11-19).** Each trusted phone has a named person (typed or picked
+  when the invite is made, editable afterwards in Settings > Sharing > Rename). Roles are `core/src/permissions.rs`,
+  file `user/roles.txt`: two start (**Reporter** may send reports; **Approver** may also accept or set aside the
+  waiting reports), the host adds or removes roles and gives each person one. A person with none written down gets the
+  first role; if the file cannot be read, nothing that needs a permission is allowed. The server checks it for every
+  request (`permissions::allowed`, used by `api_call` and `device_call`). Built: backend, tests, Settings screen.
+  Not built: a screen on the phone's browser for the waiting reports (the commands `approvals_*` exist and are
+  refused to anyone without the Approver permission); the larger doc 44 split (planner, watch supervisor, member,
+  observer) waits until these two have been used. Accepting does not yet record which person accepted.
+- [x] **Forgotten passcode.** Turning the lock on shows a one-time recovery code; Settings > Protection has "Forgot the
+  passcode?" (also on the locked Security screen) and "New recovery code". The code only re-wraps the key, records are
+  not touched. Locks made before this have no code until one is made while they are open. Checked in CI only (the
+  Tauri side cannot be built here).
 - [ ] **Vault–Hub / Pocket synchronization.** Hub side of Pocket is built (mailbox, count sheets, check-ins,
   tracks). Not built: the two-way copy between a Vault laptop and a Hub phone (inventory, gear, security logs),
   conflict rules, and the answer to "may a phone host write records" (doc 44 section 15). Needs the owner's

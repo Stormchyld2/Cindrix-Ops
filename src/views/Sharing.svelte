@@ -1,9 +1,10 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { shareInfo, shareSet, shareSetPin, shareInvite, shareTrusted, shareRevoke, type ShareInfo, type Invite, type TrustedDevice } from '../lib/api';
+  import { shareInfo, shareSet, shareSetPin, shareInvite, shareTrusted, shareRevoke, shareRename, type ShareInfo, type Invite, type TrustedDevice } from '../lib/api';
   import { qrMatrix } from '../lib/qr';
   import { everyone, loadPersonList } from '../lib/person.svelte';
   import { learner } from '../lib/learner.svelte';
+  import PeopleRoles from './PeopleRoles.svelte';
 
   let info = $state<ShareInfo | null>(null);
   let error = $state('');
@@ -48,7 +49,13 @@
   async function loadTrusted() { try { trusted = await shareTrusted(); } catch { /* the list just stays as it was */ } }
   async function makeInvite() {
     error = '';
-    try { invite = await shareInvite(invitee || everyone()[0]); } catch (e) { error = String(e); }
+    try { invite = await shareInvite(invitee.trim() || everyone()[0]); } catch (e) { error = String(e); }
+  }
+  let renaming = $state<string | null>(null);
+  let renameText = $state('');
+  async function saveName(id: string) {
+    error = '';
+    try { trusted = await shareRename(id, renameText); renaming = null; } catch (e) { error = String(e); }
   }
   async function removeDevice(id: string) {
     try { trusted = await shareRevoke(id); } catch (e) { error = String(e); }
@@ -97,9 +104,8 @@
         <div class="label sub">FAMILY DEVICES</div>
         <p class="small">A family member's own phone or laptop can join with an invite instead of the PIN. It then stays trusted, shows their name, and lets them add pictures to the shared album and to their own. Make the invite for the right person, and have them scan it within {invite?.minutes ?? 10} minutes. It works once.</p>
         <div class="row">
-          <select class="input" bind:value={invitee} aria-label="Who is this invite for">
-            {#each everyone() as n}<option value={n}>{n}</option>{/each}
-          </select>
+          <input class="input" list="invite-names" bind:value={invitee} placeholder={everyone()[0] ?? 'Name'} aria-label="Who is this invite for. Pick a name or type a new one" />
+          <datalist id="invite-names">{#each everyone() as n}<option value={n}></option>{/each}</datalist>
           <button class="btn primary" onclick={makeInvite} title="Make a one-time code for this person's phone">Make an invite</button>
         </div>
         {#if learner.locked}<p class="small muted">The Family page is locked, so only “Me” is listed. Unlock it on the Family page to invite someone else.</p>{/if}
@@ -115,10 +121,21 @@
         {/if}
         <div class="small muted pinlabel">Trusted devices</div>
         {#each trusted as t (t.id)}
-          <div class="line"><div class="grow"><b>{t.person}</b> <span class="small muted">joined {when(t.since)}</span></div><button class="btn" onclick={() => removeDevice(t.id)} title="This device will have to use the PIN again, as a guest">Remove</button></div>
+          <div class="line">
+            {#if renaming === t.id}
+              <input class="input grow" bind:value={renameText} aria-label="Name for this device" onkeydown={(e) => { if (e.key === 'Enter') void saveName(t.id); }} />
+              <button class="btn primary" onclick={() => saveName(t.id)} disabled={!renameText.trim()}>Save</button>
+              <button class="btn" onclick={() => (renaming = null)}>Cancel</button>
+            {:else}
+              <div class="grow"><b>{t.person}</b> <span class="small muted">joined {when(t.since)}</span></div>
+              <button class="btn" onclick={() => { renaming = t.id; renameText = t.person; }} title="Change the name on this device">Rename</button>
+              <button class="btn" onclick={() => removeDevice(t.id)} title="This device will have to use the PIN again, as a guest">Remove</button>
+            {/if}
+          </div>
         {:else}
           <p class="small muted">No family device has joined yet.</p>
         {/each}
+        <PeopleRoles people={trusted.map((t) => t.person)} />
       </div>
     {/if}
 

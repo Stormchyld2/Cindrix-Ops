@@ -169,16 +169,30 @@ export async function lockRemove(person: string, passcode: string): Promise<numb
   delete memLocks[person]; return 0;
 }
 // ---- the passcode for the security records and device sign-in files (src-tauri/src/seclock.rs, docs/47) ----
-export type SecLockStatus = { on: boolean; unlocked: boolean };
+export type SecLockStatus = { on: boolean; unlocked: boolean; has_recovery: boolean };
+export type SecLockSet = { sealed: number; recovery: string };
 let memSecPass: string | null = null;
 let memSecOpen = true;
+let memSecRecovery: string | null = null;
 export async function secLockStatus(): Promise<SecLockStatus> {
   if (tauriHost) return call<SecLockStatus>('seclock_status');
-  return { on: memSecPass !== null, unlocked: memSecPass === null || memSecOpen };
+  return { on: memSecPass !== null, unlocked: memSecPass === null || memSecOpen, has_recovery: memSecRecovery !== null };
 }
-export async function secLockSet(passcode: string): Promise<number> {
-  if (tauriHost) return call<number>('seclock_set', { passcode });
-  memSecPass = passcode; memSecOpen = true; return 0;
+export async function secLockSet(passcode: string): Promise<SecLockSet> {
+  if (tauriHost) return call<SecLockSet>('seclock_set', { passcode });
+  memSecPass = passcode; memSecOpen = true; memSecRecovery = 'ABCD-EFGH-JKLM-NPQR-STUV'; return { sealed: 0, recovery: memSecRecovery };
+}
+/** A new recovery code (the old one stops working). Needs the current passcode. Shown once. */
+export async function secLockMakeRecovery(passcode: string): Promise<string> {
+  if (tauriHost) return call<string>('seclock_make_recovery', { passcode });
+  if (memSecPass !== passcode) throw new Error('That passcode is not right.');
+  memSecRecovery = 'WXYZ-2345-6789-ABCD-EFGH'; return memSecRecovery;
+}
+/** The host's way back in after a forgotten passcode: the recovery code and a new passcode. */
+export async function secLockReset(recoveryCode: string, newPasscode: string): Promise<void> {
+  if (tauriHost) return call<void>('seclock_reset', { recoveryCode, newPasscode });
+  if (!memSecRecovery || recoveryCode.replace(/[^A-Za-z0-9]/g, '').toUpperCase() !== memSecRecovery.replace(/-/g, '')) throw new Error('That recovery code is not right.');
+  memSecPass = newPasscode; memSecOpen = true;
 }
 export async function secLockUnlock(passcode: string): Promise<void> {
   if (tauriHost) return call<void>('seclock_unlock', { passcode });
@@ -1740,6 +1754,32 @@ export async function shareInvite(person: string): Promise<Invite> {
 export async function shareTrusted(): Promise<TrustedDevice[]> {
   if (tauriHost) return call<TrustedDevice[]>('share_trusted');
   return [];
+}
+/** Change the name on a trusted device. */
+export async function shareRename(id: string, person: string): Promise<TrustedDevice[]> {
+  if (tauriHost) return call<TrustedDevice[]>('share_rename', { id, person });
+  throw 'Names are changed on the host computer.';
+}
+// ---------- roles for the people on trusted phones (core/src/permissions.rs, docs/61) ----------
+export type RoleRow = { name: string; caps: string[] };
+export type RoleCap = { key: string; text: string };
+export type RolesView = { roles: RoleRow[]; caps: RoleCap[]; people: { person: string; role: string | null }[] };
+const noRoles: RolesView = { roles: [{ name: 'Reporter', caps: ['log'] }, { name: 'Approver', caps: ['log', 'approve'] }], caps: [{ key: 'log', text: 'Send reports to the host: check-ins, counts, tracks and notes' }, { key: 'approve', text: 'Accept or set aside the reports waiting on the host' }], people: [] };
+export async function rolesGet(): Promise<RolesView> {
+  if (tauriHost) return call<RolesView>('roles_get');
+  return noRoles;
+}
+export async function rolesAdd(name: string, caps: string[]): Promise<RolesView> {
+  if (tauriHost) return call<RolesView>('roles_add', { name, caps });
+  throw 'Roles are changed on the host computer.';
+}
+export async function rolesRemove(name: string): Promise<RolesView> {
+  if (tauriHost) return call<RolesView>('roles_remove', { name });
+  throw 'Roles are changed on the host computer.';
+}
+export async function rolesAssign(person: string, role: string): Promise<RolesView> {
+  if (tauriHost) return call<RolesView>('roles_assign', { person, role });
+  throw 'Roles are changed on the host computer.';
 }
 export async function shareRevoke(id: string): Promise<TrustedDevice[]> {
   if (tauriHost) return call<TrustedDevice[]>('share_revoke', { id });

@@ -288,8 +288,8 @@ fn device_gate(app: &tauri::AppHandle, req: &Request) -> Option<Response> {
 /// What a trusted device may say to the Hub: hello (and learn what is waiting for it), "I have erased myself", and
 /// a report for the phone mailbox. The device's own code comes from its sign-in, never from what it sends.
 fn device_call(app: &tauri::AppHandle, req: &Request, cmd: &str, role: &Role) -> Response {
-    if !share::command_allowed(role, cmd) {
-        return json_err(403, "Only a phone that joined with an invite can do this.");
+    if !roles_allow(role, cmd) {
+        return json_err(403, "Only a phone that joined with an invite can do this, and only if the person's role allows it.");
     }
     let (id, trusted) = device_of(app, req);
     let Some(id) = id else { return json_err(403, "This device is not on the trusted list.") };
@@ -406,6 +406,62 @@ pub fn share_revoke(id: String, app: tauri::AppHandle) -> Vec<TrustedDto> {
         }
     }
     share_trusted(app)
+}
+
+/// Change the name on a trusted device (the person it belongs to). The sign-in token stays; only the name changes.
+#[tauri::command]
+pub fn share_rename(id: String, person: String, app: tauri::AppHandle) -> Result<Vec<TrustedDto>, String> {
+    let person = cindrix_core::people::folder_name(&person)?;
+    {
+        let st = app.state::<AppState>();
+        let mut a = st.share.auth();
+        let mut list = a.trusted().to_vec();
+        let Some(t) = list.iter_mut().find(|t| t.id == id) else { return Err("That device is not on the list any more.".into()) };
+        t.person = person;
+        a.set_trusted(list);
+        save_trusted(&a);
+    }
+    Ok(share_trusted(app))
+}
+
+fn roles_json() -> Result<String, String> {
+    let t = cindrix_core::permissions::load(&user_dir())?;
+    // the people who have a trusted phone, once each
+    let mut people: Vec<String> = vec![];
+    let list = cindrix_core::fsio::read_to_string(&trusted_file()).unwrap_or_default();
+    for x in share::trusted_from_text(&list) {
+        if !people.contains(&x.person) { people.push(x.person); }
+    }
+    Ok(cindrix_core::permissions::json(&t, &people))
+}
+
+#[tauri::command]
+pub fn roles_get() -> Result<Value, String> {
+    serde_json::from_str(&roles_json()?).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn roles_add(name: String, caps: Vec<String>) -> Result<Value, String> {
+    let mut t = cindrix_core::permissions::load(&user_dir())?;
+    cindrix_core::permissions::add_role(&mut t, &name, &caps)?;
+    cindrix_core::permissions::save(&user_dir(), &t)?;
+    roles_get()
+}
+
+#[tauri::command]
+pub fn roles_remove(name: String) -> Result<Value, String> {
+    let mut t = cindrix_core::permissions::load(&user_dir())?;
+    cindrix_core::permissions::remove_role(&mut t, &name)?;
+    cindrix_core::permissions::save(&user_dir(), &t)?;
+    roles_get()
+}
+
+#[tauri::command]
+pub fn roles_assign(person: String, role: String) -> Result<Value, String> {
+    let mut t = cindrix_core::permissions::load(&user_dir())?;
+    cindrix_core::permissions::assign(&mut t, &person, &role)?;
+    cindrix_core::permissions::save(&user_dir(), &t)?;
+    roles_get()
 }
 
 // ---------- the server ----------
@@ -638,14 +694,21 @@ fn route(app: &tauri::AppHandle, req: &Request, who: &str, stream: &mut TcpStrea
 
 /// Run one of the actions guests may use and give the answer as JSON.
 fn api_call(app: &tauri::AppHandle, cmd: &str, body: &[u8], role: &Role) -> Response {
-    if !share::command_allowed(role, cmd) {
-        return json_err(403, "This can only be done on the host computer or phone.");
+    if !roles_allow(role, cmd) {
+        return json_err(403, "This can only be done on the host computer or phone, or by a person whose role allows it.");
     }
     let args: Value = if body.is_empty() { json!({}) } else { serde_json::from_slice(body).unwrap_or_else(|_| json!({})) };
     match dispatch(app, cmd, &args, role) {
         Ok(v) => Response::json(200, &v.to_string()),
         Err(e) => json_err(400, &e),
     }
+}
+
+/// The fixed lists first, then the person's role (docs/61): a phone needs the permission a command asks for.
+/// If the roles file cannot be read, nothing that needs a permission is allowed.
+fn roles_allow(role: &Role, cmd: &str) -> bool {
+    let table = cindrix_core::permissions::load(&user_dir()).ok();
+    cindrix_core::permissions::allowed(role, cmd, table.as_ref())
 }
 
 fn tv<T: Serialize>(v: T) -> Result<Value, String> {
@@ -659,6 +722,10 @@ fn arg<T: serde::de::DeserializeOwned>(a: &Value, key: &str) -> Result<T, String
 fn dispatch(app: &tauri::AppHandle, cmd: &str, a: &Value, role: &Role) -> Result<Value, String> {
     let st = app.state::<AppState>();
     match cmd {
+        // reports waiting on the host: only a person whose role has the "approve" permission gets here (roles_allow)
+        "approvals_list" => { crate::seclock::require_open()?; let t = cindrix_core::security_api::pocket_list(&user_dir())?; serde_json::from_str(&t).map_err(|e| e.to_string()) }
+        "approvals_accept" => { crate::seclock::require_open()?; let name: String = arg(a, "name")?; tv(cindrix_core::security_api::pocket_accept(&user_dir(), &name, false)?) }
+        "approvals_set_aside" => { crate::seclock::require_open()?; let name: String = arg(a, "name")?; cindrix_core::security_api::pocket_set_aside(&user_dir(), &name)?; Ok(Value::Null) }
         "list_cards" => tv(crate::list_cards()),
         "whoami" => Ok(json!({ "person": match role { Role::Person(p) => Some(p.clone()), _ => None } })),
         "photos_list" => {

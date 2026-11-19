@@ -32,7 +32,8 @@ plain text for anyone who found it.
   "The Hub is locked" (no sign-in, no PIN made up from a sealed file). Unlocking, locking or removing the lock signs
   guests out so the PIN and trusted list are read again.
 - The device check now fails closed: if the device list cannot be read, the device is stopped, not let through.
-- A forgotten passcode cannot be recovered. Keep a copy of the passcode, and a backup (backups of locked files
+- **Recovery code (2026-11-19).** Turning the lock on also makes a recovery code, shown once, that wraps the same key (`recovery` in `user/seclock.json`). Settings > Protection > "Forgot the passcode?" takes the code and a new passcode and re-wraps the key; the records are not touched. "New recovery code" replaces it (needs the passcode). A lock made before this has no code until one is made. Without the passcode and without the code, nothing can be recovered.
+- A forgotten passcode with no recovery code cannot be recovered. Keep a copy of the passcode, and a backup (backups of locked files
   stay locked and need the same passcode).
 
 ## Still open

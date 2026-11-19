@@ -45,3 +45,6 @@ Owner's decisions: there is **no guest sign-in as a person**. A PIN always makes
 - **Uploads:** the headers are read first (`read_head`); a picture body (up to 40 MB) is accepted only from a trusted device, everything else stays under 1 MB.
 - **Risk to say plainly:** the address is plain HTTP, so someone else on the same network who sees the invite link in transit could use it before the owner's phone does. That is why it works once and expires, and why Sharing tells the owner to make an invite only with the person present.
 
+## Names and roles on trusted phones (2026-11-19)
+
+The name on a trusted phone is typed or picked when the invite is made and can be changed in Settings > Sharing (Rename); the sign-in token does not change. What the person may do comes from a role (`core/src/permissions.rs`, `user/roles.txt`): Reporter (send reports) and Approver (also accept or set aside waiting reports) at the start, more can be added or removed. Reading the library never needs a role. See doc 61.

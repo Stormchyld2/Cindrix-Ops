@@ -174,6 +174,12 @@ pub fn sync(list: &mut Vec<Device>, trusted: &[(String, String, u64)], now: u64)
             changed = true;
         }
     }
+    // a device that was renamed on the sign-in list shows its new person
+    for d in list.iter_mut() {
+        if let Some((_, person, _)) = trusted.iter().find(|(id, _, _)| id == &d.id) {
+            if &d.person != person { d.person = person.clone(); changed = true; }
+        }
+    }
     for d in list.iter_mut() {
         if matches!(d.state, State::Trusted | State::EraseOrdered) && !trusted.iter().any(|(id, _, _)| id == &d.id) {
             d.state = State::Revoked;
@@ -398,6 +404,15 @@ mod tests {
         let back = parse(&text).unwrap();
         assert_eq!(back.items, l);
         assert!(back.rejected.is_empty());
+    }
+
+    #[test]
+    fn a_renamed_person_shows_on_the_device_and_the_device_stays_trusted() {
+        let mut l = vec![];
+        sync(&mut l, &[tr("ab12cd34", "Dana")], 200);
+        assert!(sync(&mut l, &[tr("ab12cd34", "Dana R")], 300));
+        assert_eq!((l[0].person.as_str(), l[0].state), ("Dana R", State::Trusted));
+        assert!(!sync(&mut l, &[tr("ab12cd34", "Dana R")], 400));
     }
 
     #[test]
