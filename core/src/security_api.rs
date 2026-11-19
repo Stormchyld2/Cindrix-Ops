@@ -20,6 +20,7 @@ use crate::security_outing as outing;
 use crate::security_site as siterec;
 use crate::security_equipment as equip;
 use crate::security_review as review;
+use crate::security_roles as roles;
 use crate::security_plans as plans;
 
 pub const SECURITY_COMMANDS: &[&str] = &[
@@ -57,6 +58,8 @@ pub const SECURITY_COMMANDS: &[&str] = &[
     "security_equipment_add",
     "security_review_list",
     "security_review_add",
+    "security_roles_list",
+    "security_roles_add",
     "security_routes_get",
     "security_routes_save",
     "security_availability_list",
@@ -112,11 +115,12 @@ pub fn overview_at(user_root: &Path, off: i64, now: i64) -> Result<String, Strin
     let avail_log = siterec::load_availability(user_root)?;
     let equip_log = equip::load(user_root)?;
     let review_log = review::load(user_root)?;
+    let roles_log = roles::load(user_root)?;
     let built = incident::build(&incidents.items);
     let inventory = crate::userdata::UserDir::new(user_root).load_inventory().unwrap_or_default();
     let gear = equip::gear(&equip_log.items, &inventory);
     let rules_file = siterec::load_schedule(user_root)?;
-    let recs = Recs { gear, rules: rules_file.items.clone(), outings: outings.clone(), comms: comms_log.items.clone(), coverage: cov_log.items.clone(), training: train_log.items.clone(), assets: asset_file.items.clone(), inspections: insp_log.items.clone(), avail: avail_log.items.clone(), review: review_log.items.clone(), built: built.clone() };
+    let recs = Recs { gear, rules: rules_file.items.clone(), outings: outings.clone(), comms: comms_log.items.clone(), coverage: cov_log.items.clone(), training: train_log.items.clone(), assets: asset_file.items.clone(), inspections: insp_log.items.clone(), avail: avail_log.items.clone(), review: review_log.items.clone(), roles: roles_log.items.clone(), built: built.clone() };
     let ov = security::overview(&sites.items, &log.items, now);
     let mut rows = Vec::new();
     let mut look_total = 0usize;
@@ -146,10 +150,15 @@ pub fn overview_at(user_root: &Path, off: i64, now: i64) -> Result<String, Strin
         ));
     }
     let sites_on_watch = sites.items.iter().filter(|s| !sched::on_watch_now(&watches.items, &s.id, now).is_empty()).count();
-    let rejected = sites.rejected.len() + log.rejected.len() + watches.rejected.len() + incidents.rejected.len() + outing_log.rejected.len() + comms_log.rejected.len() + cov_log.rejected.len() + train_log.rejected.len() + channel_file.rejected.len() + asset_file.rejected.len() + insp_log.rejected.len() + avail_log.rejected.len() + rules_file.rejected.len() + equip_log.rejected.len() + review_log.rejected.len();
+    let rejected = sites.rejected.len() + log.rejected.len() + watches.rejected.len() + incidents.rejected.len() + outing_log.rejected.len() + comms_log.rejected.len() + cov_log.rejected.len() + train_log.rejected.len() + channel_file.rejected.len() + asset_file.rejected.len() + insp_log.rejected.len() + avail_log.rejected.len() + rules_file.rejected.len() + equip_log.rejected.len() + review_log.rejected.len() + roles_log.rejected.len();
     if rejected > 0 {
         look_total += 1;
         alerts.push(alert(format!("unreadable|{}", rejected), format!("{} line{} in the security records could not be read. Nothing was changed.", rejected, if rejected == 1 { "" } else { "s" }), false));
+    }
+    let owned_gear = crate::gear::load(user_root).map(|l| l.items).unwrap_or_default();
+    for l in roles::assignment_looks(&roles_log.items, &owned_gear) {
+        look_total += 1;
+        alerts.push(alert(format!("assign|{}", l), l, false));
     }
     let pocket = crate::security_pocket::waiting_count(user_root);
     if pocket > 0 {
@@ -174,6 +183,7 @@ struct Recs {
     inspections: Vec<siterec::Inspection>,
     avail: Vec<siterec::Availability>,
     review: Vec<review::Line>,
+    roles: Vec<roles::Line>,
     built: Vec<incident::Incident>,
 }
 
@@ -203,6 +213,7 @@ fn site_looks(site: &str, st: &security::SiteStatus, cur: Option<&PostureEntry>,
     out.extend(comms::training_looks(site, watches, &recs.training));
     let patrols: Vec<(String, i64)> = recs.outings.iter().filter(|o| o.patrol && o.site == site && matches!(o.state, outing::State::Out | outing::State::Back)).map(|o| (o.task.clone(), o.ended.unwrap_or(o.left))).collect();
     out.extend(equip::looks(site, &recs.gear, now));
+    out.extend(roles::looks(site, &recs.roles, review::today_days(now, off)));
     out.extend(review::looks(site, &recs.review, &recs.built, review::today_days(now, off)));
     out.extend(siterec::schedule_looks(site, &recs.rules, &patrols, off, now));
     out.extend(siterec::asset_looks(site, &recs.assets, &recs.inspections, now));
@@ -816,6 +827,38 @@ pub fn review_add(user_root: &Path, ev: &str, rec: &str, ref_id: &str, a1: &str,
     let off = offset_ok(offset_minutes)?;
     let incidents = incident::build(&store::load_incident_log(user_root)?.items);
     review::add(user_root, &incidents, ev, rec, ref_id, a1, a2, note, by, off, now_minutes())
+}
+/// Role qualifications, who has which piece of gear, and the choices the screen needs.
+pub fn roles_list(user_root: &Path, offset_minutes: i64) -> Result<String, String> {
+    let off = offset_ok(offset_minutes)?;
+    let log = roles::load(user_root)?;
+    let today = review::today_days(now_minutes(), off);
+    let defs = roles::roles(&log.items);
+    let qs = roles::quals(&log.items, today);
+    let held = roles::holdings(&log.items);
+    let gear = crate::gear::load(user_root)?;
+    let role_rows: Vec<String> = defs.iter().map(|r| format!("{{\"name\":{},\"site\":{},\"valid_days\":{},\"min_people\":{},\"note\":{},\"qualified\":{}}}", q(&r.name), q(&r.site), r.valid_days, r.min_people, q(&r.note), roles::qualified_count(&qs, &r.name))).collect();
+    let qual_rows: Vec<String> = qs.iter().map(|x| format!("{{\"person\":{},\"role\":{},\"earned\":{},\"until\":{},\"days_left\":{},\"standing\":{},\"by\":{}}}", q(&x.person), q(&x.role), q(&x.earned), q(&x.until), x.days_left.map(|d| d.to_string()).unwrap_or_else(|| "null".into()), q(x.standing.word()), q(&x.by))).collect();
+    let held_rows: Vec<String> = held.iter().map(|h| {
+        let g = gear.items.iter().find(|g| g.id == h.gear);
+        format!("{{\"gear\":{},\"name\":{},\"make\":{},\"model\":{},\"serial\":{},\"person\":{},\"since\":{},\"by\":{},\"note\":{},\"missing\":{}}}", q(&h.gear), q(g.map(|g| g.name.as_str()).unwrap_or("")), q(g.map(|g| g.make.as_str()).unwrap_or("")), q(g.map(|g| g.model.as_str()).unwrap_or("")), q(g.map(|g| g.serial.as_str()).unwrap_or("")), q(&h.person), q(&h.since), q(&h.by), q(&h.note), g.is_none())
+    }).collect();
+    let choices: Vec<String> = gear.items.iter().filter(|g| g.condition != "out").map(|g| format!("{{\"id\":{},\"name\":{},\"detail\":{},\"qty\":{},\"held\":{}}}", q(&g.id), q(&g.name), q(&[g.make.as_str(), g.model.as_str(), g.serial.as_str()].iter().filter(|x| !x.is_empty()).cloned().collect::<Vec<_>>().join(" ")), g.qty, held.iter().filter(|h| h.gear == g.id).count())).collect();
+    let mut people: Vec<String> = store::load_watches(user_root)?.items.iter().map(|w| w.person.clone()).collect();
+    people.extend(comms::load_training(user_root)?.items.iter().map(|t| t.person.clone()));
+    people.extend(qs.iter().map(|x| x.person.clone()));
+    people.extend(held.iter().map(|h| h.person.clone()));
+    let mut seen: Vec<String> = Vec::new();
+    for p in people { if !p.trim().is_empty() && !seen.iter().any(|x| x.eq_ignore_ascii_case(&p)) { seen.push(p); } }
+    seen.sort_by_key(|x| x.to_lowercase());
+    let sites: Vec<String> = store::load_sites(user_root)?.items.iter().map(|s| format!("{{\"id\":{},\"name\":{}}}", q(&s.id), q(&s.name))).collect();
+    Ok(format!("{{\"roles\":[{}],\"quals\":[{}],\"held\":[{}],\"gear\":[{}],\"people\":[{}],\"sites\":[{}],\"warn_days\":{},\"unreadable_lines\":{}}}", role_rows.join(","), qual_rows.join(","), held_rows.join(","), choices.join(","), seen.iter().map(|x| q(x)).collect::<Vec<_>>().join(","), sites.join(","), roles::WARN_DAYS, log.rejected.len() + gear.rejected.len()))
+}
+#[allow(clippy::too_many_arguments)]
+pub fn roles_add(user_root: &Path, ev: &str, a: &str, b: &str, c: &str, d: &str, note: &str, by: &str, offset_minutes: i64) -> Result<String, String> {
+    let off = offset_ok(offset_minutes)?;
+    let gear = crate::gear::load(user_root)?.items;
+    roles::add(user_root, &gear, ev, a, b, c, d, note, by, off, now_minutes())
 }
 pub fn routes_save(user_root: &Path, site: &str, list: &[siterec::Route]) -> Result<(), String> {
     let fixed: Vec<siterec::Route> = list.iter().map(|r| siterec::Route { site: site.to_string(), ..r.clone() }).collect();

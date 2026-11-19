@@ -354,3 +354,15 @@ pub fn security_review_add(ev: String, rec: String, ref_id: String, a1: String, 
     crate::seclock::require_open()?;
     api::review_add(&user_root(), &ev, &rec, &ref_id, &a1, &a2, &note, &by, offset_minutes)
 }
+
+#[tauri::command]
+pub fn security_roles_list(offset_minutes: i64) -> Result<Value, String> {
+    crate::seclock::require_open()?;
+    json(api::roles_list(&user_root(), offset_minutes))
+}
+
+#[tauri::command]
+pub fn security_roles_add(ev: String, a: String, b: String, c: String, d: String, note: String, by: String, offset_minutes: i64) -> Result<String, String> {
+    crate::seclock::require_open()?;
+    api::roles_add(&user_root(), &ev, &a, &b, &c, &d, &note, &by, offset_minutes)
+}

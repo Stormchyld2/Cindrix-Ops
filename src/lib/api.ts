@@ -2103,6 +2103,18 @@ export async function securityReviewAdd(ev: 'exercise' | 'attended' | 'aar' | 'f
   if (tauriHost) return call<string>('security_review_add', { ev, rec: f.rec ?? '', refId: f.ref ?? '', a1: f.a1 ?? '', a2: f.a2 ?? '', note: f.note ?? '', by: f.by, offsetMinutes: clockOffset() });
   throw new Error('Exercises and reviews are saved in the program, not in the browser preview.');
 }
+export type RoleRow = { name: string; site: string; valid_days: number; min_people: number; note: string; qualified: number };
+export type QualRow = { person: string; role: string; earned: string; until: string; days_left: number | null; standing: 'current' | 'running out' | 'lapsed'; by: string };
+export type HeldRow = { gear: string; name: string; make: string; model: string; serial: string; person: string; since: string; by: string; note: string; missing: boolean };
+export type RolesList = { roles: RoleRow[]; quals: QualRow[]; held: HeldRow[]; gear: { id: string; name: string; detail: string; qty: number; held: number }[]; people: string[]; sites: { id: string; name: string }[]; warn_days: number; unreadable_lines: number };
+export async function securityRolesList(): Promise<RolesList> {
+  if (tauriHost) return call<RolesList>('security_roles_list', { offsetMinutes: clockOffset() });
+  return { roles: [], quals: [], held: [], gear: [], people: [], sites: [], warn_days: 30, unreadable_lines: 0 };
+}
+export async function securityRolesAdd(ev: 'role' | 'qualify' | 'revoke' | 'issue' | 'return', f: { a: string; b?: string; c?: string; d?: string; note?: string; by: string }): Promise<string> {
+  if (tauriHost) return call<string>('security_roles_add', { ev, a: f.a, b: f.b ?? '', c: f.c ?? '', d: f.d ?? '', note: f.note ?? '', by: f.by, offsetMinutes: clockOffset() });
+  throw new Error('Qualifications and gear handouts are saved in the program, not in the browser preview.');
+}
 export type RuleRow = { route: string; every_hours: number; from: string; to: string };
 export async function securityScheduleGet(site: string): Promise<{ rules: RuleRow[]; unreadable_lines: number }> {
   if (tauriHost) return call('security_schedule_get', { site });
