@@ -21,7 +21,7 @@ use std::fs::{self, File, OpenOptions};
 use std::io::{self, BufReader, BufWriter, Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Condvar, Mutex};
 
 /// Words held in memory before a segment is saved (a few hundred megabytes at most; small enough for a phone).
 pub const DEFAULT_BUDGET: usize = 3_000_000;
@@ -578,16 +578,81 @@ pub struct Index {
     depth: Depth,
     sparse: Vec<(String, u64)>,
     dict_len: u64,
-    f_dat: Mutex<File>,
-    f_off: Mutex<File>,
-    f_post: Mutex<File>,
-    f_dict: Mutex<File>,
+    f_dat: File,
+    f_off: File,
+    f_post: File,
+    f_dict: File,
 }
 
-fn read_at(f: &Mutex<File>, pos: u64, buf: &mut [u8]) -> io::Result<()> {
-    let mut g = f.lock().unwrap_or_else(|e| e.into_inner());
-    g.seek(SeekFrom::Start(pos))?;
-    g.read_exact(buf)
+/// How many searches may work at once. A search for a very common word reads a long list and holds tens of megabytes,
+/// so on a phone or a small laptop many guests searching together must take turns. They wait, they are not refused.
+pub const MAX_SEARCHES_AT_ONCE: usize = 3;
+
+struct Slots {
+    running: Mutex<usize>,
+    freed: Condvar,
+}
+static SLOTS: Slots = Slots { running: Mutex::new(0), freed: Condvar::new() };
+/// The most searches seen running together (for the test).
+pub static PEAK_SEARCHES: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+
+struct Slot;
+impl Slot {
+    fn take() -> Slot {
+        let mut n = SLOTS.running.lock().unwrap_or_else(|e| e.into_inner());
+        while *n >= MAX_SEARCHES_AT_ONCE {
+            n = SLOTS.freed.wait(n).unwrap_or_else(|e| e.into_inner());
+        }
+        *n += 1;
+        PEAK_SEARCHES.fetch_max(*n, std::sync::atomic::Ordering::SeqCst);
+        Slot
+    }
+}
+impl Drop for Slot {
+    fn drop(&mut self) {
+        let mut n = SLOTS.running.lock().unwrap_or_else(|e| e.into_inner());
+        *n -= 1;
+        SLOTS.freed.notify_one();
+    }
+}
+
+/// Read as much as is there (up to the buffer's size) from a place in a file; the end of the file is not an error.
+fn read_upto(f: &File, pos: u64, buf: &mut [u8]) -> io::Result<usize> {
+    let mut n = 0;
+    while n < buf.len() {
+        #[cfg(unix)]
+        let r = { use std::os::unix::fs::FileExt; f.read_at(&mut buf[n..], pos + n as u64)? };
+        #[cfg(windows)]
+        let r = { use std::os::windows::fs::FileExt; f.seek_read(&mut buf[n..], pos + n as u64)? };
+        if r == 0 {
+            break;
+        }
+        n += r;
+    }
+    Ok(n)
+}
+
+/// Read at a place in a file without moving a shared position, so several searches can read at the same time
+/// (a lock around seek-then-read made every reader wait for the others).
+fn read_at(f: &File, pos: u64, buf: &mut [u8]) -> io::Result<()> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::FileExt;
+        f.read_exact_at(buf, pos)
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::FileExt;
+        let mut done = 0;
+        while done < buf.len() {
+            let n = f.seek_read(&mut buf[done..], pos + done as u64)?;
+            if n == 0 {
+                return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "the index file ended early"));
+            }
+            done += n;
+        }
+        Ok(())
+    }
 }
 
 impl Index {
@@ -618,7 +683,7 @@ impl Index {
             pos += 8;
             sparse.push((t, u64::from_le_bytes(o)));
         }
-        Ok(Index { docs: docs as u32, depth, sparse, dict_len: dict, f_dat: Mutex::new(File::open(dir.join("docs.dat"))?), f_off: Mutex::new(File::open(dir.join("docs.off"))?), f_post: Mutex::new(File::open(dir.join("post.dat"))?), f_dict: Mutex::new(File::open(dir.join("dict.dat"))?) })
+        Ok(Index { docs: docs as u32, depth, sparse, dict_len: dict, f_dat: File::open(dir.join("docs.dat"))?, f_off: File::open(dir.join("docs.off"))?, f_post: File::open(dir.join("post.dat"))?, f_dict: File::open(dir.join("dict.dat"))? })
     }
 
     pub fn docs(&self) -> u32 {
@@ -703,19 +768,7 @@ impl Index {
         read_at(&self.f_off, 8 * id as u64, &mut o)?;
         let pos = u64::from_le_bytes(o);
         let mut buf = vec![0u8; 4 + 10 + MAX_TITLE_CHARS * 4 + 10];
-        let len = {
-            let mut g = self.f_dat.lock().unwrap_or_else(|e| e.into_inner());
-            g.seek(SeekFrom::Start(pos))?;
-            let mut n = 0;
-            while n < buf.len() {
-                let r = g.read(&mut buf[n..])?;
-                if r == 0 {
-                    break;
-                }
-                n += r;
-            }
-            n
-        };
+        let len = read_upto(&self.f_dat, pos, &mut buf)?;
         buf.truncate(len);
         if buf.len() < 5 {
             return bad("the index files are damaged");
@@ -735,6 +788,11 @@ impl Index {
     /// Articles that contain every word of the query, best first. When too few contain every word, articles with most
     /// of them follow. The last word also matches words that start with it, so a search can run while it is typed.
     pub fn search(&self, query: &str, limit: usize) -> io::Result<Vec<Found>> {
+        let _turn = Slot::take();
+        self.search_inner(query, limit)
+    }
+
+    fn search_inner(&self, query: &str, limit: usize) -> io::Result<Vec<Found>> {
         let mut words: Vec<String> = Vec::new();
         for t in tokens(query) {
             if !words.contains(&t) {
@@ -899,6 +957,18 @@ mod tests {
         assert_eq!(tokens("batteries"), vec!["battery"]);
         assert_eq!(tokens("a x"), Vec::<String>::new(), "one-letter words say nothing");
         assert_eq!(tokens("speed need"), vec!["speed", "need"], "a short word is not cut down to nothing");
+    }
+
+    #[test]
+    fn many_searches_at_once_take_turns_and_all_get_their_answer() {
+        let d = tmp("turns");
+        let (_a, _dir, _fp, ix) = open(&d, ARTS, Depth::Full, DEFAULT_BUDGET);
+        let ix = std::sync::Arc::new(ix);
+        let hs: Vec<_> = (0..12).map(|_| { let ix = ix.clone(); std::thread::spawn(move || (0..40).map(|_| ix.search("water germs", 5).unwrap().len()).sum::<usize>()) }).collect();
+        let total: usize = hs.into_iter().map(|h| h.join().unwrap()).sum();
+        assert!(total > 0 && total % (12 * 40) == 0, "every search answered the same way: {}", total);
+        assert!(PEAK_SEARCHES.load(std::sync::atomic::Ordering::SeqCst) <= MAX_SEARCHES_AT_ONCE, "never more than the limit at once");
+        let _ = fs::remove_dir_all(&d);
     }
 
     #[test]

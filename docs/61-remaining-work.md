@@ -13,12 +13,23 @@ High and Medium, below the phases) are filed under the phase they belong to.
 ### 1. Consolidate approved branches and commands
 - [ ] Every command has one reach. *Built:* `core/tests/access_classes.rs`; roles and named phones (`permissions.rs`).
 - [ ] All approved work from `hub-any-drive` is merged to `main` (only when the owner says), with CI green on `main`.
+  Checked 2026-11-19: `main` has nothing that `hub-any-drive` lacks, so the merge is a plain move forward (23 commits).
+  The branch `long-emergency-v3` holds an earlier copy of the same long emergency plan plus an old Shelf tweak that
+  `hub-any-drive` already replaced; the owner chose the more complete plan, which is the one on `hub-any-drive`
+  (it also has the remains-management section). Nothing from that branch needs merging.
 - **Done when:** one branch carries everything approved; no unclassified command; CI green on that branch.
 
 ### 2. Finish ZIM and multi-library integration
 - [x] Own full-text index inside archives, used by Intel, results page and Ask (doc 60).
-- [ ] Large libraries and many devices: multi-gigabyte archives and several guests at once are untested; time and size
-  of an index on a real 50 GB archive are unknown. Archives and Shelf from the second drive are not fully shared yet (doc 24).
+- [x] Made-up archive tests (`core/examples/probe_scale.rs`, 2026-11-19, 2-core 8 GB test machine, release build,
+  uncompressed archive, so cluster decompression is not included): 800 000 articles, 2.0 GB: index built in 3 minutes
+  (about 4 400 articles a second), 701 MB on disk (35%), peak memory 227 MB while building; stop and resume ends
+  with an index of the same size. One reader: median 2 ms, 95th 114 ms (common words), worst 0.3 s. Eight readers at
+  once: 2 400 searches in 35 s, 95th 380 ms, peak memory 587 MB. Fixed on the way: searches no longer queue behind a lock
+  around each index file (positional reads), and at most three searches work at once (`MAX_SEARCHES_AT_ONCE`) so
+  memory stays bounded; the rest wait, they are not refused.
+- [ ] Still to do on real hardware: a real compressed Wikipedia-size archive (50 GB), a phone host, and the share
+  server with several real browsers (doc 49). Archives and Shelf from the second drive are not fully shared yet (doc 24).
 - **Done when:** a multi-gigabyte archive indexes, searches and resumes after a stop on real hardware; four guests
   read at once without the host stalling.
 
