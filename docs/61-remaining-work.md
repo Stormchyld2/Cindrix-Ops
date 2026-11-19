@@ -4,7 +4,69 @@ Written 2026-11-19 from the owner's roadmap, after reading the architecture docs
 Nothing below has been run on real hardware. "Checked" means a test in `core/` or a CI job covers it.
 Doc 57 is the short status page; this is the working list. Update both when something closes.
 
-## High
+**Development completion: 0 / 8 phases.** This checklist is for managing development, not a claim that a phase is
+complete. Tick a phase only after every "done when" line under it is true and checked. Earlier items (severity
+High and Medium, below the phases) are filed under the phase they belong to.
+
+## The eight phases
+
+### 1. Consolidate approved branches and commands
+- [ ] Every command has one reach. *Built:* `core/tests/access_classes.rs`; roles and named phones (`permissions.rs`).
+- [ ] All approved work from `hub-any-drive` is merged to `main` (only when the owner says), with CI green on `main`.
+- **Done when:** one branch carries everything approved; no unclassified command; CI green on that branch.
+
+### 2. Finish ZIM and multi-library integration
+- [x] Own full-text index inside archives, used by Intel, results page and Ask (doc 60).
+- [ ] Large libraries and many devices: multi-gigabyte archives and several guests at once are untested; time and size
+  of an index on a real 50 GB archive are unknown. Archives and Shelf from the second drive are not fully shared yet (doc 24).
+- **Done when:** a multi-gigabyte archive indexes, searches and resumes after a stop on real hardware; four guests
+  read at once without the host stalling.
+
+### 3. Complete Android Hub platform support
+- [ ] Not started. Waits for the real Windows test (doc 22) and the share server's hardware test (doc 49).
+- **Done when:** the Hub runs on an Android phone from the drive, with the assistant, library and share server.
+
+### 4. Complete Operations, Maps and communications
+- [ ] Structured PACE plan tied to free-text plans and the Security comms log (doc 50).
+- [ ] Due-date reminders and notifications (docs 37, 48); watch and patrol schedules may generate reminders (doc 44 section 15).
+- [ ] GPS track recording and sensor logging in the main program (docs 45, 55). Pocket's tracks are kept (`tracksheet.rs`).
+- [ ] Garden beds screen (doc 53); map data gaps (doc 57).
+- **Done when:** a due item reminds the host with no network; a recorded track is saved and shown; PACE answers
+  appear in the plan and in Security comms.
+
+### 5. Complete Security Operations integration
+- [x] Phases 1 to 4 built (command, watchbill, incidents, comms, reviews, qualifications, gear).
+- [x] Named people on phones and roles (Reporter, Approver); who accepted a report is recorded; passcode recovery code.
+- [ ] The larger role split (planner, watch supervisor, member, observer) after these two roles have been used.
+- [ ] Overwatch import (format undecided, doc 44 section 15); Security data sync (phase 6).
+- **Done when:** the acceptance matrix in doc 44 section 12 passes, row by row, in tests or on hardware.
+
+### 6. Finish Pocket/Hub interchange interfaces
+- [x] Mailbox, count sheets, check-ins, tracks, erase orders, approvals on a phone's browser.
+- [ ] Vault–Hub two-way sync (inventory, gear, security logs): decided direction (owner, 2026-11-19): a phone sends a
+  change sheet, the other side accepts it; changes on both sides are shown to a person, never merged silently. Not built.
+- [ ] Pocket's own side beyond the field tools (on hold).
+- **Done when:** a change made on a Vault reaches a Hub, and back, with a conflict shown rather than lost.
+
+### 7. Close media and supporting-module gaps
+- [x] Videos, podcasts, music, Bible study, Gear list built.
+- [ ] Review the shipped reference content (cards, Academy, guides) with a person; Academy is thin (doc 57).
+- [ ] Backups and interrupted writes: restore drill on a real Windows drive. *Built and checked:* torn writes, unique
+  backup names, half-made backups, restore drill with the passcode lock (core tests).
+- [ ] Standalone `.cmap` viewer (doc 57); `Soon.svelte` placeholders removed.
+- **Done when:** a person has reviewed each shipped card and course; a restore drill passes on a real drive.
+
+### 8. Pass the coding release gate and produce builds
+- [ ] Every architecture doc reconciled with the source and CI (this pass did 44, 45 and 57; the rest still to do).
+- [ ] The real Windows test (doc 22) and hardware plan (doc 49) done; findings fixed.
+- [ ] Windows installer signed; licenses and `content/sources.json` complete (doc 57).
+- [ ] Android build produced (phase 3).
+- **Done when:** CI is green on `main`, the Windows build passes the hardware test, and the installer is signed.
+  Then, and only then, call it "CindrixOps Code Complete, Release Candidate 1".
+
+## Detail behind the phases (kept from the first version of this list)
+
+### Detail: High
 
 - [x] **Backend permissions for each way in.** The share server refuses everything not on `GUEST_COMMANDS`
   or `PERSON_COMMANDS` (`core/src/share.rs`), and nobody reaches anything before the PIN.
@@ -41,14 +103,14 @@ Doc 57 is the short status page; this is the working list. Update both when some
   once. The full-text index builds in pieces and can be stopped and resumed (doc 60), but its time and size on
   a real 50 GB archive are unknown.
 
-## Medium
+### Detail: Medium
 
 - [ ] **GPS and FieldLog in the main program.** Track sheets from Pocket are kept (`tracksheet.rs`); recording
   tracks and sensor logs on the host is not built (docs 45, 55).
 - [ ] **Reminders and notifications.** The connecting layer (doc 37) and doc 48 have no due-date alerts yet.
 - [ ] **Structured PACE plan** is not tied to free-text plans or the Security comms log (doc 50).
 
-## Not built, by design or waiting
+### Detail: not built, by design or waiting
 
 - Android Hub, Pocket beyond the field tools, Overwatch import, plugin system (declined by the owner;
   extra content is added as `.md` files and Academy packs), garden beds screen (doc 53), signed installer.
