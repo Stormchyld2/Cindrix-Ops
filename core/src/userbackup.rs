@@ -131,19 +131,24 @@ pub fn backup(user_root: &Path, dest_parent: &Path, stamp: &str) -> Result<Repor
     let mut files = Vec::new();
     let mut skipped = Vec::new();
     walk(&u, &u, &mut files, &mut skipped)?;
-    let mut list = String::from("# format: user-backup 1\n# size, checksum (FNV-1a 64), path\n");
-    let mut bytes = 0u64;
-    for f in &files {
-        let rel = f.strip_prefix(&u).unwrap().to_string_lossy().replace('\\', "/");
-        let data = fs::read(f).map_err(|_| format!("{} could not be read, so the copy was stopped.", rel))?;
-        let to = folder.join(&rel);
-        fs::create_dir_all(to.parent().unwrap()).map_err(|_| "The copy's folder could not be made.".to_string())?;
-        fsio::write_atomic(&to, &data).map_err(|_| format!("{} could not be written to the copy.", rel))?;
-        bytes += data.len() as u64;
-        list.push_str(&format!("{}\t{:016x}\t{}\n", data.len(), fnv(&data), rel));
-    }
-    fs::create_dir_all(&folder).map_err(|_| "The copy's folder could not be made.".to_string())?;
-    fsio::write_atomic(&folder.join(LIST_NAME), list.as_bytes()).map_err(|_| "The list for the copy could not be written.".to_string())?;
+    let made = (|| -> Result<(String, u64), String> {
+        let mut list = String::from("# format: user-backup 1\n# size, checksum (FNV-1a 64), path\n");
+        let mut bytes = 0u64;
+        for f in &files {
+            let rel = f.strip_prefix(&u).unwrap().to_string_lossy().replace('\\', "/");
+            let data = fs::read(f).map_err(|_| format!("{} could not be read, so the copy was stopped.", rel))?;
+            let to = folder.join(&rel);
+            fs::create_dir_all(to.parent().unwrap()).map_err(|_| "The copy's folder could not be made.".to_string())?;
+            fsio::write_atomic(&to, &data).map_err(|_| format!("{} could not be written to the copy.", rel))?;
+            bytes += data.len() as u64;
+            list.push_str(&format!("{}\t{:016x}\t{}\n", data.len(), fnv(&data), rel));
+        }
+        fs::create_dir_all(&folder).map_err(|_| "The copy's folder could not be made.".to_string())?;
+        fsio::write_atomic(&folder.join(LIST_NAME), list.as_bytes()).map_err(|_| "The list for the copy could not be written.".to_string())?;
+        Ok((list, bytes))
+    })();
+    // a copy that stopped half way is removed (the folder is ours: it did not exist a moment ago), so it can never be mistaken for a good one
+    let (_list, bytes) = match made { Ok(v) => v, Err(e) => { let _ = fs::remove_dir_all(&folder); return Err(e); } };
     let bad = verify(&folder)?;
     if !bad.is_empty() { return Err(format!("The copy was made but {} file{} did not read back the same, so do not trust it: {}.", bad.len(), if bad.len() == 1 { "" } else { "s" }, bad.join(", "))); }
     Ok(Report { folder, files: files.len(), bytes, skipped })
@@ -244,6 +249,39 @@ mod tests {
         backup(&u, &d, "2026-11-09-0800").unwrap();
         let l = list(&d);
         assert_eq!((l.len(), l[0].stamp.as_str(), l[0].files), (2, "2026-11-09-0800", 2));
+        let _ = fs::remove_dir_all(u.parent().unwrap());
+    }
+
+    #[test]
+    fn a_copy_that_stops_half_way_is_removed_and_the_same_time_can_be_tried_again() {
+        let (u, d) = setup("half");
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            fs::write(u.join("zzz.txt"), "last\n").unwrap();
+            let p = u.join("zzz.txt");
+            fs::set_permissions(&p, fs::Permissions::from_mode(0o000)).unwrap();
+            // the check only means something when the file really cannot be read (not as the administrator account)
+            if fs::read(&p).is_err() {
+                let before = fs::read_dir(&d).unwrap().count();
+                assert!(backup(&u, &d, "2026-11-08-2100").is_err());
+                assert_eq!(fs::read_dir(&d).unwrap().count(), before, "no half copy may be left behind");
+                fs::set_permissions(&p, fs::Permissions::from_mode(0o644)).unwrap();
+                assert_eq!(backup(&u, &d, "2026-11-08-2100").unwrap().files, 3);
+            }
+        }
+        let _ = fs::remove_dir_all(u.parent().unwrap());
+    }
+
+    #[test]
+    fn links_inside_the_user_folder_are_left_out_of_a_copy() {
+        let (u, d) = setup("link");
+        #[cfg(unix)]
+        {
+            std::os::unix::fs::symlink(u.join("nowhere"), u.join("zzz.txt")).unwrap();
+            let r = backup(&u, &d, "2026-11-08-2100").unwrap();
+            assert_eq!((r.files, r.skipped.len()), (2, 1));
+        }
         let _ = fs::remove_dir_all(u.parent().unwrap());
     }
 

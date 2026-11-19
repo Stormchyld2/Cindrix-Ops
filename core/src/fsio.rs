@@ -97,10 +97,24 @@ pub fn append(path: &Path, data: &[u8]) -> std::io::Result<()> {
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => Vec::new(),
             Err(e) => return Err(e),
         };
+        // a cut-off last line must not swallow the next good one
+        if !all.is_empty() && all.last() != Some(&b'\n') && data.first() != Some(&b'\n') { all.push(b'\n'); }
         all.extend_from_slice(data);
         return write_atomic(path, &all);
     }
+    let torn = match fs::File::open(path) {
+        Ok(mut f) => {
+            use std::io::{Read, Seek, SeekFrom};
+            let len = f.metadata().map(|m| m.len()).unwrap_or(0);
+            if len == 0 { false } else {
+                let mut last = [0u8; 1];
+                f.seek(SeekFrom::Start(len - 1)).and_then(|_| f.read_exact(&mut last)).map(|_| last[0] != b'\n').unwrap_or(false)
+            }
+        }
+        Err(_) => false,
+    };
     let mut f = fs::OpenOptions::new().create(true).append(true).open(path)?;
+    if torn && data.first() != Some(&b'\n') { f.write_all(b"\n")?; }
     f.write_all(data)?;
     f.sync_all()
 }
@@ -137,7 +151,14 @@ pub fn backup_then_write(path: &Path, backups_dir: &Path, data: &[u8]) -> std::i
         fs::create_dir_all(backups_dir)?;
         let secs = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
         let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
-        fs::copy(path, backups_dir.join(format!("{}-{}", secs, name)))?;
+        // two saves in the same second must not share a backup name: the older copy would be lost
+        let mut target = backups_dir.join(format!("{}-{}", secs, name));
+        let mut n = 1;
+        while target.exists() {
+            target = backups_dir.join(format!("{}-{}-{}", secs, n, name));
+            n += 1;
+        }
+        fs::copy(path, target)?;
     }
     write_atomic(path, data)
 }
@@ -174,6 +195,51 @@ mod tests {
         let kept: Vec<_> = fs::read_dir(d.join("backups")).unwrap().map(|e| fs::read(e.unwrap().path()).unwrap()).collect();
         assert_eq!(kept, vec![b"old".to_vec()]);
         let _ = fs::remove_dir_all(&d);
+    }
+
+    #[test]
+    fn a_half_written_temporary_file_never_replaces_the_real_one() {
+        let d = tmp("halfwrite");
+        let f = d.join("tasks.txt");
+        write_atomic(&f, b"good\n").unwrap();
+        // a crash after the temporary file was started but before the rename
+        fs::write(d.join("tasks.txt.tmp"), b"hal").unwrap();
+        assert_eq!(fs::read_to_string(&f).unwrap(), "good\n");
+        // the next save carries on and replaces the leftover
+        write_atomic(&f, b"better\n").unwrap();
+        assert_eq!(fs::read_to_string(&f).unwrap(), "better\n");
+        assert!(!d.join("tasks.txt.tmp").exists());
+    }
+
+    #[test]
+    fn saves_in_the_same_second_keep_every_older_version() {
+        let d = tmp("samesec");
+        let f = d.join("gear.txt");
+        let b = d.join("backups");
+        write_atomic(&f, b"v1").unwrap();
+        backup_then_write(&f, &b, b"v2").unwrap();
+        backup_then_write(&f, &b, b"v3").unwrap();
+        backup_then_write(&f, &b, b"v4").unwrap();
+        let mut kept: Vec<String> = fs::read_dir(&b).unwrap().map(|e| fs::read_to_string(e.unwrap().path()).unwrap()).collect();
+        kept.sort();
+        assert_eq!(kept, vec!["v1", "v2", "v3"]);
+        assert_eq!(fs::read_to_string(&f).unwrap(), "v4");
+    }
+
+    #[test]
+    fn a_cut_off_last_line_does_not_hide_the_lines_before_it() {
+        let d = tmp("tornappend");
+        let f = d.join("log.txt");
+        append(&f, b"one\ntwo\n").unwrap();
+        // power cut in the middle of the next line
+        let mut raw = fs::OpenOptions::new().append(true).open(&f).unwrap();
+        raw.write_all(b"thr").unwrap();
+        drop(raw);
+        let text = read_to_string(&f).unwrap();
+        assert!(text.starts_with("one\ntwo\n"));
+        append(&f, b"four\n").unwrap();
+        let lines: Vec<String> = read_to_string(&f).unwrap().lines().map(|l| l.to_string()).collect();
+        assert_eq!(lines, vec!["one", "two", "thr", "four"], "the new line must stand alone");
     }
 
     #[test]
