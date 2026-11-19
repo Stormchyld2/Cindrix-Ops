@@ -464,6 +464,24 @@ pub fn agenda_get(from: String, to: String) -> Result<Vec<AgendaDto>, String> {
     Ok(list.into_iter().map(|a| AgendaDto { date: a.date, kind: a.kind, id: a.id, title: a.title, time: a.time, overdue: a.overdue, project: a.project }).collect())
 }
 
+#[derive(Serialize)]
+pub struct ReminderDto {
+    key: String,
+    text: String,
+    urgent: bool,
+    go: String,
+}
+
+/// What is late, due today or tomorrow, or about to start (core/src/reminders.rs). The screen sends its own date and
+/// the minute of its day, so the host's time zone never matters. Host only.
+#[tauri::command]
+pub fn reminders_due(today: String, minute: i64) -> Result<Vec<ReminderDto>, String> {
+    let u = crate::user();
+    let t = calendar::parse_date(&today).unwrap_or_else(calendar::today_days);
+    let list = core_ops::agenda(&u.load_tasks()?, &u.load_events()?, &extra_dates(), t, t + 1);
+    Ok(cindrix_core::reminders::due(&list, t, minute.clamp(0, 1439)).into_iter().map(|r| ReminderDto { key: r.key, text: r.text, urgent: r.urgent, go: r.go }).collect())
+}
+
 /// Everything that can be searched from one place, with a stable `kind` and `id` for each.
 fn all_entries() -> Vec<Entry> {
     let u = crate::user();

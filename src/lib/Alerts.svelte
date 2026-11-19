@@ -1,13 +1,14 @@
 <script lang="ts">
-  // Tells the host when something in Security Operations needs a look, while the program is open (docs/48):
+  // Tells the host when something is due or needs a look (late tasks, today's events, things that run out, and Security
+  // Operations), while the program is open (docs/48):
   // a bar at the top, a short beep for something new, and a number in the window title. The program checks again
   // every minute. It cannot tell anyone when it is closed or the computer is asleep, and it says so below.
   import { onMount, onDestroy } from 'svelte';
-  import { securityOverview, secLockStatus } from './api';
+  import { securityOverview, secLockStatus, remindersDue } from './api';
 
   let { go }: { go: (tab: string) => void } = $props();
 
-  type Item = { key: string; text: string; urgent: boolean };
+  type Item = { key: string; text: string; urgent: boolean; go?: string };
   let items = $state<Item[]>([]);
   let seen = $state<string[]>([]); // keys the host has pressed "Got it" on
   let sound = $state(true);
@@ -35,12 +36,17 @@
   }
 
   async function check() {
+    // due dates come first and need nothing from Security; Security's own lines are added when the records are open
+    let found: Item[] = [];
+    try { found = (await remindersDue()).map((r) => ({ ...r })); } catch { /* the bar just shows nothing for reminders */ }
     try {
       const s = await secLockStatus();
-      if (s.on && !s.unlocked) { items = []; return; }
-      const o = await securityOverview();
-      items = o.alerts ?? [];
-    } catch { return; }
+      if (!(s.on && !s.unlocked)) {
+        const o = await securityOverview();
+        found = [...found, ...(o.alerts ?? []).map((a) => ({ ...a, go: 'Security' }))];
+      }
+    } catch { /* no Security in this product, or it could not be read: reminders still show */ }
+    items = found;
     const keys = new Set(items.map((i) => i.key));
     const fresh = items.filter((i) => !announced.has(i.key) && !seen.includes(i.key));
     // the first check after start only fills the bar: no beep for things that were already there
@@ -65,7 +71,7 @@
       {#each open.slice(0, 3) as i (i.key)}<div>{i.text}</div>{/each}
       {#if open.length > 3}<div class="more">and {open.length - 3} more</div>{/if}
     </div>
-    <button class="btn" onclick={() => go('Security')} title="Open Security Operations">Open Security</button>
+    <button class="btn" onclick={() => go(open[0].go ?? 'Security')} title="Open the screen for the first one">Open</button>
     <button class="btn" onclick={() => (seen = [...seen, ...open.map((i) => i.key)])} title="Hide these until something new comes up">Got it</button>
     <button class="btn" onclick={toggleSound} title="Turn the beep on or off" aria-pressed={sound}>{sound ? 'Sound on' : 'Sound off'}</button>
   </div>

@@ -47,6 +47,7 @@ pub mod guides;
 pub mod hotspot;
 pub mod ops;
 pub mod permissions;
+pub mod reminders;
 pub mod seclock;
 pub mod tracksheet;
 pub mod security;

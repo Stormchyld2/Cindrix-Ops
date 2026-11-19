@@ -2021,6 +2021,15 @@ export type SecurityIncident = {
 // Minutes east of UTC on this computer right now. The program uses its own clock for "now"; this only says how to write it.
 const clockOffset = () => -new Date().getTimezoneOffset();
 
+export type ReminderItem = { key: string; text: string; urgent: boolean; go: string };
+/** Late, due today or tomorrow, or about to start (core/src/reminders.rs). Host only. */
+export async function remindersDue(): Promise<ReminderItem[]> {
+  if (!tauriHost) return [];
+  const n = new Date();
+  const today = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
+  return call<ReminderItem[]>('reminders_due', { today, minute: n.getHours() * 60 + n.getMinutes() });
+}
+
 export async function securityOverview(): Promise<SecurityOverview> {
   if (tauriHost) return call<SecurityOverview>('security_overview', { offsetMinutes: clockOffset() });
   // Browser preview: nothing is stored, and nothing is assessed, so the honest answer is "unknown".

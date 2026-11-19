@@ -342,7 +342,7 @@
   </aside>
   <div class="content">
 
-  {#if !inShare && product?.security}
+  {#if !inShare}
     <Alerts go={goTo} />
   {/if}
 

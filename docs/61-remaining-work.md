@@ -39,7 +39,9 @@ High and Medium, below the phases) are filed under the phase they belong to.
 
 ### 4. Complete Operations, Maps and communications
 - [ ] Structured PACE plan tied to free-text plans and the Security comms log (doc 50).
-- [ ] Due-date reminders and notifications (docs 37, 48); watch and patrol schedules may generate reminders (doc 44 section 15).
+- [x] Due-date reminders in the alert bar (late, today, tomorrow, timed events; `core/src/reminders.rs`, doc 48). Not
+  built: reminders from watch and patrol schedules (doc 44 section 15); a reminder while the program is closed or the
+  computer asleep (cannot be done without a background service).
 - [ ] GPS track recording and sensor logging in the main program (docs 45, 55). Pocket's tracks are kept (`tracksheet.rs`).
 - [ ] Garden beds screen (doc 53); map data gaps (doc 57).
 - **Done when:** a due item reminds the host with no network; a recorded track is saved and shown; PACE answers

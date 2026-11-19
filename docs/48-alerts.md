@@ -12,6 +12,16 @@ Security screen happened to be open.
   The first check after start only fills the bar (no beep for old things). While the records are locked it shows nothing.
 - Nothing leaves the computer. No push messages, no network.
 
+## Due-date reminders (2026-11-19)
+
+The same bar now also carries reminders from the one agenda the program already makes (`ops::agenda`), worded and
+chosen in `core/src/reminders.rs` and asked for with `reminders_due` (the screen sends its own date and minute, so the
+host's time zone never matters). Late tasks and plan steps (late tasks are urgent), things due today or tomorrow, an
+all-day event today, a timed event from an hour before it starts until a quarter hour after, and inventory dates today
+or tomorrow. Many items already past their date collapse to one line so the bar is not drowned. The bar now shows in
+every product, not only where Security is on; Security's own lines are added when the records are open. Same limits
+as below. Watch and patrol schedules do not generate reminders yet (doc 44 section 15 still asks).
+
 ## Limits (say these out loud)
 
 - It only works while the program is open and the computer is awake. A closed program or a sleeping laptop tells

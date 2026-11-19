@@ -3445,6 +3445,7 @@ pub fn run() {
             ops::project_doc_image,
             ops::connect_suggest,
             ops::agenda_get,
+            ops::reminders_due,
             ops::birthdays_sync,
             bible::bible_status,
             bible::bible_books,
