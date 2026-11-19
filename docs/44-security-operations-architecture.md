@@ -1,7 +1,7 @@
 # 44. Security Operations Architecture
 
 **Product:** CindrixOps (Windows host first; which editions get which parts is an open decision, section 15)  
-**Status:** Approved scope and architectural design; implementation pending  
+**Status:** Approved design; phases 1–4 built and checked in CI (not run on real hardware). Open work is listed in doc 61. Section 17 is a history of what was built, not a to-do list; where it says "not built yet", the later parts of section 17 and doc 61 are newer.  
 **Revision:** 1.3 — 2026-11-08 (1.2 of 2026-11-07 plus the carried-over requirements in section 14 and the open decisions in section 15; the separate earlier draft `44-security-operations.md` was merged into this file and removed)  
 **Related documents:** 01 Architecture; 02 Files and folders; 03 Safety and licenses; 09 Passphrase lock; 11 Navigation; 18 Maps; 21 Academy; 26 Plans; 27 Emergency cards and plans; 30 Map drawing; 34 Sharing server; 35 Top bar and Dashboard; 37 Connecting layer; 43 Hub/Overwatch model.
 

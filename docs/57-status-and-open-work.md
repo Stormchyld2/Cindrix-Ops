@@ -31,3 +31,5 @@ Safe backup mailbox, share server with PIN and invites, drive markers and librar
 10. **Placeholder screen** `Soon.svelte` still shows for planned tabs.
 
 Update this page, not the older "still to do" lists, when items change.
+
+The working checklist with severity (permissions, sync, recovery, large libraries, GPS, reminders, PACE) is `61-remaining-work.md`.

@@ -1,6 +1,6 @@
 # 45. Cindrix Pocket: the phone companion
 
-Status: design agreed with the owner on 2026-11-08. Nothing is built. Items marked **OPEN** wait on a decision.
+Status: design agreed with the owner on 2026-11-08. The Hub side is built (device list, invite QR trust, report mailbox, count sheets, check-in sheets, GPS track sheets; checked in CI, not on real hardware). The phone app's field tools are in the Cindrix-Pocket repo (branch `field-tools`); the rest of Pocket is not built and is on hold. See doc 61. Items marked **OPEN** wait on a decision.
 The Pocket repo (`Stormchyld2/Cindrix-Pocket`) holds the first notes (`README.md`, `docs/ARCHITECTURE.md`, 2026-11-01);
 this page records what was decided afterwards and what Cindrix Ops has to provide.
 
