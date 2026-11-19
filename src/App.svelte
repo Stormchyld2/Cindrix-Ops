@@ -5,6 +5,7 @@
   import Academy from './views/Academy.svelte';
   import Inventory from './views/Inventory.svelte';
   import Gear from './views/Gear.svelte';
+  import Approvals from './views/Approvals.svelte';
   import Family from './views/Family.svelte';
   import Cascade from './views/Cascade.svelte';
   import Soon from './views/Soon.svelte';
@@ -40,7 +41,7 @@
   import Splash from './lib/Splash.svelte';
   import { onMount } from 'svelte';
   import { intelRequest, sourceRequest, viewRequest, bibleRequest } from './lib/chat.svelte';
-  import { inShare, modelStatus, libraryStatus, productInfo, librariesList, libraryAnswer, privacySetIdle, type ModelStatus, type ProductInfo, type LibraryEntry } from './lib/api';
+  import { inShare, canApprove, modelStatus, libraryStatus, productInfo, librariesList, libraryAnswer, privacySetIdle, type ModelStatus, type ProductInfo, type LibraryEntry } from './lib/api';
   import { settings, applyUiScale } from './lib/settings.svelte';
   import { installTooltips, removeTooltips } from './lib/tooltips';
   let ms: ModelStatus | null = $state(null);
@@ -95,8 +96,8 @@
   $effect(() => { if (settings.loaded) void privacySetIdle(settings.values.privateLockMinutes); });
 
   // Intel is the offline internet: the archives read like web pages. It goes with the library.
-  type Group = 'Dashboard' | 'Ask' | 'Library' | 'Intel' | 'Academy' | 'Maps' | 'Music' | 'Podcasts' | 'Videos' | 'Plan' | 'Inventory' | 'Gear' | 'Settings' | 'Corner' | 'Guides' | 'Journal' | 'Photos' | 'CommsPlan' | 'Todo' | 'Calendar' | 'Projects' | 'DrugLabels' | 'Security' | 'Bible' | 'Soon';
-  const allGroups: Group[] = ['Dashboard', 'Ask', 'Library', 'Intel', 'Academy', 'Maps', 'Music', 'Podcasts', 'Videos', 'Plan', 'Inventory', 'Gear', 'Settings', 'Corner', 'Journal', 'Photos', 'CommsPlan', 'Todo', 'Calendar', 'Projects', 'DrugLabels', 'Security', 'Bible'];
+  type Group = 'Dashboard' | 'Ask' | 'Library' | 'Intel' | 'Academy' | 'Maps' | 'Music' | 'Podcasts' | 'Videos' | 'Plan' | 'Inventory' | 'Gear' | 'Settings' | 'Corner' | 'Guides' | 'Journal' | 'Photos' | 'CommsPlan' | 'Todo' | 'Calendar' | 'Projects' | 'DrugLabels' | 'Security' | 'Bible' | 'Approvals' | 'Soon';
+  const allGroups: Group[] = ['Dashboard', 'Ask', 'Library', 'Intel', 'Academy', 'Maps', 'Music', 'Podcasts', 'Videos', 'Plan', 'Inventory', 'Gear', 'Settings', 'Corner', 'Journal', 'Photos', 'CommsPlan', 'Todo', 'Calendar', 'Projects', 'DrugLabels', 'Security', 'Bible', 'Approvals'];
   // Each product switches parts of the program on or off (core/src/product.rs).
   const groups = $derived(
     allGroups.filter((g) => {
@@ -107,6 +108,7 @@
       if (g === 'Maps') return product.maps;
       if (g === 'Music' || g === 'Podcasts' || g === 'Videos') return product.music;
       if (g === 'Security') return product.security && !inShare;
+      if (g === 'Approvals') return inShare && mayApprove;
       if (g === 'Plan' || g === 'Inventory' || g === 'Gear') return product.plan;
       if (g === 'Todo' || g === 'Calendar' || g === 'Projects') return !inShare;
       return true;
@@ -114,6 +116,9 @@
   );
   const planTabs = ['Start', 'What next', 'Drills', 'Family', 'Binder', 'Seed vault', 'Garden beds', 'What fails'] as const;
 
+  // a phone's person with the Approver permission gets a screen for the reports waiting on the host
+  let mayApprove = $state(false);
+  onMount(() => { void canApprove().then((v) => (mayApprove = v)); });
   let group: Group = $state('Dashboard');
   // If the current screen is switched off for this product, move to the first one that is on.
   $effect(() => { if (groups.length && group !== 'Soon' && group !== 'Guides' && !groups.includes(group)) group = groups[0]; });
@@ -250,6 +255,7 @@
         { label: 'Journal', tab: 'Journal', note: 'private', show: !inShare }, { label: 'Photos', tab: 'Photos' } ] },
       { id: 'Comms', cat: 'comms', show: true, entries: [
         { label: 'Comms plan', tab: 'CommsPlan', note: 'private', show: !inShare }, { label: 'Radio reference', tab: 'guide:radio-reference' },
+        { label: 'Reports to approve', tab: 'Approvals', note: 'phones', show: inShare && mayApprove },
         { label: '', tab: '', rule: true, show: !inShare },
         { label: 'Sharing', tab: 'settings:Sharing', note: 'hotspot', show: !inShare } ] },
       { id: 'System', cat: 'system', show: true, entries: [
@@ -261,7 +267,7 @@
     switch (group) {
       case 'Library': case 'Intel': case 'DrugLabels': case 'Bible': return 'Intel';
       case 'Music': case 'Podcasts': case 'Videos': case 'Corner': case 'Journal': case 'Photos': return 'Morale';
-      case 'CommsPlan': return 'Comms';
+      case 'CommsPlan': case 'Approvals': return 'Comms';
       case 'Plan': return plan === 'Seed vault' || plan === 'Garden beds' ? 'Agro' : 'Operations';
       case 'Inventory': case 'Gear': case 'Todo': case 'Calendar': case 'Projects': return 'Operations';
       case 'Settings': return settingsFromComms ? 'Comms' : 'System';
@@ -413,6 +419,8 @@
       <Inventory />
     {:else if group === 'Gear'}
       <Gear />
+    {:else if group === 'Approvals'}
+      <Approvals />
     {:else if group === 'Settings'}
       <Settings {openArchives} go={goTo} />
     {:else}

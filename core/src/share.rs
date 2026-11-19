@@ -385,10 +385,48 @@ impl Auth {
         Ok(code)
     }
 
-    /// Use an invite. It works once; the device that used it becomes a trusted device for that person.
+    /// An invite where the person types their own name when they join. It runs out the same way.
+    pub fn new_open_invite(&mut self, now: u64) -> String {
+        self.invites.retain(|i| i.expires > now);
+        if self.invites.len() >= 16 { self.invites.remove(0); }
+        let code = new_token();
+        self.invites.push(Invite { code: code.clone(), person: String::new(), expires: now + INVITE_SECONDS });
+        code
+    }
+
+    /// True when this invite is good and still waits for the person's name.
+    pub fn invite_needs_name(&self, code: &str, now: u64) -> bool {
+        !code.is_empty() && self.invites.iter().any(|i| i.expires > now && i.person.is_empty() && same(&i.code, code))
+    }
+
+    /// Use an invite, giving the name the person typed (ignored when the host already named the invite).
+    /// `taken` are names that may not be claimed this way, such as people who already have a role: a name typed on a
+    /// phone must never inherit someone else's role. A wrong name leaves the invite waiting.
+    pub fn redeem_named(&mut self, code: &str, name: &str, now: u64, taken: &[String]) -> Result<Trusted, String> {
+        self.invites.retain(|i| i.expires > now);
+        let at = self.invites.iter().position(|i| !code.is_empty() && same(&i.code, code)).ok_or("This invite has been used or has run out. Ask for a new one, or type the PIN.")?;
+        let person = if self.invites[at].person.is_empty() {
+            let n = crate::people::folder_name(name).map_err(|_| "Type your name first.".to_string())?;
+            let same_name = |x: &str| x.eq_ignore_ascii_case(&n);
+            if self.trusted.iter().any(|t| same_name(&t.person)) || taken.iter().any(|t| same_name(t)) {
+                return Err("That name is already used on another phone. Type a different name, or ask for an invite with your name on it.".into());
+            }
+            n
+        } else {
+            self.invites[at].person.clone()
+        };
+        let inv = self.invites.remove(at);
+        let token = new_token();
+        let t = Trusted { id: token[..8].to_string(), token, person, since: now };
+        let _ = inv;
+        self.trusted.push(t.clone());
+        Ok(t)
+    }
+
+    /// Use an invite that already has a name. It works once; the device that used it becomes a trusted device for that person.
     pub fn redeem(&mut self, code: &str, now: u64) -> Option<Trusted> {
         self.invites.retain(|i| i.expires > now);
-        let at = self.invites.iter().position(|i| !code.is_empty() && same(&i.code, code))?;
+        let at = self.invites.iter().position(|i| !code.is_empty() && !i.person.is_empty() && same(&i.code, code))?;
         let inv = self.invites.remove(at);
         let token = new_token();
         let t = Trusted { id: token[..8].to_string(), token, person: inv.person, since: now };
@@ -662,6 +700,30 @@ mod tests {
         assert_eq!(a.role(&t.token), Role::Person("Dana".into()));
         assert!(a.redeem(&code, 151).is_none(), "second use");
         assert!(a.redeem("", 151).is_none());
+    }
+
+    #[test]
+    fn an_open_invite_lets_the_phone_type_its_name_but_never_a_name_already_in_use() {
+        let mut a = Auth::new("1234");
+        let c = a.new_open_invite(100);
+        assert!(a.invite_needs_name(&c, 150));
+        assert!(a.redeem(&c, 150).is_none(), "the plain way in refuses an invite that needs a name");
+        assert!(a.redeem_named(&c, "   ", 150, &[]).is_err());
+        assert!(a.redeem_named(&c, "Sam", 150, &["sam".to_string()]).unwrap_err().contains("already used"), "a name that already has a role is refused");
+        assert!(a.invite_needs_name(&c, 150), "a refused name leaves the invite waiting");
+        let t = a.redeem_named(&c, "  Ana  ", 151, &[]).unwrap();
+        assert_eq!(t.person, "Ana");
+        assert_eq!(a.role(&t.token), Role::Person("Ana".into()));
+        assert!(a.redeem_named(&c, "Ana", 152, &[]).is_err(), "works once");
+        // a second phone cannot claim the name of the first
+        let c2 = a.new_open_invite(200);
+        assert!(a.redeem_named(&c2, "ANA", 201, &[]).is_err());
+        // a named invite keeps the host's name whatever the phone sends
+        let c3 = a.new_invite("Dana", 300).unwrap();
+        assert_eq!(a.redeem_named(&c3, "Someone else", 301, &[]).unwrap().person, "Dana");
+        // and open invites run out
+        let c4 = a.new_open_invite(400);
+        assert!(!a.invite_needs_name(&c4, 400 + INVITE_SECONDS));
     }
 
     #[test]

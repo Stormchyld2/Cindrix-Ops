@@ -2287,6 +2287,25 @@ export async function securityPocketSetAside(name: string): Promise<void> {
   throw new Error('Reports are handled in the program, not in the browser preview.');
 }
 
+// ---------- reports waiting on the host, for a phone whose person may approve (core/src/permissions.rs, docs/61) ----------
+export async function approvalsList(): Promise<PocketReport[]> {
+  if (inShare) return (await shareCall<{ waiting: PocketReport[] }>('approvals_list')).waiting;
+  return [];
+}
+export async function approvalsAccept(name: string): Promise<number> {
+  if (inShare) return shareCall<number>('approvals_accept', { name });
+  throw new Error('Reports are accepted on the host in Security Operations.');
+}
+export async function approvalsSetAside(name: string): Promise<void> {
+  if (inShare) return shareCall<void>('approvals_set_aside', { name });
+  throw new Error('Reports are handled on the host in Security Operations.');
+}
+/** True when this browser's person may accept or set aside waiting reports (the host answers "no" to everyone else). */
+export async function canApprove(): Promise<boolean> {
+  if (!inShare) return false;
+  try { await shareCall('approvals_list'); return true; } catch { return false; }
+}
+
 // ---------- Bible study (Canonleaf's files, read from library\bible; read-only, guests may use it) ----------
 export type BibleModule = { id: string; title: string; kind: string; license: string; attribution: string };
 export type BibleStatus = { found: boolean; default_bible: string | null; modules: BibleModule[]; where_to_put: string };

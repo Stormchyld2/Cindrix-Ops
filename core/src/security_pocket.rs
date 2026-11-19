@@ -44,6 +44,31 @@ pub fn ledger_path(user_root: &Path) -> PathBuf {
     store::dir(user_root).join("pocket-accepted.txt")
 }
 
+/// Who accepted or set aside which waiting report, and when. Only ever added to. The host's own choices are written
+/// as "host"; a phone with the Approver permission is written under the person's name.
+pub fn decisions_path(user_root: &Path) -> PathBuf {
+    store::dir(user_root).join("pocket-decisions.txt")
+}
+const DECISIONS_HEADER: &str = "# format: pocket-decisions 1\n# when (UTC minutes), file, what, who\n";
+
+pub fn record_decision(user_root: &Path, name: &str, what: &str, by: &str, utc_minutes: i64) -> Result<(), String> {
+    let clean = |t: &str| t.chars().map(|c| if c.is_control() { ' ' } else { c }).collect::<String>();
+    let line = format!("{}\t{}\t{}\t{}\n", utc_minutes, clean(name), clean(what), clean(by));
+    store::append_line(user_root, &decisions_path(user_root), DECISIONS_HEADER, &line, |t| {
+        if t.is_empty() || t.starts_with("# format: pocket-decisions 1") { Ok(()) } else { Err("The record of who accepted reports is from a different version, so it was left alone.".to_string()) }
+    })
+}
+
+/// The decisions, newest last: (when, file, what, who).
+pub fn decisions(user_root: &Path) -> Vec<(i64, String, String, String)> {
+    let text = crate::fsio::read_to_string(&decisions_path(user_root)).unwrap_or_default();
+    text.lines().filter(|l| !l.starts_with('#') && !l.trim().is_empty()).filter_map(|l| {
+        let f: Vec<&str> = l.split('\t').collect();
+        if f.len() != 4 { return None; }
+        Some((f[0].parse().ok()?, f[1].to_string(), f[2].to_string(), f[3].to_string()))
+    }).collect()
+}
+
 /// A file name the mailbox will touch: lower-case letters, digits and dashes, ending `.txt`. No folders, no dots
 /// before the extension, nothing that can climb out of the mailbox.
 pub fn safe_name(name: &str) -> bool {
@@ -476,6 +501,20 @@ mod tests {
     }
     fn put(r: &Path, name: &str, entries: &[Entry]) {
         drop_file(r, name, &render_report("n10", "Sam", T, entries)).unwrap();
+    }
+
+    #[test]
+    fn who_accepted_or_set_aside_a_report_is_kept_and_a_damaged_record_is_not_overwritten() {
+        let r = tmp("decisions");
+        record_decision(&r, "n10-0001.txt", "accepted", "Sam", 100).unwrap();
+        record_decision(&r, "n10-0002.txt", "set aside", "host\tx", 101).unwrap();
+        let d = decisions(&r);
+        assert_eq!(d.len(), 2);
+        assert_eq!((d[0].1.as_str(), d[0].2.as_str(), d[0].3.as_str()), ("n10-0001.txt", "accepted", "Sam"));
+        assert_eq!(d[1].3, "host x", "a tab in a name cannot break the line");
+        fs::write(decisions_path(&r), "something else\n").unwrap();
+        assert!(record_decision(&r, "n10-0003.txt", "accepted", "Sam", 102).is_err());
+        assert_eq!(fs::read_to_string(decisions_path(&r)).unwrap(), "something else\n");
     }
 
     #[test]

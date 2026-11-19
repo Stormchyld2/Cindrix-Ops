@@ -11,15 +11,19 @@ Doc 57 is the short status page; this is the working list. Update both when some
   `core/tests/access_classes.rs` now fails when a registered command is answered for a guest or phone without
   being on a list, when a list names a command nobody serves, when a guest command looks like a write or a
   private file, and when the phone list changes without the test being changed on purpose.
-- [~] **People inside the host (owner decision 2026-11-19).** Each trusted phone has a named person (typed or picked
+- [x] **People inside the host (owner decision 2026-11-19).** Each trusted phone has a named person (typed or picked
   when the invite is made, editable afterwards in Settings > Sharing > Rename). Roles are `core/src/permissions.rs`,
   file `user/roles.txt`: two start (**Reporter** may send reports; **Approver** may also accept or set aside the
   waiting reports), the host adds or removes roles and gives each person one. A person with none written down gets the
   first role; if the file cannot be read, nothing that needs a permission is allowed. The server checks it for every
   request (`permissions::allowed`, used by `api_call` and `device_call`). Built: backend, tests, Settings screen.
-  Not built: a screen on the phone's browser for the waiting reports (the commands `approvals_*` exist and are
-  refused to anyone without the Approver permission); the larger doc 44 split (planner, watch supervisor, member,
-  observer) waits until these two have been used. Accepting does not yet record which person accepted.
+  Also built (2026-11-19, second part): a phone's browser shows **Reports to approve** (Comms menu) only when its person
+  may approve; every accept or set-aside is written with the person's name (or "host") to
+  `user/security/pocket-decisions.txt`; an invite can be made with **Let them type their own name**, and the phone
+  asks for it when it opens the invite (a name already on another phone or already holding a role is refused, so
+  a typed name can never inherit someone else's role). The larger doc 44 split (planner, watch supervisor, member,
+  observer) waits until these two roles have been used. The passcode lock itself is one lock for the host's security
+  records, not one per person: only the host holds the recovery code.
 - [x] **Forgotten passcode.** Turning the lock on shows a one-time recovery code; Settings > Protection has "Forgot the
   passcode?" (also on the locked Security screen) and "New recovery code". The code only re-wraps the key, records are
   not touched. Locks made before this have no code until one is made while they are open. Checked in CI only (the

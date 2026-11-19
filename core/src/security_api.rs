@@ -714,7 +714,15 @@ pub fn pocket_list(user_root: &Path) -> Result<String, String> {
 
 /// The host accepts a report into the records. Returns how many entries were added.
 pub fn pocket_accept(user_root: &Path, name: &str, allow_moved: bool) -> Result<usize, String> {
-    crate::security_pocket::accept_any(user_root, name, allow_moved)
+    pocket_accept_by(user_root, name, allow_moved, "host")
+}
+
+/// The same, with the person who did it written in the record of decisions (a phone with the Approver permission, or "host").
+pub fn pocket_accept_by(user_root: &Path, name: &str, allow_moved: bool, by: &str) -> Result<usize, String> {
+    let n = crate::security_pocket::accept_any(user_root, name, allow_moved)?;
+    // the report is already in the records; if the note cannot be written the person is told, and nothing is undone
+    crate::security_pocket::record_decision(user_root, name, "accepted", by, now_minutes()).map_err(|e| format!("The report was accepted, but the note of who did it could not be saved: {}", e))?;
+    Ok(n)
 }
 
 /// A waiting count sheet line by line, so the host can see what each number was, is, and was counted as.
@@ -724,7 +732,12 @@ pub fn pocket_sheet(user_root: &Path, name: &str) -> Result<String, String> {
 
 /// The host sets a report aside without using it. It is kept, not deleted.
 pub fn pocket_set_aside(user_root: &Path, name: &str) -> Result<(), String> {
-    crate::security_pocket::set_aside(user_root, name)
+    pocket_set_aside_by(user_root, name, "host")
+}
+
+pub fn pocket_set_aside_by(user_root: &Path, name: &str, by: &str) -> Result<(), String> {
+    crate::security_pocket::set_aside(user_root, name)?;
+    crate::security_pocket::record_decision(user_root, name, "set aside", by, now_minutes()).map_err(|e| format!("The report was set aside, but the note of who did it could not be saved: {}", e))
 }
 
 // ---------- the Security tab, routes, availability, plans, weather, export ----------

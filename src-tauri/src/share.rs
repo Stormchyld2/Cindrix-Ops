@@ -372,6 +372,7 @@ pub struct TrustedDto {
 
 #[tauri::command]
 pub fn share_invite(person: String, app: tauri::AppHandle) -> Result<InviteDto, String> {
+    let open = person.trim().is_empty();
     let inf = info(&app);
     if !inf.on {
         return Err("Turn sharing on first, then make the invite.".into());
@@ -379,11 +380,12 @@ pub fn share_invite(person: String, app: tauri::AppHandle) -> Result<InviteDto, 
     let Some(addr) = inf.addresses.first() else {
         return Err("No network address was found. Turn on the hotspot, or join a Wi-Fi network.".into());
     };
-    let person = cindrix_core::people::folder_name(&person)?;
+    // an empty name means the person types their own name on the phone
+    let person = if open { String::new() } else { cindrix_core::people::folder_name(&person)? };
     let code = {
         let st = app.state::<AppState>();
-        let made = st.share.auth().new_invite(&person, now());
-        made?
+        let mut a = st.share.auth();
+        if open { a.new_open_invite(now()) } else { a.new_invite(&person, now())? }
     };
     Ok(InviteDto { url: format!("{}join?c={}", addr.url, code), person, minutes: share::INVITE_SECONDS / 60 })
 }
@@ -550,6 +552,25 @@ button{{margin-top:14px;width:100%;font-size:18px;padding:12px;border-radius:10p
     )
 }
 
+/// The page a phone sees when its invite waits for a name.
+fn join_name_page(code: &str, message: &str) -> Response {
+    let note = if message.is_empty() { String::new() } else { format!("<p class=\"m\">{}</p>", esc(message)) };
+    Response::html(
+        200,
+        &format!(
+            "<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Cindrix</title>\
+<style>body{{font:18px system-ui,sans-serif;background:#14171a;color:#e8e6e1;margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center}}\
+form{{width:min(360px,90vw);padding:24px}}h1{{font-size:22px;margin:0 0 6px}}p{{color:#a8b0a8;margin:0 0 14px}}.m{{color:#f0d9a0}}\
+input[type=text]{{width:100%;box-sizing:border-box;font-size:22px;text-align:center;padding:12px;border-radius:10px;border:1px solid #4a5148;background:#1d2227;color:inherit}}\
+button{{margin-top:14px;width:100%;font-size:18px;padding:12px;border-radius:10px;border:0;background:#6fcf8d;color:#10150f;cursor:pointer}}</style></head>\
+<body><form method=\"get\" action=\"/join\"><h1>Join this library</h1><p>Type your name. The host sees it next to this phone.</p>{}\
+<input type=\"hidden\" name=\"c\" value=\"{}\"><input type=\"text\" name=\"name\" autocomplete=\"name\" autofocus aria-label=\"Your name\"><button type=\"submit\">Join</button></form></body></html>",
+            note,
+            esc(code)
+        ),
+    )
+}
+
 fn json_err(status: u16, msg: &str) -> Response {
     Response::json(status, &json!({ "error": msg }).to_string())
 }
@@ -581,22 +602,32 @@ fn route(app: &tauri::AppHandle, req: &Request, who: &str, stream: &mut TcpStrea
         return;
     }
 
-    // an invite from a QR code: the device becomes a trusted device for one named person
+    // an invite from a QR code: the device becomes a trusted device for one named person. When the host made the
+    // invite without a name, the phone is asked for its own (and a name already in use is refused).
     if req.path == "/join" && req.method == "GET" {
         let code = req.query_value("c").unwrap_or("").to_string();
+        let typed = req.query_value("name").map(|n| n.to_string());
+        let needs = sh.auth().invite_needs_name(&code, now());
+        if needs && typed.is_none() {
+            send(stream, &join_name_page(&code, ""));
+            return;
+        }
+        // names that already have a role may not be claimed by typing them
+        let taken: Vec<String> = cindrix_core::permissions::load(&user_dir()).map(|t| t.people.into_iter().map(|(p, _)| p).collect()).unwrap_or_default();
         let got = {
             let mut a = sh.auth();
-            let t = a.redeem(&code, now());
-            if t.is_some() {
+            let t = a.redeem_named(&code, typed.as_deref().unwrap_or(""), now(), &taken);
+            if t.is_ok() {
                 save_trusted(&a);
             }
             t
         };
         let r = match got {
-            Some(t) => Response::new(302, "text/plain", vec![])
+            Ok(t) => Response::new(302, "text/plain", vec![])
                 .with("Location", "/")
                 .with("Set-Cookie", &format!("cx={}; Path=/; HttpOnly; SameSite=Lax; Max-Age=31536000", t.token)),
-            None => pin_page("This invite has been used or has run out. Ask for a new one, or type the PIN."),
+            Err(e) if needs => join_name_page(&code, &e),
+            Err(e) => pin_page(&e),
         };
         send(stream, &r);
         return;
@@ -724,8 +755,8 @@ fn dispatch(app: &tauri::AppHandle, cmd: &str, a: &Value, role: &Role) -> Result
     match cmd {
         // reports waiting on the host: only a person whose role has the "approve" permission gets here (roles_allow)
         "approvals_list" => { crate::seclock::require_open()?; let t = cindrix_core::security_api::pocket_list(&user_dir())?; serde_json::from_str(&t).map_err(|e| e.to_string()) }
-        "approvals_accept" => { crate::seclock::require_open()?; let name: String = arg(a, "name")?; tv(cindrix_core::security_api::pocket_accept(&user_dir(), &name, false)?) }
-        "approvals_set_aside" => { crate::seclock::require_open()?; let name: String = arg(a, "name")?; cindrix_core::security_api::pocket_set_aside(&user_dir(), &name)?; Ok(Value::Null) }
+        "approvals_accept" => { crate::seclock::require_open()?; let name: String = arg(a, "name")?; let by = match role { Role::Person(p) => p.clone(), _ => return Err("Only a named person can do this.".into()) }; tv(cindrix_core::security_api::pocket_accept_by(&user_dir(), &name, false, &by)?) }
+        "approvals_set_aside" => { crate::seclock::require_open()?; let name: String = arg(a, "name")?; let by = match role { Role::Person(p) => p.clone(), _ => return Err("Only a named person can do this.".into()) }; cindrix_core::security_api::pocket_set_aside_by(&user_dir(), &name, &by)?; Ok(Value::Null) }
         "list_cards" => tv(crate::list_cards()),
         "whoami" => Ok(json!({ "person": match role { Role::Person(p) => Some(p.clone()), _ => None } })),
         "photos_list" => {

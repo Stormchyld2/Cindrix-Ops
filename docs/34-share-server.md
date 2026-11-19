@@ -48,3 +48,5 @@ Owner's decisions: there is **no guest sign-in as a person**. A PIN always makes
 ## Names and roles on trusted phones (2026-11-19)
 
 The name on a trusted phone is typed or picked when the invite is made and can be changed in Settings > Sharing (Rename); the sign-in token does not change. What the person may do comes from a role (`core/src/permissions.rs`, `user/roles.txt`): Reporter (send reports) and Approver (also accept or set aside waiting reports) at the start, more can be added or removed. Reading the library never needs a role. See doc 61.
+
+An invite can also be made without a name ("Let them type their own name"). The phone then shows a one-field page for its name when the invite is opened. A name already on another trusted phone, or already holding a role, is refused and the invite keeps waiting. A phone whose person may approve also sees "Reports to approve"; each decision is written with the person's name to `user/security/pocket-decisions.txt`.

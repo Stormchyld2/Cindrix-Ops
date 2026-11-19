@@ -44,12 +44,13 @@
   // family members: an invite code works once and makes the phone that scans it a trusted device
   let trusted = $state<TrustedDevice[]>([]);
   let invitee = $state('');
+  let typeOwn = $state(false);
   let invite = $state<Invite | null>(null);
   const inviteCode = $derived(qrFor(invite?.url));
   async function loadTrusted() { try { trusted = await shareTrusted(); } catch { /* the list just stays as it was */ } }
   async function makeInvite() {
     error = '';
-    try { invite = await shareInvite(invitee.trim() || everyone()[0]); } catch (e) { error = String(e); }
+    try { invite = await shareInvite(typeOwn ? '' : (invitee.trim() || everyone()[0])); } catch (e) { error = String(e); }
   }
   let renaming = $state<string | null>(null);
   let renameText = $state('');
@@ -104,16 +105,17 @@
         <div class="label sub">FAMILY DEVICES</div>
         <p class="small">A family member's own phone or laptop can join with an invite instead of the PIN. It then stays trusted, shows their name, and lets them add pictures to the shared album and to their own. Make the invite for the right person, and have them scan it within {invite?.minutes ?? 10} minutes. It works once.</p>
         <div class="row">
-          <input class="input" list="invite-names" bind:value={invitee} placeholder={everyone()[0] ?? 'Name'} aria-label="Who is this invite for. Pick a name or type a new one" />
+          <label class="small"><input type="checkbox" bind:checked={typeOwn} /> Let them type their own name</label>
+          <input class="input" list="invite-names" disabled={typeOwn} bind:value={invitee} placeholder={everyone()[0] ?? 'Name'} aria-label="Who is this invite for. Pick a name or type a new one" />
           <datalist id="invite-names">{#each everyone() as n}<option value={n}></option>{/each}</datalist>
           <button class="btn primary" onclick={makeInvite} title="Make a one-time code for this person's phone">Make an invite</button>
         </div>
         {#if learner.locked}<p class="small muted">The Family page is locked, so only “Me” is listed. Unlock it on the Family page to invite someone else.</p>{/if}
         {#if invite && inviteCode}
           <div class="join">
-            <svg class="qr" viewBox="0 0 {inviteCode.size} {inviteCode.size}" role="img" aria-label="Invite code for {invite.person}"><rect width={inviteCode.size} height={inviteCode.size} fill="#fff" /><path d={inviteCode.d} fill="#000" /></svg>
+            <svg class="qr" viewBox="0 0 {inviteCode.size} {inviteCode.size}" role="img" aria-label="Invite code{invite.person ? ` for ${invite.person}` : ''}"><rect width={inviteCode.size} height={inviteCode.size} fill="#fff" /><path d={inviteCode.d} fill="#000" /></svg>
             <div>
-              <p><b>Invite for {invite.person}</b></p>
+              <p><b>{invite.person ? `Invite for ${invite.person}` : 'Invite (they type their own name)'}</b></p>
               <p class="small muted">Have them scan this with their phone's camera while it is on this Wi-Fi or hotspot. It works once and runs out after {invite.minutes} minutes. Do not post or send a picture of it.</p>
               <button class="btn" onclick={() => (invite = null)}>Hide the invite</button>
             </div>
