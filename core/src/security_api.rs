@@ -120,7 +120,7 @@ pub fn overview_at(user_root: &Path, off: i64, now: i64) -> Result<String, Strin
     let inventory = crate::userdata::UserDir::new(user_root).load_inventory().unwrap_or_default();
     let gear = equip::gear(&equip_log.items, &inventory);
     let rules_file = siterec::load_schedule(user_root)?;
-    let recs = Recs { gear, rules: rules_file.items.clone(), outings: outings.clone(), comms: comms_log.items.clone(), coverage: cov_log.items.clone(), training: train_log.items.clone(), assets: asset_file.items.clone(), inspections: insp_log.items.clone(), avail: avail_log.items.clone(), review: review_log.items.clone(), roles: roles_log.items.clone(), built: built.clone() };
+    let recs = Recs { gear, rules: rules_file.items.clone(), outings: outings.clone(), comms: comms_log.items.clone(), coverage: cov_log.items.clone(), training: train_log.items.clone(), assets: asset_file.items.clone(), inspections: insp_log.items.clone(), avail: avail_log.items.clone(), review: review_log.items.clone(), roles: roles_log.items.clone(), built: built.clone(), pace: crate::pace::load(user_root).unwrap_or_default(), channels: channel_file.items.clone() };
     let ov = security::overview(&sites.items, &log.items, now);
     let mut rows = Vec::new();
     let mut look_total = 0usize;
@@ -185,6 +185,8 @@ struct Recs {
     review: Vec<review::Line>,
     roles: Vec<roles::Line>,
     built: Vec<incident::Incident>,
+    pace: Vec<(String, String)>,
+    channels: Vec<comms::Channel>,
 }
 
 /// The plain-words "needs a look" lines for one site. One place makes them, so the Dashboard count and the
@@ -210,6 +212,11 @@ fn site_looks(site: &str, st: &security::SiteStatus, cur: Option<&PostureEntry>,
         out.extend(outing::looks(o, now, off));
     }
     out.extend(comms::looks(site, &recs.comms, &recs.coverage));
+    {
+        let (list, is_default) = comms::channels_for(&recs.channels, site);
+        let pairs: Vec<(String, String)> = list.iter().map(|c| (c.channel.clone(), c.role.clone())).collect();
+        out.extend(crate::pace::looks(&recs.pace, &pairs, is_default));
+    }
     out.extend(comms::training_looks(site, watches, &recs.training));
     let patrols: Vec<(String, i64)> = recs.outings.iter().filter(|o| o.patrol && o.site == site && matches!(o.state, outing::State::Out | outing::State::Back)).map(|o| (o.task.clone(), o.ended.unwrap_or(o.left))).collect();
     out.extend(equip::looks(site, &recs.gear, now));

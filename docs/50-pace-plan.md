@@ -23,5 +23,5 @@ Alternate (phones down, internet up), Contingency (all down: radio) and Emergenc
 
 ## Not done yet
 
-- The structured plan is not yet tied to the free-text plan or to the Security comms log (doc 46).
+- Tied to Security so far: `pace::looks` compares the Contingency radio answer with each site's channel plan and adds a line to "needs a look" (no answer, site still on the starting channels, or the site's main channel not mentioned). Still not tied: the free-text Comms plan text, and the comms log entries themselves.
 - The screens have not been type-checked or looked at in a browser (the tooling was not available).

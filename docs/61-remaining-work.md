@@ -38,7 +38,7 @@ High and Medium, below the phases) are filed under the phase they belong to.
 - **Done when:** the Hub runs on an Android phone from the drive, with the assistant, library and share server.
 
 ### 4. Complete Operations, Maps and communications
-- [ ] Structured PACE plan tied to free-text plans and the Security comms log (doc 50).
+- [~] Structured PACE plan: now checked against the Security channel plan (needs-a-look lines, tested); free-text plan and comms log still not tied (doc 50).
 - [x] Due-date reminders in the alert bar (late, today, tomorrow, timed events; `core/src/reminders.rs`, doc 48). Not
   built: reminders from watch and patrol schedules (doc 44 section 15); a reminder while the program is closed or the
   computer asleep (cannot be done without a background service).
@@ -121,7 +121,7 @@ High and Medium, below the phases) are filed under the phase they belong to.
 - [ ] **GPS and FieldLog in the main program.** Track sheets from Pocket are kept (`tracksheet.rs`); recording
   tracks and sensor logs on the host is not built (docs 45, 55).
 - [ ] **Reminders and notifications.** The connecting layer (doc 37) and doc 48 have no due-date alerts yet.
-- [ ] **Structured PACE plan** is not tied to free-text plans or the Security comms log (doc 50).
+- [~] **Structured PACE plan** is checked against the Security channel plan (doc 50); not yet tied to free-text plans or the comms log entries.
 
 ### Detail: not built, by design or waiting
 

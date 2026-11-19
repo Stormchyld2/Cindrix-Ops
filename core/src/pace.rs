@@ -215,6 +215,41 @@ pub fn build(answers: &[(String, String)]) -> Plan {
     Plan { empty: answered == 0, answered, total: QUESTIONS.len(), levels }
 }
 
+/// Plain-words lines that compare the PACE answers with a site's radio channel plan (Security > Communications).
+/// `channels` is the site's channel plan and `is_default` is true while the site still shows the starting
+/// channels. With no PACE answers at all there is nothing to compare, so no line is made (the person has simply
+/// not started the plan).
+pub fn looks(answers: &[(String, String)], channels: &[(String, String)], is_default: bool) -> Vec<String> {
+    let get = |key: &str| answers.iter().find(|(k, _)| k == key).map(|(_, v)| v.trim().to_string()).unwrap_or_default();
+    let mut out = Vec::new();
+    if answers.iter().all(|(_, v)| v.trim().is_empty()) {
+        return out;
+    }
+    let radio = get("c_channels");
+    if radio.is_empty() {
+        out.push("The PACE plan does not say which radio channels to use first. Answer it in Settings, PACE plan.".to_string());
+        return out;
+    }
+    if is_default {
+        out.push("The PACE plan names radio channels, but this site's channel plan still shows the starting channels. Check that the two match.".to_string());
+        return out;
+    }
+    // A channel from the site's plan that the PACE answer does not mention is worth a look.
+    let words: Vec<String> = radio.split(|c: char| !(c.is_alphanumeric() || c == '.')).filter(|w| !w.is_empty()).map(|w| w.to_lowercase()).collect();
+    let mentioned = |ch: &str| {
+        let c = ch.trim().to_lowercase();
+        let plain = c.trim_start_matches('0');
+        words.iter().any(|w| *w == c || (!plain.is_empty() && w == plain))
+    };
+    let primary = channels.iter().find(|(_, role)| role == "primary");
+    if let Some((ch, _)) = primary {
+        if !mentioned(ch) {
+            out.push(format!("The site's main radio channel is CH {}, but the PACE plan does not mention it. Check that the two match.", ch));
+        }
+    }
+    out
+}
+
 /// The plan as plain text, for printing or copying. Empty when there is nothing to build from.
 pub fn to_text(plan: &Plan) -> String {
     if plan.empty {
@@ -335,5 +370,22 @@ mod tests {
         let get = |k: &str| a.iter().find(|(x, _)| x == k).unwrap().1.clone();
         assert_eq!(get("specialist"), "Sam", "the last line for a question wins");
         assert_eq!(get("e_rally"), "Library\nSchool");
+    }
+
+    #[test]
+    fn pace_lines_compare_with_the_channel_plan() {
+        let none: Vec<(String, String)> = vec![];
+        assert!(looks(&none, &[], true).is_empty(), "no answers, nothing to compare");
+        let other = vec![set("p_ways", "Call first")];
+        assert!(looks(&other, &[], true)[0].contains("does not say which radio channels"));
+        let a = vec![set("c_channels", "Call on 146.520 MHz, then GMRS channel 20")];
+        assert!(looks(&a, &[], true)[0].contains("starting channels"));
+        let site = vec![("04".to_string(), "primary".to_string())];
+        assert!(looks(&a, &site, false)[0].contains("CH 04"));
+        let b = vec![set("c_channels", "Start on channel 4, back up on 5")];
+        assert!(looks(&b, &site, false).is_empty(), "04 matches 4");
+        let c = vec![set("c_channels", "Channel 20")];
+        let site20 = vec![("20".to_string(), "primary".to_string())];
+        assert!(looks(&c, &site20, false).is_empty());
     }
 }
