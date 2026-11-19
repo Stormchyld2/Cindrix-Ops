@@ -1761,9 +1761,9 @@ export async function shareRename(id: string, person: string): Promise<TrustedDe
   throw 'Names are changed on the host computer.';
 }
 // ---------- roles for the people on trusted phones (core/src/permissions.rs, docs/61) ----------
-export type RoleRow = { name: string; caps: string[] };
+export type PhoneRoleRow = { name: string; caps: string[] };
 export type RoleCap = { key: string; text: string };
-export type RolesView = { roles: RoleRow[]; caps: RoleCap[]; people: { person: string; role: string | null }[] };
+export type RolesView = { roles: PhoneRoleRow[]; caps: RoleCap[]; people: { person: string; role: string | null }[] };
 const noRoles: RolesView = { roles: [{ name: 'Reporter', caps: ['log'] }, { name: 'Approver', caps: ['log', 'approve'] }], caps: [{ key: 'log', text: 'Send reports to the host: check-ins, counts, tracks and notes' }, { key: 'approve', text: 'Accept or set aside the reports waiting on the host' }], people: [] };
 export async function rolesGet(): Promise<RolesView> {
   if (tauriHost) return call<RolesView>('roles_get');
