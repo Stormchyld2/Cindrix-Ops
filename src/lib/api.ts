@@ -1622,6 +1622,33 @@ export async function zimSearchAll(term: string, category = ''): Promise<ZimHit[
   const t = term.toLowerCase();
   return Object.entries(previewPages).filter(([, v]) => v.title.toLowerCase().includes(t)).map(([p, v]) => ({ book: 'sample', book_title: 'Sample library (preview)', title: v.title, path: p }));
 }
+export type ZimTextHit = ZimHit & { snippet: string };
+/** Articles whose text contains the words, from every archive that has a search index (made in Archives). */
+export async function zimSearchText(term: string, category = ''): Promise<ZimTextHit[]> {
+  if (inTauri) return call<ZimTextHit[]>('zim_search_text', category ? { term, category } : { term });
+  return [];
+}
+export type IndexBook = { name: string; title: string; articles: number; mb: number; category: string; state: 'none' | 'partial' | 'ready' | 'stale'; done: number; docs: number; depth: string; index_mb: number; est_lead_mb: number; est_full_mb: number; running: boolean };
+export type IndexJob = { book: string; running: boolean; joining: boolean; done: number; total: number; percent: number; finished: boolean; message: string };
+export async function zimIndexList(): Promise<{ books: IndexBook[]; job: IndexJob }> {
+  if (inTauri) return call('zim_index_list');
+  return { books: [], job: { book: '', running: false, joining: false, done: 0, total: 0, percent: 0, finished: false, message: '' } };
+}
+export async function zimIndexStatus(): Promise<IndexJob> {
+  if (inTauri) return call<IndexJob>('zim_index_status');
+  return { book: '', running: false, joining: false, done: 0, total: 0, percent: 0, finished: false, message: '' };
+}
+export async function zimIndexStart(book: string, depth: 'lead' | 'full'): Promise<void> {
+  if (inTauri) return call<void>('zim_index_start', { book, depth });
+  throw new Error('The search index is made in the program, not in the browser preview.');
+}
+export async function zimIndexStop(): Promise<void> {
+  if (inTauri) return call<void>('zim_index_stop');
+}
+export async function zimIndexDelete(book: string): Promise<void> {
+  if (inTauri) return call<void>('zim_index_delete', { book });
+  throw new Error('The search index is made in the program, not in the browser preview.');
+}
 /** What to put in the reader's frame for a library path: an address (desktop app) or the page itself (browser preview). */
 export async function zimFrame(path: string): Promise<{ src?: string; srcdoc?: string; title: string }> {
   if (inShare) return { src: location.origin + path, title: '' };

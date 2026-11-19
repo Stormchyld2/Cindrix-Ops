@@ -139,6 +139,16 @@ impl Archive {
     }
 
     /// Newer archives (minor version 1 and up) keep all content in the `C` namespace.
+    /// The type of content (such as `text/html`) for an entry's mime number, or empty when unknown.
+    pub fn mime_of(&self, id: u16) -> &str {
+        self.mimes.get(id as usize).map(|m| m.as_str()).unwrap_or("")
+    }
+
+    /// The namespace byte that holds articles in this archive.
+    pub fn content_ns(&self) -> u8 {
+        if self.new_layout() { b'C' } else { b'A' }
+    }
+
     pub fn new_layout(&self) -> bool {
         self.minor >= 1
     }

@@ -59,6 +59,7 @@ pub mod security_equipment;
 pub mod security_review;
 pub mod security_roles;
 pub mod gear;
+pub mod ftindex;
 pub mod security_export;
 pub mod security_plans;
 pub mod security_site;

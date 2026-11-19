@@ -2,7 +2,7 @@
   import PageHeader from '../lib/PageHeader.svelte';
   import { onMount, onDestroy, untrack } from 'svelte';
   import {
-    zimBooks, zimUnreadable, zimFrame, zimOrigin, zimSearchAll, zimBookmarksLoad, zimBookmarksSave, libraryStatus,
+    zimBooks, zimUnreadable, zimFrame, zimOrigin, zimSearchAll, zimSearchText, type ZimTextHit, zimBookmarksLoad, zimBookmarksSave, libraryStatus,
     type ZimBook, type ZimBookmark, type ZimHit, type LibraryStatus,
   } from '../lib/api';
   import { settings } from '../lib/settings.svelte';
@@ -40,6 +40,7 @@
   let term = $state('');
   let suggestions: ZimHit[] = $state([]);
   let hits: ZimHit[] = $state([]);
+  let textHits: ZimTextHit[] = $state([]);
   let searching = $state(false);
   let plain = $state(false);
   // set when one archive is opened in the library server (kiwix-serve) instead of the built-in reader
@@ -371,7 +372,9 @@
   async function runSearch(q: string) {
     searching = true;
     hits = [];
+    textHits = [];
     try { hits = await zimSearchAll(q, category); } catch { hits = []; }
+    try { textHits = await zimSearchText(q, category); } catch { textHits = []; }
     searching = false;
   }
   function submit() {
@@ -482,8 +485,8 @@
         <h2>Results for “{loc.term}”</h2>
         {#if searching}
           <p class="muted">Searching every archive…</p>
-        {:else if !groups.length}
-          <p class="muted">No titles match. Try fewer or shorter words. This searches page titles; open an archive and use “Search inside” to search the words in the pages themselves.</p>
+        {:else if !groups.length && !textHits.length}
+          <p class="muted">Nothing matches. Try fewer or shorter words. Titles are always searched. To search the words inside articles too, make an archive's search index in Archives.</p>
         {:else}
           {#each groups as g}
             <div class="group">
@@ -493,6 +496,14 @@
               </ul>
             </div>
           {/each}
+          {#if textHits.length}
+            <div class="group">
+              <div class="label">INSIDE ARTICLES</div>
+              <ul class="hits">
+                {#each textHits as h}<li><button class="open" onclick={() => openHit(h)}>{h.title} <span class="from">{h.book_title}</span></button>{#if h.snippet}<div class="muted small">{h.snippet}</div>{/if}</li>{/each}
+              </ul>
+            </div>
+          {/if}
         {/if}
       </div>
     {:else}

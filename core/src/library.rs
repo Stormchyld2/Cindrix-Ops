@@ -2,13 +2,17 @@
 //! look up pages for the reader, suggest titles as you type, and find passages for the
 //! assistant. See `zimread` for the file format side.
 //!
-//! Searching here is by TITLE. Kiwix's own full-text index (Xapian) is not read; when
+//! Searching here is by TITLE, and by the words inside articles for every archive whose own search index has been made
+//! (`ftindex`, built from Archives; no Kiwix program needed). Kiwix's own full-text index (Xapian) is not read; when
 //! `kiwix-serve` is running the app uses that for full-text search as well.
 
 use crate::kiwix::{best_chunk, html_to_text};
 use crate::retrieval::{self, Passage};
+use crate::ftindex;
 use crate::zimread::{Archive, Page};
+use std::collections::HashMap;
 use std::io;
+use std::sync::{Arc, Mutex};
 use std::path::{Path, PathBuf};
 
 pub struct Book {
@@ -26,6 +30,10 @@ pub struct Library {
     /// Archives that could not be opened, with a plain-words reason, so a broken file is told about
     /// rather than quietly missing.
     pub failed: Vec<(PathBuf, String)>,
+    /// The library folders; an archive's search index is kept in `.search-index` in the one it sits in.
+    index_roots: Vec<PathBuf>,
+    /// Search indexes already opened, by archive name. Only finished ones are kept, so one that is made later is noticed.
+    fts: Mutex<HashMap<String, Arc<ftindex::Index>>>,
 }
 
 /// The name used for an archive in addresses.
@@ -92,6 +100,27 @@ pub struct Hit {
     pub title: String,
 }
 
+/// An article found by the words inside it.
+#[derive(Debug, Clone, PartialEq)]
+pub struct TextHit {
+    pub book: String,
+    pub book_title: String,
+    pub address: String,
+    pub title: String,
+    /// The passage that matches best, a line or two.
+    pub snippet: String,
+}
+
+/// At most `n` characters, cut at a word and marked with an ellipsis when it was cut.
+fn clip(s: &str, n: usize) -> String {
+    let one: String = s.split_whitespace().collect::<Vec<_>>().join(" ");
+    if one.chars().count() <= n {
+        return one;
+    }
+    let cut: String = one.chars().take(n).collect();
+    format!("{}…", cut.rsplit_once(' ').map(|x| x.0).unwrap_or(&cut))
+}
+
 impl Library {
     /// Open every readable archive. A file that cannot be read is left out, not an error.
     pub fn open(files: &[PathBuf]) -> Library {
@@ -118,7 +147,7 @@ impl Library {
             let category = category_for(f, roots);
             books.push(Book { name, title, file: f.clone(), archive, category });
         }
-        Library { books, failed }
+        Library { books, failed, index_roots: roots.to_vec(), fts: Mutex::new(HashMap::new()) }
     }
 
     pub fn book(&self, name: &str) -> Option<&Book> {
@@ -222,9 +251,78 @@ impl Library {
         }
     }
 
+    // ---------- search inside articles (the program's own index) ----------
+
+    /// Where an archive's search index folder goes and the fingerprint that ties it to this file.
+    pub fn index_dir(&self, b: &Book) -> io::Result<(PathBuf, String)> {
+        let base = self.index_roots.iter().find(|r| b.file.starts_with(r)).cloned().or_else(|| b.file.parent().map(|p| p.to_path_buf())).unwrap_or_default().join(".search-index");
+        let fp = ftindex::fingerprint(&b.file)?;
+        Ok((ftindex::index_dir_for(&base, &b.file, &fp), fp))
+    }
+
+    /// The archive's finished search index, if there is one that matches the file as it is now.
+    pub fn fulltext(&self, b: &Book) -> Option<Arc<ftindex::Index>> {
+        if let Some(i) = self.fts.lock().unwrap_or_else(|e| e.into_inner()).get(&b.name) {
+            return Some(i.clone());
+        }
+        let (dir, fp) = self.index_dir(b).ok()?;
+        let ix = Arc::new(ftindex::Index::open(&dir, &fp).ok()?);
+        self.fts.lock().unwrap_or_else(|e| e.into_inner()).insert(b.name.clone(), ix.clone());
+        Some(ix)
+    }
+
+    /// Let go of an archive's opened index (before it is rebuilt or deleted: Windows will not delete an open file).
+    pub fn forget_index(&self, name: &str) {
+        self.fts.lock().unwrap_or_else(|e| e.into_inner()).remove(name);
+    }
+
+    /// Articles whose text contains the words, from every archive that has a search index (or only those of one
+    /// category), best of each first and mixed between archives. Each comes with the passage that matches best.
+    pub fn search_text(&self, category: Option<&str>, term: &str, per_book: usize, total: usize) -> Vec<TextHit> {
+        let category = category.map(|c| c.trim()).filter(|c| !c.is_empty());
+        let mut lists: Vec<Vec<(usize, u32, String)>> = Vec::new();
+        for (bi, b) in self.books.iter().enumerate() {
+            if category.map(|c| !b.category.eq_ignore_ascii_case(c)).unwrap_or(false) {
+                continue;
+            }
+            let Some(ix) = self.fulltext(b) else { continue };
+            let found = ix.search(term, per_book).unwrap_or_default();
+            lists.push(found.into_iter().map(|f| (bi, f.entry, f.title)).collect());
+        }
+        let mut picked: Vec<(usize, u32, String)> = Vec::new();
+        let mut rank = 0;
+        'outer: loop {
+            let mut any = false;
+            for l in &lists {
+                if let Some(x) = l.get(rank) {
+                    picked.push(x.clone());
+                    any = true;
+                    if picked.len() >= total {
+                        break 'outer;
+                    }
+                }
+            }
+            if !any {
+                break;
+            }
+            rank += 1;
+        }
+        let mut out = Vec::new();
+        for (bi, entry, title) in picked {
+            let b = &self.books[bi];
+            let Ok(e) = b.archive.entry(entry) else { continue };
+            let address = b.archive.address_of(e.ns, &e.url);
+            let snippet = b.archive.read_index(entry).ok().map(|p| clip(&best_chunk(&title, &html_to_text(&String::from_utf8_lossy(&p.data)), term), 240)).unwrap_or_default();
+            out.push(TextHit { book: b.name.clone(), book_title: b.title.clone(), address, title, snippet });
+        }
+        out
+    }
+
     /// A simple results page for a typed search, by title.
     pub fn results_page(&self, book: &str, term: &str) -> String {
         let mut rows = String::new();
+        let mut extra = String::new();
+        let mut indexed = false;
         if let Some(b) = self.book(book) {
             let words: Vec<String> = term.split_whitespace().map(|w| w.to_string()).collect();
             let mut found = b.archive.suggest(term.trim(), 40).unwrap_or_default();
@@ -238,12 +336,28 @@ impl Library {
             for (addr, title) in found.into_iter().take(60) {
                 rows.push_str(&format!("<li><a href=\"/content/{}/{}\">{}</a></li>", book, encode_path(&addr), esc(&title)));
             }
+            if let Some(ix) = self.fulltext(b) {
+                let mut inside = String::new();
+                for (n, f) in ix.search(term, 40).unwrap_or_default().into_iter().enumerate() {
+                    let Ok(e) = b.archive.entry(f.entry) else { continue };
+                    let addr = b.archive.address_of(e.ns, &e.url);
+                    let snip = if n < 15 { b.archive.read_index(f.entry).ok().map(|p| clip(&best_chunk(&f.title, &html_to_text(&String::from_utf8_lossy(&p.data)), term), 200)).unwrap_or_default() } else { String::new() };
+                    inside.push_str(&format!("<li><a href=\"/content/{}/{}\">{}</a>{}</li>", book, encode_path(&addr), esc(&f.title), if snip.is_empty() { String::new() } else { format!("<div style=\"color:#555;font-size:14px\">{}</div>", esc(&snip)) }));
+                }
+                if !inside.is_empty() {
+                    extra = format!("<h2>Inside articles</h2><ul>{}</ul>", inside);
+                }
+                indexed = true;
+            }
         }
         let body = if rows.is_empty() { "<p>No titles match. Try fewer or shorter words.</p>".to_string() } else { format!("<ul>{}</ul>", rows) };
+        let note = if indexed { "Titles first, then the words inside articles." } else { "This searches article titles. To search inside articles too, make this archive's search index in Archives." };
         format!(
-            "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>Search: {t}</title><style>body{{font:16px system-ui,sans-serif;margin:16px;max-width:760px}}li{{margin:6px 0}}</style></head><body><h2>Titles matching “{t}”</h2>{b}<p style=\"color:#666;font-size:13px\">This searches article titles. The full-text search needs the Kiwix library program.</p></body></html>",
+            "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>Search: {t}</title><style>body{{font:16px system-ui,sans-serif;margin:16px;max-width:760px}}li{{margin:6px 0}}</style></head><body><h2>Titles matching “{t}”</h2>{b}{x}<p style=\"color:#666;font-size:13px\">{n}</p></body></html>",
             t = esc(term),
-            b = body
+            b = body,
+            x = extra,
+            n = note
         )
     }
 
@@ -290,6 +404,16 @@ impl Library {
             if b.archive.articles <= 50_000 {
                 for (a, t) in b.archive.search_titles(&stems, 20, 50_000).unwrap_or_default() {
                     add(a, t);
+                }
+            }
+            // the words inside articles, when this archive has a search index of its own
+            if let Some(ix) = self.fulltext(b) {
+                for (rank, f) in ix.search(&words.join(" "), per_book * 3).unwrap_or_default().into_iter().enumerate() {
+                    let Ok(e) = b.archive.entry(f.entry) else { continue };
+                    let addr = b.archive.address_of(e.ns, &e.url);
+                    if !cands.iter().any(|c| c.1 == addr) {
+                        cands.push((1.5 - rank as f64 * 0.1, addr, f.title));
+                    }
                 }
             }
             cands.sort_by(|x, y| y.0.partial_cmp(&x.0).unwrap_or(std::cmp::Ordering::Equal));
@@ -388,4 +512,100 @@ pub fn encode_path(addr: &str) -> String {
 /// Undo percent-encoding in an address from the web view. None if it is not valid text.
 pub fn decode_path(s: &str) -> Option<String> {
     crate::maps::percent_decode(s)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::zim::ZimWriter;
+
+    fn tmp(n: &str) -> PathBuf {
+        let d = std::env::temp_dir().join(format!("cindrix-libft-{}-{}", n, std::process::id()));
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(&d).unwrap();
+        d
+    }
+    fn make(dir: &Path, name: &str, arts: &[(&str, &str)]) -> PathBuf {
+        let p = dir.join(name);
+        let mut w = ZimWriter::create(&p).unwrap();
+        for (i, (t, b)) in arts.iter().enumerate() {
+            w.add(b'C', &format!("a{:03}", i), t, "text/html", format!("<html><body><h1>{}</h1><p>{}</p></body></html>", t, b).into_bytes()).unwrap();
+        }
+        w.finish().unwrap();
+        p
+    }
+    const ARTS: &[(&str, &str)] = &[
+        ("Boiling water", "To purify river water bring it to a rolling boil for one minute. Boiled water kills germs and the cloudy kind should be strained first through cloth."),
+        ("First aid", "Press on a bleeding wound with clean cloth. Water can rinse dirt from a cut. Keep the wound clean and covered."),
+        ("Tents", "Pitch your tent on flat ground away from dead trees."),
+    ];
+    fn lib_with_index(d: &Path) -> Library {
+        let zim = make(d, "manual.zim", ARTS);
+        let lib = Library::open_in(&[zim], &[d.to_path_buf()]);
+        let b = &lib.books[0];
+        let (dir, fp) = lib.index_dir(b).unwrap();
+        assert_eq!(ftindex::build(&b.archive, &dir, &fp, ftindex::Depth::Full, ftindex::DEFAULT_BUDGET, &ftindex::Progress::default()).unwrap(), ftindex::Outcome::Done);
+        lib
+    }
+
+    #[test]
+    fn without_an_index_only_titles_are_searched_and_the_page_says_how_to_search_inside() {
+        let d = tmp("none");
+        let zim = make(&d, "manual.zim", ARTS);
+        let lib = Library::open_in(&[zim], &[d.clone()]);
+        assert!(lib.fulltext(&lib.books[0]).is_none());
+        assert!(lib.search_text(None, "rinse", 5, 10).is_empty());
+        assert!(lib.passages("how do I rinse a cut", 2, 3).is_empty(), "no title says rinse or cut");
+        let page = lib.results_page("manual", "rinse");
+        assert!(page.contains("make this archive's search index in Archives") && !page.contains("Inside articles"));
+        let _ = std::fs::remove_dir_all(&d);
+    }
+
+    #[test]
+    fn with_an_index_the_words_inside_articles_are_found_with_a_matching_passage() {
+        let d = tmp("with");
+        let lib = lib_with_index(&d);
+        let hits = lib.search_text(None, "rinse dirt", 5, 10);
+        assert_eq!(hits.len(), 1, "{:?}", hits);
+        assert_eq!((hits[0].title.as_str(), hits[0].book.as_str(), hits[0].address.as_str()), ("First aid", "manual", "a001"));
+        assert!(hits[0].snippet.contains("rinse dirt"), "{}", hits[0].snippet);
+        assert!(lib.search_text(Some("Nowhere"), "rinse", 5, 10).is_empty(), "a category with no such archive finds nothing");
+        assert!(lib.search_text(None, "zebra", 5, 10).is_empty());
+        let _ = std::fs::remove_dir_all(&d);
+    }
+
+    #[test]
+    fn the_assistant_gets_passages_from_inside_articles_and_the_results_page_lists_them() {
+        let d = tmp("assist");
+        let lib = lib_with_index(&d);
+        let p = lib.passages("how do I rinse a cut", 2, 3);
+        assert!(p.iter().any(|x| x.heading == "First aid" && x.text.contains("rinse")), "{:?}", p);
+        let page = lib.results_page("manual", "strained cloth");
+        assert!(page.contains("Inside articles") && page.contains("Boiling water") && page.contains("/content/manual/a000"), "{}", page);
+        assert!(page.contains("Titles first, then the words inside articles."));
+        let _ = std::fs::remove_dir_all(&d);
+    }
+
+    #[test]
+    fn a_replaced_archive_is_not_searched_with_the_old_index_and_forgetting_lets_go_of_it() {
+        let d = tmp("replace");
+        let lib = lib_with_index(&d);
+        assert!(lib.fulltext(&lib.books[0]).is_some());
+        lib.forget_index("manual");
+        let (dir, _) = lib.index_dir(&lib.books[0]).unwrap();
+        assert!(ftindex::delete(&dir).is_ok());
+        assert!(lib.fulltext(&lib.books[0]).is_none(), "a deleted index is no longer used");
+        // an index made for another file's fingerprint is refused by Index::open
+        let lib2 = lib_with_index(&tmp("replace2"));
+        let other = make(&d, "other.zim", &ARTS[..1]);
+        assert_ne!(ftindex::fingerprint(&other).unwrap(), lib2.index_dir(&lib2.books[0]).unwrap().1);
+        let _ = std::fs::remove_dir_all(&d);
+    }
+
+    #[test]
+    fn a_long_passage_is_cut_at_a_word() {
+        assert_eq!(clip("short text", 50), "short text");
+        let c = clip(&"word ".repeat(100), 22);
+        assert!(c.ends_with('…') && c.chars().count() <= 23 && !c.contains("wor…"), "{}", c);
+    }
 }

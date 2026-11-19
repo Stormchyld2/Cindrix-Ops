@@ -1,5 +1,6 @@
 <script lang="ts">
   import PageHeader from '../lib/PageHeader.svelte';
+  import ArchiveSearchIndex from './ArchiveSearchIndex.svelte';
   import { onMount, onDestroy } from 'svelte';
   import {
     libraryStatus, libraryShare, driveRescan, crawlStart, crawlStatus, crawlCancel, archiveAdd, archiveCopyStatus, archiveRemove,
@@ -132,6 +133,8 @@
   </div>
 
   {#if problem}<div class="warn">{problem}</div>{/if}
+
+  <ArchiveSearchIndex />
 
   <div class="panel">
     <div class="head">

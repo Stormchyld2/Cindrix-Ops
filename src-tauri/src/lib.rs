@@ -25,6 +25,7 @@ use tauri_plugin_dialog::DialogExt;
 mod bible;
 mod druglabels;
 mod fetch;
+mod ftsearch;
 mod gear;
 mod hybrid;
 mod libs;
@@ -3507,6 +3508,12 @@ pub fn run() {
             zimview::zim_bookmarks_load,
             zimview::zim_bookmarks_save,
             zimview::zim_search_all,
+            ftsearch::zim_search_text,
+            ftsearch::zim_index_list,
+            ftsearch::zim_index_status,
+            ftsearch::zim_index_start,
+            ftsearch::zim_index_stop,
+            ftsearch::zim_index_delete,
             settings::settings_load,
             settings::settings_save,
             music::music_status,
