@@ -154,3 +154,19 @@ fn guests_may_list_and_watch_videos_but_cannot_save_places_or_write() {
     assert!(!s.contains("std::fs::File::open"), "no unchecked file opens in the video server");
     assert!(s.contains("videoconv::resolve_cache("), "converted copies must be served through the checked name");
 }
+
+#[test]
+fn the_gear_commands_are_host_only() {
+    for c in ["gear_list", "gear_save", "gear_delete"] {
+        assert!(!GUEST_COMMANDS.contains(&c), "{} must not be on the guest list", c);
+        assert!(!guest_allowed(c), "{} must be refused for guests", c);
+    }
+    let tauri = std::fs::read_to_string(repo("src-tauri/src/gear.rs")).unwrap();
+    for c in ["gear_list", "gear_save", "gear_delete"] {
+        assert!(tauri.contains(&format!("pub fn {}(", c)), "{} is missing from gear.rs", c);
+    }
+    let lib = std::fs::read_to_string(repo("src-tauri/src/lib.rs")).unwrap();
+    for c in ["gear::gear_list", "gear::gear_save", "gear::gear_delete"] {
+        assert!(lib.contains(c), "{} is not registered", c);
+    }
+}

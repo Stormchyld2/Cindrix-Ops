@@ -25,6 +25,7 @@ use tauri_plugin_dialog::DialogExt;
 mod bible;
 mod druglabels;
 mod fetch;
+mod gear;
 mod hybrid;
 mod libs;
 mod music;
@@ -3611,6 +3612,9 @@ pub fn run() {
             inventory_list,
             inventory_save_item,
             inventory_delete,
+            gear::gear_list,
+            gear::gear_save,
+            gear::gear_delete,
             inventory_places,
             inventory_where,
             shelf_life_suggest,

@@ -2262,3 +2262,19 @@ export async function bibleMentions(verses: string[]): Promise<BibleMention[]> {
 export async function bibleStrongs(number: string): Promise<BibleStrongs[]> {
   return inTauri ? call<BibleStrongs[]>('bible_strongs', { number }) : [];
 }
+
+// ---- Gear list (things that are not food; core/src/gear.rs). Host-only. ----
+export type GearPiece = { id: string; name: string; kind: string; make: string; model: string; serial: string; location: string; qty: number; condition: string; bought: string; notes: string };
+export type GearListing = { items: GearPiece[]; kinds: [string, string][]; conditions: [string, string][]; unreadable_lines: number };
+export async function gearList(): Promise<GearListing> {
+  if (tauriHost) return call<GearListing>('gear_list');
+  return { items: [], kinds: [['other', 'Other']], conditions: [['good', 'Good']], unreadable_lines: 0 };
+}
+export async function gearSave(piece: GearPiece): Promise<GearListing> {
+  if (tauriHost) return call<GearListing>('gear_save', { piece });
+  throw new Error('The gear list is saved in the program, not in the browser preview.');
+}
+export async function gearDelete(ids: string[]): Promise<GearListing> {
+  if (tauriHost) return call<GearListing>('gear_delete', { ids });
+  throw new Error('The gear list is saved in the program, not in the browser preview.');
+}

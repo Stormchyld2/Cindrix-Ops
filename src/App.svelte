@@ -4,6 +4,7 @@
   import Start from './views/Start.svelte';
   import Academy from './views/Academy.svelte';
   import Inventory from './views/Inventory.svelte';
+  import Gear from './views/Gear.svelte';
   import Family from './views/Family.svelte';
   import Cascade from './views/Cascade.svelte';
   import Soon from './views/Soon.svelte';
@@ -94,8 +95,8 @@
   $effect(() => { if (settings.loaded) void privacySetIdle(settings.values.privateLockMinutes); });
 
   // Intel is the offline internet: the archives read like web pages. It goes with the library.
-  type Group = 'Dashboard' | 'Ask' | 'Library' | 'Intel' | 'Academy' | 'Maps' | 'Music' | 'Podcasts' | 'Videos' | 'Plan' | 'Inventory' | 'Settings' | 'Corner' | 'Guides' | 'Journal' | 'Photos' | 'CommsPlan' | 'Todo' | 'Calendar' | 'Projects' | 'DrugLabels' | 'Security' | 'Bible' | 'Soon';
-  const allGroups: Group[] = ['Dashboard', 'Ask', 'Library', 'Intel', 'Academy', 'Maps', 'Music', 'Podcasts', 'Videos', 'Plan', 'Inventory', 'Settings', 'Corner', 'Journal', 'Photos', 'CommsPlan', 'Todo', 'Calendar', 'Projects', 'DrugLabels', 'Security', 'Bible'];
+  type Group = 'Dashboard' | 'Ask' | 'Library' | 'Intel' | 'Academy' | 'Maps' | 'Music' | 'Podcasts' | 'Videos' | 'Plan' | 'Inventory' | 'Gear' | 'Settings' | 'Corner' | 'Guides' | 'Journal' | 'Photos' | 'CommsPlan' | 'Todo' | 'Calendar' | 'Projects' | 'DrugLabels' | 'Security' | 'Bible' | 'Soon';
+  const allGroups: Group[] = ['Dashboard', 'Ask', 'Library', 'Intel', 'Academy', 'Maps', 'Music', 'Podcasts', 'Videos', 'Plan', 'Inventory', 'Gear', 'Settings', 'Corner', 'Journal', 'Photos', 'CommsPlan', 'Todo', 'Calendar', 'Projects', 'DrugLabels', 'Security', 'Bible'];
   // Each product switches parts of the program on or off (core/src/product.rs).
   const groups = $derived(
     allGroups.filter((g) => {
@@ -106,7 +107,7 @@
       if (g === 'Maps') return product.maps;
       if (g === 'Music' || g === 'Podcasts' || g === 'Videos') return product.music;
       if (g === 'Security') return product.security && !inShare;
-      if (g === 'Plan' || g === 'Inventory') return product.plan;
+      if (g === 'Plan' || g === 'Inventory' || g === 'Gear') return product.plan;
       if (g === 'Todo' || g === 'Calendar' || g === 'Projects') return !inShare;
       return true;
     })
@@ -226,7 +227,7 @@
       { id: 'Ask', cat: 'home', tab: 'Ask', show: p ? p.assistant : true },
       { id: 'Operations', cat: 'ops', show: plan_, entries: [
         { label: 'Get ready', tab: 'Start' }, { label: 'Plans', tab: 'What next' }, { label: 'Drills', tab: 'Drills' },
-        { label: 'Inventory', tab: 'Inventory' }, { label: 'Family', tab: 'Family' }, { label: 'Binder', tab: 'Binder' },
+        { label: 'Inventory', tab: 'Inventory', note: 'food' }, { label: 'Gear', tab: 'Gear', note: 'tents, radios', show: !inShare }, { label: 'Family', tab: 'Family' }, { label: 'Binder', tab: 'Binder' },
         { label: 'What fails next', tab: 'What fails' }, { label: '', tab: '', rule: true, show: !inShare },
         { label: 'Calendar', tab: 'Calendar', show: !inShare }, { label: 'To-do list', tab: 'Todo', show: !inShare },
         { label: 'Projects', tab: 'Projects', show: !inShare } ] },
@@ -262,7 +263,7 @@
       case 'Music': case 'Podcasts': case 'Videos': case 'Corner': case 'Journal': case 'Photos': return 'Morale';
       case 'CommsPlan': return 'Comms';
       case 'Plan': return plan === 'Seed vault' || plan === 'Garden beds' ? 'Agro' : 'Operations';
-      case 'Inventory': case 'Todo': case 'Calendar': case 'Projects': return 'Operations';
+      case 'Inventory': case 'Gear': case 'Todo': case 'Calendar': case 'Projects': return 'Operations';
       case 'Settings': return settingsFromComms ? 'Comms' : 'System';
       case 'Guides': {
         const hit = tops.find((t) => t.entries?.some((e) => e.tab === 'guide:' + guideSection));
@@ -410,6 +411,8 @@
       {/if}
     {:else if group === 'Inventory'}
       <Inventory />
+    {:else if group === 'Gear'}
+      <Gear />
     {:else if group === 'Settings'}
       <Settings {openArchives} go={goTo} />
     {:else}
