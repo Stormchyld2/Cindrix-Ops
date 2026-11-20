@@ -330,6 +330,30 @@ fn device_call(app: &tauri::AppHandle, req: &Request, cmd: &str, role: &Role) ->
     }
 }
 
+/// The other host asks for this device's copy of something (`peer_get`) or sends its own (`peer_put`). The kind is in
+/// the `X-Kind` header. Only a signed-in person whose role has the "sync" permission gets here. One at a time.
+fn peer_call(req: &Request, cmd: &str, role: &Role) -> Response {
+    static ONE: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    if !roles_allow(role, cmd) {
+        return json_err(403, "This device may not copy with the Hub. Give its person a role with the copy permission (Settings, People and roles).");
+    }
+    let _one = ONE.lock();
+    let kind = req.header("x-kind").unwrap_or("").to_string();
+    let root = user_dir();
+    if cmd == "peer_get" {
+        return match cindrix_core::peersync::export(&root, &kind) {
+            Ok(t) => Response::new(200, "text/plain; charset=utf-8", t.into_bytes()),
+            Err(e) => json_err(400, &e),
+        };
+    }
+    let body = String::from_utf8_lossy(&req.body).to_string();
+    let mut sum = cindrix_core::peersync::Summary::default();
+    match cindrix_core::peersync::apply(&root, &kind, &body, &mut sum) {
+        Ok(()) => Response::json(200, "{\"ok\":true}"),
+        Err(e) => json_err(400, &e),
+    }
+}
+
 #[tauri::command]
 pub fn devices_list(app: tauri::AppHandle) -> Result<Value, String> {
     let trusted = app.state::<AppState>().share.auth().trusted_ids();
@@ -504,11 +528,17 @@ fn handle(app: &tauri::AppHandle, mut stream: TcpStream, peer: SocketAddr) -> Re
     };
     // a picture is the one big thing a browser may send, and only a trusted family member may: check before taking it in
     let upload = req.method == "POST" && req.path == "/api/photo_add";
+    // the other host's copy of inventory and logs can be bigger than an ordinary request, but only a signed-in person may send it
+    let peer_big = req.method == "POST" && req.path == "/api/peer_put";
+    if peer_big && !matches!(role_of(app, &req), Role::Person(_)) {
+        send(&mut stream, &json_err(403, "Only a device that joined with an invite can do this."));
+        return Ok(());
+    }
     if upload && !matches!(role_of(app, &req), Role::Person(_)) {
         send(&mut stream, &json_err(403, "Only a family member who joined with an invite can add pictures."));
         return Ok(());
     }
-    let max = if upload { cindrix_core::people::MAX_PHOTO_BYTES + 1024 } else { share::MAX_BODY };
+    let max = if upload { cindrix_core::people::MAX_PHOTO_BYTES + 1024 } else if peer_big { 8 * 1024 * 1024 } else { share::MAX_BODY };
     if let Err(e) = share::read_body(&mut reader, &mut req, max) {
         send(&mut stream, &Response::text(400, &e));
         return Ok(());
@@ -651,6 +681,8 @@ fn route(app: &tauri::AppHandle, req: &Request, who: &str, stream: &mut TcpStrea
         if let Some(cmd) = req.path.strip_prefix("/api/") {
             if matches!(cmd, "device_check_in" | "device_erased" | "pocket_upload") {
                 send(stream, &device_call(app, req, cmd, &role));
+            } else if matches!(cmd, "peer_get" | "peer_put") {
+                send(stream, &peer_call(req, cmd, &role));
             } else if cmd == "ask_stream" {
                 ask_sse(app, req, stream);
             } else if cmd == "photo_add" {

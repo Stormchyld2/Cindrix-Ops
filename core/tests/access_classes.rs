@@ -62,7 +62,7 @@ fn everything_the_share_server_answers_is_on_a_list_and_nothing_on_a_list_is_uns
         assert!(command_allowed(&Role::Guest, c) || command_allowed(&person, c), "{} is answered by the server but no role may ask for it", c);
     }
     // the commands handled before dispatch (devices, mailbox, photos, maps) are the only ones allowed to be missing from it
-    let before_dispatch = ["photo_read", "photo_add", "device_check_in", "device_erased", "pocket_upload", "phone_map_read", "ask_stream", "music_prepare", "shelf_read", "shelf_download", "whoami"];
+    let before_dispatch = ["photo_read", "photo_add", "device_check_in", "device_erased", "pocket_upload", "phone_map_read", "ask_stream", "music_prepare", "shelf_read", "shelf_download", "whoami", "peer_get", "peer_put"];
     for c in GUEST_COMMANDS.iter().chain(PERSON_COMMANDS.iter()) {
         assert!(served.contains(*c) || before_dispatch.contains(c), "{} is on a role list but the server never answers it", c);
     }
@@ -71,7 +71,7 @@ fn everything_the_share_server_answers_is_on_a_list_and_nothing_on_a_list_is_uns
 #[test]
 fn every_command_a_guest_or_phone_may_ask_is_a_real_command_or_a_known_server_route() {
     let reg = registered();
-    let routes = ["photo_add", "photo_read", "device_check_in", "device_erased", "pocket_upload", "phone_map_read", "ask_stream", "music_prepare", "shelf_read", "shelf_download", "whoami", "photos_list", "photo_delete", "phone_maps_list", "dashboard_suggestions", "guides_list", "bible_notes", "approvals_list", "approvals_accept", "approvals_set_aside"];
+    let routes = ["photo_add", "photo_read", "device_check_in", "device_erased", "pocket_upload", "phone_map_read", "ask_stream", "music_prepare", "shelf_read", "shelf_download", "whoami", "photos_list", "photo_delete", "phone_maps_list", "dashboard_suggestions", "guides_list", "bible_notes", "approvals_list", "approvals_accept", "approvals_set_aside", "peer_get", "peer_put"];
     for c in GUEST_COMMANDS.iter().chain(PERSON_COMMANDS.iter()) {
         assert!(reg.contains(*c) || routes.contains(c), "{} is on a role list but is neither registered nor a known server route", c);
     }
@@ -87,7 +87,7 @@ fn guests_never_get_a_command_that_writes_or_touches_private_files() {
     }
     // a phone may only add to its own album, say hello, say it erased itself, and send logs
     let person: BTreeSet<&str> = PERSON_COMMANDS.iter().copied().collect();
-    let expected: BTreeSet<&str> = ["whoami", "photo_add", "photo_delete", "device_check_in", "device_erased", "pocket_upload", "phone_maps_list", "phone_map_read", "approvals_list", "approvals_accept", "approvals_set_aside"].into_iter().collect();
+    let expected: BTreeSet<&str> = ["whoami", "photo_add", "photo_delete", "device_check_in", "device_erased", "pocket_upload", "phone_maps_list", "phone_map_read", "approvals_list", "approvals_accept", "approvals_set_aside", "peer_get", "peer_put"].into_iter().collect();
     assert_eq!(person, expected, "the trusted-phone list changed: check docs/34 and docs/45, then update this test on purpose");
 }
 

@@ -27,6 +27,7 @@ mod druglabels;
 mod fetch;
 mod ftsearch;
 mod gear;
+mod peerlink;
 mod hybrid;
 mod libs;
 mod music;
@@ -3317,6 +3318,7 @@ pub fn run() {
             std::thread::spawn(move || {
                 std::thread::sleep(Duration::from_secs(10));
                 share::watch(share_handle);
+                peerlink::start_loop();
             });
             std::thread::spawn(move || {
                 let st = handle.state::<AppState>();
@@ -3641,6 +3643,11 @@ pub fn run() {
             gear::gear_sync_waiting,
             gear::gear_sync_preview,
             gear::gear_sync_accept,
+            peerlink::link_join,
+            peerlink::link_status,
+            peerlink::link_unlink,
+            peerlink::link_sync_now,
+            peerlink::link_dismiss,
             inventory_places,
             inventory_where,
             shelf_life_suggest,

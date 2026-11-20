@@ -2428,3 +2428,29 @@ export async function gearSyncAccept(name: string, picks: [string, boolean][]): 
   if (tauriHost) return call<GearSyncReport>('gear_sync_accept', { name, picks });
   throw new Error('The gear sheet is read in the program, not in the browser preview.');
 }
+
+// ---- Keeping another computer or phone in step (core/src/peer.rs, peersync.rs). Host-only. ----
+export type LinkHeld = { file: string; id: string; why: string; line: string };
+export type LinkStatus = { linked: boolean; address: string; name: string; last_at: number; last_notes: string[]; held: LinkHeld[]; gear_waiting: number };
+export type LinkRound = { gear_taken: number; gear_waiting: number; inventory_changes: number; log_lines: number; notes: string[] };
+const noLink: LinkStatus = { linked: false, address: '', name: '', last_at: 0, last_notes: [], held: [], gear_waiting: 0 };
+export async function linkStatus(): Promise<LinkStatus> {
+  if (tauriHost) return call<LinkStatus>('link_status');
+  return noLink;
+}
+export async function linkJoin(url: string, name: string): Promise<LinkStatus> {
+  if (tauriHost) return call<LinkStatus>('link_join', { url, name });
+  throw new Error('Linking is done in the program, not in the browser preview.');
+}
+export async function linkUnlink(): Promise<LinkStatus> {
+  if (tauriHost) return call<LinkStatus>('link_unlink');
+  return noLink;
+}
+export async function linkSyncNow(): Promise<LinkRound> {
+  if (tauriHost) return call<LinkRound>('link_sync_now');
+  throw new Error('Copying is done in the program, not in the browser preview.');
+}
+export async function linkDismiss(file: string, line: string): Promise<LinkStatus> {
+  if (tauriHost) return call<LinkStatus>('link_dismiss', { file, line });
+  return noLink;
+}

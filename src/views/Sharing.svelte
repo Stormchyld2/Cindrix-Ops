@@ -5,6 +5,7 @@
   import { everyone, loadPersonList } from '../lib/person.svelte';
   import { learner } from '../lib/learner.svelte';
   import PeopleRoles from './PeopleRoles.svelte';
+  import PeerLink from './PeerLink.svelte';
 
   let info = $state<ShareInfo | null>(null);
   let error = $state('');
@@ -166,6 +167,8 @@
     </details>
   {/if}
 </div>
+
+<PeerLink />
 
 <style>
   .on { color: var(--ok); }

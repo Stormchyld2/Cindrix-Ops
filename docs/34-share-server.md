@@ -50,3 +50,14 @@ Owner's decisions: there is **no guest sign-in as a person**. A PIN always makes
 The name on a trusted phone is typed or picked when the invite is made and can be changed in Settings > Sharing (Rename); the sign-in token does not change. What the person may do comes from a role (`core/src/permissions.rs`, `user/roles.txt`): Reporter (send reports) and Approver (also accept or set aside waiting reports) at the start, more can be added or removed. Reading the library never needs a role. See doc 61.
 
 An invite can also be made without a name ("Let them type their own name"). The phone then shows a one-field page for its name when the invite is opened. A name already on another trusted phone, or already holding a role, is refused and the invite keeps waiting. A phone whose person may approve also sees "Reports to approve"; each decision is written with the person's name to `user/security/pocket-decisions.txt`.
+
+## Linking two hosts (laptop and phone), 2026-11-20
+A second full host keeps in step with this one through the same trusted-device sign-in a phone uses. On the Hub the
+person makes an invite with no name and the other computer pastes its address into Settings > Sharing > "Keep another
+device in step" (`PeerLink.svelte`; core `peer.rs`). The Hub gains two routes, `peer_get` and `peer_put`
+(POST, header `X-Kind`; allowed only for a named person whose role has the new **sync** permission, `permissions.rs`),
+which hand over and take in the gear sheet, the inventory copy and ten Security logs (`peersync.rs`, `gearsync.rs`,
+`logsync.rs`). The caller makes a round every five minutes while the program is open, or on "Copy now". The caller only
+ever connects to a local-network address (`peer::local_only`), over plain HTTP, so nothing goes over the internet.
+Gear with a clash waits on the Gear page; a Security log line that clashes is held and listed. The incident log, the
+watchbill, sites, channels and plans are not copied (incidents and phone notes travel as reports).

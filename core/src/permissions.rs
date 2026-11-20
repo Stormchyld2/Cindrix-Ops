@@ -17,6 +17,7 @@ use std::path::{Path, PathBuf};
 pub const CAPS: &[(&str, &str)] = &[
     ("log", "Send reports to the host: check-ins, counts, tracks and notes"),
     ("approve", "Accept or set aside the reports waiting on the host"),
+    ("sync", "Keep gear, inventory and security records in step with this device (for your other computer or phone)"),
 ];
 
 /// Commands a phone may ask for, and the permission each one needs.
@@ -25,6 +26,8 @@ pub const NEEDS: &[(&str, &str)] = &[
     ("approvals_list", "approve"),
     ("approvals_accept", "approve"),
     ("approvals_set_aside", "approve"),
+    ("peer_get", "sync"),
+    ("peer_put", "sync"),
 ];
 
 #[derive(Debug, Clone, PartialEq)]
@@ -226,7 +229,7 @@ mod tests {
         assign(&mut t2, "Sam", "Approver").unwrap();
         assert!(allowed(&sam, "approvals_accept", Some(&t2)));
         // guests and nobody never get a command that needs a permission
-        for c in ["pocket_upload", "approvals_list", "approvals_accept", "approvals_set_aside"] {
+        for c in ["pocket_upload", "approvals_list", "approvals_accept", "approvals_set_aside", "peer_get", "peer_put"] {
             assert!(!allowed(&W::Guest, c, Some(&t2)), "{}", c);
             assert!(!allowed(&W::Nobody, c, Some(&t2)), "{}", c);
             assert!(!allowed(&sam, c, None), "{} must be refused when the roles file cannot be read", c);

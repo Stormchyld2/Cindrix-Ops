@@ -53,13 +53,13 @@ High and Medium, below the phases) are filed under the phase they belong to.
 - [x] Phases 1 to 4 built (command, watchbill, incidents, comms, reviews, qualifications, gear).
 - [x] Named people on phones and roles (Reporter, Approver); who accepted a report is recorded; passcode recovery code.
 - [ ] The larger role split (planner, watch supervisor, member, observer) after these two roles have been used.
-- [ ] Overwatch import (format undecided, doc 44 section 15); Security data sync (phase 6).
+- [x] Overwatch import dropped (owner, 2026-11-20). Security log sync is done (phase 6).
 - [~] Acceptance matrix (doc 44 section 12): every row now has a status in the doc. Rows 4, 5 and 13 got a new test (`core/tests/security_acceptance.rs`). Rows 1, 8 (missing references), 12 and the two screens in rows 2 and 5 are still unchecked.
 - **Done when:** the acceptance matrix in doc 44 section 12 passes, row by row, in tests or on hardware.
 
 ### 6. Finish Pocket/Hub interchange interfaces
 - [x] Mailbox, count sheets, check-ins, tracks, erase orders, approvals on a phone's browser.
-- [~] Vault–Hub two-way sync. Gear: built (`gearsync.rs`, Gear page > Copy with the other device): each side makes a sheet, the other accepts it, a piece changed on both sides (or changed on one and removed on the other, or two new pieces with the same number) is shown to a person to pick mine or theirs; core tests. Inventory: already merges by its own per-line ids and per-device stock counts (`sync.rs`, doc 39); it shows notes but newest change wins for other fields, so it is not the pick-one kind. Security logs: not built (the Pocket mailbox covers phone to host). The sheets are moved by hand (copy the file to the other device's `user/inbox/sync` folder); nothing sends them by itself yet. Not tried on two real devices.
+- [x] Vault–Hub two-way sync, by itself (built 2026-11-20, tested with two folders and a stand-in network server; not tried on two real devices): the laptop joins the phone's share server with an invite and every five minutes (or "Copy now") copies gear, inventory and ten Security logs both ways over the local network only (`peer.rs`, `peersync.rs`, `gearsync.rs`, `logsync.rs`, `sync.rs`; Settings > Sharing > Keep another device in step). Gear changed on both sides waits on the Gear page; a Security log line that uses a number the other side already uses for something different is held and listed, never overwritten. Inventory merges by its own rules (newest change wins for other fields, with a note). Not copied: the incident log (incidents and phone notes travel as reports), watchbill, sites, channels and plans, which are edited in place; if both devices edit those, the one you work on is the one that counts. The other device needs a role with the new copy permission.
 - [ ] Pocket's own side beyond the field tools (on hold).
 - **Done when:** a change made on a Vault reaches a Hub, and back, with a conflict shown rather than lost.
 

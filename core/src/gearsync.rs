@@ -280,6 +280,15 @@ pub fn read_waiting(user_root: &Path, name: &str) -> Result<String, String> {
     std::fs::read_to_string(&p).map_err(|_| "That file could not be read.".to_string())
 }
 
+/// Keep a sheet that has conflicts in the waiting folder, for a person to look at on the Gear page.
+pub fn hold(user_root: &Path, sheet: &str) -> Result<String, String> {
+    let (from, _) = parse_sheet(sheet)?;
+    let name = format!("gear-sync-{}.txt", from);
+    std::fs::create_dir_all(inbox(user_root)).map_err(|_| "The waiting folder could not be made.".to_string())?;
+    fsio::write_atomic(&inbox(user_root).join(&name), sheet.as_bytes()).map_err(|e| format!("The sheet could not be kept: {}", e))?;
+    Ok(name)
+}
+
 /// After a sheet has been accepted with no conflict left waiting, move it to `done/`.
 pub fn finish_waiting(user_root: &Path, name: &str) -> Result<(), String> {
     if !name_ok(name) {
