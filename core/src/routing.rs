@@ -829,6 +829,25 @@ pub fn directions(packs: &[PathBuf], from: (f64, f64), to: (f64, f64), avoid: &[
     }
 }
 
+/// True when the straight piece from `a` to `b` touches the area: an end lies inside it, or the piece crosses
+/// one of its sides. (Checking points along the piece could step over a small area drawn across a road.)
+fn segment_meets_area(a: (f64, f64), b: (f64, f64), poly: &[(f64, f64)]) -> bool {
+    if crate::maps::in_polygon(a, poly) || crate::maps::in_polygon(b, poly) {
+        return true;
+    }
+    let cross = |o: (f64, f64), p: (f64, f64), q: (f64, f64)| (p.0 - o.0) * (q.1 - o.1) - (p.1 - o.1) * (q.0 - o.0);
+    let mut j = poly.len() - 1;
+    for i in 0..poly.len() {
+        let (c, d) = (poly[j], poly[i]);
+        j = i;
+        let (d1, d2, d3, d4) = (cross(a, b, c), cross(a, b, d), cross(c, d, a), cross(c, d, b));
+        if ((d1 > 0.0) != (d2 > 0.0)) && ((d3 > 0.0) != (d4 > 0.0)) && d1 != 0.0 && d2 != 0.0 && d3 != 0.0 && d4 != 0.0 {
+            return true;
+        }
+    }
+    false
+}
+
 fn solve(b: &mut Builder, from: (f64, f64), to: (f64, f64), avoid: &[Vec<(f64, f64)>], zoom: u8) -> R<Directions> {
     b.planarize();
     let cells = b.seg_cells();
@@ -867,16 +886,12 @@ fn solve(b: &mut Builder, from: (f64, f64), to: (f64, f64), avoid: &[Vec<(f64, f
                     return true;
                 }
                 let q = b.nodes[e.to as usize];
-                let steps = ((e.len as f64 / 15.0).ceil() as usize).max(1);
                 for (poly, bx) in avoid.iter().zip(&boxes) {
                     if p.lat.max(q.lat) < bx.0 || p.lat.min(q.lat) > bx.2 || p.lon.max(q.lon) < bx.1 || p.lon.min(q.lon) > bx.3 {
                         continue;
                     }
-                    for k in 0..=steps {
-                        let f = k as f64 / steps as f64;
-                        if crate::maps::in_polygon((p.lat + f * (q.lat - p.lat), p.lon + f * (q.lon - p.lon)), poly) {
-                            return false;
-                        }
+                    if segment_meets_area((p.lat, p.lon), (q.lat, q.lon), poly) {
+                        return false;
                     }
                 }
                 true
@@ -1075,6 +1090,22 @@ mod tests {
         let around = directions(&[p], from, to, &[ring]).unwrap().car.unwrap();
         assert!(around.km > direct.km * 1.5, "{} vs {}", around.km, direct.km);
         assert!(around.steps.iter().any(|s| s.name == "Detour Ave"));
+    }
+
+    #[test]
+    fn a_small_area_across_a_long_road_is_not_stepped_over() {
+        let t = tile(&[
+            l("minor_road", "residential", "Short St", vec![(200, 2048), (3900, 2048)]),
+            l("minor_road", "residential", "Detour Ave", vec![(200, 2048), (200, 300), (3900, 300), (3900, 2048)]),
+        ]);
+        let p = write("avoid-small", vec![(Z, X, Y, t)]);
+        let (from, to) = (at(0, 200.0, 2048.0), at(0, 3900.0, 2048.0));
+        let direct = directions(&[p.clone()], from, to, &[]).unwrap().car.unwrap();
+        // a sliver only a few metres wide, standing across the road between two sample points
+        let ring = vec![at(0, 2008.0, 2030.0), at(0, 2012.0, 2030.0), at(0, 2012.0, 2066.0), at(0, 2008.0, 2066.0)];
+        let around = directions(&[p], from, to, &[ring]).unwrap().car.unwrap();
+        assert!(around.steps.iter().any(|s| s.name == "Detour Ave"), "{:?}", around.steps.iter().map(|s| s.name.clone()).collect::<Vec<_>>());
+        assert!(around.km > direct.km);
     }
 
     #[test]
