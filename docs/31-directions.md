@@ -31,8 +31,8 @@ carry a `kind` and a `kind_detail` (motorway, primary, residential, footway ...)
    coarse zooms). The gap is walked or driven in a straight line and said so.
 5. A* with a time cost. Car speeds come from the road kind (motorway 100 km/h down to service roads
    20); paths, footways and steps are foot only; motorways are car only. Walking is 5 km/h (steps 3).
-6. Areas drawn with Avoid on the map are kept out of: any stretch of road with a point inside one
-   is not used (unless the start or end itself is inside one).
+6. Areas drawn with Avoid on the map are kept out of: any stretch of road that touches one (an end inside it, or
+   the stretch crossing its edge) is not used (unless the start or end itself is inside one).
 
 ## What it does not know
 

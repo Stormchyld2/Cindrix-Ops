@@ -11,7 +11,7 @@ Status: the saved-map features are built and tested. The tile viewer is **writte
 - Saved maps are plain files in `user/saved-maps/<name>/` (`map.json`, `notes.md`, `route.gpx`), with a backup of the previous version before any save.
 
 ## Honest limits
-- (Out of date, corrected 2026-11-19.) Directions by car and on foot are built (doc 31) and the areas drawn as areas to avoid are passed to them (`routing::directions`, `Maps.svelte` `computeTrip`). A core test shows a detour round an area. The owner reports on real maps the way is NOT steered round an area; not yet reproduced (see doc 61).
+- (Out of date, corrected 2026-11-19.) Directions by car and on foot are built (doc 31) and the areas drawn as areas to avoid are passed to them (`routing::directions`, `Maps.svelte` `computeTrip`). A core test shows a detour round an area. The owner reported the way was not steered round a small drawn area; fixed 2026-11-20 (the router now tests the exact crossing, not points every 15 m), awaiting a check on the real map pack (see doc 61).
 - No place names on the map: the style leaves out text layers because no font files ship yet. Pin labels are drawn by the app.
 - No topo (contours, shading), no satellite layer, no GPS, no "line of sight", no layer toggles (hospitals, water and so on). The mockup shows all of these; none is built.
 - Positions are placed by hand and are approximate.
