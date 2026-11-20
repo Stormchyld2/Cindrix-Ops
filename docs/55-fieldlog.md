@@ -16,3 +16,6 @@ A design for a field notebook tied to the map viewer.
 
 ## Not decided
 Battery cost of logging, how often to sample, and whether voice notes need transcription (the app already has a local model).
+
+## Built so far (2026-11-19)
+`core/src/trackrec.rs` records a track on the host: readings worse than 30 m accuracy are dropped, a reading too near the last in both distance (5 m) and time (60 s) is dropped, every kept reading is saved at once to a `.part` file, and stopping makes an ordinary track sheet (same as Pocket's) so the Walked tracks list and GPX copy-out work. Air pressure goes in a `.pressure` file; `weather_hint` says "falling fast", "slowly falling" or "rising fast" from the last three hours, as a hint only. The screen is Operations > Walked tracks > Record a track and uses the device's own location. Not built: notes on points, a barometer reading from the screen, drawing tracks on the map, trying it on a phone.

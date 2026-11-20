@@ -142,6 +142,11 @@ pub fn read(path: &Path) -> Result<Sheet, String> {
     parse(&String::from_utf8(data).map_err(|_| "This is not plain text.".to_string())?)
 }
 
+/// Straight-line distance over the ground, in metres.
+pub fn distance(a: &Point, b: &Point) -> f64 {
+    haversine(a, b)
+}
+
 fn haversine(a: &Point, b: &Point) -> f64 {
     let r = 6_371_000.0_f64;
     let (p1, p2) = (a.lat.to_radians(), b.lat.to_radians());

@@ -1,12 +1,57 @@
 <script lang="ts">
   // Security Operations > Operations: GPS tracks sent by phones and kept by the host (core/src/tracksheet.rs, docs/45).
-  import { onMount } from 'svelte';
-  import { securityTracksList, securityTrackExport, type TrackRow } from '../lib/api';
+  import { onMount, onDestroy } from 'svelte';
+  import { securityTracksList, securityTrackExport, securityTrackRecStatus, securityTrackRecStart, securityTrackRecPoint, securityTrackRecStop, securityTrackRecDiscard, type TrackRow } from '../lib/api';
 
   let tracks = $state<TrackRow[]>([]);
   let note = $state('');
   async function load() { try { tracks = (await securityTracksList()).tracks; } catch (e) { note = String(e); } }
-  onMount(load);
+  onMount(() => { load(); refreshRec(); });
+  onDestroy(() => { if (watchId !== null) navigator.geolocation.clearWatch(watchId); });
+
+  // Recording a track on this device (core/src/trackrec.rs). Each reading is saved at once, so a crash loses almost nothing.
+  let recId = $state('');
+  let recPoints = $state(0);
+  let recHint = $state<string | null>(null);
+  let who = $state('');
+  let recNote = $state('');
+  let watchId: number | null = null;
+  async function refreshRec() {
+    try {
+      const st = await securityTrackRecStatus();
+      if (st.recording) { recId = st.id; recPoints = st.points; recHint = st.hint; if (!who) who = st.person; } else { recId = ''; recPoints = 0; recHint = null; }
+    } catch (e) { recNote = String(e); }
+  }
+  function listen() {
+    if (!('geolocation' in navigator)) { recNote = 'This device cannot tell the program where it is. You can still keep the recording, but no points will be added.'; return; }
+    watchId = navigator.geolocation.watchPosition(
+      async (pos) => {
+        if (!recId) return;
+        try {
+          const c = pos.coords;
+          const r = await securityTrackRecPoint(recId, c.latitude, c.longitude, c.altitude ?? null, c.accuracy ?? null, null);
+          recNote = r.kept ? '' : r.why;
+          await refreshRec();
+        } catch (e) { recNote = String(e); }
+      },
+      () => { recNote = 'The device could not find where it is. Check that location is switched on and allowed for this program.'; },
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 30000 },
+    );
+  }
+  function unlisten() { if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; } }
+  async function startRec() {
+    try { recId = await securityTrackRecStart(who, ''); recNote = ''; listen(); await refreshRec(); } catch (e) { recNote = String(e); }
+  }
+  async function stopRec() {
+    unlisten();
+    try { await securityTrackRecStop(recId); note = 'The track is kept in the list below.'; recNote = ''; } catch (e) { recNote = String(e); }
+    await refreshRec(); await load();
+  }
+  async function dropRec() {
+    unlisten();
+    try { await securityTrackRecDiscard(recId); recNote = 'The recording was thrown away.'; } catch (e) { recNote = String(e); }
+    await refreshRec();
+  }
 
   const miles = (m: number) => (m / 1609.344).toFixed(2);
   const feet = (m: number) => Math.round(m * 3.28084);
@@ -16,6 +61,24 @@
     try { note = `Copied to ${await securityTrackExport(t.id)} as a GPX file. It is a plain copy, so keep it somewhere safe.`; } catch (e) { note = String(e); }
   }
 </script>
+
+<div class="panel">
+  <h2>Record a track</h2>
+  <p class="muted small">Records where this device goes. Weak signals are left out, and the line is saved as you go. It needs a device that can tell where it is.</p>
+  {#if recId}
+    <p><b>Recording</b> for {who || 'someone'}: {recPoints} points so far.</p>
+    {#if recHint}<p class="small" role="status">{recHint}</p>{/if}
+    <button class="btn" onclick={stopRec} title="Stop and keep this track">Stop and keep</button>
+    <button class="btn" onclick={dropRec} title="Throw this recording away">Throw away</button>
+    {#if watchId === null}<button class="btn" onclick={listen} title="Start listening for the device's position again after a restart">Carry on recording</button>{/if}
+  {:else}
+    <label class="small">Who is walking?
+      <input type="text" bind:value={who} maxlength="80" placeholder="A name" />
+    </label>
+    <button class="btn" onclick={startRec} disabled={!who.trim()} title="Begin recording where this device goes">Start recording</button>
+  {/if}
+  {#if recNote}<p class="small" role="status">{recNote}</p>{/if}
+</div>
 
 <div class="panel">
   <h2>Walked tracks</h2>

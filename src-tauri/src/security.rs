@@ -326,6 +326,36 @@ pub fn security_tracks_list() -> Result<Value, String> {
 }
 
 #[tauri::command]
+pub fn security_track_rec_status() -> Result<Value, String> {
+    crate::seclock::require_open()?;
+    json(api::track_rec_status(&user_root()))
+}
+
+#[tauri::command]
+pub fn security_track_rec_start(person: String, outing: String) -> Result<String, String> {
+    crate::seclock::require_open()?;
+    api::track_rec_start(&user_root(), &person, &outing)
+}
+
+#[tauri::command]
+pub fn security_track_rec_point(id: String, lat: f64, lon: f64, ele: Option<f64>, accuracy: Option<f64>, pressure: Option<f64>) -> Result<Value, String> {
+    crate::seclock::require_open()?;
+    json(api::track_rec_point(&user_root(), &id, lat, lon, ele, accuracy, pressure))
+}
+
+#[tauri::command]
+pub fn security_track_rec_stop(id: String) -> Result<String, String> {
+    crate::seclock::require_open()?;
+    api::track_rec_stop(&user_root(), &id)
+}
+
+#[tauri::command]
+pub fn security_track_rec_discard(id: String) -> Result<(), String> {
+    crate::seclock::require_open()?;
+    api::track_rec_discard(&user_root(), &id)
+}
+
+#[tauri::command]
 pub fn security_track_export(id: String) -> Result<String, String> {
     crate::seclock::require_open()?;
     api::track_export(&user_root(), &id)

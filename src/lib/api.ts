@@ -2256,6 +2256,28 @@ export async function securityTrackExport(id: string): Promise<string> {
   throw new Error('Tracks are copied out in the program, not in the browser preview.');
 }
 
+export type TrackRecStatus = { recording: false } | { recording: true; id: string; person: string; outing: string; points: number; hint: string | null };
+export async function securityTrackRecStatus(): Promise<TrackRecStatus> {
+  if (tauriHost) return call<TrackRecStatus>('security_track_rec_status');
+  return { recording: false };
+}
+export async function securityTrackRecStart(person: string, outing: string): Promise<string> {
+  if (tauriHost) return call<string>('security_track_rec_start', { person, outing });
+  throw new Error('Tracks are recorded in the program, not in the browser preview.');
+}
+export async function securityTrackRecPoint(id: string, lat: number, lon: number, ele: number | null, accuracy: number | null, pressure: number | null): Promise<{ kept: boolean; why: string }> {
+  if (tauriHost) return call<{ kept: boolean; why: string }>('security_track_rec_point', { id, lat, lon, ele, accuracy, pressure });
+  throw new Error('Tracks are recorded in the program, not in the browser preview.');
+}
+export async function securityTrackRecStop(id: string): Promise<string> {
+  if (tauriHost) return call<string>('security_track_rec_stop', { id });
+  throw new Error('Tracks are recorded in the program, not in the browser preview.');
+}
+export async function securityTrackRecDiscard(id: string): Promise<void> {
+  if (tauriHost) return call<void>('security_track_rec_discard', { id });
+  throw new Error('Tracks are recorded in the program, not in the browser preview.');
+}
+
 export type OutingRow = {
   id: string; patrol: boolean; site: string; people: string[]; task: string; method: string;
   left: string; back: string; next: string; state: 'out' | 'back' | 'cancelled'; ended: string;

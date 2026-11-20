@@ -42,7 +42,7 @@ High and Medium, below the phases) are filed under the phase they belong to.
 - [x] Due-date reminders in the alert bar (late, today, tomorrow, timed events; `core/src/reminders.rs`, doc 48). Not
   built: reminders from watch and patrol schedules (doc 44 section 15); a reminder while the program is closed or the
   computer asleep (cannot be done without a background service).
-- [ ] GPS track recording and sensor logging in the main program (docs 45, 55). Pocket's tracks are kept (`tracksheet.rs`).
+- [~] GPS track recording in the main program: built (`trackrec.rs`, Operations > Walked tracks > Record a track; weak-signal filter, saved as it goes, pressure hint). Not tested on a real device; no barometer reading from the screen yet (docs 45, 55).
 - [ ] Garden beds screen (doc 53); map data gaps (doc 57).
 - **Done when:** a due item reminds the host with no network; a recorded track is saved and shown; PACE answers
   appear in the plan and in Security comms.
@@ -118,8 +118,9 @@ High and Medium, below the phases) are filed under the phase they belong to.
 
 ### Detail: Medium
 
-- [ ] **GPS and FieldLog in the main program.** Track sheets from Pocket are kept (`tracksheet.rs`); recording
-  tracks and sensor logs on the host is not built (docs 45, 55).
+- [~] **GPS and FieldLog in the main program.** Recording on the host is built (`trackrec.rs`, tested in `core/`); the
+  screen uses the device's own location and has not been tried on real hardware. Notes on points, a barometer reading
+  and showing tracks on the map are not built (docs 45, 55).
 - [ ] **Reminders and notifications.** The connecting layer (doc 37) and doc 48 have no due-date alerts yet.
 - [~] **Structured PACE plan** is checked against the Security channel plan (doc 50); not yet tied to free-text plans or the comms log entries.
 

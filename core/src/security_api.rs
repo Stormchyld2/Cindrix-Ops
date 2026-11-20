@@ -74,6 +74,11 @@ pub const SECURITY_COMMANDS: &[&str] = &[
     "security_export_records",
     "security_tracks_list",
     "security_track_export",
+    "security_track_rec_status",
+    "security_track_rec_start",
+    "security_track_rec_point",
+    "security_track_rec_stop",
+    "security_track_rec_discard",
     "security_pocket_list",
     "security_pocket_sheet",
     "security_pocket_accept",
@@ -953,6 +958,46 @@ pub fn tracks_list(user_root: &Path) -> Result<String, String> {
         })
         .collect();
     Ok(format!("{{\"tracks\":[{}]}}", rows.join(",")))
+}
+
+// ---------- recording a track on the host (core/src/trackrec.rs) ----------
+
+fn now_secs() -> i64 {
+    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs() as i64).unwrap_or(0)
+}
+
+/// The recording under way, if any, with the air-pressure hint when the device sent pressure.
+pub fn track_rec_status(user_root: &Path) -> Result<String, String> {
+    match crate::trackrec::current(user_root)? {
+        None => Ok("{\"recording\":false}".to_string()),
+        Some(r) => {
+            let hint = crate::trackrec::weather_hint(&crate::trackrec::pressure(user_root, &r.id));
+            Ok(format!(
+                "{{\"recording\":true,\"id\":{},\"person\":{},\"outing\":{},\"points\":{},\"hint\":{}}}",
+                q(&r.id), q(&r.person), q(&r.outing), r.points, hint.map(|h| q(&h)).unwrap_or_else(|| "null".to_string())
+            ))
+        }
+    }
+}
+
+pub fn track_rec_start(user_root: &Path, person: &str, outing: &str) -> Result<String, String> {
+    crate::trackrec::start(user_root, person, outing, now_secs())
+}
+
+/// Offer one reading; the answer says whether it was kept and, when not, why in plain words.
+pub fn track_rec_point(user_root: &Path, id: &str, lat: f64, lon: f64, ele: Option<f64>, accuracy: Option<f64>, pressure: Option<f64>) -> Result<String, String> {
+    match crate::trackrec::add_point(user_root, id, now_secs(), lat, lon, ele, accuracy, pressure)? {
+        crate::trackrec::Taken::Kept => Ok("{\"kept\":true,\"why\":\"\"}".to_string()),
+        crate::trackrec::Taken::Skipped(w) => Ok(format!("{{\"kept\":false,\"why\":{}}}", q(w))),
+    }
+}
+
+pub fn track_rec_stop(user_root: &Path, id: &str) -> Result<String, String> {
+    crate::trackrec::stop(user_root, id, now_minutes())
+}
+
+pub fn track_rec_discard(user_root: &Path, id: &str) -> Result<(), String> {
+    crate::trackrec::discard(user_root, id)
 }
 
 /// Write one kept track as a GPX file in `user/exports/` and say where (a plain copy: the lock does not cover exports).

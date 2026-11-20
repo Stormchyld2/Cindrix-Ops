@@ -50,6 +50,7 @@ pub mod permissions;
 pub mod reminders;
 pub mod seclock;
 pub mod tracksheet;
+pub mod trackrec;
 pub mod security;
 pub mod security_api;
 pub mod security_comms;
