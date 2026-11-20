@@ -20,6 +20,14 @@
   const roleOf = (p: string) => view?.people.find((x) => x.person === p)?.role ?? view?.roles[0]?.name ?? '';
   const capText = (k: string) => view?.caps.find((c) => c.key === k)?.text ?? k;
   function toggleCap(k: string) { newCaps = newCaps.includes(k) ? newCaps.filter((c) => c !== k) : [...newCaps, k]; }
+  // the four roles doc 44 recommends, as starting points. A phone can only send reports, accept reports and copy, so only those three permissions exist to give.
+  const starters: { name: string; caps: string[]; text: string }[] = [
+    { name: 'Planner', caps: ['log', 'approve', 'sync'], text: 'Does everything a phone can do, including the other computer or phone that copies with this one.' },
+    { name: 'Watch supervisor', caps: ['log', 'approve'], text: 'Sends reports and accepts or sets aside the reports waiting on the host.' },
+    { name: 'Member', caps: ['log'], text: 'Sends reports only.' },
+    { name: 'Observer', caps: [], text: 'Can look at library content like a guest, and sends nothing.' },
+  ];
+  function useStarter(n: string) { const s = starters.find((x) => x.name === n); if (s) { newName = s.name; newCaps = [...s.caps]; } }
   async function add() { await run(() => rolesAdd(newName, newCaps)); if (!error) { newName = ''; newCaps = ['log']; } }
 </script>
 
@@ -50,6 +58,10 @@
 
     <div class="small muted pinlabel">Add a role</div>
     <div class="row">
+      <select class="input" aria-label="Start from" onchange={(e) => { useStarter((e.currentTarget as HTMLSelectElement).value); (e.currentTarget as HTMLSelectElement).value = ''; }} title="Fill in the name and permissions from one of the four usual roles">
+        <option value="">Start from a usual role...</option>
+        {#each starters as st}<option value={st.name}>{st.name}: {st.text}</option>{/each}
+      </select>
       <input class="input" placeholder="Role name" aria-label="Role name" bind:value={newName} />
       {#each view.caps as c (c.key)}
         <label class="small"><input type="checkbox" checked={newCaps.includes(c.key)} onchange={() => toggleCap(c.key)} /> {c.text}</label>

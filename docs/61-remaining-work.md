@@ -52,7 +52,7 @@ High and Medium, below the phases) are filed under the phase they belong to.
 ### 5. Complete Security Operations integration
 - [x] Phases 1 to 4 built (command, watchbill, incidents, comms, reviews, qualifications, gear).
 - [x] Named people on phones and roles (Reporter, Approver); who accepted a report is recorded; passcode recovery code.
-- [ ] The larger role split (planner, watch supervisor, member, observer) after these two roles have been used.
+- [x] The larger role split: the four roles doc 44 recommends (planner, watch supervisor, member, observer) are one click each when adding a role (Settings > Sharing > People and roles). They map onto the only three permissions a phone can use today (send reports, accept reports, copy with this device). Finer ones (edit the roster, confirm posture, open or close incidents, approve training, export) have nothing on a phone to guard yet: when a phone gets those commands, each needs its own permission and a line in `permissions::NEEDS`. The host itself is one operator.
 - [x] Overwatch import dropped (owner, 2026-11-20). Security log sync is done (phase 6).
 - [~] Acceptance matrix (doc 44 section 12): every row now has a status in the doc. Rows 4, 5 and 13 got a new test (`core/tests/security_acceptance.rs`). Rows 1, 8 (missing references), 12 and the two screens in rows 2 and 5 are still unchecked.
 - **Done when:** the acceptance matrix in doc 44 section 12 passes, row by row, in tests or on hardware.
