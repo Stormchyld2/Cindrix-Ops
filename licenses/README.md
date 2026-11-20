@@ -34,6 +34,7 @@ their full text.
 | FDA drug labels (openFDA, `scripts/get-druglabels.ps1`) | The label text for medicines, read in Intel > Drug labels | U.S. government information; openFDA terms (https://open.fda.gov/terms/) | Show it as published, say it is not advice and not endorsed by the FDA; the program never downloads it itself |
 | Home remedies pages (`content/guides/home-remedies`) | Reworded from NOMAD's `home_remedies.json` and `natural_remedies.json`, which summarize CDC, MedlinePlus and NCCIH pages | Public domain (U.S. government), NOMAD Apache-2.0 | Keep each page's `Source:` line |
 | ffmpeg (LGPL build) | Plays WMA by converting for a moment | LGPL-2.1-or-later | Keep license; offer the ffmpeg source (link below); we run it as a separate program |
+| Bible packs, podcasts and how-to videos you add (`library/bible`, `podcasts/`, `library/videos`) | Read and played from the drive; none ships with the program | Each pack, show or video keeps its own license | Keep each one's attribution (shown under Bible text); check terms before sharing copies |
 | CHIRP (radio programming software) | Taught in the Radio Licenses course; you put its installer in `resources/CHIRP` on the drive | GPL-3.0 | We do not change or rebuild it; link to its source and keep its license with the installer |
 | Our own code in `core/` and `crypto/` | All the logic, including our own zstd and xz readers | The project's license (see "Our own license") | |
 

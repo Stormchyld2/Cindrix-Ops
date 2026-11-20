@@ -61,7 +61,7 @@ Windows comes first; Android and iPhone wrap it later.
 
 - The app never uses the internet, except "Save a website" while it runs. Nothing new may phone out.
 - UI text is plain words for a non-technical person. No jargon, no blame in error messages.
-- The assistant never gives medicine or insulin doses (`core/tests/safety/dosing.json`).
+- The assistant never gives medicine or insulin doses (`tests/safety/dosing.json`).
 - Products switch screens on or off through `Features` in `product.rs`, not by asking which product.
 - A user's own files live under `user/` on the drive as plain files. Never overwrite a damaged file
   silently; use `fsio::backup_then_write` / `write_atomic`.

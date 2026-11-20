@@ -72,9 +72,9 @@ High and Medium, below the phases) are filed under the phase they belong to.
 - **Done when:** a person has reviewed each shipped card and course; a restore drill passes on a real drive.
 
 ### 8. Pass the coding release gate and produce builds
-- [ ] Every architecture doc reconciled with the source and CI (this pass did 44, 45 and 57; the rest still to do).
+- [x] Every architecture doc reconciled with the source and CI (2026-11-20 pass: every file named in `docs/` checked against the repo; stale paths fixed in `CLAUDE.md` and docs 07 and 38; the rest name files on the drive, not in the repo, or are marked as history).
 - [ ] The real Windows test (doc 22) and hardware plan (doc 49) done; findings fixed.
-- [ ] Windows installer signed; licenses and `content/sources.json` complete (doc 57).
+- [ ] Windows installer signed (needs the owner's signing certificate). Licenses and `content/sources.json`: [x] lines added for Bible packs, podcasts and videos (2026-11-20); every shipped or downloaded item now has a line.
 - [ ] Android build produced (phase 3).
 - **Done when:** CI is green on `main`, the Windows build passes the hardware test, and the installer is signed.
   Then, and only then, call it "CindrixOps Code Complete, Release Candidate 1".

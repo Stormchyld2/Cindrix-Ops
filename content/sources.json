@@ -413,6 +413,29 @@
           "note": "aphis.usda.gov/animal_health/carcass/docs/carcass-disposal-guide.pdf. Put the PDF in the library or books folder."
         }
       ]
+    },
+    {
+      "title": "Added 2026-11-20 (Bible study, podcasts, videos)",
+      "items": [
+        {
+          "name": "Bible texts, commentary, dictionary and cross-references (Canonleaf packs in library/bible)",
+          "license": "Each pack carries its own; Canonleaf marks packs 'review required' for sharing",
+          "status": "you add",
+          "note": "Read only, for a private collection. The attribution line of each pack is shown under the text. Nothing is downloaded by the program."
+        },
+        {
+          "name": "Podcast episodes (podcasts folder, saved by Cindrix Radio)",
+          "license": "Each show's own terms",
+          "status": "you add",
+          "note": "Played from the drive only. Check each show's terms before sharing copies."
+        },
+        {
+          "name": "How-to videos (library/videos)",
+          "license": "Each video's own license",
+          "status": "you add",
+          "note": "Played from the drive only. Copies made for playback by ffmpeg go to a .converted folder; originals are never changed."
+        }
+      ]
     }
   ]
 }

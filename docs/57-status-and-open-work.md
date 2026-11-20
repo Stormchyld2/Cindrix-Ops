@@ -28,7 +28,8 @@ Safe backup mailbox, share server with PIN and invites, drive markers and librar
 7. **License of our own code**: decided (doc 05, row 14). The text is in `LICENSE` and `licenses/PERSONAL-USE-LICENSE.md`, owner Jason Williams. The owner switches the repo to private in GitHub settings.
 8. **Installer and signing**: builds are unsigned (SmartScreen warns); signing postponed by the owner.
 9. **Standalone map viewer (`.cmap`)** is a separate project; spec only (`CINDRIXOPS_CMAP_VIEWER_ARCHITECTURE.md`).
-10. ~~Placeholder screen `Soon.svelte`~~ removed 2026-11-20; nothing used it.
+10. **Licenses**: `content/sources.json` and `licenses/README.md` checked 2026-11-20; lines added for Bible packs, podcasts and videos.
+11. ~~Placeholder screen `Soon.svelte`~~ removed 2026-11-20; nothing used it.
 
 Update this page, not the older "still to do" lists, when items change.
 
