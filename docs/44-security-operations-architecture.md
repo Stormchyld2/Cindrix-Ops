@@ -181,6 +181,28 @@ Protective decisions remain with people. The product must not automatically actu
 12. Android secondary tabs and emergency shortcut remain keyboard/screen-reader accessible and usable at narrow widths.
 13. Optional integrations fail gracefully without blocking local plans, logs or watchbill.
 
+### Where each row stands (2026-11-19)
+
+"Test" means an automatic test in `core/`. "Not checked" means nothing automatic covers it yet.
+
+| Row | Status | Where |
+|---|---|---|
+| 1 Navigation | Not checked automatically (the screen builds in CI; nobody has looked at it on a real run) | `App.svelte` |
+| 2 One projector for Dashboard and Command | Core tested; the two screens themselves not checked | `overview_looks_are_one_list_for_dashboard_and_command`, `outings_show_up_in_needs_a_look_and_the_overview_count_agrees` |
+| 3 Unknown first; Normal never from silence; changes name who and why | Test | `unknown_is_the_default_and_the_word_for_anything_odd`, `silence_never_lowers_a_posture`, `overview_never_claims_all_normal_without_proof`, `a_new_program_says_unknown_not_safe`, `setting_posture_uses_the_computers_clock_and_shows_on_the_overview` |
+| 4 Sites isolated | Test | `core/tests/security_acceptance.rs` row 4, `site_codes_come_from_the_name_and_never_change` |
+| 5 Emergency shortcut works offline | Core runs with nothing else running (test, `security_acceptance.rs`); the shortcut button itself not checked | |
+| 6 Watchbill coverage, overlap, rest, clock change, handover | Test | `draft_is_proposed_only_and_round_robin`, `draft_across_a_clock_change_keeps_real_hours`, `overlap_and_double_booking_are_found`, `short_rest_is_a_warning`, `missed_handover_stays_open_and_is_never_auto_closed` |
+| 7 Missed check-in is a task, not an incident | Test | `late_contact_and_late_return_are_plain_lines_never_incidents`, `silence_never_closes_anything` (`extending_needs_a_reason_and_silence_never_closes_anything`) |
+| 8 Ids survive rename; missing references stay visible | Ids: test (`site_codes_come_from_the_name_and_never_change`). Missing references: not checked |  |
+| 9 Atomic writes, interrupted saves, backups, damaged files | Test | `an_interrupted_write_is_reported_not_repaired_away`, `damaged_or_newer_files_stop_every_write`, `sites_save_with_a_backup_of_the_old_file`, the `fsio` and `userbackup` tests |
+| 10 Live and exercise data apart; no silent closure or qualification | Test | `exercises_are_never_counted_as_live`, `closed_stays_closed_until_an_explicit_reopen`, `training_needs_someone_else_to_sign_off_and_the_newest_line_counts` |
+| 11 Access guards reads, writes and export | Test | `core/tests/security_rules.rs`, `core/tests/access_classes.rs`; locked cards: every `security_*` command starts with `seclock::require_open()` |
+| 12 Keyboard, screen reader, narrow widths | Not checked (needs a real device) | |
+| 13 Optional integrations fail gracefully | Test for "works with nothing else"; there are no integrations yet (Overwatch import not built) | `security_acceptance.rs` |
+
+Rows still without a check: 1, 8 (missing references), 12, and the screens in 2 and 5.
+
 ## 13. Phased implementation and change control
 
 **Phase 1 — Foundation:** audit existing Family, Maps, Academy, Plan, Inventory, navigation, storage and dashboard components; create Security domain contracts and site records; one new parent/six subtabs; shared dashboard projection; posture; Command and emergency quick access.

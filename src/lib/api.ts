@@ -2407,3 +2407,24 @@ export async function gearDelete(ids: string[]): Promise<GearListing> {
   if (tauriHost) return call<GearListing>('gear_delete', { ids });
   throw new Error('The gear list is saved in the program, not in the browser preview.');
 }
+
+// ---- Gear: two-way copy with the other device (core/src/gearsync.rs). Host-only. ----
+export type GearSyncConflict = { id: string; mine: GearPiece | null; theirs: GearPiece | null };
+export type GearSyncPlan = { from: string; same: number; take: GearPiece[]; remove: GearPiece[]; conflicts: GearSyncConflict[] };
+export type GearSyncReport = { taken: number; removed: number; kept_mine: number; took_theirs: number; waiting: number };
+export async function gearSyncExport(): Promise<string> {
+  if (tauriHost) return call<string>('gear_sync_export');
+  throw new Error('The gear sheet is made in the program, not in the browser preview.');
+}
+export async function gearSyncWaiting(): Promise<string[]> {
+  if (tauriHost) return call<string[]>('gear_sync_waiting');
+  return [];
+}
+export async function gearSyncPreview(name: string): Promise<GearSyncPlan> {
+  if (tauriHost) return call<GearSyncPlan>('gear_sync_preview', { name });
+  throw new Error('The gear sheet is read in the program, not in the browser preview.');
+}
+export async function gearSyncAccept(name: string, picks: [string, boolean][]): Promise<GearSyncReport> {
+  if (tauriHost) return call<GearSyncReport>('gear_sync_accept', { name, picks });
+  throw new Error('The gear sheet is read in the program, not in the browser preview.');
+}

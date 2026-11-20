@@ -61,3 +61,75 @@ pub fn gear_delete(ids: Vec<String>) -> Result<GearListDto, String> {
     let items = gear::delete(&user_root(), &ids)?;
     Ok(list_of(&items, 0))
 }
+
+// ---------- two-way copy with the other device (core/src/gearsync.rs) ----------
+
+#[derive(Serialize)]
+pub struct SyncConflictDto {
+    pub id: String,
+    pub mine: Option<PieceDto>,
+    pub theirs: Option<PieceDto>,
+}
+
+#[derive(Serialize)]
+pub struct SyncPlanDto {
+    pub from: String,
+    pub same: usize,
+    pub take: Vec<PieceDto>,
+    pub remove: Vec<PieceDto>,
+    pub conflicts: Vec<SyncConflictDto>,
+}
+
+#[derive(Serialize)]
+pub struct SyncReportDto {
+    pub taken: usize,
+    pub removed: usize,
+    pub kept_mine: usize,
+    pub took_theirs: usize,
+    pub waiting: usize,
+}
+
+fn my_code() -> String {
+    cindrix_core::userdata::UserDir::new(&user_root()).device_id()
+}
+
+/// Write this device's gear list as a sheet for the other device and say where it is.
+#[tauri::command]
+pub fn gear_sync_export() -> Result<String, String> {
+    let code = my_code();
+    let text = cindrix_core::gearsync::export(&user_root(), &code)?;
+    let name = format!("gear-sync-{}.txt", code);
+    let dir = user_root().join("exports");
+    std::fs::create_dir_all(&dir).map_err(|_| "The exports folder could not be made.".to_string())?;
+    cindrix_core::fsio::write_atomic(&dir.join(&name), text.as_bytes()).map_err(|e| format!("The sheet could not be saved: {}", e))?;
+    Ok(format!("exports/{}", name))
+}
+
+#[tauri::command]
+pub fn gear_sync_waiting() -> Vec<String> {
+    cindrix_core::gearsync::waiting(&user_root())
+}
+
+#[tauri::command]
+pub fn gear_sync_preview(name: String) -> Result<SyncPlanDto, String> {
+    let sheet = cindrix_core::gearsync::read_waiting(&user_root(), &name)?;
+    let p = cindrix_core::gearsync::preview(&user_root(), &my_code(), &sheet)?;
+    Ok(SyncPlanDto {
+        from: p.from,
+        same: p.same,
+        take: p.take.iter().map(dto).collect(),
+        remove: p.remove.iter().map(dto).collect(),
+        conflicts: p.conflicts.iter().map(|c| SyncConflictDto { id: c.id.clone(), mine: c.mine.as_ref().map(dto), theirs: c.theirs.as_ref().map(dto) }).collect(),
+    })
+}
+
+/// `picks`: for each conflict the person has decided, `true` keeps the other device's version.
+#[tauri::command]
+pub fn gear_sync_accept(name: String, picks: Vec<(String, bool)>) -> Result<SyncReportDto, String> {
+    let sheet = cindrix_core::gearsync::read_waiting(&user_root(), &name)?;
+    let r = cindrix_core::gearsync::accept(&user_root(), &my_code(), &sheet, &picks)?;
+    if r.waiting == 0 {
+        cindrix_core::gearsync::finish_waiting(&user_root(), &name)?;
+    }
+    Ok(SyncReportDto { taken: r.taken, removed: r.removed, kept_mine: r.kept_mine, took_theirs: r.took_theirs, waiting: r.waiting })
+}

@@ -3,7 +3,7 @@
   // Core: core/src/gear.rs (user/gear.txt). It starts empty: everything here is typed in by the person.
   import PageHeader from '../lib/PageHeader.svelte';
   import { onMount } from 'svelte';
-  import { gearList, gearSave, gearDelete, type GearListing, type GearPiece } from '../lib/api';
+  import { gearList, gearSave, gearDelete, gearSyncExport, gearSyncWaiting, gearSyncPreview, gearSyncAccept, type GearListing, type GearPiece, type GearSyncPlan } from '../lib/api';
 
   let data = $state<GearListing | null>(null);
   let note = $state('');
@@ -14,7 +14,30 @@
 
   const blank = (): GearPiece => ({ id: '', name: '', kind: 'other', make: '', model: '', serial: '', location: '', qty: 1, condition: 'good', bought: '', notes: '' });
   async function load() { try { data = await gearList(); } catch (e) { note = String(e); } }
-  onMount(load);
+  onMount(() => { load(); loadWaiting(); });
+
+  // Copy with the other device (laptop and phone): each sends a sheet, the other accepts it, and a piece changed on both is decided by a person.
+  let waiting = $state<string[]>([]);
+  let open = $state('');
+  let plan = $state<GearSyncPlan | null>(null);
+  let picks = $state<Record<string, boolean>>({});
+  async function loadWaiting() { try { waiting = await gearSyncWaiting(); } catch { waiting = []; } }
+  async function makeSheet() {
+    try { note = `The sheet is saved as ${await gearSyncExport()}. Put it in the other device's inbox/sync folder (user/inbox/sync) and accept it there.`; } catch (e) { note = String(e); }
+  }
+  async function look(name: string) {
+    try { plan = await gearSyncPreview(name); open = name; picks = {}; } catch (e) { note = String(e); }
+  }
+  const pieceText = (p: GearPiece | null) => (p ? `${p.name}${p.make || p.model ? ' (' + [p.make, p.model].filter(Boolean).join(' ') + ')' : ''}, ${p.qty} at ${p.location || 'no place'}, ${condName(p.condition)}${p.notes ? ', ' + p.notes : ''}` : 'Removed');
+  async function accept() {
+    try {
+      const r = await gearSyncAccept(open, Object.entries(picks));
+      note = `Took ${r.taken} new or changed, removed ${r.removed}. ${r.waiting ? r.waiting + ' still waiting for you to choose.' : 'Nothing is waiting.'}`;
+      if (!r.waiting) { open = ''; plan = null; }
+      else await look(open);
+      await load(); await loadWaiting();
+    } catch (e) { note = String(e); }
+  }
 
   const kindName = (id: string) => data?.kinds.find((k) => k[0] === id)?.[1] ?? id;
   const condName = (id: string) => data?.conditions.find((k) => k[0] === id)?.[1] ?? id;
@@ -33,6 +56,26 @@
 </script>
 
 <PageHeader eyebrow="CINDRIX OPS" title="Gear" tagline="Tents, radios, walking poles and everything else that is not food, with make, model and serial number. Food stays in the Inventory." />
+
+<div class="panel">
+  <h2>Copy with the other device</h2>
+  <p class="muted small">Make a sheet here and put it on the other device, and the other way round. Nothing is joined without you: a piece changed on both devices is shown to you to choose.</p>
+  <button class="btn" onclick={makeSheet} title="Save this device's gear list as a sheet for the other device">Make a sheet for the other device</button>
+  {#each waiting as w (w)}
+    <div class="row"><span class="grow">{w}</span><button class="btn" onclick={() => look(w)} title="See what accepting this sheet would change">Look at it</button></div>
+  {/each}
+  {#if plan && open}
+    <p class="small">From device {plan.from}: {plan.take.length} new or changed, {plan.remove.length} removed there, {plan.same} the same, {plan.conflicts.length} to decide.</p>
+    {#each plan.conflicts as c (c.id)}
+      <div class="small">
+        <b>{c.id}</b><br />
+        <label><input type="radio" name={'c' + c.id} onchange={() => (picks[c.id] = false)} /> Keep mine: {pieceText(c.mine)}</label><br />
+        <label><input type="radio" name={'c' + c.id} onchange={() => (picks[c.id] = true)} /> Use theirs: {pieceText(c.theirs)}</label>
+      </div>
+    {/each}
+    <button class="btn primary" onclick={accept} title="Accept the sheet. Pieces you have not chosen for stay as they are">Accept this sheet</button>
+  {/if}
+</div>
 
 <div class="panel">
   {#if note}<p class="note" role="status">{note}</p>{/if}
