@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { bedsList, bedsSave, type BedRow, type BedReview } from '../lib/api';
+  import { bedsList, bedsSave, seedsList, type BedRow, type BedReview } from '../lib/api';
 
   let review: BedReview = $state({ rows: [], clashes: [], hints: [] });
   let error = $state('');
@@ -9,9 +9,12 @@
   let crop = $state('');
   let year = $state(new Date().getFullYear());
   let notes = $state('');
+  // crops from the seed vault, offered as you type (the vault is optional: an empty or unreadable vault just offers nothing)
+  let seedCrops: string[] = $state([]);
 
   onMount(async () => {
     try { review = await bedsList(); } catch (e) { error = String(e); }
+    try { seedCrops = [...new Set((await seedsList()).map((x) => x.crop).filter(Boolean))].sort(); } catch { /* no suggestions */ }
   });
 
   const beds = $derived([...new Set(review.rows.map((r) => r.bed))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true })));
@@ -55,7 +58,8 @@
     <label>Bed <input list="bed-names" bind:value={bed} placeholder="Bed 1" required /></label>
     <datalist id="bed-names">{#each beds as b}<option value={b}></option>{/each}</datalist>
     <label>Year <input type="number" bind:value={year} min="1900" max="2200" style="width:6em" /></label>
-    <label>Crop <input bind:value={crop} placeholder="Tomato" required /></label>
+    <label>Crop <input list="seed-crops" bind:value={crop} placeholder="Tomato" required /></label>
+    <datalist id="seed-crops">{#each seedCrops as c}<option value={c}></option>{/each}</datalist>
     <label class="grow">Notes <input bind:value={notes} placeholder="Optional" /></label>
     <button class="btn primary" type="submit">Save</button>
   </form>

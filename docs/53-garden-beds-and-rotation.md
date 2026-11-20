@@ -14,8 +14,9 @@ a crop went last year. Rotation is the cheapest pest and disease control a home 
 **API:** `family_of(crop)`, `rest_years(family)`, `check(history, bed, year, crop)`, `check_all(history)`,
 `suggest(history, bed, year)`, `parse(csv)`, `to_csv(history)`. Pure logic, std only, nine unit tests.
 
-**Not built yet:** a Svelte screen (beds grid, per-bed history, "plant here instead" hint), linking beds to Seed Vault
-rows, and auto-created sowing tasks from the calendar.
+**Built:** the screen (Plan > Garden beds: beds grid, per-bed history, clash warnings, next-crop hints; `src/views/GardenBeds.svelte`). The crop box offers crops from the Seed vault as you type.
+
+**Not built yet:** tying a planting to one Seed vault row (stock used), and auto-created sowing tasks from the calendar.
 
 **Credit:** the idea of per-bed crop history with rotation checks was inspired by the feature list of the open-source
 garden planner *Brinjel* (AGPL-3.0). We read its description only; **no Brinjel code or text is used**, and because it is

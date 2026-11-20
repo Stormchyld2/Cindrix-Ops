@@ -43,7 +43,8 @@ High and Medium, below the phases) are filed under the phase they belong to.
   built: reminders from watch and patrol schedules (doc 44 section 15); a reminder while the program is closed or the
   computer asleep (cannot be done without a background service).
 - [~] GPS track recording in the main program: built (`trackrec.rs`, Operations > Walked tracks > Record a track; weak-signal filter, saved as it goes, pressure hint). Not tested on a real device; no barometer reading from the screen yet (docs 45, 55).
-- [ ] Garden beds screen (doc 53); map data gaps (doc 57).
+- [x] Garden beds screen (Plan > Garden beds, `GardenBeds.svelte`, was already built; the crop box now offers crops from the Seed vault).
+- [ ] Map data gaps (doc 57): Cheatham and Robertson counties missing from the Tennessee aerial/topo box, whole-US street addresses (doc 28), place-name fonts, no-go-area route warnings. These need map files fetched with internet, which this workspace does not have, so they move to phase 7 (content) and are not code work.
 - **Done when:** a due item reminds the host with no network; a recorded track is saved and shown; PACE answers
   appear in the plan and in Security comms.
 
