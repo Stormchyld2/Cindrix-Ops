@@ -8,7 +8,6 @@
   import Approvals from './views/Approvals.svelte';
   import Family from './views/Family.svelte';
   import Cascade from './views/Cascade.svelte';
-  import Soon from './views/Soon.svelte';
   import Todo from './views/Todo.svelte';
   import Calendar from './views/Calendar.svelte';
   import Projects from './views/Projects.svelte';
@@ -96,7 +95,7 @@
   $effect(() => { if (settings.loaded) void privacySetIdle(settings.values.privateLockMinutes); });
 
   // Intel is the offline internet: the archives read like web pages. It goes with the library.
-  type Group = 'Dashboard' | 'Ask' | 'Library' | 'Intel' | 'Academy' | 'Maps' | 'Music' | 'Podcasts' | 'Videos' | 'Plan' | 'Inventory' | 'Gear' | 'Settings' | 'Corner' | 'Guides' | 'Journal' | 'Photos' | 'CommsPlan' | 'Todo' | 'Calendar' | 'Projects' | 'DrugLabels' | 'Security' | 'Bible' | 'Approvals' | 'Soon';
+  type Group = 'Dashboard' | 'Ask' | 'Library' | 'Intel' | 'Academy' | 'Maps' | 'Music' | 'Podcasts' | 'Videos' | 'Plan' | 'Inventory' | 'Gear' | 'Settings' | 'Corner' | 'Guides' | 'Journal' | 'Photos' | 'CommsPlan' | 'Todo' | 'Calendar' | 'Projects' | 'DrugLabels' | 'Security' | 'Bible' | 'Approvals';
   const allGroups: Group[] = ['Dashboard', 'Ask', 'Library', 'Intel', 'Academy', 'Maps', 'Music', 'Podcasts', 'Videos', 'Plan', 'Inventory', 'Gear', 'Settings', 'Corner', 'Journal', 'Photos', 'CommsPlan', 'Todo', 'Calendar', 'Projects', 'DrugLabels', 'Security', 'Bible', 'Approvals'];
   // Each product switches parts of the program on or off (core/src/product.rs).
   const groups = $derived(
@@ -121,7 +120,7 @@
   onMount(() => { void canApprove().then((v) => (mayApprove = v)); });
   let group: Group = $state('Dashboard');
   // If the current screen is switched off for this product, move to the first one that is on.
-  $effect(() => { if (groups.length && group !== 'Soon' && group !== 'Guides' && !groups.includes(group)) group = groups[0]; });
+  $effect(() => { if (groups.length && group !== 'Guides' && !groups.includes(group)) group = groups[0]; });
   let plan: (typeof planTabs)[number] = $state('Start');
   const libTabs = ['Shelf', 'Archives', 'Cards'] as const;
   let lib: (typeof libTabs)[number] = $state('Shelf');
@@ -187,10 +186,9 @@
   }
   /** The Dashboard's links: a top-level screen, or a screen inside Plan, Library and so on. */
   function goTo(tab: string) {
-    // screens that are planned but not built yet, the Settings tabs, and the Academy's Training sign-off
+    // the Settings tabs, and the Academy's Training sign-off
     if (!tab.startsWith('settings:')) settingsFromComms = false;
     if (tab.startsWith('guide:')) { guideSection = tab.slice(6); group = 'Guides'; return; }
-    if (tab.startsWith('soon:')) { soonTitle = tab.slice(5); group = 'Soon'; return; }
     if (tab.startsWith('settings:')) { settingsFromComms = tab === 'settings:Sharing'; viewRequest.settingsTab = tab.slice(9); group = 'Settings'; return; }
     if (tab === 'training') { viewRequest.training = true; group = 'Academy'; return; }
     if ((allGroups as string[]).includes(tab)) { group = tab as Group; return; }
@@ -204,7 +202,6 @@
   }
 
   // ---- the top bar: groups with a menu each (mockups/Navigation.html) ----
-  let soonTitle = $state('');
   let guideSection = $state('crop-guides');
   const guideInfo: Record<string, { title: string; intro: string }> = {
     'crop-guides': { title: 'Crop guides', intro: 'What to grow and how: one page for each crop. Check them against your own area: planting times depend on your frost dates.' },
@@ -274,10 +271,6 @@
       case 'Guides': {
         const hit = tops.find((t) => t.entries?.some((e) => e.tab === 'guide:' + guideSection));
         return hit ? hit.id : 'Agro';
-      }
-      case 'Soon': {
-        const hit = tops.find((t) => t.entries?.some((e) => e.tab === 'soon:' + soonTitle));
-        return hit ? hit.id : soonTitle;
       }
       default: return group;
     }
@@ -423,8 +416,6 @@
       <Approvals />
     {:else if group === 'Settings'}
       <Settings {openArchives} go={goTo} />
-    {:else}
-      <Soon title={group === 'Soon' ? soonTitle : group} />
     {/if}
   </main>
 

@@ -65,10 +65,10 @@ High and Medium, below the phases) are filed under the phase they belong to.
 
 ### 7. Close media and supporting-module gaps
 - [x] Videos, podcasts, music, Bible study, Gear list built.
-- [ ] Review the shipped reference content (cards, Academy, guides) with a person; Academy is thin (doc 57).
-- [ ] Backups and interrupted writes: restore drill on a real Windows drive. *Built and checked:* torn writes, unique
+- [ ] Review the shipped reference content (cards, Academy, guides) with a person; Academy is thin (doc 57). Ready for a person: `docs/62-content-review-sheet.md` lists all 169 cards (0 reviewed) and every course with its lesson count; regenerate with `node scripts/review-sheet.mjs`. Only a person can make a card `status: reviewed`.
+- [ ] Backups and interrupted writes: restore drill on a real Windows drive (the step-by-step is `docs/63-restore-drill.md`; not run yet). *Built and checked:* torn writes, unique
   backup names, half-made backups, restore drill with the passcode lock (core tests).
-- [ ] Standalone `.cmap` viewer (doc 57); `Soon.svelte` placeholders removed.
+- [~] Standalone `.cmap` viewer (doc 57): its own project, spec only, not started here. `Soon.svelte` placeholder screen removed (nothing linked to it any more).
 - **Done when:** a person has reviewed each shipped card and course; a restore drill passes on a real drive.
 
 ### 8. Pass the coding release gate and produce builds

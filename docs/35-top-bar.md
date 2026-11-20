@@ -18,7 +18,7 @@ Ten words, each with a small coloured diamond. (Security, approved 2026-11-07, i
 | Comms | Comms plan, Radio reference (30 pages, 2026-10-24), Sharing |
 | System | Settings, My details |
 
-Screens that are not built show the "Not built yet" page (`Soon.svelte`). Nothing in a menu is hidden to look finished.
+Every screen in a menu is built. Nothing in a menu is hidden to look finished.
 
 Products still switch parts off through `Features` (`product.rs`): a word with nothing left in it disappears.
 
