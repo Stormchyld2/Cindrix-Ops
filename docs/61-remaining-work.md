@@ -74,9 +74,9 @@ High and Medium, below the phases) are filed under the phase they belong to.
 ### 8. Pass the coding release gate and produce builds
 - [x] Every architecture doc reconciled with the source and CI (2026-11-20 pass: every file named in `docs/` checked against the repo; stale paths fixed in `CLAUDE.md` and docs 07 and 38; the rest name files on the drive, not in the repo, or are marked as history).
 - [ ] The real Windows test (doc 22) and hardware plan (doc 49) done; findings fixed. One combined list for the whole program: `docs/64-full-program-test.md` (not run yet).
-- [ ] Windows installer signed (needs the owner's signing certificate). Licenses and `content/sources.json`: [x] lines added for Bible packs, podcasts and videos (2026-11-20); every shipped or downloaded item now has a line.
-- [ ] Android build produced (phase 3).
-- **Done when:** CI is green on `main`, the Windows build passes the hardware test, and the installer is signed.
+- [x] Windows program stays unsigned: the owner decided 2026-11-20 not to sign it (Windows will warn on first run; doc 22 says how to continue). Only the Android build is signed, with the sideload key in `android/`. Licenses and `content/sources.json`: [x] lines added for Bible packs, podcasts and videos (2026-11-20); every shipped or downloaded item now has a line.
+- [~] Android build: CI already builds and signs a Hub APK (`.github/workflows/android-build.yml`, branch `android-hub`, last green run 2026-11-17). It has not been run on a phone, and the work on `hub-any-drive` since then (sharing, sync, maps, security) has not been built for Android. Next: run that workflow on `hub-any-drive` and fix what breaks.
+- **Done when:** CI is green on `main`, and the Windows build passes the hardware test. (Windows is not signed, by the owner's decision.)
   Then, and only then, call it "CindrixOps Code Complete, Release Candidate 1".
 
 ## Detail behind the phases (kept from the first version of this list)
@@ -129,7 +129,7 @@ High and Medium, below the phases) are filed under the phase they belong to.
 ### Detail: not built, by design or waiting
 
 - Android Hub, Pocket beyond the field tools, Overwatch import, plugin system (declined by the owner;
-  extra content is added as `.md` files and Academy packs), garden beds screen (doc 53), signed installer.
+  extra content is added as `.md` files and Academy packs), garden beds screen (doc 53).
 
 ## Checked in CI on `hub-any-drive` (2026-11-19)
 

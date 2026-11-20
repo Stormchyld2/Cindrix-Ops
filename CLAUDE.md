@@ -34,7 +34,7 @@ Windows comes first; Android and iPhone wrap it later.
 - `core/examples/`: small programs the CI jobs run (`make_zim`, `check_drive`, `cross_check`, `probe_*`). They look unused locally but CI needs them; do not delete (they were removed by mistake twice).
 - `mockups/`: design mockups. Match them when changing a screen.
 
-## Direction (decided 2026-10-21; libraries and the share server are built but not run on real hardware, Android is not started; details in `docs/24-hosts-libraries-browser-clients.md`)
+## Direction (decided 2026-10-21; libraries and the share server are built but not run on real hardware, the Android build runs in CI (`android-build.yml`, signed with the sideload key) but has not been run on a phone; details in `docs/24-hosts-libraries-browser-clients.md`)
 
 - Go carries program and content on one stick. Vault and Hub are one exFAT drive of content; the program
   runs on a host (Windows laptop for Vault, Android phone for Hub). The drive also holds a rescue copy of
