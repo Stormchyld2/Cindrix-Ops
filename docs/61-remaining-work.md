@@ -44,7 +44,8 @@ High and Medium, below the phases) are filed under the phase they belong to.
   computer asleep (cannot be done without a background service).
 - [~] GPS track recording in the main program: built (`trackrec.rs`, Operations > Walked tracks > Record a track; weak-signal filter, saved as it goes, pressure hint). Not tested on a real device; no barometer reading from the screen yet (docs 45, 55).
 - [x] Garden beds screen (Plan > Garden beds, `GardenBeds.svelte`, was already built; the crop box now offers crops from the Seed vault).
-- [ ] Map data gaps (doc 57): the list is from the 2026-11-07 audit and may be out of date. Doc 29 now has a `tn-middle` box that includes Cheatham and Robertson, so those two may already be on the drive. To settle it, someone looks at the real drive (Maps screen, or the `maps` folder). Whole-US street addresses (doc 28), place-name fonts and no-go-area route warnings are still open. Nothing here is code work I can check from this workspace, which cannot see the drive.
+- [ ] Map data (doc 57, unverified from this workspace, which cannot see the drive): Cheatham and Robertson are inside the `tn-middle` box (doc 29) and may already be on the drive; street addresses have a download script (`get-addresses.ps1`) and search (doc 28), so they may be done. Open: place-name fonts.
+- [ ] **Bug reported by the owner (2026-11-19): an area to avoid is created but the way is not steered round it.** The engine and the screen both pass areas to `directions` and a core test shows a detour, so the cause is something real maps do and the test does not. Needs the exact steps (Directions boxes or only route stops; any message shown) or a run on the real map pack.
 - **Done when:** a due item reminds the host with no network; a recorded track is saved and shown; PACE answers
   appear in the plan and in Security comms.
 

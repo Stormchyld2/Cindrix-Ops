@@ -88,6 +88,11 @@ pub fn load(user_root: &Path) -> Result<Loaded, String> {
     }
 }
 
+/// Write the whole list (backed up first). For the sync, which has already decided every line.
+pub fn replace_all(user_root: &Path, items: &[Piece]) -> Result<(), String> {
+    store(user_root, items)
+}
+
 fn store(user_root: &Path, items: &[Piece]) -> Result<(), String> {
     fsio::backup_then_write(&path(user_root), &user_root.join("backups"), serialize(items).as_bytes()).map_err(|e| format!("The gear list could not be saved: {}", e))
 }

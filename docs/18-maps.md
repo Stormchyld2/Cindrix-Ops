@@ -11,7 +11,7 @@ Status: the saved-map features are built and tested. The tile viewer is **writte
 - Saved maps are plain files in `user/saved-maps/<name>/` (`map.json`, `notes.md`, `route.gpx`), with a backup of the previous version before any save.
 
 ## Honest limits
-- No road routing, and routes are not steered around no-go areas. The point-in-area test exists in the core (`maps::in_polygon`) but no screen uses it yet.
+- (Out of date, corrected 2026-11-19.) Directions by car and on foot are built (doc 31) and the areas drawn as areas to avoid are passed to them (`routing::directions`, `Maps.svelte` `computeTrip`). A core test shows a detour round an area. The owner reports on real maps the way is NOT steered round an area; not yet reproduced (see doc 61).
 - No place names on the map: the style leaves out text layers because no font files ship yet. Pin labels are drawn by the app.
 - No topo (contours, shading), no satellite layer, no GPS, no "line of sight", no layer toggles (hospitals, water and so on). The mockup shows all of these; none is built.
 - Positions are placed by hand and are approximate.
@@ -58,7 +58,7 @@ The map "did not load correctly" with the small test pack. Likely cause: the vie
 
 ## Still to do
 (Updated 2026-11-07: the topo layer, aerial packs, layer buttons, drawing tools, directions and MGRS grid have since been built; see docs 28 to 32.)
-Still open: fonts for place names, a warning when a route crosses a no-go area, GPS where hardware has it, whole-US street addresses, and a first run on real tiles. Full list: [57](57-status-and-open-work.md).
+Still open: fonts for place names, the owner's report that a drawn area is not avoided on real maps, a warning when a route crosses a no-go area, GPS where hardware has it, and a first run on real tiles. Street addresses: the download script and search are built (doc 28); whether the whole US is on the drive is unchecked from here. Full list: [57](57-status-and-open-work.md).
 
 
 ## Finding a place (2026-10-21)
